@@ -10,6 +10,7 @@ type Environment = {
   scraper: {
     home: {
       url: string;
+      mainSearchArea: string;
     };
   };
 };
@@ -33,5 +34,9 @@ export class Configuration {
 
   get scraperHomeUrl(): string {
     return this.environment.scraper.home.url;
+  }
+
+  get mainSearchArea(): string {
+    return this.environment.scraper.home.mainSearchArea;
   }
 }

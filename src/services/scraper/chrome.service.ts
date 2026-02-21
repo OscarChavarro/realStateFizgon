@@ -1,0 +1,169 @@
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { spawn, ChildProcess } from 'node:child_process';
+import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { join } from 'node:path';
+import CDP = require('chrome-remote-interface');
+import { Configuration } from '../../config/configuration';
+import { MainPageService } from './main-page.service';
+
+@Injectable()
+export class ChromeService implements OnModuleInit {
+  private readonly logger = new Logger(ChromeService.name);
+  private chromeProcess?: ChildProcess;
+  private chromeStdoutFd?: number;
+  private chromeStderrFd?: number;
+  private readonly cdpHost = '127.0.0.1';
+  private readonly cdpPort = 9222;
+
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly mainPageService: MainPageService
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.launchChrome();
+    await this.openHomePage();
+  }
+
+  private async launchChrome(): Promise<void> {
+    const logsDir = join(process.cwd(), 'output', 'logs');
+    mkdirSync(logsDir, { recursive: true });
+    this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
+    this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+
+    this.chromeProcess = spawn(this.configuration.chromeBinary, [
+      `--remote-debugging-port=${this.cdpPort}`,
+      `--user-data-dir=${this.configuration.chromePath}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--new-window',
+      this.configuration.scraperHomeUrl
+    ], {
+      stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+    });
+    this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
+
+    this.chromeProcess.once('exit', () => {
+      if (this.chromeStdoutFd !== undefined) {
+        closeSync(this.chromeStdoutFd);
+        this.chromeStdoutFd = undefined;
+      }
+      if (this.chromeStderrFd !== undefined) {
+        closeSync(this.chromeStderrFd);
+        this.chromeStderrFd = undefined;
+      }
+    });
+
+    await this.waitForCdp();
+  }
+
+  private async waitForCdp(): Promise<void> {
+    const timeout = 60000;
+    const start = Date.now();
+    let lastError: unknown;
+
+    while (Date.now() - start < timeout) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2000);
+
+      try {
+        const response = await fetch(`http://${this.cdpHost}:${this.cdpPort}/json/version`, {
+          signal: controller.signal
+        });
+        if (response.ok) {
+          this.logger.log(`CDP endpoint is ready at ${this.cdpHost}:${this.cdpPort}.`);
+          return;
+        }
+      } catch (error) {
+        lastError = error;
+      } finally {
+        clearTimeout(timer);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    throw new Error(
+      `CDP endpoint did not become available in time at ${this.cdpHost}:${this.cdpPort}${lastError ? ` (${String(lastError)})` : ''}`
+    );
+  }
+
+  private async openHomePage(): Promise<void> {
+    const targets = await CDP.List({ host: this.cdpHost, port: this.cdpPort });
+    const pageTarget = [...targets].reverse().find((target: { type?: string }) => target.type === 'page');
+
+    if (!pageTarget) {
+      throw new Error('No page target available in Chrome');
+    }
+
+    this.logger.log(`Using existing page target ${String((pageTarget as { id?: string }).id ?? 'unknown')}.`);
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: pageTarget });
+
+    try {
+      const { Page, Runtime } = client;
+      await Page.enable();
+      await Runtime.enable();
+      await Page.bringToFront();
+      const locationResult = await Runtime.evaluate({
+        expression: 'window.location.href',
+        returnByValue: true
+      });
+      const currentUrl = String(locationResult.result?.value ?? '');
+      this.logger.log(`Current page URL before automation: ${currentUrl}`);
+      if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
+        await Page.navigate({ url: this.configuration.scraperHomeUrl });
+        await this.waitForPageLoad(Page);
+      }
+      await this.recoverIfOriginError(Page, Runtime);
+      await this.mainPageService.execute(
+        client,
+        this.configuration.mainSearchArea,
+        this.configuration.scraperHomeUrl
+      );
+      this.logger.log('MainPageService finished.');
+    } finally {
+      await client.close();
+    }
+  }
+
+  private async recoverIfOriginError(Page: { reload(params?: { ignoreCache?: boolean }): Promise<void>; loadEventFired(cb: () => void): void }, Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }): Promise<void> {
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+      const hasOriginError = await this.hasOriginError(Runtime);
+      if (!hasOriginError) {
+        return;
+      }
+
+      this.logger.warn(`Detected origin error page (attempt ${attempt}/${maxRetries}). Reloading in 1 second.`);
+      await this.sleep(1000);
+      await Page.reload({ ignoreCache: true });
+      await this.waitForPageLoad(Page);
+    }
+
+    throw new Error('Origin error page persisted after automatic reload attempts.');
+  }
+
+  private async hasOriginError(Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }): Promise<boolean> {
+    const evaluation = await Runtime.evaluate({
+      expression: `(() => {
+        const title = (document.title || '').toLowerCase();
+        const text = (document.body?.innerText || '').toLowerCase();
+        return title.includes('425 unknown error') || text.includes('error 425 unknown error') || text.includes('varnish cache server');
+      })()`,
+      returnByValue: true
+    });
+
+    return evaluation.result?.value === true;
+  }
+
+  private async waitForPageLoad(Page: { loadEventFired(cb: () => void): void }): Promise<void> {
+    await new Promise<void>((resolve) => {
+      Page.loadEventFired(() => resolve());
+    });
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}

@@ -4,6 +4,7 @@ build/
 out/
 coverage/
 *.log
+output/logs/*
 .env
 .env.*
 .DS_Store

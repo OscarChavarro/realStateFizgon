@@ -5,7 +5,8 @@
   },
   "scraper": {
     "home": {
-      "url": "https://www.idealista.com/"
+      "url": "https://www.idealista.com/",
+      "mainSearchArea": "Madrid"
     }
   }
 }

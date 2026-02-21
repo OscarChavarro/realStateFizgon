@@ -1,0 +1,256 @@
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { spawn, ChildProcess } from 'node:child_process';
+import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { join } from 'node:path';
+import CDP = require('chrome-remote-interface');
+import { Configuration } from '../../config/configuration';
+import { RabbitMqService } from './rabbitmq/rabbit-mq.service';
+
+type CdpClient = {
+  Page: {
+    enable(): Promise<void>;
+    navigate(params: { url: string }): Promise<{ errorText?: string }>;
+    bringToFront(): Promise<void>;
+  };
+  Runtime: {
+    enable(): Promise<void>;
+    evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;
+  };
+  close(): Promise<void>;
+};
+
+@Injectable()
+export class ChromeService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ChromeService.name);
+  private readonly cdpHost = '127.0.0.1';
+  private chromeProcess?: ChildProcess;
+  private chromeStdoutFd?: number;
+  private chromeStderrFd?: number;
+  private cdpClient?: CdpClient;
+
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly rabbitMqService: RabbitMqService
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.launchChrome();
+    this.cdpClient = await this.openCdpClient();
+
+    await this.rabbitMqService.consumePropertyUrls(async (url) => {
+      await this.openPropertyUrl(url);
+      await this.sleep(this.configuration.delayAfterUrlMs);
+    });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    if (this.cdpClient) {
+      await this.cdpClient.close();
+      this.cdpClient = undefined;
+    }
+
+    if (this.chromeProcess && !this.chromeProcess.killed) {
+      this.chromeProcess.kill('SIGTERM');
+    }
+  }
+
+  private async openPropertyUrl(url: string): Promise<void> {
+    await this.ensureCdpClient();
+
+    this.logger.log(`Processing details for property: ${url}`);
+
+    try {
+      await this.navigateAndWait(url);
+      this.logger.log(`Loaded details page: ${url}`);
+    } catch (error) {
+      if (!this.isClosedWebSocketError(error)) {
+        throw error;
+      }
+
+      this.logger.warn('CDP websocket was closed. Reconnecting CDP client and retrying current URL once.');
+      await this.reconnectCdpClient();
+      await this.navigateAndWait(url);
+      this.logger.log(`Loaded details page after CDP reconnect: ${url}`);
+    }
+  }
+
+  private async launchChrome(): Promise<void> {
+    const logsDir = join(process.cwd(), 'output', 'logs');
+    mkdirSync(logsDir, { recursive: true });
+    this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
+    this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+
+    this.chromeProcess = spawn(
+      this.configuration.chromeBinary,
+      [
+        `--remote-debugging-port=${this.configuration.chromeCdpPort}`,
+        `--user-data-dir=${this.configuration.chromePath}`,
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--new-window',
+        'about:blank'
+      ],
+      {
+        stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+      }
+    );
+
+    this.chromeProcess.once('exit', () => {
+      if (this.chromeStdoutFd !== undefined) {
+        closeSync(this.chromeStdoutFd);
+        this.chromeStdoutFd = undefined;
+      }
+      if (this.chromeStderrFd !== undefined) {
+        closeSync(this.chromeStderrFd);
+        this.chromeStderrFd = undefined;
+      }
+    });
+
+    await this.waitForCdp();
+  }
+
+  private async openCdpClient(): Promise<CdpClient> {
+    const createdTarget = await (CDP as unknown as {
+      New(params: { host: string; port: number; url: string }): Promise<{ id?: string }>;
+    }).New({
+      host: this.cdpHost,
+      port: this.configuration.chromeCdpPort,
+      url: 'about:blank'
+    });
+
+    const targets = await CDP.List({ host: this.cdpHost, port: this.configuration.chromeCdpPort });
+    const pageTarget = targets.find((target: { id?: string; type?: string }) => target.id === createdTarget.id && target.type === 'page');
+    if (!pageTarget) {
+      throw new Error('No page target available in Chrome.');
+    }
+
+    const client = await CDP({
+      host: this.cdpHost,
+      port: this.configuration.chromeCdpPort,
+      target: pageTarget
+    }) as CdpClient;
+
+    await client.Page.enable();
+    await client.Runtime.enable();
+    await client.Page.bringToFront();
+    this.logger.log(`Connected to dedicated CDP page target ${String((pageTarget as { id?: string }).id ?? 'unknown')}.`);
+    return client;
+  }
+
+  private async waitForCdp(): Promise<void> {
+    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
+
+      try {
+        const response = await fetch(`http://127.0.0.1:${this.configuration.chromeCdpPort}/json/version`, {
+          signal: controller.signal
+        });
+        if (response.ok) {
+          return;
+        }
+      } catch {
+        // Keep polling until timeout.
+      } finally {
+        clearTimeout(timer);
+      }
+
+      await this.sleep(this.configuration.chromeCdpPollIntervalMs);
+    }
+
+    throw new Error(`CDP endpoint did not become available on port ${this.configuration.chromeCdpPort}.`);
+  }
+
+  private async waitForUrlAndDomComplete(
+    runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
+    targetUrl: string
+  ): Promise<void> {
+    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const evaluation = await runtime.evaluate({
+        expression: `(() => {
+          const currentNoHash = window.location.href.split('#')[0];
+          const targetNoHash = ${JSON.stringify(targetUrl)}.split('#')[0];
+          const sameUrl = currentNoHash === targetNoHash;
+          const isComplete = document.readyState === 'complete';
+          return sameUrl && isComplete;
+        })()`,
+        returnByValue: true
+      });
+
+      if (evaluation.result?.value === true) {
+        return;
+      }
+
+      await this.sleep(this.configuration.chromeCdpPollIntervalMs);
+    }
+
+    throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async ensureCdpClient(): Promise<void> {
+    if (!this.cdpClient) {
+      this.cdpClient = await this.openCdpClient();
+      return;
+    }
+
+    try {
+      await this.cdpClient.Runtime.evaluate({ expression: 'true', returnByValue: true });
+    } catch (error) {
+      if (!this.isClosedWebSocketError(error)) {
+        throw error;
+      }
+
+      await this.reconnectCdpClient();
+    }
+  }
+
+  private async reconnectCdpClient(): Promise<void> {
+    if (this.cdpClient) {
+      try {
+        await this.cdpClient.close();
+      } catch {
+        // Ignore close failures during reconnect.
+      }
+      this.cdpClient = undefined;
+    }
+
+    await this.waitForCdp();
+    this.cdpClient = await this.openCdpClient();
+  }
+
+  private async navigateAndWait(url: string): Promise<void> {
+    if (!this.cdpClient) {
+      throw new Error('CDP client is not initialized.');
+    }
+
+    await this.cdpClient.Page.bringToFront();
+    const navigation = await this.cdpClient.Page.navigate({ url });
+    if (navigation.errorText) {
+      throw new Error(`Navigation failed: ${navigation.errorText}`);
+    }
+    await this.waitForUrlAndDomComplete(this.cdpClient.Runtime, url);
+
+    const current = await this.cdpClient.Runtime.evaluate({
+      expression: 'window.location.href',
+      returnByValue: true
+    });
+    this.logger.log(`Browser current URL after navigation: ${String(current.result?.value ?? '')}`);
+  }
+
+  private isClosedWebSocketError(error: unknown): boolean {
+    const text = error instanceof Error ? error.message : String(error);
+    return text.includes('WebSocket is not open')
+      || text.includes('readyState 3')
+      || text.includes('socket hang up');
+  }
+}

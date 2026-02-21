@@ -1,0 +1,21 @@
+{
+  "chrome": {
+    "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "path": "/tmp/googleChromeIdealistaScraperDetail",
+    "cdpPort": 9223
+  },
+  "rabbitmq": {
+    "host": "localhost",
+    "port": 5672
+  },
+  "timeouts": {
+    "chrome": {
+      "cdpreadytimeout": 60000,
+      "cdprequesttimeout": 2000,
+      "cdppollinterval": 500
+    },
+    "consumer": {
+      "delayafterurlms": 5000
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Filter } from './filters/filter.interface';
+import { SUPPORTED_FILTERS } from './filters/supported-filters';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -31,24 +33,7 @@ type AsideFiltersPayload = {
 export class FiltersService {
   private readonly logger = new Logger(FiltersService.name);
 
-  private readonly supportedFilters = [
-    'Tipo de inmueble',
-    'Precio',
-    'Tipo de alquiler',
-    'Tamano',
-    'Tipo de vivienda',
-    'Otras denominaciones',
-    'Equipamiento',
-    'Habitaciones',
-    'Banos',
-    'Estado',
-    'Caracteristicas',
-    'Planta',
-    'Eficiencia Energetica',
-    'Multimedia',
-    'Tipo de anuncio',
-    'Fecha de publicacion'
-  ];
+  private readonly supportedFilters: Filter[] = SUPPORTED_FILTERS;
 
   async execute(client: CdpClient): Promise<void> {
     await client.Runtime.enable();
@@ -62,12 +47,14 @@ export class FiltersService {
     const matchedSectionIndexes = new Set<number>();
 
     for (const supported of this.supportedFilters) {
-      const supportedNormalized = this.normalizeText(supported);
+      const presentBySelector = await this.isPresentBySelector(client, supported.cssSelector());
+      const supportedNormalized = this.normalizeText(supported.name());
       const matched = payload.sections.find((section) => this.matches(section.normalized, supportedNormalized));
       if (matched) {
         matchedSectionIndexes.add(matched.index);
       }
-      this.logger.log(`Filter: ${this.prettyName(supported)} | Present: ${matched ? 'yes' : 'no'}`);
+      const present = presentBySelector || Boolean(matched);
+      this.logger.log(`Filter: ${supported.name()} | Present: ${present ? 'yes' : 'no'}`);
     }
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));
@@ -148,6 +135,15 @@ export class FiltersService {
     return sectionName.includes(supportedName) || supportedName.includes(sectionName);
   }
 
+  private async isPresentBySelector(client: CdpClient, selector: string): Promise<boolean> {
+    const result = await client.Runtime.evaluate({
+      expression: `Boolean(document.querySelector(${JSON.stringify(selector)}))`,
+      returnByValue: true
+    });
+
+    return result.result?.value === true;
+  }
+
   private normalizeText(value: string): string {
     return value
       .normalize('NFD')
@@ -157,22 +153,4 @@ export class FiltersService {
       .trim();
   }
 
-  private prettyName(value: string): string {
-    if (value === 'Tamano') {
-      return 'Tamaño';
-    }
-    if (value === 'Banos') {
-      return 'Baños';
-    }
-    if (value === 'Caracteristicas') {
-      return 'Características';
-    }
-    if (value === 'Eficiencia Energetica') {
-      return 'Eficiencia Energética';
-    }
-    if (value === 'Fecha de publicacion') {
-      return 'Fecha de publicación';
-    }
-    return value;
-  }
 }

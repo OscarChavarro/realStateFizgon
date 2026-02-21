@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Filter } from './filters/filter.interface';
+import { FilterType } from './filters/filter-type.enum';
 import { SUPPORTED_FILTERS } from './filters/supported-filters';
 
 type RuntimeEvaluateResult = {
@@ -11,11 +12,13 @@ type RuntimeEvaluateResult = {
   };
 };
 
+type RuntimeDomain = {
+  enable(): Promise<void>;
+  evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
+};
+
 type CdpClient = {
-  Runtime: {
-    enable(): Promise<void>;
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
-  };
+  Runtime: RuntimeDomain;
 };
 
 type AsideSection = {
@@ -32,7 +35,6 @@ type AsideFiltersPayload = {
 @Injectable()
 export class FiltersService {
   private readonly logger = new Logger(FiltersService.name);
-
   private readonly supportedFilters: Filter[] = SUPPORTED_FILTERS;
 
   async execute(client: CdpClient): Promise<void> {
@@ -46,21 +48,167 @@ export class FiltersService {
 
     const matchedSectionIndexes = new Set<number>();
 
-    for (const supported of this.supportedFilters) {
-      const presentBySelector = await this.isPresentBySelector(client, supported.getCssSelector());
-      const supportedNormalized = this.normalizeText(supported.getName());
-      const matched = payload.sections.find((section) => this.matches(section.normalized, supportedNormalized));
-      if (matched) {
-        matchedSectionIndexes.add(matched.index);
-      }
-      const present = presentBySelector || Boolean(matched);
-      this.logger.log(`Filter: ${supported.getName()} | Present: ${present ? 'yes' : 'no'}`);
+    for (const filter of this.supportedFilters) {
+      await this.processFilter(client, payload, filter, matchedSectionIndexes);
     }
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));
     for (const section of unsupported) {
       this.logger.log(`Not supported: ${section.name}`);
     }
+  }
+
+  private async processFilter(
+    client: CdpClient,
+    payload: AsideFiltersPayload,
+    filter: Filter,
+    matchedSectionIndexes: Set<number>
+  ): Promise<void> {
+    const presentBySelector = await this.isPresentBySelector(client, filter.getCssSelector());
+    const supportedNormalized = this.normalizeText(filter.getName());
+    const matched = payload.sections.find((section) => this.matches(section.normalized, supportedNormalized));
+
+    if (matched) {
+      matchedSectionIndexes.add(matched.index);
+    }
+
+    const present = presentBySelector || Boolean(matched);
+    this.logger.log(`Filter: ${filter.getName()} | Present: ${present ? 'yes' : 'no'}`);
+
+    if (!present) {
+      return;
+    }
+
+    switch (filter.getType()) {
+      case FilterType.MIN_MAX:
+        await this.processMinMaxFilter(filter);
+        return;
+      case FilterType.SINGLE_SELECTOR_DROPDOWN:
+        await this.processSingleSelectorDropdownFilter(client, filter);
+        return;
+      case FilterType.MULTIPLE_SELECTOR:
+        await this.processMultipleSelectorFilter(client, filter);
+        return;
+      case FilterType.SINGLE_SELECTOR:
+        await this.processSingleSelectorFilter(client, filter);
+        return;
+      default:
+        filter.setPlainOptions([]);
+    }
+  }
+
+  private async processMinMaxFilter(filter: Filter): Promise<void> {
+    filter.setPlainOptions([]);
+  }
+
+  private async processSingleSelectorDropdownFilter(client: CdpClient, filter: Filter): Promise<void> {
+    const options = await this.extractSingleSelectorDropdownOptions(client, filter.getCssSelector());
+    filter.setPlainOptions(options);
+    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
+  }
+
+  private async processMultipleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
+    const options = await this.extractMultipleSelectorOptions(client, filter.getCssSelector());
+    filter.setPlainOptions(options);
+    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
+  }
+
+  private async processSingleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
+    const options = await this.extractSingleSelectorOptions(client, filter.getCssSelector());
+    filter.setPlainOptions(options);
+    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
+  }
+
+  private async extractSingleSelectorDropdownOptions(client: CdpClient, selector: string): Promise<string[]> {
+    return this.evaluateStringArray(
+      client,
+      `(() => {
+        const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
+        const root = document.querySelector(${JSON.stringify(selector)});
+        if (!root) {
+          return [];
+        }
+
+        const values = Array.from(
+          root.querySelectorAll('ul.dropdown-list-refresh > li, ul.dropdown-list > li, ul.dropdown > li')
+        )
+          .map((node) => normalize(node.textContent))
+          .filter((value) => value.length > 0);
+
+        return Array.from(new Set(values));
+      })()`
+    );
+  }
+
+  private async extractMultipleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+    return this.evaluateStringArray(
+      client,
+      `(() => {
+        const normalize = (value) => (value || '')
+          .replace(/Desplegar/g, '')
+          .replace(/\\s+/g, ' ')
+          .trim();
+
+        const root = document.querySelector(${JSON.stringify(selector)});
+        if (!root) {
+          return [];
+        }
+
+        const values = Array.from(root.querySelectorAll('input[type="checkbox"], input[type="radio"]'))
+          .map((input) => {
+            const label = input.closest('label');
+            if (!label) {
+              return '';
+            }
+            const content = label.querySelector('span > span');
+            return normalize(content ? content.textContent : label.textContent);
+          })
+          .filter((value) => value.length > 0);
+
+        return Array.from(new Set(values));
+      })()`
+    );
+  }
+
+  private async extractSingleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+    return this.evaluateStringArray(
+      client,
+      `(() => {
+        const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
+        const root = document.querySelector(${JSON.stringify(selector)});
+        if (!root) {
+          return [];
+        }
+
+        const values = Array.from(root.querySelectorAll('label.input-radio'))
+          .map((label) => {
+            const content = label.querySelector('span > span');
+            return normalize(content ? content.textContent : label.textContent);
+          })
+          .filter((value) => value.length > 0);
+
+        return Array.from(new Set(values));
+      })()`
+    );
+  }
+
+  private async evaluateStringArray(client: CdpClient, expression: string): Promise<string[]> {
+    const result = await client.Runtime.evaluate({
+      expression,
+      awaitPromise: true,
+      returnByValue: true
+    });
+
+    if (result.exceptionDetails?.text) {
+      throw new Error(result.exceptionDetails.text);
+    }
+
+    const value = result.result?.value;
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((item): item is string => typeof item === 'string');
   }
 
   private async readAsideFilters(client: CdpClient): Promise<AsideFiltersPayload> {
@@ -152,5 +300,4 @@ export class FiltersService {
       .replace(/\s+/g, ' ')
       .trim();
   }
-
 }

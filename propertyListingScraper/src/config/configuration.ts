@@ -46,6 +46,7 @@ type Secrets = {
     host?: string;
     port?: number;
     vhost?: string;
+    queue?: string;
     user?: string;
     password?: string;
   };
@@ -88,6 +89,10 @@ export class Configuration {
 
   get rabbitMqVhost(): string {
     return this.secrets.rabbitmq?.vhost ?? 'dev';
+  }
+
+  get rabbitMqQueue(): string {
+    return this.secrets.rabbitmq?.queue ?? 'property-listing-urls';
   }
 
   get scraperHomeUrl(): string {

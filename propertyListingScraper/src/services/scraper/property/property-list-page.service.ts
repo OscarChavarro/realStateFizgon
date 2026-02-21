@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
+import { RabbitMqService } from '../../rabbitmq/rabbit-mq.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {

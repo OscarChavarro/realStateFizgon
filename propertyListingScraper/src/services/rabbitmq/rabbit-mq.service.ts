@@ -1,11 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as amqp from 'amqplib';
-import { Configuration } from '../../../config/configuration';
+import { Configuration } from '../../config/configuration';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
-  private readonly queueName = 'property-listing-urls';
   private connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
   private channel: amqp.Channel | null = null;
 
@@ -18,10 +17,10 @@ export class RabbitMqService implements OnModuleDestroy {
 
     const channel = await this.getChannel();
     for (const url of urls) {
-      channel.sendToQueue(this.queueName, Buffer.from(url), { persistent: true });
+      channel.sendToQueue(this.configuration.rabbitMqQueue, Buffer.from(url), { persistent: true });
     }
 
-    this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.queueName}".`);
+    this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -52,7 +51,7 @@ export class RabbitMqService implements OnModuleDestroy {
     }
 
     const channel = await this.connection.createChannel();
-    await channel.assertQueue(this.queueName, { durable: true });
+    await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
     this.channel = channel;
     return channel;
   }

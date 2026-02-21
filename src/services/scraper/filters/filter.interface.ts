@@ -24,4 +24,8 @@ export abstract class Filter {
   setPlainOptions(options: string[]): void {
     this.plainOptions = [...options];
   }
+
+  setMinOptions(_options: string[]): void {}
+
+  setMaxOptions(_options: string[]): void {}
 }

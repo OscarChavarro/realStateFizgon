@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Filter } from './filters/filter.interface';
 import { FilterType } from './filters/filter-type.enum';
-import { SUPPORTED_FILTERS } from './filters/supported-filters';
+import { SupportedFilters } from './filters/supported-filters';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -32,10 +32,16 @@ type AsideFiltersPayload = {
   sections: AsideSection[];
 };
 
+type MinMaxOptions = {
+  minOptions: string[];
+  maxOptions: string[];
+};
+
 @Injectable()
 export class FiltersService {
   private readonly logger = new Logger(FiltersService.name);
-  private readonly supportedFilters: Filter[] = SUPPORTED_FILTERS;
+  private readonly extractedFiltersFromDom = new SupportedFilters();
+  private readonly preloadedFiltersFromConfiguration = new SupportedFilters().loadFromConfiguration();
 
   async execute(client: CdpClient): Promise<void> {
     await client.Runtime.enable();
@@ -48,9 +54,17 @@ export class FiltersService {
 
     const matchedSectionIndexes = new Set<number>();
 
-    for (const filter of this.supportedFilters) {
+    for (const filter of this.extractedFiltersFromDom.getSupportedFilters()) {
       await this.processFilter(client, payload, filter, matchedSectionIndexes);
     }
+
+    this.logger.log(
+      `Preloaded filters from configuration: ${this.preloadedFiltersFromConfiguration.getSupportedFilters().length}`
+    );
+    this.logger.log(`extractedFiltersFromDom: ${JSON.stringify(this.extractedFiltersFromDom, null, 2)}`);
+    this.logger.log(
+      `preloadedFiltersFromConfiguration: ${JSON.stringify(this.preloadedFiltersFromConfiguration, null, 2)}`
+    );
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));
     for (const section of unsupported) {
@@ -81,7 +95,7 @@ export class FiltersService {
 
     switch (filter.getType()) {
       case FilterType.MIN_MAX:
-        await this.processMinMaxFilter(filter);
+        await this.processMinMaxFilter(client, filter);
         return;
       case FilterType.SINGLE_SELECTOR_DROPDOWN:
         await this.processSingleSelectorDropdownFilter(client, filter);
@@ -97,8 +111,12 @@ export class FiltersService {
     }
   }
 
-  private async processMinMaxFilter(filter: Filter): Promise<void> {
-    filter.setPlainOptions([]);
+  private async processMinMaxFilter(client: CdpClient, filter: Filter): Promise<void> {
+    const { minOptions, maxOptions } = await this.extractMinMaxOptions(client, filter.getCssSelector());
+    filter.setMinOptions(minOptions);
+    filter.setMaxOptions(maxOptions);
+    this.logger.log(`Filter min options (${filter.getName()}): ${minOptions.join(' | ')}`);
+    this.logger.log(`Filter max options (${filter.getName()}): ${maxOptions.join(' | ')}`);
   }
 
   private async processSingleSelectorDropdownFilter(client: CdpClient, filter: Filter): Promise<void> {
@@ -190,6 +208,53 @@ export class FiltersService {
         return Array.from(new Set(values));
       })()`
     );
+  }
+
+  private async extractMinMaxOptions(client: CdpClient, selector: string): Promise<MinMaxOptions> {
+    const result = await client.Runtime.evaluate({
+      expression: `(() => {
+        const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
+        const root = document.querySelector(${JSON.stringify(selector)});
+        if (!root) {
+          return { minOptions: [], maxOptions: [] };
+        }
+
+        const dropdowns = Array.from(root.querySelectorAll(':scope > .dropdown-list'));
+        const minContainer = dropdowns[0];
+        const maxContainer = dropdowns[1];
+
+        const readValues = (container) => {
+          if (!container) {
+            return [];
+          }
+          const values = Array.from(container.querySelectorAll('ul.dropdown-list.dropdown-insertion > li, ul.dropdown > li, ul.dropdown-list > li'))
+            .map((node) => normalize(node.textContent))
+            .filter((value) => value.length > 0);
+          return Array.from(new Set(values));
+        };
+
+        return {
+          minOptions: readValues(minContainer),
+          maxOptions: readValues(maxContainer)
+        };
+      })()`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+
+    if (result.exceptionDetails?.text) {
+      throw new Error(result.exceptionDetails.text);
+    }
+
+    const value = result.result?.value as MinMaxOptions | undefined;
+    if (!value) {
+      return { minOptions: [], maxOptions: [] };
+    }
+
+    return {
+      minOptions: Array.isArray(value.minOptions) ? value.minOptions.filter((item): item is string => typeof item === 'string') : [],
+      maxOptions: Array.isArray(value.maxOptions) ? value.maxOptions.filter((item): item is string => typeof item === 'string') : []
+    };
   }
 
   private async evaluateStringArray(client: CdpClient, expression: string): Promise<string[]> {

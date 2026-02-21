@@ -122,6 +122,7 @@ export class ChromeService implements OnModuleInit {
         this.configuration.mainSearchArea,
         this.configuration.scraperHomeUrl
       );
+      await this.recoverIfOriginError(Page, Runtime);
       await this.waitForExpression(
         Runtime,
         "Boolean(document.querySelector('#aside-filters'))"
@@ -156,7 +157,13 @@ export class ChromeService implements OnModuleInit {
       expression: `(() => {
         const title = (document.title || '').toLowerCase();
         const text = (document.body?.innerText || '').toLowerCase();
-        return title.includes('425 unknown error') || text.includes('error 425 unknown error') || text.includes('varnish cache server');
+        return title.includes('425 unknown error')
+          || title.includes('unknown error')
+          || text.includes('error 425 unknown error')
+          || text.includes('error 425')
+          || text.includes('unknown error')
+          || text.includes('error 54113')
+          || text.includes('varnish cache server');
       })()`,
       returnByValue: true
     });

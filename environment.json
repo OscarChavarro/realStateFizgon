@@ -8,5 +8,329 @@
       "url": "https://www.idealista.com/",
       "mainSearchArea": "Madrid"
     }
+  },
+  "filters": {
+    "definitions": [
+      {
+        "propertyType": {
+          "plainOptions": [
+            "Obra nueva",
+            "Viviendas",
+            "Habitación",
+            "Oficinas",
+            "Locales o naves",
+            "Traspasos",
+            "Garajes",
+            "Terrenos",
+            "Trasteros",
+            "Edificios"
+          ],
+          "selectedPlainOptions": [
+            "Obra nueva",
+            "Viviendas"
+          ]
+        }
+      },
+      {
+        "price": {
+          "minOptions": [
+            "Mín",
+            "500",
+            "550",
+            "600",
+            "650",
+            "700",
+            "750",
+            "800",
+            "850",
+            "900",
+            "950",
+            "1.000",
+            "1.100",
+            "1.200",
+            "1.300",
+            "1.400",
+            "1.500",
+            "1.600",
+            "1.700",
+            "1.800",
+            "1.900",
+            "2.000",
+            "2.100",
+            "2.400",
+            "2.700",
+            "3.000",
+            "Sin límite"
+          ],
+          "maxOptions": [
+            "Máx",
+            "500",
+            "550",
+            "600",
+            "650",
+            "700",
+            "750",
+            "800",
+            "850",
+            "900",
+            "950",
+            "1.000",
+            "1.100",
+            "1.200",
+            "1.300",
+            "1.400",
+            "1.500",
+            "1.600",
+            "1.700",
+            "1.800",
+            "1.900",
+            "2.000",
+            "2.100",
+            "2.400",
+            "2.700",
+            "3.000",
+            "Sin límite"
+          ],
+          "selectedMin": "Mín",
+          "selectedMax": "Máx"
+        }
+      },
+      {
+        "rentalType": {
+          "plainOptions": [
+            "Residencial de larga estancia",
+            "De temporada"
+          ],
+          "selectedPlainOptions": [
+            "Residencial de larga estancia"
+          ]
+        }
+      },
+      {
+        "size": {
+          "minOptions": [
+            "Mín",
+            "40 m²",
+            "60 m²",
+            "80 m²",
+            "100 m²",
+            "120 m²",
+            "140 m²",
+            "160 m²",
+            "180 m²",
+            "200 m²",
+            "250 m²",
+            "300 m²",
+            "350 m²",
+            "400 m²",
+            "450 m²",
+            "500 m²",
+            "600 m²",
+            "700 m²",
+            "800 m²",
+            "900 m²",
+            "Sin límite"
+          ],
+          "maxOptions": [
+            "Máx",
+            "40 m²",
+            "60 m²",
+            "80 m²",
+            "100 m²",
+            "120 m²",
+            "140 m²",
+            "160 m²",
+            "180 m²",
+            "200 m²",
+            "250 m²",
+            "300 m²",
+            "350 m²",
+            "400 m²",
+            "450 m²",
+            "500 m²",
+            "600 m²",
+            "700 m²",
+            "800 m²",
+            "900 m²",
+            "Sin límite"
+          ],
+          "selectedMin": null,
+          "selectedMax": null
+        }
+      },
+      {
+        "housingType": {
+          "plainOptions": [
+            "Pisos, áticos y dúplex",
+            "Pisos",
+            "Áticos",
+            "Dúplex",
+            "Casas y chalets",
+            "Independientes",
+            "Pareados",
+            "Adosados",
+            "Casas rústicas"
+          ],
+          "selectedPlainOptions": [
+            "Pisos, áticos y dúplex",
+            "Pisos"
+          ]
+        }
+      },
+      {
+        "otherDenominations": {
+          "plainOptions": [
+            "Apartamentos",
+            "Villas",
+            "Lofts",
+            "Buhardillas"
+          ],
+          "selectedPlainOptions": [
+            "Apartamentos",
+            "Villas"
+          ]
+        }
+      },
+      {
+        "equipment": {
+          "plainOptions": [
+            "Indiferente",
+            "Sólo cocina equipada",
+            "Amueblado"
+          ],
+          "selectedPlainOptions": [
+            "Indiferente",
+            "Sólo cocina equipada"
+          ]
+        }
+      },
+      {
+        "rooms": {
+          "plainOptions": [
+            "0 habitaciones (estudios)",
+            "1",
+            "2",
+            "3",
+            "4 habitaciones o más"
+          ],
+          "selectedPlainOptions": [
+            "0 habitaciones (estudios)",
+            "1"
+          ]
+        }
+      },
+      {
+        "bathrooms": {
+          "plainOptions": [
+            "1",
+            "2",
+            "3 baños o más"
+          ],
+          "selectedPlainOptions": [
+            "1",
+            "2"
+          ]
+        }
+      },
+      {
+        "condition": {
+          "plainOptions": [
+            "Obra nueva",
+            "Buen estado",
+            "A reformar"
+          ],
+          "selectedPlainOptions": [
+            "Obra nueva",
+            "Buen estado"
+          ]
+        }
+      },
+      {
+        "features": {
+          "plainOptions": [
+            "Admite mascotas",
+            "Aire acondicionado",
+            "Armarios empotrados",
+            "Ascensor",
+            "Balcón y terraza",
+            "Balcón",
+            "Terraza",
+            "Exterior",
+            "Garaje",
+            "Jardín",
+            "Piscina",
+            "Trastero",
+            "Vivienda accesible",
+            "Vivienda de lujo"
+          ],
+          "selectedPlainOptions": [
+            "Admite mascotas",
+            "Aire acondicionado"
+          ]
+        }
+      },
+      {
+        "floor": {
+          "plainOptions": [
+            "Última planta",
+            "Plantas intermedias",
+            "Bajos"
+          ],
+          "selectedPlainOptions": [
+            "Última planta",
+            "Plantas intermedias"
+          ]
+        }
+      },
+      {
+        "energyEfficiency": {
+          "plainOptions": [
+            "Alta",
+            "Media",
+            "Baja"
+          ],
+          "selectedPlainOptions": [
+            "Alta",
+            "Media"
+          ]
+        }
+      },
+      {
+        "multimedia": {
+          "plainOptions": [
+            "Con plano",
+            "Con visita virtual"
+          ],
+          "selectedPlainOptions": [
+            "Con plano",
+            "Con visita virtual"
+          ]
+        }
+      },
+      {
+        "listingType": {
+          "plainOptions": [
+            "De bancos"
+          ],
+          "selectedPlainOptions": [
+            "De bancos"
+          ]
+        }
+      },
+      {
+        "publicationDate": {
+          "plainOptions": [
+            "Indiferente",
+            "Últimas 24 horas",
+            "La última semana",
+            "El último mes"
+          ],
+          "selectedPlainOptions": [
+            "Indiferente",
+            "Últimas 24 horas"
+          ]
+        }
+      }
+    ]
   }
 }

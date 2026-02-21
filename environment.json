@@ -1,0 +1,11 @@
+{
+  "chrome": {
+    "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "path": "/tmp/googleChromeIdealistaScraper"
+  },
+  "scraper": {
+    "home": {
+      "url": "https://www.idealista.com/"
+    }
+  }
+}

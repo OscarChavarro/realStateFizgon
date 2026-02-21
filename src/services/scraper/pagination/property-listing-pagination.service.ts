@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from '../../../config/configuration';
+import { PropertyListPageService } from '../property/property-list-page.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -20,15 +21,23 @@ type CdpClient = {
 export class PropertyListingPaginationService {
   private readonly logger = new Logger(PropertyListingPaginationService.name);
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly propertyListPageService: PropertyListPageService
+  ) {}
 
   async execute(client: CdpClient): Promise<void> {
     let page = 1;
+    const allUrls: string[] = [];
 
     while (true) {
+      const pageUrls = await this.propertyListPageService.getPropertyUrls(client);
+      allUrls.push(...pageUrls);
+
       const hasNext = await this.hasNextButton(client);
       if (!hasNext) {
         this.logger.log(`Pagination finished at page ${page}.`);
+        this.propertyListPageService.processUrls(allUrls);
         return;
       }
 
@@ -36,6 +45,7 @@ export class PropertyListingPaginationService {
       const clicked = await this.clickNextButton(client);
       if (!clicked) {
         this.logger.warn('Next button exists but could not be clicked. Stopping pagination.');
+        this.propertyListPageService.processUrls(allUrls);
         return;
       }
 

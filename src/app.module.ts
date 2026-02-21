@@ -7,6 +7,7 @@ import { FilterUpdateService } from './services/scraper/filters/filter-update.se
 import { FiltersService } from './services/scraper/filters/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
 import { PropertyListingPaginationService } from './services/scraper/pagination/property-listing-pagination.service';
+import { PropertyListPageService } from './services/scraper/property/property-list-page.service';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PropertyListingPaginationService } from './services/scraper/pagination/
     FilterLoaderDetectionService,
     FilterUpdateService,
     FiltersService,
+    PropertyListPageService,
     PropertyListingPaginationService,
     ChromeService
   ]

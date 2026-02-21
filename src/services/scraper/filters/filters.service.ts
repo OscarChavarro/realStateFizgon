@@ -97,7 +97,6 @@ export class FiltersService {
     }
 
     const present = presentBySelector || Boolean(matched);
-    this.logger.log(`Filter: ${filter.getName()} | Present: ${present ? 'yes' : 'no'}`);
 
     if (!present) {
       return;

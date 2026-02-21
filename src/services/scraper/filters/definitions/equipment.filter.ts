@@ -1,11 +1,16 @@
 import { Filter } from '../filter.interface';
+import { FilterType } from '../filter-type.enum';
 
 export class Equipment implements Filter {
-  name(): string {
+  getName(): string {
     return 'Equipamiento';
   }
 
-  cssSelector(): string {
+  getType(): FilterType {
+    return FilterType.SINGLE_SELECTOR_DROPDOWN;
+  }
+
+  getCssSelector(): string {
     return 'div.item-form:has(#qa_adfilter_amenity)';
   }
 }

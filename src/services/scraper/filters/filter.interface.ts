@@ -1,4 +1,7 @@
+import { FilterType } from './filter-type.enum';
+
 export interface Filter {
-  name(): string;
-  cssSelector(): string;
+  getName(): string;
+  getCssSelector(): string;
+  getType(): FilterType;
 }

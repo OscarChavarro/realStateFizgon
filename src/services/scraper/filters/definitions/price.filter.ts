@@ -1,11 +1,16 @@
 import { Filter } from '../filter.interface';
+import { FilterType } from '../filter-type.enum';
 
 export class Price implements Filter {
-  name(): string {
+  getName(): string {
     return 'Precio';
   }
 
-  cssSelector(): string {
+  getType(): FilterType {
+    return FilterType.MIN_MAX;
+  }
+
+  getCssSelector(): string {
     return '#price-filter-container';
   }
 }

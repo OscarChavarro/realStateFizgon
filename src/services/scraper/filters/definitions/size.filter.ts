@@ -1,11 +1,16 @@
 import { Filter } from '../filter.interface';
+import { FilterType } from '../filter-type.enum';
 
 export class Size implements Filter {
-  name(): string {
+  getName(): string {
     return 'Tamaño';
   }
 
-  cssSelector(): string {
+  getType(): FilterType {
+    return FilterType.MIN_MAX;
+  }
+
+  getCssSelector(): string {
     return '#area-filter-container';
   }
 }

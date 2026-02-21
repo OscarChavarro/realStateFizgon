@@ -47,14 +47,14 @@ export class FiltersService {
     const matchedSectionIndexes = new Set<number>();
 
     for (const supported of this.supportedFilters) {
-      const presentBySelector = await this.isPresentBySelector(client, supported.cssSelector());
-      const supportedNormalized = this.normalizeText(supported.name());
+      const presentBySelector = await this.isPresentBySelector(client, supported.getCssSelector());
+      const supportedNormalized = this.normalizeText(supported.getName());
       const matched = payload.sections.find((section) => this.matches(section.normalized, supportedNormalized));
       if (matched) {
         matchedSectionIndexes.add(matched.index);
       }
       const present = presentBySelector || Boolean(matched);
-      this.logger.log(`Filter: ${supported.name()} | Present: ${present ? 'yes' : 'no'}`);
+      this.logger.log(`Filter: ${supported.getName()} | Present: ${present ? 'yes' : 'no'}`);
     }
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));

@@ -8,6 +8,7 @@ import { FiltersService } from './services/scraper/filters/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
 import { PropertyListingPaginationService } from './services/scraper/pagination/property-listing-pagination.service';
 import { PropertyListPageService } from './services/scraper/property/property-list-page.service';
+import { RabbitMqService } from './services/scraper/rabbitmq/rabbit-mq.service';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PropertyListPageService } from './services/scraper/property/property-li
     FilterLoaderDetectionService,
     FilterUpdateService,
     FiltersService,
+    RabbitMqService,
     PropertyListPageService,
     PropertyListingPaginationService,
     ChromeService

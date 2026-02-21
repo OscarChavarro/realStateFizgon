@@ -1,0 +1,55 @@
+digraph PropertyScraperArchitecture {
+  rankdir=TB;
+  node [shape=box, style=rounded];
+
+  browser_list [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/chrome.png"/></TD>
+          <TD>Web browser for property list scraping</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
+  listing_scraper [label="propertyListingScraper"];
+  rabbitmq [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
+          <TD>RabbitMq</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
+  detail_scraper [label="propertyDetailScraper"];
+  browser_detail [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/chrome.png"/></TD>
+          <TD>Web browser for property detail scraping</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
+
+  { rank=same; browser_list; browser_detail; }
+  { rank=same; listing_scraper; rabbitmq; detail_scraper; }
+
+  browser_list -> listing_scraper [style=invis, weight=100];
+  browser_detail -> detail_scraper [style=invis, weight=100];
+  listing_scraper -> rabbitmq [style=invis, weight=20];
+  rabbitmq -> detail_scraper [style=invis, weight=20];
+
+  listing_scraper -> browser_list;
+  listing_scraper -> rabbitmq;
+  detail_scraper -> rabbitmq;
+  rabbitmq -> listing_scraper;
+  rabbitmq -> detail_scraper;
+  detail_scraper -> browser_detail;
+}

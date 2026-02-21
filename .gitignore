@@ -10,3 +10,6 @@ output/logs/*
 .DS_Store
 .idea/
 .vscode/
+
+# Secrets in secrets.json are not pushed. Refer to secrets-example.json
+secrets.json

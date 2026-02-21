@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -17,6 +18,8 @@ type CdpClient = {
 
 @Injectable()
 export class PropertyListPageService {
+  constructor(private readonly rabbitMqService: RabbitMqService) {}
+
   async getPropertyUrls(client: CdpClient): Promise<string[]> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
@@ -65,9 +68,7 @@ export class PropertyListPageService {
     return value.filter((item): item is string => typeof item === 'string');
   }
 
-  processUrls(urls: string[]): void {
-    for (const url of urls) {
-      console.log(url);
-    }
+  async processUrls(urls: string[]): Promise<void> {
+    await this.rabbitMqService.publishPropertyUrls(urls);
   }
 }

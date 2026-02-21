@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Configuration } from '../../config/configuration';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -20,6 +21,8 @@ type CdpClient = {
 @Injectable()
 export class MainPageService {
   private readonly logger = new Logger(MainPageService.name);
+
+  constructor(private readonly configuration: Configuration) {}
 
   async execute(client: CdpClient, mainSearchArea: string, scraperHomeUrl: string): Promise<void> {
     this.logger.log(`Main page automation started for ${scraperHomeUrl}`);
@@ -96,7 +99,7 @@ export class MainPageService {
   }
 
   private async waitForExpression(client: CdpClient, expression: string): Promise<void> {
-    const timeout = 30000;
+    const timeout = this.configuration.mainPageExpressionTimeoutMs;
     const start = Date.now();
 
     while (Date.now() - start < timeout) {
@@ -109,7 +112,7 @@ export class MainPageService {
         return;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, this.configuration.mainPageExpressionPollIntervalMs));
     }
 
     throw new Error(`Timeout waiting for expression: ${expression}`);

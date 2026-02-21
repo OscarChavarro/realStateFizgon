@@ -66,7 +66,8 @@ export class FiltersService {
       await this.processFilter(client, payload, filter, matchedSectionIndexes);
     }
 
-    this.filterUpdateService.logRequiredActions(
+    await this.filterUpdateService.applyRequiredActions(
+      client,
       this.preloadedFiltersFromConfiguration,
       this.extractedFiltersFromDom
     );

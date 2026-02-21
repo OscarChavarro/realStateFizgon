@@ -60,13 +60,13 @@ export class ChromeService implements OnModuleInit {
   }
 
   private async waitForCdp(): Promise<void> {
-    const timeout = 60000;
+    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
     const start = Date.now();
     let lastError: unknown;
 
     while (Date.now() - start < timeout) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2000);
+      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
 
       try {
         const response = await fetch(`http://${this.cdpHost}:${this.cdpPort}/json/version`, {
@@ -82,7 +82,7 @@ export class ChromeService implements OnModuleInit {
         clearTimeout(timer);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, this.configuration.chromeCdpPollIntervalMs));
     }
 
     throw new Error(
@@ -144,7 +144,7 @@ export class ChromeService implements OnModuleInit {
       }
 
       this.logger.warn(`Detected origin error page (attempt ${attempt}/${maxRetries}). Reloading in 1 second.`);
-      await this.sleep(1000);
+      await this.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
       await Page.reload({ ignoreCache: true });
       await this.waitForPageLoad(Page);
     }
@@ -185,7 +185,7 @@ export class ChromeService implements OnModuleInit {
     Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
     expression: string
   ): Promise<void> {
-    const timeout = 30000;
+    const timeout = this.configuration.chromeExpressionTimeoutMs;
     const start = Date.now();
 
     while (Date.now() - start < timeout) {
@@ -198,7 +198,7 @@ export class ChromeService implements OnModuleInit {
         return;
       }
 
-      await this.sleep(200);
+      await this.sleep(this.configuration.chromeExpressionPollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for expression: ${expression}`);

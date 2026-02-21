@@ -9,6 +9,23 @@
       "mainSearchArea": "Madrid"
     }
   },
+  "timeouts": {
+    "chrome": {
+      "cdpreadytimeout": 60000,
+      "cdprequesttimeout": 2000,
+      "cdppollinterval": 500,
+      "originerrorreloadwait": 1000,
+      "expressiontimeout": 30000,
+      "expressionpollinterval": 200
+    },
+    "mainpage": {
+      "expressiontimeout": 30000,
+      "expressionpollinterval": 200
+    },
+    "filter": {
+      "stateclickwait": 2000
+    }
+  },
   "filters": {
     "definitions": [
       {
@@ -26,7 +43,6 @@
             "Edificios"
           ],
           "selectedPlainOptions": [
-            "Obra nueva",
             "Viviendas"
           ]
         }
@@ -34,7 +50,6 @@
       {
         "price": {
           "minOptions": [
-            "Mín",
             "500",
             "550",
             "600",
@@ -63,7 +78,6 @@
             "Sin límite"
           ],
           "maxOptions": [
-            "Máx",
             "500",
             "550",
             "600",
@@ -91,8 +105,8 @@
             "3.000",
             "Sin límite"
           ],
-          "selectedMin": "Mín",
-          "selectedMax": "Máx"
+          "selectedMin": "1.400",
+          "selectedMax": "1.800"
         }
       },
       {
@@ -109,7 +123,6 @@
       {
         "size": {
           "minOptions": [
-            "Mín",
             "40 m²",
             "60 m²",
             "80 m²",
@@ -132,7 +145,6 @@
             "Sin límite"
           ],
           "maxOptions": [
-            "Máx",
             "40 m²",
             "60 m²",
             "80 m²",
@@ -172,7 +184,6 @@
             "Casas rústicas"
           ],
           "selectedPlainOptions": [
-            "Pisos, áticos y dúplex",
             "Pisos"
           ]
         }
@@ -185,10 +196,7 @@
             "Lofts",
             "Buhardillas"
           ],
-          "selectedPlainOptions": [
-            "Apartamentos",
-            "Villas"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -199,7 +207,6 @@
             "Amueblado"
           ],
           "selectedPlainOptions": [
-            "Indiferente",
             "Sólo cocina equipada"
           ]
         }
@@ -213,10 +220,7 @@
             "3",
             "4 habitaciones o más"
           ],
-          "selectedPlainOptions": [
-            "0 habitaciones (estudios)",
-            "1"
-          ]
+          "selectedPlainOptions": ["2", "3"]
         }
       },
       {
@@ -226,10 +230,7 @@
             "2",
             "3 baños o más"
           ],
-          "selectedPlainOptions": [
-            "1",
-            "2"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -263,10 +264,7 @@
             "Vivienda accesible",
             "Vivienda de lujo"
           ],
-          "selectedPlainOptions": [
-            "Admite mascotas",
-            "Aire acondicionado"
-          ]
+          "selectedPlainOptions": ["Aire acondicionado", "Trastero"]
         }
       },
       {
@@ -276,10 +274,7 @@
             "Plantas intermedias",
             "Bajos"
           ],
-          "selectedPlainOptions": [
-            "Última planta",
-            "Plantas intermedias"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -289,10 +284,7 @@
             "Media",
             "Baja"
           ],
-          "selectedPlainOptions": [
-            "Alta",
-            "Media"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -301,10 +293,7 @@
             "Con plano",
             "Con visita virtual"
           ],
-          "selectedPlainOptions": [
-            "Con plano",
-            "Con visita virtual"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -312,9 +301,7 @@
           "plainOptions": [
             "De bancos"
           ],
-          "selectedPlainOptions": [
-            "De bancos"
-          ]
+          "selectedPlainOptions": []
         }
       },
       {
@@ -325,10 +312,7 @@
             "La última semana",
             "El último mes"
           ],
-          "selectedPlainOptions": [
-            "Indiferente",
-            "Últimas 24 horas"
-          ]
+          "selectedPlainOptions": []
         }
       }
     ]

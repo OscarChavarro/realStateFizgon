@@ -1,11 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { spawn, ChildProcess } from 'node:child_process';
+import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from './config/configuration';
 
 @Injectable()
 export class ChromeService implements OnModuleInit {
   private chromeProcess?: ChildProcess;
+  private chromeStdoutFd?: number;
+  private chromeStderrFd?: number;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
 
@@ -17,6 +21,11 @@ export class ChromeService implements OnModuleInit {
   }
 
   private async launchChrome(): Promise<void> {
+    const logsDir = join(process.cwd(), 'output', 'logs');
+    mkdirSync(logsDir, { recursive: true });
+    this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
+    this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+
     this.chromeProcess = spawn(this.configuration.chromeBinary, [
       `--remote-debugging-port=${this.cdpPort}`,
       `--user-data-dir=${this.configuration.chromePath}`,
@@ -25,7 +34,18 @@ export class ChromeService implements OnModuleInit {
       '--new-window',
       'about:blank'
     ], {
-      stdio: 'inherit'
+      stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+    });
+
+    this.chromeProcess.once('exit', () => {
+      if (this.chromeStdoutFd !== undefined) {
+        closeSync(this.chromeStdoutFd);
+        this.chromeStdoutFd = undefined;
+      }
+      if (this.chromeStderrFd !== undefined) {
+        closeSync(this.chromeStderrFd);
+        this.chromeStderrFd = undefined;
+      }
     });
 
     await this.waitForCdp();

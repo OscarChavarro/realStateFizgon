@@ -63,11 +63,17 @@ export class SupportedFilters {
           : [];
         filter.setMinOptions(minOptions);
         filter.setMaxOptions(maxOptions);
+        filter.setSelectedMin(typeof definition.selectedMin === 'string' ? definition.selectedMin : null);
+        filter.setSelectedMax(typeof definition.selectedMax === 'string' ? definition.selectedMax : null);
       } else {
         const plainOptions = Array.isArray(definition.plainOptions)
           ? definition.plainOptions.filter((value): value is string => typeof value === 'string')
           : [];
         filter.setPlainOptions(plainOptions);
+        const selectedPlainOptions = Array.isArray(definition.selectedPlainOptions)
+          ? definition.selectedPlainOptions.filter((value): value is string => typeof value === 'string')
+          : [];
+        filter.setSelectedPlainOptions(selectedPlainOptions);
       }
     }
 
@@ -76,14 +82,28 @@ export class SupportedFilters {
 
   private readConfiguration(): {
     filters?: {
-      definitions?: Array<Record<string, { plainOptions?: unknown[]; minOptions?: unknown[]; maxOptions?: unknown[] }>>;
+      definitions?: Array<Record<string, {
+        plainOptions?: unknown[];
+        minOptions?: unknown[];
+        maxOptions?: unknown[];
+        selectedPlainOptions?: unknown[];
+        selectedMin?: unknown;
+        selectedMax?: unknown;
+      }>>;
     };
   } | null {
     try {
       const raw = readFileSync(join(process.cwd(), 'environment.json'), 'utf-8');
       return JSON.parse(raw) as {
         filters?: {
-          definitions?: Array<Record<string, { plainOptions?: unknown[]; minOptions?: unknown[]; maxOptions?: unknown[] }>>;
+          definitions?: Array<Record<string, {
+            plainOptions?: unknown[];
+            minOptions?: unknown[];
+            maxOptions?: unknown[];
+            selectedPlainOptions?: unknown[];
+            selectedMin?: unknown;
+            selectedMax?: unknown;
+          }>>;
         };
       };
     } catch {
@@ -92,9 +112,30 @@ export class SupportedFilters {
   }
 
   private flattenDefinitions(
-    definitions: Array<Record<string, { plainOptions?: unknown[]; minOptions?: unknown[]; maxOptions?: unknown[] }>>
-  ): Record<string, { plainOptions?: unknown[]; minOptions?: unknown[]; maxOptions?: unknown[] }> {
-    const accumulator: Record<string, { plainOptions?: unknown[]; minOptions?: unknown[]; maxOptions?: unknown[] }> = {};
+    definitions: Array<Record<string, {
+      plainOptions?: unknown[];
+      minOptions?: unknown[];
+      maxOptions?: unknown[];
+      selectedPlainOptions?: unknown[];
+      selectedMin?: unknown;
+      selectedMax?: unknown;
+    }>>
+  ): Record<string, {
+    plainOptions?: unknown[];
+    minOptions?: unknown[];
+    maxOptions?: unknown[];
+    selectedPlainOptions?: unknown[];
+    selectedMin?: unknown;
+    selectedMax?: unknown;
+  }> {
+    const accumulator: Record<string, {
+      plainOptions?: unknown[];
+      minOptions?: unknown[];
+      maxOptions?: unknown[];
+      selectedPlainOptions?: unknown[];
+      selectedMin?: unknown;
+      selectedMax?: unknown;
+    }> = {};
 
     for (const entry of definitions) {
       const key = Object.keys(entry)[0];

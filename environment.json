@@ -23,7 +23,9 @@
       "expressionpollinterval": 200
     },
     "filter": {
-      "stateclickwait": 2000
+      "stateclickwait": 2000,
+      "listingloadingtimeout": 10000,
+      "listingloadingpollinterval": 200
     }
   },
   "filters": {

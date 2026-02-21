@@ -4,7 +4,7 @@ import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
-import { FiltersService } from './filters.service';
+import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
 
 @Injectable()

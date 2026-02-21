@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FilterUpdateService } from './filter-update.service';
-import { Filter } from './filters/filter.interface';
-import { FilterType } from './filters/filter-type.enum';
-import { SupportedFilters } from './filters/supported-filters';
+import { Filter } from './filter.interface';
+import { FilterType } from '../../../model/filters/filter-type.enum';
+import { SupportedFilters } from './supported-filters';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -20,6 +20,10 @@ type RuntimeDomain = {
 
 type CdpClient = {
   Runtime: RuntimeDomain;
+  Page: {
+    reload(params?: { ignoreCache?: boolean }): Promise<void>;
+    loadEventFired(cb: () => void): void;
+  };
 };
 
 type AsideSection = {

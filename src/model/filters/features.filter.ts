@@ -1,5 +1,5 @@
-import { Filter } from '../filter.interface';
-import { FilterType } from '../filter-type.enum';
+import { Filter } from '../../services/scraper/filters/filter.interface';
+import { FilterType } from './filter-type.enum';
 
 export class Features extends Filter {
   constructor() {

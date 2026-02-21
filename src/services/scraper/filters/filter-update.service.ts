@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from '../../config/configuration';
-import { Filter } from './filters/filter.interface';
-import { FilterType } from './filters/filter-type.enum';
-import { SupportedFilters } from './filters/supported-filters';
+import { FilterLoaderDetectionService } from './filter-loader-detection.service';
+import { Filter } from './filter.interface';
+import { FilterType } from '../../../model/filters/filter-type.enum';
+import { SupportedFilters } from './supported-filters';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -17,6 +17,10 @@ type CdpClient = {
   Runtime: {
     evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
   };
+  Page: {
+    reload(params?: { ignoreCache?: boolean }): Promise<void>;
+    loadEventFired(cb: () => void): void;
+  };
 };
 
 type MinMaxSelection = {
@@ -28,8 +32,9 @@ type MinMaxSelection = {
 export class FilterUpdateService {
   private readonly logger = new Logger(FilterUpdateService.name);
   private readonly maxReconciliationAttempts = 4;
+  private readonly maxFullReconciliationPasses = 4;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(private readonly filterLoaderDetectionService: FilterLoaderDetectionService) {}
 
   async applyRequiredActions(
     client: CdpClient,
@@ -40,22 +45,41 @@ export class FilterUpdateService {
     const extractedCount = extractedFiltersFromDom.getSupportedFilters().length;
     this.logger.log(`Reconciling ${preloaded.length} filters against current DOM (${extractedCount} extracted).`);
 
-    for (const expectedFilter of preloaded) {
-      await this.reconcileFilter(client, expectedFilter);
+    for (let pass = 1; pass <= this.maxFullReconciliationPasses; pass += 1) {
+      let restartFromBeginning = false;
+
+      for (const expectedFilter of preloaded) {
+        const shouldRestart = await this.reconcileFilter(client, expectedFilter);
+        if (shouldRestart) {
+          restartFromBeginning = true;
+          break;
+        }
+      }
+
+      if (!restartFromBeginning) {
+        return;
+      }
+
+      this.logger.warn(`Restarting filter reconciliation from the beginning (pass ${pass}/${this.maxFullReconciliationPasses}).`);
     }
+
+    this.logger.warn('Reached maximum full reconciliation passes.');
   }
 
-  private async reconcileFilter(client: CdpClient, expectedFilter: Filter): Promise<void> {
+  private async reconcileFilter(client: CdpClient, expectedFilter: Filter): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxReconciliationAttempts; attempt += 1) {
       if (expectedFilter.getType() === FilterType.MIN_MAX) {
         const currentSelection = await this.readCurrentMinMaxSelection(client, expectedFilter.getCssSelector());
         const hasDiff = this.hasMinMaxDiff(expectedFilter, currentSelection);
 
         if (!hasDiff) {
-          return;
+          return false;
         }
 
-        await this.applyMinMaxActions(client, expectedFilter, currentSelection);
+        const shouldRestart = await this.applyMinMaxActions(client, expectedFilter, currentSelection);
+        if (shouldRestart) {
+          return true;
+        }
       } else {
         const currentSelection = await this.readCurrentPlainSelection(client, expectedFilter);
         const { toEnable, toDisable } = this.getPlainSelectionDiff(
@@ -64,16 +88,19 @@ export class FilterUpdateService {
         );
 
         if (toEnable.length === 0 && toDisable.length === 0) {
-          return;
+          return false;
         }
 
-        await this.applyPlainSelectionActions(client, expectedFilter, toEnable, toDisable);
+        const shouldRestart = await this.applyPlainSelectionActions(client, expectedFilter, toEnable, toDisable);
+        if (shouldRestart) {
+          return true;
+        }
       }
 
-      await this.sleep(this.configuration.filterStateClickWaitMs);
     }
 
     this.logger.warn(`Could not fully reconcile filter ${expectedFilter.getName()} after retries.`);
+    return false;
   }
 
   private hasMinMaxDiff(expectedFilter: Filter, currentSelection: MinMaxSelection): boolean {
@@ -96,12 +123,16 @@ export class FilterUpdateService {
     expectedFilter: Filter,
     toEnable: string[],
     toDisable: string[]
-  ): Promise<void> {
+  ): Promise<boolean> {
     for (const option of toEnable) {
       const clicked = await this.clickPlainOption(client, expectedFilter.getCssSelector(), option, 'enable');
       if (clicked) {
         this.logger.log(`Click on ${option} to enable it`);
-        await this.sleep(this.configuration.filterStateClickWaitMs);
+        await this.filterLoaderDetectionService.scrollToTop(client);
+        const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
+        if (!stable) {
+          return true;
+        }
       }
     }
 
@@ -109,16 +140,22 @@ export class FilterUpdateService {
       const clicked = await this.clickPlainOption(client, expectedFilter.getCssSelector(), option, 'disable');
       if (clicked) {
         this.logger.log(`Click on ${option} to disable it`);
-        await this.sleep(this.configuration.filterStateClickWaitMs);
+        await this.filterLoaderDetectionService.scrollToTop(client);
+        const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
+        if (!stable) {
+          return true;
+        }
       }
     }
+
+    return false;
   }
 
   private async applyMinMaxActions(
     client: CdpClient,
     expectedFilter: Filter,
     currentSelection: MinMaxSelection
-  ): Promise<void> {
+  ): Promise<boolean> {
     const expectedMin = expectedFilter.getSelectedMin();
     const expectedMax = expectedFilter.getSelectedMax();
 
@@ -131,7 +168,11 @@ export class FilterUpdateService {
         } else {
           this.logger.log(`Set minimum value on ${expectedFilter.getName()} to ${expectedMin}`);
         }
-        await this.sleep(this.configuration.filterStateClickWaitMs);
+        await this.filterLoaderDetectionService.scrollToTop(client);
+        const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
+        if (!stable) {
+          return true;
+        }
       }
     }
 
@@ -144,9 +185,15 @@ export class FilterUpdateService {
         } else {
           this.logger.log(`Set maximum value on ${expectedFilter.getName()} to ${expectedMax}`);
         }
-        await this.sleep(this.configuration.filterStateClickWaitMs);
+        await this.filterLoaderDetectionService.scrollToTop(client);
+        const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
+        if (!stable) {
+          return true;
+        }
       }
     }
+
+    return false;
   }
 
   private async readCurrentPlainSelection(client: CdpClient, expectedFilter: Filter): Promise<string[]> {
@@ -388,9 +435,5 @@ export class FilterUpdateService {
     }
 
     return value.filter((item): item is string => typeof item === 'string');
-  }
-
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

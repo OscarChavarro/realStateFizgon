@@ -22,6 +22,8 @@ type Environment = {
     };
     filter: {
       stateclickwait: number;
+      listingloadingtimeout: number;
+      listingloadingpollinterval: number;
     };
   };
   scraper: {
@@ -91,5 +93,13 @@ export class Configuration {
 
   get filterStateClickWaitMs(): number {
     return this.environment.timeouts?.filter?.stateclickwait ?? 2000;
+  }
+
+  get filterListingLoadingTimeoutMs(): number {
+    return this.environment.timeouts?.filter?.listingloadingtimeout ?? 10000;
+  }
+
+  get filterListingLoadingPollIntervalMs(): number {
+    return this.environment.timeouts?.filter?.listingloadingpollinterval ?? 200;
   }
 }

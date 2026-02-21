@@ -128,10 +128,6 @@ export class FiltersService {
     filter.setMaxOptions(maxOptions);
     filter.setSelectedMin(selectedMin);
     filter.setSelectedMax(selectedMax);
-    this.logger.log(`Filter min options (${filter.getName()}): ${minOptions.join(' | ')}`);
-    this.logger.log(`Filter max options (${filter.getName()}): ${maxOptions.join(' | ')}`);
-    this.logger.log(`Filter selected min (${filter.getName()}): ${selectedMin ?? 'null'}`);
-    this.logger.log(`Filter selected max (${filter.getName()}): ${selectedMax ?? 'null'}`);
   }
 
   private async processSingleSelectorDropdownFilter(client: CdpClient, filter: Filter): Promise<void> {
@@ -139,8 +135,6 @@ export class FiltersService {
     const selectedPlainOptions = await this.extractSelectedSingleSelectorDropdownOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
-    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
-    this.logger.log(`Filter selected options (${filter.getName()}): ${selectedPlainOptions.join(' | ')}`);
   }
 
   private async processMultipleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
@@ -148,8 +142,6 @@ export class FiltersService {
     const selectedPlainOptions = await this.extractSelectedMultipleSelectorOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
-    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
-    this.logger.log(`Filter selected options (${filter.getName()}): ${selectedPlainOptions.join(' | ')}`);
   }
 
   private async processSingleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
@@ -157,8 +149,6 @@ export class FiltersService {
     const selectedPlainOptions = await this.extractSelectedSingleSelectorOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
-    this.logger.log(`Filter options (${filter.getName()}): ${options.join(' | ')}`);
-    this.logger.log(`Filter selected options (${filter.getName()}): ${selectedPlainOptions.join(' | ')}`);
   }
 
   private async extractSingleSelectorDropdownOptions(client: CdpClient, selector: string): Promise<string[]> {

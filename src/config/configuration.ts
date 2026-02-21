@@ -25,6 +25,9 @@ type Environment = {
       listingloadingtimeout: number;
       listingloadingpollinterval: number;
     };
+    pagination: {
+      clickwait: number;
+    };
   };
   scraper: {
     home: {
@@ -101,5 +104,9 @@ export class Configuration {
 
   get filterListingLoadingPollIntervalMs(): number {
     return this.environment.timeouts?.filter?.listingloadingpollinterval ?? 200;
+  }
+
+  get paginationClickWaitMs(): number {
+    return this.environment.timeouts?.pagination?.clickwait ?? 1000;
   }
 }

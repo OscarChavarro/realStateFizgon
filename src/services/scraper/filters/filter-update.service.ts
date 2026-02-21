@@ -132,7 +132,6 @@ export class FilterUpdateService {
       for (const option of toEnable) {
         const clicked = await this.clickSingleSelectorDropdownOption(client, expectedFilter.getCssSelector(), option);
         if (clicked) {
-          this.logger.log(`Click on ${option} to enable it`);
           await this.filterLoaderDetectionService.scrollToTop(client);
           const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
           if (!stable) {
@@ -147,7 +146,6 @@ export class FilterUpdateService {
     for (const option of toEnable) {
       const clicked = await this.clickPlainOption(client, expectedFilter.getCssSelector(), option, 'enable');
       if (clicked) {
-        this.logger.log(`Click on ${option} to enable it`);
         await this.filterLoaderDetectionService.scrollToTop(client);
         const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
         if (!stable) {
@@ -159,7 +157,6 @@ export class FilterUpdateService {
     for (const option of toDisable) {
       const clicked = await this.clickPlainOption(client, expectedFilter.getCssSelector(), option, 'disable');
       if (clicked) {
-        this.logger.log(`Click on ${option} to disable it`);
         await this.filterLoaderDetectionService.scrollToTop(client);
         const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
         if (!stable) {
@@ -183,11 +180,6 @@ export class FilterUpdateService {
       const value = expectedMin ?? 'Mín';
       const clicked = await this.clickMinMaxOption(client, expectedFilter.getCssSelector(), 'min', value);
       if (clicked) {
-        if (expectedMin === null) {
-          this.logger.log(`Clear minimum value on ${expectedFilter.getName()}`);
-        } else {
-          this.logger.log(`Set minimum value on ${expectedFilter.getName()} to ${expectedMin}`);
-        }
         await this.filterLoaderDetectionService.scrollToTop(client);
         const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
         if (!stable) {
@@ -200,11 +192,6 @@ export class FilterUpdateService {
       const value = expectedMax ?? 'Máx';
       const clicked = await this.clickMinMaxOption(client, expectedFilter.getCssSelector(), 'max', value);
       if (clicked) {
-        if (expectedMax === null) {
-          this.logger.log(`Clear maximum value on ${expectedFilter.getName()}`);
-        } else {
-          this.logger.log(`Set maximum value on ${expectedFilter.getName()} to ${expectedMax}`);
-        }
         await this.filterLoaderDetectionService.scrollToTop(client);
         const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
         if (!stable) {

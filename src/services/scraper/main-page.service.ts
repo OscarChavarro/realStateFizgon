@@ -30,19 +30,42 @@ export class MainPageService {
 
     await this.waitForExpression(
       client,
-      "Boolean(document.querySelector('fieldset.new-radio-button label[for=\"free-search-operation-rent\"]'))"
+      `Boolean(
+        document.querySelector('fieldset.new-radio-button label[for="free-search-operation-rent"]')
+        || document.querySelector('label[for="free-search-operation-rent"]')
+        || document.querySelector('#free-search-operation-rent')
+        || document.querySelector('input[name="operation"][value="rent"]')
+        || document.querySelector('#campoBus')
+      )`
     );
-    this.logger.log('Step 1/3: Rent option found, clicking "Alquilar".');
+    this.logger.log('Step 1/3: Rent controls ready, selecting "Alquilar" when available.');
 
     await this.evaluateOrThrow(
       client,
       `(() => {
-        const rentLabel = document.querySelector('fieldset.new-radio-button label[for="free-search-operation-rent"]');
-        if (!rentLabel) {
-          throw new Error('Rent label was not found');
+        const rentLabel = document.querySelector(
+          'fieldset.new-radio-button label[for="free-search-operation-rent"], label[for="free-search-operation-rent"]'
+        );
+        if (rentLabel) {
+          rentLabel.click();
+          return true;
         }
-        rentLabel.click();
-        return true;
+
+        const rentInput = document.querySelector(
+          '#free-search-operation-rent, input[name="operation"][value="rent"]'
+        );
+        if (rentInput) {
+          rentInput.checked = true;
+          rentInput.dispatchEvent(new Event('input', { bubbles: true }));
+          rentInput.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+
+        if (document.querySelector('#campoBus')) {
+          return true;
+        }
+
+        throw new Error('Rent controls were not found');
       })()`
     );
     this.logger.log('Step 1/3 completed.');
@@ -104,11 +127,32 @@ export class MainPageService {
 
     while (Date.now() - start < timeout) {
       const evaluation = await client.Runtime.evaluate({
-        expression,
+        expression: `(() => {
+          const matched = (${expression});
+          const title = (document.title || '').toLowerCase();
+          const text = (document.body?.innerText || '').toLowerCase();
+          const hasOriginError = title.includes('425 unknown error')
+            || title.includes('unknown error')
+            || text.includes('error 425 unknown error')
+            || text.includes('error 425')
+            || text.includes('unknown error')
+            || text.includes('error 54113')
+            || text.includes('varnish cache server');
+          return { matched, hasOriginError };
+        })()`,
         returnByValue: true
       });
 
-      if (evaluation.result?.value === true) {
+      if (evaluation.exceptionDetails?.text) {
+        throw new Error(evaluation.exceptionDetails.text);
+      }
+
+      const value = evaluation.result?.value as { matched?: unknown; hasOriginError?: unknown } | undefined;
+      if (value?.hasOriginError === true) {
+        throw new Error(`Origin error page detected while waiting for expression: ${expression}`);
+      }
+
+      if (value?.matched === true) {
         return;
       }
 

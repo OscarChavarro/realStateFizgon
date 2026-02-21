@@ -6,6 +6,7 @@ import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
 import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
+import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
 
 @Injectable()
 export class ChromeService implements OnModuleInit {
@@ -19,7 +20,8 @@ export class ChromeService implements OnModuleInit {
   constructor(
     private readonly configuration: Configuration,
     private readonly mainPageService: MainPageService,
-    private readonly filtersService: FiltersService
+    private readonly filtersService: FiltersService,
+    private readonly propertyListingPaginationService: PropertyListingPaginationService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -116,18 +118,13 @@ export class ChromeService implements OnModuleInit {
         await Page.navigate({ url: this.configuration.scraperHomeUrl });
         await this.waitForPageLoad(Page);
       }
-      await this.recoverIfOriginError(Page, Runtime);
-      await this.mainPageService.execute(
-        client,
-        this.configuration.mainSearchArea,
-        this.configuration.scraperHomeUrl
-      );
-      await this.recoverIfOriginError(Page, Runtime);
+      await this.executeMainPageWithRetry(client, Page, Runtime);
       await this.waitForExpression(
         Runtime,
         "Boolean(document.querySelector('#aside-filters'))"
       );
       await this.filtersService.execute(client);
+      await this.propertyListingPaginationService.execute(client);
       this.logger.log('MainPageService finished.');
     } finally {
       await client.close();
@@ -150,6 +147,51 @@ export class ChromeService implements OnModuleInit {
     }
 
     throw new Error('Origin error page persisted after automatic reload attempts.');
+  }
+
+  private async executeMainPageWithRetry(
+    client: {
+      Runtime: {
+        enable(): Promise<void>;
+        evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
+      };
+    },
+    Page: { navigate(params: { url: string }): Promise<void>; reload(params?: { ignoreCache?: boolean }): Promise<void>; loadEventFired(cb: () => void): void },
+    Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }
+  ): Promise<void> {
+    const maxAttempts = 3;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await this.recoverIfOriginError(Page, Runtime);
+        await this.mainPageService.execute(
+          client,
+          this.configuration.mainSearchArea,
+          this.configuration.scraperHomeUrl
+        );
+        await this.recoverIfOriginError(Page, Runtime);
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const isOriginErrorVisible = await this.hasOriginError(Runtime);
+
+        if (attempt === maxAttempts) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Main page flow failed (attempt ${attempt}/${maxAttempts}): ${message}. Reloading home and retrying.`
+        );
+        await this.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
+
+        if (isOriginErrorVisible) {
+          await Page.reload({ ignoreCache: true });
+        } else {
+          await Page.navigate({ url: this.configuration.scraperHomeUrl });
+        }
+        await this.waitForPageLoad(Page);
+      }
+    }
   }
 
   private async hasOriginError(Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }): Promise<boolean> {

@@ -26,6 +26,9 @@
       "stateclickwait": 2000,
       "listingloadingtimeout": 10000,
       "listingloadingpollinterval": 200
+    },
+    "pagination": {
+      "clickwait": 1000
     }
   },
   "filters": {

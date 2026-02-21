@@ -1,21 +1,8 @@
 import { Filter } from '../filter.interface';
 import { FilterType } from '../filter-type.enum';
 
-export class PropertyType implements Filter {
-  private plainOptions: string[] = [];
-  getName(): string {
-    return 'Tipo de inmueble';
-  }
-
-  getType(): FilterType {
-    return FilterType.SINGLE_SELECTOR_DROPDOWN;
-  }
-
-  setPlainOptions(options: string[]): void {
-    this.plainOptions = [...options];
-  }
-
-  getCssSelector(): string {
-    return '#filter-form > .item-form.typology-filter-container';
+export class PropertyType extends Filter {
+  constructor() {
+    super('Tipo de inmueble', '#filter-form > .item-form.typology-filter-container', FilterType.SINGLE_SELECTOR_DROPDOWN);
   }
 }

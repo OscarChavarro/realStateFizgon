@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { FilterUpdateService } from './filter-update.service';
 import { Filter } from './filters/filter.interface';
 import { FilterType } from './filters/filter-type.enum';
 import { SupportedFilters } from './filters/supported-filters';
@@ -48,6 +49,8 @@ export class FiltersService {
   private readonly extractedFiltersFromDom = new SupportedFilters();
   private readonly preloadedFiltersFromConfiguration = new SupportedFilters().loadFromConfiguration();
 
+  constructor(private readonly filterUpdateService: FilterUpdateService) {}
+
   async execute(client: CdpClient): Promise<void> {
     await client.Runtime.enable();
     const payload = await this.readAsideFilters(client);
@@ -63,12 +66,9 @@ export class FiltersService {
       await this.processFilter(client, payload, filter, matchedSectionIndexes);
     }
 
-    this.logger.log(
-      `Preloaded filters from configuration: ${this.preloadedFiltersFromConfiguration.getSupportedFilters().length}`
-    );
-    this.logger.log(`extractedFiltersFromDom: ${JSON.stringify(this.extractedFiltersFromDom, null, 2)}`);
-    this.logger.log(
-      `preloadedFiltersFromConfiguration: ${JSON.stringify(this.preloadedFiltersFromConfiguration, null, 2)}`
+    this.filterUpdateService.logRequiredActions(
+      this.preloadedFiltersFromConfiguration,
+      this.extractedFiltersFromDom
     );
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));

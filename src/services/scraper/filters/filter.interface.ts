@@ -32,6 +32,10 @@ export abstract class Filter {
     this.selectedPlainOptions = [...options];
   }
 
+  getSelectedPlainOptions(): string[] {
+    return [...this.selectedPlainOptions];
+  }
+
   setMinOptions(_options: string[]): void {}
 
   setMaxOptions(_options: string[]): void {}
@@ -40,7 +44,15 @@ export abstract class Filter {
     this.selectedMin = value;
   }
 
+  getSelectedMin(): string | null {
+    return this.selectedMin;
+  }
+
   setSelectedMax(value: string | null): void {
     this.selectedMax = value;
+  }
+
+  getSelectedMax(): string | null {
+    return this.selectedMax;
   }
 }

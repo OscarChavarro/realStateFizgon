@@ -109,11 +109,15 @@ export class FilterUpdateService {
   }
 
   private getPlainSelectionDiff(expected: string[], current: string[]): { toEnable: string[]; toDisable: string[] } {
-    const expectedSet = new Set(expected);
-    const currentSet = new Set(current);
+    const expectedNormalizedSet = new Set(expected.map((option) => this.normalizeComparableText(option)));
+    const currentNormalizedSet = new Set(current.map((option) => this.normalizeComparableText(option)));
 
-    const toEnable = expected.filter((option) => !currentSet.has(option));
-    const toDisable = current.filter((option) => !expectedSet.has(option));
+    const toEnable = expected.filter(
+      (option) => !currentNormalizedSet.has(this.normalizeComparableText(option))
+    );
+    const toDisable = current.filter(
+      (option) => !expectedNormalizedSet.has(this.normalizeComparableText(option))
+    );
 
     return { toEnable, toDisable };
   }
@@ -124,6 +128,22 @@ export class FilterUpdateService {
     toEnable: string[],
     toDisable: string[]
   ): Promise<boolean> {
+    if (expectedFilter.getType() === FilterType.SINGLE_SELECTOR_DROPDOWN) {
+      for (const option of toEnable) {
+        const clicked = await this.clickSingleSelectorDropdownOption(client, expectedFilter.getCssSelector(), option);
+        if (clicked) {
+          this.logger.log(`Click on ${option} to enable it`);
+          await this.filterLoaderDetectionService.scrollToTop(client);
+          const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
+          if (!stable) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
     for (const option of toEnable) {
       const clicked = await this.clickPlainOption(client, expectedFilter.getCssSelector(), option, 'enable');
       if (clicked) {
@@ -216,6 +236,20 @@ export class FilterUpdateService {
         const root = document.querySelector(${JSON.stringify(selector)});
         if (!root) {
           return [];
+        }
+
+        const hiddenInput = root.querySelector('input[type="hidden"]');
+        const hiddenValue = hiddenInput && typeof hiddenInput.value === 'string'
+          ? hiddenInput.value.trim()
+          : '';
+        if (hiddenValue.length > 0) {
+          const selectedNode = root.querySelector(
+            'ul.dropdown-list > li[data-value="' + hiddenValue.replace(/"/g, '\\"') + '"], ul.dropdown > li[data-value="' + hiddenValue.replace(/"/g, '\\"') + '"]'
+          );
+          const selectedFromHidden = normalize(selectedNode ? selectedNode.textContent : '');
+          if (selectedFromHidden.length > 0) {
+            return [selectedFromHidden];
+          }
         }
 
         const selectedValue = normalize(
@@ -312,7 +346,13 @@ export class FilterUpdateService {
   ): Promise<boolean> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
-        const normalize = (value) => (value || '').replace(/\\s+/g, ' ').replace(/Desplegar/g, '').trim();
+        const normalize = (value) => (value || '')
+          .normalize('NFD')
+          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/\\s+/g, ' ')
+          .replace(/Desplegar/gi, '')
+          .trim()
+          .toLowerCase();
         const root = document.querySelector(${JSON.stringify(selector)});
         if (!root) {
           return false;
@@ -343,6 +383,81 @@ export class FilterUpdateService {
             return true;
           }
           return false;
+        }
+
+        return false;
+      })()`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+
+    if (result.exceptionDetails?.text) {
+      throw new Error(result.exceptionDetails.text);
+    }
+
+    return result.result?.value === true;
+  }
+
+  private async clickSingleSelectorDropdownOption(
+    client: CdpClient,
+    selector: string,
+    option: string
+  ): Promise<boolean> {
+    const result = await client.Runtime.evaluate({
+      expression: `(() => {
+        const normalize = (value) => (value || '')
+          .normalize('NFD')
+          .replace(/[\\u0300-\\u036f]/g, '')
+          .replace(/\\s+/g, ' ')
+          .replace(/Desplegar/gi, '')
+          .trim()
+          .toLowerCase();
+
+        const root = document.querySelector(${JSON.stringify(selector)});
+        if (!root) {
+          return false;
+        }
+
+        const target = normalize(${JSON.stringify(option)});
+
+        const hiddenInput = root.querySelector('input[type="hidden"]');
+        const hiddenValue = hiddenInput && typeof hiddenInput.value === 'string'
+          ? hiddenInput.value.trim()
+          : '';
+        if (hiddenValue.length > 0) {
+          const selectedNode = root.querySelector(
+            'ul.dropdown-list > li[data-value="' + hiddenValue.replace(/"/g, '\\"') + '"], ul.dropdown > li[data-value="' + hiddenValue.replace(/"/g, '\\"') + '"]'
+          );
+          const selectedText = normalize(selectedNode ? selectedNode.textContent : '');
+          if (selectedText === target) {
+            return false;
+          }
+        }
+
+        const selectedPlaceholder = normalize(
+          root.querySelector('button.dropdown-wrapper > span.placeholder, :scope > button.dropdown-wrapper > span.placeholder')?.textContent || ''
+        );
+        if (selectedPlaceholder === target) {
+          return false;
+        }
+
+        const button = root.querySelector('button.dropdown-wrapper');
+        if (button) {
+          button.click();
+        }
+
+        const options = Array.from(
+          root.querySelectorAll('ul.dropdown-list > li, ul.dropdown > li')
+        );
+
+        for (const item of options) {
+          const text = normalize(item.textContent);
+          if (text !== target) {
+            continue;
+          }
+          const clickable = item.querySelector('a') || item;
+          clickable.click();
+          return true;
         }
 
         return false;
@@ -435,5 +550,15 @@ export class FilterUpdateService {
     }
 
     return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  private normalizeComparableText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/Desplegar/gi, '')
+      .trim()
+      .toLowerCase();
   }
 }

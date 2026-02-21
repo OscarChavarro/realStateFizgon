@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
 import { ChromeService } from './services/scraper/chrome.service';
+import { FiltersService } from './services/scraper/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
 
 @Module({
@@ -10,6 +11,6 @@ import { MainPageService } from './services/scraper/main-page.service';
       isGlobal: true
     })
   ],
-  providers: [Configuration, MainPageService, ChromeService]
+  providers: [Configuration, MainPageService, FiltersService, ChromeService]
 })
 export class AppModule {}

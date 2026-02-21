@@ -4,6 +4,7 @@ import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
+import { FiltersService } from './filters.service';
 import { MainPageService } from './main-page.service';
 
 @Injectable()
@@ -17,7 +18,8 @@ export class ChromeService implements OnModuleInit {
 
   constructor(
     private readonly configuration: Configuration,
-    private readonly mainPageService: MainPageService
+    private readonly mainPageService: MainPageService,
+    private readonly filtersService: FiltersService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -120,6 +122,11 @@ export class ChromeService implements OnModuleInit {
         this.configuration.mainSearchArea,
         this.configuration.scraperHomeUrl
       );
+      await this.waitForExpression(
+        Runtime,
+        "Boolean(document.querySelector('#aside-filters'))"
+      );
+      await this.filtersService.execute(client);
       this.logger.log('MainPageService finished.');
     } finally {
       await client.close();
@@ -165,5 +172,28 @@ export class ChromeService implements OnModuleInit {
 
   private async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async waitForExpression(
+    Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
+    expression: string
+  ): Promise<void> {
+    const timeout = 30000;
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const evaluation = await Runtime.evaluate({
+        expression,
+        returnByValue: true
+      });
+
+      if (evaluation.result?.value === true) {
+        return;
+      }
+
+      await this.sleep(200);
+    }
+
+    throw new Error(`Timeout waiting for expression: ${expression}`);
   }
 }

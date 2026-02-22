@@ -45,9 +45,10 @@ export class RabbitMqService implements OnModuleDestroy {
     });
   }
 
-  async publishIdealistaUpdateNotification(url: string): Promise<void> {
+  async publishIdealistaUpdateNotification(url: string, title: string | null): Promise<void> {
     await this.publishJsonToQueue(RabbitMqService.OUTGOING_NOTIFICATION_MESSAGES_QUEUE, {
       url,
+      title,
       type: 'IDEALISTA_UPDATE'
     });
   }

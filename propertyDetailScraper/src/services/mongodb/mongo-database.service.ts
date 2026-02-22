@@ -37,7 +37,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
         ...property,
         importedBy
       } as Property & Document);
-      await this.rabbitMqService.publishIdealistaUpdateNotification(property.url);
+      await this.rabbitMqService.publishIdealistaUpdateNotification(property.url, property.title);
       return;
     }
 

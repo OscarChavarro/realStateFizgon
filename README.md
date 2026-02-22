@@ -16,12 +16,13 @@ Product definition:
 
 # Software architecture
 
-This system comprises several services that interacts with each other as shown in the following diagrams:
+This system comprises several micro services that interacts with each other as shown in the following diagrams:
 
 ![Property Scraper Architecture](doc/architecture/property-scraper-architecture.png)
 
-Blue arrows means that a micro service controls a web browser using the CDP protocol.
-Black arrows shows information flow.
+- Blue arrows means that a micro service controls a web browser using the CDP protocol.
+- Black arrows shows information flow.
+- Green background components are the micro services that makes up this project.
 
 The architecture componentes are:
 

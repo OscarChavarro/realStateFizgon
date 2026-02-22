@@ -4,7 +4,7 @@
     "port": 5672
   },
   "notificaton": {
-    "postMessageSentWaitInMs": 3600000
+    "postMessageSentWaitInMs": 500
   },
   "whiskeysocketswhatsapp": {
     "authFolderPath": "./output/whatsapp-auth",

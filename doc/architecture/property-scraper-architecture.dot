@@ -13,7 +13,7 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
-  listing_scraper [label="propertyListingScraper"];
+  listing_scraper [label="propertyListingScraper", style="rounded,filled", fillcolor="#80ff80"];
   rabbitmq1 [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
@@ -25,7 +25,18 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
-  detail_scraper [label="propertyDetailScraper", group="detail_column"];
+  rabbitmq2 [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
+          <TD ALIGN="LEFT">Rabbit<BR/>(outgoing-notification-messages queue)</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
+  detail_scraper [label="propertyDetailScraper", group="detail_column", style="rounded,filled", fillcolor="#80ff80"];
   mongodb [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
@@ -49,6 +60,18 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
+  notification_message_sender [label="notificationMessageSender", style="rounded,filled", fillcolor="#80ff80"];
+  whatsapp [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/whatsapp.png"/></TD>
+          <TD>Whatsapp</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
 
   { rank=same; browser_list; browser_detail; }
   { rank=same; listing_scraper; rabbitmq1; detail_scraper; }
@@ -58,9 +81,11 @@ digraph PropertyScraperArchitecture {
   browser_detail -> detail_scraper;
   listing_scraper -> rabbitmq1 [minlen=2];
   rabbitmq1 -> detail_scraper [minlen=2];
-
   listing_scraper -> browser_list [color=blue];
   detail_scraper -> browser_detail [color=blue];
   detail_scraper -> mongodb [minlen=2];
   mongodb -> detail_scraper [minlen=2];
+  detail_scraper -> rabbitmq2;
+  rabbitmq2 -> notification_message_sender;
+  notification_message_sender -> whatsapp;
 }

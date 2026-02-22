@@ -353,7 +353,7 @@ export class PropertyDetailPageService {
     })()`);
 
     if (hasOriginError) {
-      throw new Error(`Origin error page detected while processing URL: ${url}`);
+      throw new Error(`Wrong content. `);
     }
   }
 

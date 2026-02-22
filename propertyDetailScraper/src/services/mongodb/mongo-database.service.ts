@@ -26,13 +26,20 @@ export class MongoDatabaseService implements OnModuleDestroy {
   async saveProperty(property: Property): Promise<void> {
     const collection = await this.ensurePropertiesCollection();
     const existing = await collection.findOne({ url: property.url });
+    const importedBy = new Date();
 
     if (!existing) {
-      await collection.insertOne(property as Property & Document);
+      await collection.insertOne({
+        ...property,
+        importedBy
+      } as Property & Document);
       return;
     }
 
-    const merged = this.mergeProperty(existing, property);
+    const merged = {
+      ...this.mergeProperty(existing, property),
+      importedBy
+    } as Property & Document;
     await collection.replaceOne({ _id: existing._id }, merged);
   }
 
@@ -42,7 +49,8 @@ export class MongoDatabaseService implements OnModuleDestroy {
       { url },
       {
         url,
-        closedBy: new Date()
+        closedBy: new Date(),
+        importedBy: new Date()
       } as Document,
       { upsert: true }
     );

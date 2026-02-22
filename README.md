@@ -1,4 +1,20 @@
-# Idealista Scraper Architecture
+# Idealista Scraper
+
+## Product highlights
+
+Intended audience:
+- People searching for homes to buy or rent in Spain
+- Realtors and real estate professionals who need structured data from public listings
+
+Problem this product solves:
+- The market is highly competitive. Finding attractive properties early is difficult, and competition from other buyers or renters is intense. This product helps users react faster by detecting new listings near real time, instead of relying only on Idealista's standard email alerts.
+
+Product definition:
+- A system that scrapes public real estate listings in Spain (initially Idealista), builds a database (including image data) for a filtered subset of the market, and sends real-time WhatsApp notifications for relevant opportunities.
+- Given that public information is downloaded, this data can be used to analyze information about past market situation. After a property has been removed from original source, can be still queried from the local copy.
+- Since images are downloaded, additional tools to leverage Artificial Inteligence (for example to analyze images) can be developed. Note this product is also a research testbed on architecture and interior design.
+
+# Software architecture
 
 This system comprises several services that interacts with each other as shown in the following diagrams:
 

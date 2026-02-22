@@ -5,6 +5,7 @@ import { ChromeService } from './services/scraper/chrome.service';
 import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
 import { PropertyDetailPageService } from './services/scraper/property/property-detail-page.service';
 import { MongoDatabaseService } from './services/mongodb/mongo-database.service';
+import { ImageDownloader } from './services/imagedownload/image-downloader';
 
 @Module({
   imports: [
@@ -12,6 +13,6 @@ import { MongoDatabaseService } from './services/mongodb/mongo-database.service'
       isGlobal: true
     })
   ],
-  providers: [Configuration, RabbitMqService, MongoDatabaseService, PropertyDetailPageService, ChromeService]
+  providers: [Configuration, RabbitMqService, MongoDatabaseService, ImageDownloader, PropertyDetailPageService, ChromeService]
 })
 export class AppModule {}

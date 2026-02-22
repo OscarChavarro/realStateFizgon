@@ -12,6 +12,9 @@ type Environment = {
     host: string;
     port: number;
   };
+  images?: {
+    downloadFolder?: string;
+  };
   timeouts: {
     chrome: {
       cdpreadytimeout: number;
@@ -93,6 +96,10 @@ export class Configuration {
 
   get delayAfterUrlMs(): number {
     return this.environment.timeouts?.consumer?.delayafterurlms ?? 5000;
+  }
+
+  get imageDownloadFolder(): string {
+    return this.environment.images?.downloadFolder ?? './output/images';
   }
 
   get propertyDetailPageScrollIntervalMs(): number {

@@ -7,6 +7,7 @@ import { Configuration } from '../../config/configuration';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { PropertyDetailPageService } from './property/property-detail-page.service';
 import { MongoDatabaseService } from '../mongodb/mongo-database.service';
+import { ImageDownloader } from '../imagedownload/image-downloader';
 
 type CdpClient = {
   Page: {
@@ -34,10 +35,12 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     private readonly configuration: Configuration,
     private readonly rabbitMqService: RabbitMqService,
     private readonly propertyDetailPageService: PropertyDetailPageService,
-    private readonly mongoDatabaseService: MongoDatabaseService
+    private readonly mongoDatabaseService: MongoDatabaseService,
+    private readonly imageDownloader: ImageDownloader
   ) {}
 
   async onModuleInit(): Promise<void> {
+    this.imageDownloader.validateImageDownloadFolder();
     await this.mongoDatabaseService.validateConnectionOrExit();
     await this.launchChrome();
     this.cdpClient = await this.openCdpClient();

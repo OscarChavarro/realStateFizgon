@@ -24,6 +24,7 @@ type Environment = {
     propertydetailpage: {
       scrollintervalms: number;
       scrollevents: number;
+      imagesloadwaitms?: number;
     };
   };
 };
@@ -92,6 +93,10 @@ export class Configuration {
 
   get propertyDetailPageScrollEvents(): number {
     return this.environment.timeouts?.propertydetailpage?.scrollevents ?? 10;
+  }
+
+  get propertyDetailPageImagesLoadWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.imagesloadwaitms ?? 2000;
   }
 
   get rabbitMqHost(): string {

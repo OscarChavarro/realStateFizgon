@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, WithId } from 'mongodb';
 import { Configuration } from '../../config/configuration';
 import { Property } from '../../model/property/property.model';
+import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy {
@@ -12,7 +13,10 @@ export class MongoDatabaseService implements OnModuleDestroy {
   private database?: Db;
   private propertiesCollection?: Collection<Property & Document>;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly rabbitMqService: RabbitMqService
+  ) {}
 
   async onModuleDestroy(): Promise<void> {
     if (this.mongoClient) {
@@ -33,6 +37,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
         ...property,
         importedBy
       } as Property & Document);
+      await this.rabbitMqService.publishIdealistaUpdateNotification(property.url);
       return;
     }
 

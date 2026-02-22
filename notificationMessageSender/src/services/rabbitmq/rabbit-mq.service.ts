@@ -5,13 +5,12 @@ import { Configuration } from '../../config/configuration';
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
-  private static readonly OUTGOING_NOTIFICATION_MESSAGES_QUEUE = 'outgoing-notification-messages';
   private connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
   private channel: amqp.Channel | null = null;
 
   constructor(private readonly configuration: Configuration) {}
 
-  async consumePropertyUrls(consumer: (url: string) => Promise<void>): Promise<void> {
+  async consumeMessages(consumer: (message: unknown) => Promise<void>): Promise<void> {
     const channel = await this.getChannel();
     await channel.prefetch(1);
 
@@ -20,36 +19,19 @@ export class RabbitMqService implements OnModuleDestroy {
         return;
       }
 
-      const url = message.content.toString('utf-8');
+      const payload = this.parseMessage(message.content.toString('utf-8'));
       try {
-        await consumer(url);
+        await consumer(payload);
         channel.ack(message);
       } catch (error) {
         const messageText = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Failed to process URL "${url}": ${messageText}`);
+        this.logger.error(`Failed to process outgoing notification message: ${messageText}`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
         channel.nack(message, false, true);
       }
     });
 
-    this.logger.log(`Consuming URLs from RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
-  }
-
-  async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
-    const channel = await this.getChannel();
-    await channel.assertQueue(queueName, { durable: true });
-    const body = Buffer.from(JSON.stringify(payload), 'utf-8');
-    channel.sendToQueue(queueName, body, {
-      persistent: true,
-      contentType: 'application/json'
-    });
-  }
-
-  async publishIdealistaUpdateNotification(url: string): Promise<void> {
-    await this.publishJsonToQueue(RabbitMqService.OUTGOING_NOTIFICATION_MESSAGES_QUEUE, {
-      url,
-      type: 'IDEALISTA_UPDATE'
-    });
+    this.logger.log(`Consuming messages from RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -61,6 +43,14 @@ export class RabbitMqService implements OnModuleDestroy {
     if (this.connection) {
       await this.connection.close();
       this.connection = null;
+    }
+  }
+
+  private parseMessage(raw: string): unknown {
+    try {
+      return JSON.parse(raw) as unknown;
+    } catch {
+      return raw;
     }
   }
 

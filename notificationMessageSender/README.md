@@ -7,7 +7,8 @@ Micro service based on NestJS + TypeScript that consumes notification messages f
 - Consumes messages from queue `outgoing-notification-messages`.
 - Processes one message at a time (`prefetch(1)`).
 - After consuming a message, waits the configured time before processing the next one.
-- Messages consumed from RabbitMQ are intended to be delivered to a Whatsapp user or group.
+- At startup, initializes WhatsApp via `@whiskeysockets/baileys`; if the session is not linked yet, a QR is printed in terminal.
+- Messages consumed from RabbitMQ are delivered to a configured Whatsapp user or group.
 
 ## Configuration
 
@@ -17,8 +18,14 @@ Required files:
 
 Relevant configuration:
 - `notificaton.postMessageSentWaitInMs`: wait time in milliseconds after consuming each message (default `3600000`, i.e. 3600 seconds).
+- `whiskeysocketswhatsapp.authFolderPath`: local folder to persist WhatsApp auth session.
+- `whiskeysocketswhatsapp.printQrInTerminal`: print QR in terminal when linking is needed.
+- `whiskeysocketswhatsapp.markOnlineOnConnect`: Baileys online presence behavior.
+- `whiskeysocketswhatsapp.connectTimeoutMs`: timeout for WhatsApp connection on startup.
 
-RabbitMQ credentials are read from `secrets.json`.
+Credentials and destination data are read from `secrets.json`:
+- `whiskeysocketswhatsapp.phoneNumber`: destination phone number (used to derive `@s.whatsapp.net` JID).
+- `whiskeysocketswhatsapp.destinationJid`: optional explicit destination JID (`...@s.whatsapp.net` or `...@g.us`). If set, it overrides `phoneNumber`.
 
 ## Run
 

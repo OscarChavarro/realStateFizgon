@@ -10,6 +10,12 @@ type Environment = {
   notificaton?: {
     postMessageSentWaitInMs?: number;
   };
+  whiskeysocketswhatsapp?: {
+    authFolderPath?: string;
+    printQrInTerminal?: boolean;
+    markOnlineOnConnect?: boolean;
+    connectTimeoutMs?: number;
+  };
 };
 
 type Secrets = {
@@ -20,6 +26,10 @@ type Secrets = {
     queue?: string;
     user?: string;
     password?: string;
+  };
+  whiskeysocketswhatsapp?: {
+    phoneNumber?: string;
+    destinationJid?: string;
   };
 };
 
@@ -68,5 +78,39 @@ export class Configuration {
 
   get notificationPostMessageSentWaitInMs(): number {
     return Math.max(0, this.environment.notificaton?.postMessageSentWaitInMs ?? 3600000);
+  }
+
+  get whiskeySocketsWhatsappAuthFolderPath(): string {
+    return this.environment.whiskeysocketswhatsapp?.authFolderPath ?? './output/whatsapp-auth';
+  }
+
+  get whiskeySocketsWhatsappPrintQrInTerminal(): boolean {
+    return this.environment.whiskeysocketswhatsapp?.printQrInTerminal ?? true;
+  }
+
+  get whiskeySocketsWhatsappMarkOnlineOnConnect(): boolean {
+    return this.environment.whiskeysocketswhatsapp?.markOnlineOnConnect ?? false;
+  }
+
+  get whiskeySocketsWhatsappConnectTimeoutMs(): number {
+    return Math.max(1000, this.environment.whiskeysocketswhatsapp?.connectTimeoutMs ?? 60000);
+  }
+
+  get whiskeySocketsWhatsappPhoneNumber(): string {
+    return this.secrets.whiskeysocketswhatsapp?.phoneNumber ?? '';
+  }
+
+  get whiskeySocketsWhatsappDestinationJid(): string {
+    const explicit = this.secrets.whiskeysocketswhatsapp?.destinationJid?.trim() ?? '';
+    if (explicit.length > 0) {
+      return explicit;
+    }
+
+    const phoneNumber = this.whiskeySocketsWhatsappPhoneNumber.replace(/\D/g, '');
+    if (phoneNumber.length === 0) {
+      return '';
+    }
+
+    return `${phoneNumber}@s.whatsapp.net`;
   }
 }

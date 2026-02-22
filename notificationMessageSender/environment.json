@@ -5,5 +5,11 @@
   },
   "notificaton": {
     "postMessageSentWaitInMs": 3600000
+  },
+  "whiskeysocketswhatsapp": {
+    "authFolderPath": "./output/whatsapp-auth",
+    "printQrInTerminal": true,
+    "markOnlineOnConnect": false,
+    "connectTimeoutMs": 60000
   }
 }

@@ -53,7 +53,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     this.cdpClient = await this.openCdpClient();
 
     await this.rabbitMqService.consumePropertyUrls(async (url) => {
-      await this.openPropertyUrl(url);
+      await this.processPropertyUrlWithRetry(url);
       await this.sleep(this.configuration.delayAfterUrlMs);
     });
   }
@@ -69,7 +69,29 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async openPropertyUrl(url: string): Promise<void> {
+  private async processPropertyUrlWithRetry(url: string): Promise<void> {
+    const maxAttempts = this.configuration.consumerMaxUrlAttempts;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        await this.openPropertyUrlOnce(url);
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (attempt < maxAttempts) {
+          this.logger.warn(`Error loading "${url}" (attempt ${attempt}/${maxAttempts}): ${message}. Retrying.`);
+          await this.sleep(this.configuration.delayAfterUrlMs);
+          continue;
+        }
+
+        this.logger.error(`Failed to process URL after ${maxAttempts} attempts: ${url}`);
+        this.logger.error('Stopping micro service to avoid losing property information.');
+        process.exit(1);
+      }
+    }
+  }
+
+  private async openPropertyUrlOnce(url: string): Promise<void> {
     await this.ensureCdpClient();
 
     this.logger.log(`Processing: ${url}`);
@@ -80,6 +102,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.propertyDetailPageService.loadPropertyUrl(client, url);
+      return;
     } catch (error) {
       if (!this.isClosedWebSocketError(error)) {
         throw error;
@@ -91,7 +114,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         throw new Error('CDP client is not initialized after reconnect.');
       }
       await this.propertyDetailPageService.loadPropertyUrl(this.cdpClient, url);
-      this.logger.log(`Loaded details page after CDP reconnect: ${url}`);
+      return;
     }
   }
 

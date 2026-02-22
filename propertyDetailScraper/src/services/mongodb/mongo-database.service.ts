@@ -92,7 +92,6 @@ export class MongoDatabaseService implements OnModuleDestroy {
     const collection = this.database.collection<Property & Document>(collectionName);
     await collection.createIndex({ url: 1 }, { name: 'url_1' });
     this.propertiesCollection = collection;
-    this.logger.log('MongoDB index ensured for "properties.url".');
   }
 
   private mergeProperty(existing: WithId<Property & Document>, incoming: Property): Property & Document {

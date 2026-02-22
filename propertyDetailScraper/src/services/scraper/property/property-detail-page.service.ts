@@ -63,16 +63,19 @@ export class PropertyDetailPageService {
       throw new Error(`Navigation failed: ${navigation.errorText}`);
     }
     await this.waitForUrlAndDomComplete(client.Runtime, url);
+    await this.throwIfOriginErrorPage(client.Runtime, url);
     await this.scrollPageToBottomAndBackToTop(client.Runtime);
     await this.extendAllPhotos(client.Runtime);
     await this.waitForImagesToLoad(client.Runtime);
     const property = await this.extractPropertyDataFromDOM(client.Runtime, url);
-    if (property) {
-      const filteredProperty = this.filterPropertyImagesByBlurPattern(property);
-      await this.mongoDatabaseService.saveProperty(filteredProperty);
-      await this.imageDownloader.waitForPendingImageDownloads();
-      await this.imageDownloader.movePropertyImagesFromIncoming(filteredProperty);
+    if (!property) {
+      throw new Error(`Property detail container was not found after loading URL: ${url}`);
     }
+
+    const filteredProperty = this.filterPropertyImagesByBlurPattern(property);
+    await this.mongoDatabaseService.saveProperty(filteredProperty);
+    await this.imageDownloader.waitForPendingImageDownloads();
+    await this.imageDownloader.movePropertyImagesFromIncoming(filteredProperty);
   }
 
   async extractPropertyDataFromDOM(runtime: RuntimeClient, url: string): Promise<Property | null> {
@@ -253,8 +256,8 @@ export class PropertyDetailPageService {
   }
 
   async extendAllPhotos(runtime: RuntimeClient): Promise<void> {
-    const clicked = await this.clickMorePhotosIfExists(runtime);
-    if (!clicked) {
+    const clickedCount = await this.clickAllMorePhotosIfExists(runtime);
+    if (clickedCount === 0) {
       return;
     }
 
@@ -329,6 +332,24 @@ export class PropertyDetailPageService {
     throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
   }
 
+  private async throwIfOriginErrorPage(runtime: RuntimeClient, url: string): Promise<void> {
+    const hasOriginError = await this.evaluateExpression<boolean>(runtime, `(() => {
+      const title = (document.title || '').toLowerCase();
+      const text = (document.body?.innerText || '').toLowerCase();
+      return title.includes('425 unknown error')
+        || title.includes('unknown error')
+        || text.includes('error 425 unknown error')
+        || text.includes('error 425')
+        || text.includes('unknown error')
+        || text.includes('error 54113')
+        || text.includes('varnish cache server');
+    })()`);
+
+    if (hasOriginError) {
+      throw new Error(`Origin error page detected while processing URL: ${url}`);
+    }
+  }
+
   private async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -358,26 +379,46 @@ export class PropertyDetailPageService {
     });
   }
 
-  private async clickMorePhotosIfExists(
+  private async clickAllMorePhotosIfExists(
     runtime: RuntimeClient
-  ): Promise<boolean> {
-    const result = await runtime.evaluate({
-      expression: `(() => {
-        const button = document.querySelector(${JSON.stringify(PropertyDetailPageService.MORE_PHOTOS_BUTTON_SELECTOR)});
-        if (!button) {
+  ): Promise<number> {
+    let clicks = 0;
+    const maxIterations = 20;
+
+    for (let attempt = 0; attempt < maxIterations; attempt += 1) {
+      const clicked = await this.evaluateExpression<boolean>(runtime, `(() => {
+        const buttons = Array.from(document.querySelectorAll(${JSON.stringify(PropertyDetailPageService.MORE_PHOTOS_BUTTON_SELECTOR)}));
+        if (buttons.length === 0) {
           return false;
         }
-        if (typeof button.click === 'function') {
-          button.click();
+
+        const visibleButton = buttons.find((button) => {
+          const style = window.getComputedStyle(button);
+          const rect = button.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+        }) || buttons[0];
+
+        if (!visibleButton) {
+          return false;
+        }
+
+        if (typeof visibleButton.click === 'function') {
+          visibleButton.click();
         } else {
-          button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+          visibleButton.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
         }
         return true;
-      })()`,
-      returnByValue: true
-    });
+      })()`);
 
-    return result.result?.value === true;
+      if (!clicked) {
+        break;
+      }
+
+      clicks += 1;
+      await this.sleep(this.configuration.propertyDetailPageMorePhotosClickWaitMs);
+    }
+
+    return clicks;
   }
 
   private async evaluateExpression<T>(runtime: RuntimeClient, expression: string): Promise<T> {

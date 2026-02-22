@@ -18,12 +18,14 @@
       "cdppollinterval": 500
     },
     "consumer": {
-      "delayafterurlms": 1000
+      "delayafterurlms": 1000,
+      "maxurlattempts": 3
     },
     "propertydetailpage": {
       "scrollintervalms": 200,
       "scrollevents": 10,
-      "imagesloadwaitms": 2000
+      "imagesloadwaitms": 2000,
+      "morephotosclickwaitms": 400
     }
   }
 }

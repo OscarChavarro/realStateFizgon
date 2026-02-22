@@ -23,11 +23,13 @@ type Environment = {
     };
     consumer: {
       delayafterurlms: number;
+      maxurlattempts?: number;
     };
     propertydetailpage: {
       scrollintervalms: number;
       scrollevents: number;
       imagesloadwaitms?: number;
+      morephotosclickwaitms?: number;
     };
   };
 };
@@ -98,6 +100,10 @@ export class Configuration {
     return this.environment.timeouts?.consumer?.delayafterurlms ?? 5000;
   }
 
+  get consumerMaxUrlAttempts(): number {
+    return Math.max(1, this.environment.timeouts?.consumer?.maxurlattempts ?? 3);
+  }
+
   get imageDownloadFolder(): string {
     return this.environment.images?.downloadFolder ?? './output/images';
   }
@@ -112,6 +118,10 @@ export class Configuration {
 
   get propertyDetailPageImagesLoadWaitMs(): number {
     return this.environment.timeouts?.propertydetailpage?.imagesloadwaitms ?? 2000;
+  }
+
+  get propertyDetailPageMorePhotosClickWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.morephotosclickwaitms ?? 400;
   }
 
   get rabbitMqHost(): string {

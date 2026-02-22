@@ -47,6 +47,7 @@ export class ImageDownloader {
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();
   private readonly initializedClients = new WeakSet<object>();
   private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
+  private readonly activeDownloadTasks = new Set<Promise<void>>();
 
   constructor(private readonly configuration: Configuration) {}
 
@@ -106,10 +107,14 @@ export class ImageDownloader {
   async waitForPendingImageDownloads(timeoutMs = 5000): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
-      if (this.pendingImageRequests.size === 0) {
+      if (this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0) {
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    if (this.activeDownloadTasks.size > 0) {
+      await Promise.allSettled([...this.activeDownloadTasks]);
     }
   }
 
@@ -185,7 +190,9 @@ export class ImageDownloader {
     }
 
     this.pendingImageRequests.delete(event.requestId);
-    void this.downloadFromNetworkBody(network, event.requestId, pending.url, pending.mimeType);
+    const task = this.downloadFromNetworkBody(network, event.requestId, pending.url, pending.mimeType)
+      .finally(() => this.activeDownloadTasks.delete(task));
+    this.activeDownloadTasks.add(task);
   }
 
   private async downloadFromNetworkBody(network: NetworkDomain, requestId: string, url: string, mimeType: string): Promise<void> {

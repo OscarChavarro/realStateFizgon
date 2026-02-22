@@ -30,6 +30,7 @@ type Environment = {
       scrollevents: number;
       imagesloadwaitms?: number;
       morephotosclickwaitms?: number;
+      premediaexpansionwaitms?: number;
     };
   };
 };
@@ -122,6 +123,10 @@ export class Configuration {
 
   get propertyDetailPageMorePhotosClickWaitMs(): number {
     return this.environment.timeouts?.propertydetailpage?.morephotosclickwaitms ?? 400;
+  }
+
+  get propertyDetailPagePreMediaExpansionWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.premediaexpansionwaitms ?? 1000;
   }
 
   get rabbitMqHost(): string {

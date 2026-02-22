@@ -25,7 +25,8 @@
       "scrollintervalms": 200,
       "scrollevents": 10,
       "imagesloadwaitms": 2000,
-      "morephotosclickwaitms": 400
+      "morephotosclickwaitms": 400,
+      "premediaexpansionwaitms": 1000
     }
   }
 }

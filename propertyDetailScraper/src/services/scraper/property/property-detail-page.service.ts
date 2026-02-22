@@ -263,6 +263,7 @@ export class PropertyDetailPageService {
   }
 
   async extendAllPhotos(runtime: RuntimeClient): Promise<void> {
+    await this.sleep(this.configuration.propertyDetailPagePreMediaExpansionWaitMs);
     const clickedCount = await this.clickAllMorePhotosIfExists(runtime);
     if (clickedCount === 0) {
       return;

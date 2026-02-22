@@ -34,6 +34,16 @@ export class RabbitMqService implements OnModuleDestroy {
     this.logger.log(`Consuming URLs from RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
   }
 
+  async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
+    const channel = await this.getChannel();
+    await channel.assertQueue(queueName, { durable: true });
+    const body = Buffer.from(JSON.stringify(payload), 'utf-8');
+    channel.sendToQueue(queueName, body, {
+      persistent: true,
+      contentType: 'application/json'
+    });
+  }
+
   async onModuleDestroy(): Promise<void> {
     if (this.channel) {
       await this.channel.close();

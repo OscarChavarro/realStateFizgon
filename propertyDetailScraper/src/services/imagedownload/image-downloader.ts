@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { Configuration } from '../../config/configuration';
 import { Property } from '../../model/property/property.model';
+import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 
 type NetworkResponseReceivedEvent = {
   requestId: string;
@@ -44,12 +45,16 @@ type DownloadedIncomingImage = {
 @Injectable()
 export class ImageDownloader {
   private readonly logger = new Logger(ImageDownloader.name);
+  private static readonly PENDING_IMAGE_URLS_QUEUE = 'pending-image-urls-to-download';
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();
   private readonly initializedClients = new WeakSet<object>();
   private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
   private readonly activeDownloadTasks = new Set<Promise<void>>();
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly rabbitMqService: RabbitMqService
+  ) {}
 
   validateImageDownloadFolder(): void {
     const configuredFolder = this.configuration.imageDownloadFolder;
@@ -144,12 +149,14 @@ export class ImageDownloader {
 
       if (!candidates || candidates.length === 0) {
         this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
+        await this.enqueuePendingImageUrlDownload(image.url, propertyId);
         continue;
       }
 
       const selectedFile = candidates.shift();
       if (!selectedFile) {
         this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
+        await this.enqueuePendingImageUrlDownload(image.url, propertyId);
         continue;
       }
 
@@ -167,6 +174,18 @@ export class ImageDownloader {
     await this.moveRemainingIncomingToLeftovers(incomingFolderPath);
     this.incomingImagesByKey.clear();
     this.pendingImageRequests.clear();
+  }
+
+  private async enqueuePendingImageUrlDownload(url: string, propertyId: string): Promise<void> {
+    try {
+      await this.rabbitMqService.publishJsonToQueue(ImageDownloader.PENDING_IMAGE_URLS_QUEUE, {
+        url,
+        propertyId
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed enqueueing pending image URL "${url}" for property "${propertyId}": ${message}`);
+    }
   }
 
   private handleResponseReceived(event: NetworkResponseReceivedEvent): void {

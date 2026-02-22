@@ -70,6 +70,10 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async processPropertyUrlWithRetry(url: string): Promise<void> {
+    if (await this.mongoDatabaseService.propertyExistsByUrl(url)) {
+      return;
+    }
+
     const maxAttempts = this.configuration.consumerMaxUrlAttempts;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

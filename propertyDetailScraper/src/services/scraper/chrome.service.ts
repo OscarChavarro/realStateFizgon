@@ -37,6 +37,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
   private cdpClient?: CdpClient;
+  private shuttingDown = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -59,6 +60,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
+    this.shuttingDown = true;
+
     if (this.cdpClient) {
       await this.cdpClient.close();
       this.cdpClient = undefined;
@@ -143,7 +146,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       }
     );
 
-    this.chromeProcess.once('exit', () => {
+    this.chromeProcess.once('exit', (code, signal) => {
       if (this.chromeStdoutFd !== undefined) {
         closeSync(this.chromeStdoutFd);
         this.chromeStdoutFd = undefined;
@@ -152,6 +155,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         closeSync(this.chromeStderrFd);
         this.chromeStderrFd = undefined;
       }
+
+      this.handleUnexpectedChromeExit(code, signal);
     });
 
     await this.waitForCdp();
@@ -253,5 +258,16 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     return text.includes('WebSocket is not open')
       || text.includes('readyState 3')
       || text.includes('socket hang up');
+  }
+
+  private handleUnexpectedChromeExit(code: number | null, signal: NodeJS.Signals | null): void {
+    if (this.shuttingDown) {
+      return;
+    }
+
+    const codeText = code === null ? 'null' : String(code);
+    const signalText = signal ?? 'null';
+    this.logger.error(`Chrome process exited unexpectedly (code=${codeText}, signal=${signalText}). Exiting micro service.`);
+    process.exit(1);
   }
 }

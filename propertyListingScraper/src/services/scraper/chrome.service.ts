@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { spawn, ChildProcess } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
@@ -9,13 +9,14 @@ import { MainPageService } from './main-page.service';
 import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
 
 @Injectable()
-export class ChromeService implements OnModuleInit {
+export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromeService.name);
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
+  private shuttingDown = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -27,6 +28,13 @@ export class ChromeService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     await this.launchChrome();
     await this.openHomePage();
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    this.shuttingDown = true;
+    if (this.chromeProcess && !this.chromeProcess.killed) {
+      this.chromeProcess.kill('SIGTERM');
+    }
   }
 
   private async launchChrome(): Promise<void> {
@@ -47,7 +55,7 @@ export class ChromeService implements OnModuleInit {
     });
     this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
 
-    this.chromeProcess.once('exit', () => {
+    this.chromeProcess.once('exit', (code, signal) => {
       if (this.chromeStdoutFd !== undefined) {
         closeSync(this.chromeStdoutFd);
         this.chromeStdoutFd = undefined;
@@ -56,6 +64,8 @@ export class ChromeService implements OnModuleInit {
         closeSync(this.chromeStderrFd);
         this.chromeStderrFd = undefined;
       }
+
+      this.handleUnexpectedChromeExit(code, signal);
     });
 
     await this.waitForCdp();
@@ -244,5 +254,17 @@ export class ChromeService implements OnModuleInit {
     }
 
     throw new Error(`Timeout waiting for expression: ${expression}`);
+  }
+
+  private handleUnexpectedChromeExit(code: number | null, signal: NodeJS.Signals | null): void {
+    if (this.shuttingDown) {
+      return;
+    }
+
+    const codeText = code === null ? 'null' : String(code);
+    const signalText = signal ?? 'null';
+    this.logger.error(`Chrome process exited unexpectedly (code=${codeText}, signal=${signalText}).`);
+    this.logger.error('Se perdió la conexión CDP con el browser; el microservicio se cerrará.');
+    process.exit(1);
   }
 }

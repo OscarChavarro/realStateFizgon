@@ -4,6 +4,9 @@ This system comprises several services that interacts with each other as shown i
 
 ![Property Scraper Architecture](doc/architecture/property-scraper-architecture.png)
 
+Blue arrows means that a micro service controls a web browser using the CDP protocol.
+Black arrows shows information flow.
+
 The architecture componentes are:
 
 - [Page list scraper](propertyListingScraper/README.md): scraper that controls a Google Chrome web browser to get the list of properties given a set of filters. The resulting URLs for properties are written to RabbitMq.
@@ -84,6 +87,66 @@ rabbitmqadmin -H localhost -P 15672 -u propertydetail_user -p '<some password2>'
 ```
 
 After this manual test works, put the credentials in the `secrets.json` file for each micro service.
+
+# MongoDB management
+
+The `propertyDetailScraper` micro service uses a MongoDB to store the scraped property  information. To install this database locally on MacOS do:
+
+```bash
+brew tap mongodb/brew
+brew install mongodb-community mongosh
+sudo brew services start mongodb-community
+```
+
+Edit MongoDB configuration to accept external/local connections as needed, update bind IP in:
+
+```bash
+/opt/homebrew/etc/mongod.conf
+```
+
+Use:
+
+```yaml
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+```
+
+Then restart MongoDB and verify is working:
+
+```bash
+brew services restart mongodb-community
+```
+
+Verify MongoDB is running:
+
+```bash
+brew services list | grep mongodb-community
+mongosh --eval "db.runCommand({ ping: 1 })"
+```
+
+Create the database `idealistaScraper` and an application user:
+
+```bash
+mongosh
+```
+
+Then execute in the shell:
+
+```javascript
+use idealistaScraper
+db.createUser({user: "propertydetail_user", pwd: "<some password>", roles: [{ role: "readWrite", db: "idealistaScraper" }]})
+db.getUsers()
+```
+
+Connect from terminal with authentication:
+
+```bash
+mongosh --host localhost --port 27017 \
+  --username propertydetail_user \
+  --password <some password> \
+  --authenticationDatabase admin idealistaScraper
+```
 
 # Common installation on micro services
 

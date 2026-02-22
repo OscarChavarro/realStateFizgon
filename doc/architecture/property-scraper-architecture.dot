@@ -14,18 +14,30 @@ digraph PropertyScraperArchitecture {
     margin="0.08,0.05"
   ];
   listing_scraper [label="propertyListingScraper"];
-  rabbitmq [
+  rabbitmq1 [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
           <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
-          <TD>RabbitMq</TD>
+          <TD ALIGN="LEFT">Rabbit<BR/>(property-listing-urls queue)</TD>
         </TR>
       </TABLE>
     >,
     margin="0.08,0.05"
   ];
-  detail_scraper [label="propertyDetailScraper"];
+  detail_scraper [label="propertyDetailScraper", group="detail_column"];
+  mongodb [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/mongoDB.png"/></TD>
+          <TD>MongoDB</TD>
+        </TR>
+      </TABLE>
+    >,
+    group="detail_column",
+    margin="0.08,0.05"
+  ];
   browser_detail [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
@@ -39,17 +51,16 @@ digraph PropertyScraperArchitecture {
   ];
 
   { rank=same; browser_list; browser_detail; }
-  { rank=same; listing_scraper; rabbitmq; detail_scraper; }
+  { rank=same; listing_scraper; rabbitmq1; detail_scraper; }
+  { rank=same; mongodb; }
 
-  browser_list -> listing_scraper [style=invis, weight=100];
-  browser_detail -> detail_scraper [style=invis, weight=100];
-  listing_scraper -> rabbitmq [style=invis, weight=20];
-  rabbitmq -> detail_scraper [style=invis, weight=20];
+  browser_list -> listing_scraper;
+  browser_detail -> detail_scraper;
+  listing_scraper -> rabbitmq1 [minlen=2];
+  rabbitmq1 -> detail_scraper [minlen=2];
 
-  listing_scraper -> browser_list;
-  listing_scraper -> rabbitmq;
-  detail_scraper -> rabbitmq;
-  rabbitmq -> listing_scraper;
-  rabbitmq -> detail_scraper;
-  detail_scraper -> browser_detail;
+  listing_scraper -> browser_list [color=blue];
+  detail_scraper -> browser_detail [color=blue];
+  detail_scraper -> mongodb [minlen=2];
+  mongodb -> detail_scraper [minlen=2];
 }

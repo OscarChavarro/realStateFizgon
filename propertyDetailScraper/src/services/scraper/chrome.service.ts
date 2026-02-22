@@ -19,6 +19,13 @@ type CdpClient = {
     enable(): Promise<void>;
     evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;
   };
+  Network: {
+    enable(): Promise<void>;
+    responseReceived(callback: (event: unknown) => void): void;
+    loadingFinished(callback: (event: unknown) => void): void;
+    loadingFailed(callback: (event: unknown) => void): void;
+    getResponseBody(params: { requestId: string }): Promise<{ body: string; base64Encoded: boolean }>;
+  };
   close(): Promise<void>;
 };
 
@@ -146,6 +153,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
     await client.Page.enable();
     await client.Runtime.enable();
+    await this.imageDownloader.initializeNetworkCapture(client);
     await client.Page.bringToFront();
     this.logger.log(`Connected to dedicated CDP page target ${String((pageTarget as { id?: string }).id ?? 'unknown')}.`);
     return client;

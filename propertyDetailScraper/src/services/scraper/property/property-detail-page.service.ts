@@ -5,6 +5,7 @@ import { PropertyImage } from '../../../model/property/property-image.model';
 import { PropertyMainFeatures } from '../../../model/property/property-main-features.model';
 import { Property } from '../../../model/property/property.model';
 import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
+import { ImageDownloader } from '../../imagedownload/image-downloader';
 
 type CdpClient = {
   Page: {
@@ -52,7 +53,8 @@ export class PropertyDetailPageService {
 
   constructor(
     private readonly configuration: Configuration,
-    private readonly mongoDatabaseService: MongoDatabaseService
+    private readonly mongoDatabaseService: MongoDatabaseService,
+    private readonly imageDownloader: ImageDownloader
   ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
@@ -66,7 +68,10 @@ export class PropertyDetailPageService {
     await this.waitForImagesToLoad(client.Runtime);
     const property = await this.extractPropertyDataFromDOM(client.Runtime, url);
     if (property) {
-      await this.mongoDatabaseService.saveProperty(property);
+      const filteredProperty = this.filterPropertyImagesByBlurPattern(property);
+      await this.mongoDatabaseService.saveProperty(filteredProperty);
+      await this.imageDownloader.waitForPendingImageDownloads();
+      await this.imageDownloader.movePropertyImagesFromIncoming(filteredProperty);
     }
   }
 
@@ -421,6 +426,34 @@ export class PropertyDetailPageService {
 
     const [value] = values.splice(index, 1);
     return value ?? null;
+  }
+
+  private filterPropertyImagesByBlurPattern(property: Property): Property {
+    const images = property.images.filter((image) => this.isIdealistaBlurUrl(image.url));
+    return new Property(
+      property.url,
+      property.title,
+      property.location,
+      property.mainFeatures,
+      property.advertiserComment,
+      property.featureGroups,
+      property.publicationAge,
+      images
+    );
+  }
+
+  private isIdealistaBlurUrl(rawUrl: string): boolean {
+    try {
+      const url = new URL(rawUrl);
+      const host = url.hostname.toLowerCase();
+      if (!(host === 'idealista.com' || host.endsWith('.idealista.com'))) {
+        return false;
+      }
+
+      return url.pathname.toLowerCase().includes('/blur/');
+    } catch {
+      return false;
+    }
   }
 
 }

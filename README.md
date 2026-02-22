@@ -7,7 +7,7 @@ This system comprises several services that interacts with each other as shown i
 The architecture componentes are:
 
 - [Page list scraper](propertyListingScraper/README.md): scraper that controls a Google Chrome web browser to get the list of properties given a set of filters. The resulting URLs for properties are written to RabbitMq.
-- Page detail scraper: reads property URLs from RabbitMq and downloads property details from Idealista source using a second and separate instance of Google Chrome. Given the property information, the information is stored in the mongodb database, and notifications are sent via whatsapp.
+- [Page detail scraper](propertyDetailScraper/README.md): reads property URLs from RabbitMq and downloads property details from Idealista source using a second and separate instance of Google Chrome. Given the property information, the information is stored in the mongodb database, and notifications are sent via whatsapp.
 - Whatsapp notification sender: Service to send notification to whatsapp. Works reading messages written to RabbitMq.
 
 # RabbitMq management

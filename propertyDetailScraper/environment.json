@@ -15,7 +15,11 @@
       "cdppollinterval": 500
     },
     "consumer": {
-      "delayafterurlms": 5000
+      "delayafterurlms": 1000
+    },
+    "propertydetailpage": {
+      "scrollintervalms": 200,
+      "scrollevents": 10
     }
   }
 }

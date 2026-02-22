@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
 import { ChromeService } from './services/scraper/chrome.service';
 import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
+import { PropertyDetailPageService } from './services/scraper/property/property-detail-page.service';
 
 @Module({
   imports: [
@@ -10,6 +11,6 @@ import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
       isGlobal: true
     })
   ],
-  providers: [Configuration, RabbitMqService, ChromeService]
+  providers: [Configuration, RabbitMqService, PropertyDetailPageService, ChromeService]
 })
 export class AppModule {}

@@ -21,6 +21,10 @@ type Environment = {
     consumer: {
       delayafterurlms: number;
     };
+    propertydetailpage: {
+      scrollintervalms: number;
+      scrollevents: number;
+    };
   };
 };
 
@@ -80,6 +84,14 @@ export class Configuration {
 
   get delayAfterUrlMs(): number {
     return this.environment.timeouts?.consumer?.delayafterurlms ?? 5000;
+  }
+
+  get propertyDetailPageScrollIntervalMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.scrollintervalms ?? 200;
+  }
+
+  get propertyDetailPageScrollEvents(): number {
+    return this.environment.timeouts?.propertydetailpage?.scrollevents ?? 10;
   }
 
   get rabbitMqHost(): string {

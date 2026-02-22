@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
+import { PropertyDetailPageService } from './property/property-detail-page.service';
 
 type CdpClient = {
   Page: {
@@ -30,7 +31,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly configuration: Configuration,
-    private readonly rabbitMqService: RabbitMqService
+    private readonly rabbitMqService: RabbitMqService,
+    private readonly propertyDetailPageService: PropertyDetailPageService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -58,9 +60,13 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     await this.ensureCdpClient();
 
     this.logger.log(`Processing details for property: ${url}`);
+    const client = this.cdpClient;
+    if (!client) {
+      throw new Error('CDP client is not initialized.');
+    }
 
     try {
-      await this.navigateAndWait(url);
+      await this.propertyDetailPageService.loadPropertyUrl(client, url);
       this.logger.log(`Loaded details page: ${url}`);
     } catch (error) {
       if (!this.isClosedWebSocketError(error)) {
@@ -69,7 +75,10 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
       this.logger.warn('CDP websocket was closed. Reconnecting CDP client and retrying current URL once.');
       await this.reconnectCdpClient();
-      await this.navigateAndWait(url);
+      if (!this.cdpClient) {
+        throw new Error('CDP client is not initialized after reconnect.');
+      }
+      await this.propertyDetailPageService.loadPropertyUrl(this.cdpClient, url);
       this.logger.log(`Loaded details page after CDP reconnect: ${url}`);
     }
   }
@@ -164,35 +173,6 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     throw new Error(`CDP endpoint did not become available on port ${this.configuration.chromeCdpPort}.`);
   }
 
-  private async waitForUrlAndDomComplete(
-    runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
-    targetUrl: string
-  ): Promise<void> {
-    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
-    const start = Date.now();
-
-    while (Date.now() - start < timeout) {
-      const evaluation = await runtime.evaluate({
-        expression: `(() => {
-          const currentNoHash = window.location.href.split('#')[0];
-          const targetNoHash = ${JSON.stringify(targetUrl)}.split('#')[0];
-          const sameUrl = currentNoHash === targetNoHash;
-          const isComplete = document.readyState === 'complete';
-          return sameUrl && isComplete;
-        })()`,
-        returnByValue: true
-      });
-
-      if (evaluation.result?.value === true) {
-        return;
-      }
-
-      await this.sleep(this.configuration.chromeCdpPollIntervalMs);
-    }
-
-    throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
-  }
-
   private async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -226,25 +206,6 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
     await this.waitForCdp();
     this.cdpClient = await this.openCdpClient();
-  }
-
-  private async navigateAndWait(url: string): Promise<void> {
-    if (!this.cdpClient) {
-      throw new Error('CDP client is not initialized.');
-    }
-
-    await this.cdpClient.Page.bringToFront();
-    const navigation = await this.cdpClient.Page.navigate({ url });
-    if (navigation.errorText) {
-      throw new Error(`Navigation failed: ${navigation.errorText}`);
-    }
-    await this.waitForUrlAndDomComplete(this.cdpClient.Runtime, url);
-
-    const current = await this.cdpClient.Runtime.evaluate({
-      expression: 'window.location.href',
-      returnByValue: true
-    });
-    this.logger.log(`Browser current URL after navigation: ${String(current.result?.value ?? '')}`);
   }
 
   private isClosedWebSocketError(error: unknown): boolean {

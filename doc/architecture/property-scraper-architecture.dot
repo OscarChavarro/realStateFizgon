@@ -72,6 +72,30 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
+  prometheus [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/prometheus.png"/></TD>
+          <TD>Prometheus</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05",
+    color=darkgreen
+  ];
+  grafana [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/grafana.png"/></TD>
+          <TD>Grafana</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05",
+    color=darkgreen
+  ];
 
   { rank=same; browser_list; browser_detail; }
   { rank=same; listing_scraper; rabbitmq1; detail_scraper; }
@@ -88,4 +112,8 @@ digraph PropertyScraperArchitecture {
   detail_scraper -> rabbitmq2;
   rabbitmq2 -> notification_message_sender;
   notification_message_sender -> whatsapp;
+  listing_scraper -> prometheus [color=darkgreen];
+  detail_scraper -> prometheus [color=darkgreen];
+  notification_message_sender -> prometheus [color=darkgreen];
+  prometheus -> grafana [color=darkgreen];
 }

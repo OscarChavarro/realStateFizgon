@@ -7,6 +7,9 @@ type Environment = {
     host: string;
     port: number;
   };
+  metrics?: {
+    httpPort?: number;
+  };
   notificaton?: {
     postMessageSentWaitInMs?: number;
   };
@@ -76,6 +79,10 @@ export class Configuration {
     return this.secrets.rabbitmq?.password ?? '';
   }
 
+  get metricsHttpPort(): number {
+    return Math.max(1, this.environment.metrics?.httpPort ?? 9464);
+  }
+
   get notificationPostMessageSentWaitInMs(): number {
     return Math.max(0, this.environment.notificaton?.postMessageSentWaitInMs ?? 3600000);
   }
@@ -113,4 +120,5 @@ export class Configuration {
 
     return `${phoneNumber}@s.whatsapp.net`;
   }
+
 }

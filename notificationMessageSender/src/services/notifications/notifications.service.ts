@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Configuration } from '../../config/configuration';
+import { PrometheusMetricsService } from '../prometheus/prometheus-metrics.service';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { WhatsappMessageFormatter } from '../whatsapp/whatsapp-message-formatter';
 import { WhatsappWhiskeySocketsService } from '../whatsapp/whatsapp-whiskey-sockets.service';
@@ -10,6 +11,7 @@ export class NotificationsService implements OnModuleInit {
 
   constructor(
     private readonly configuration: Configuration,
+    private readonly prometheusMetricsService: PrometheusMetricsService,
     private readonly rabbitMqService: RabbitMqService,
     private readonly whatsappMessageFormatter: WhatsappMessageFormatter,
     private readonly whatsappWhiskeySocketsService: WhatsappWhiskeySocketsService
@@ -20,6 +22,7 @@ export class NotificationsService implements OnModuleInit {
     await this.rabbitMqService.consumeMessages(async (message) => {
       this.logger.log(`Consumed outgoing notification message: ${JSON.stringify(message)}`);
       await this.whatsappWhiskeySocketsService.sendTextMessage(this.whatsappMessageFormatter.format(message));
+      this.prometheusMetricsService.incrementWhatsappMessagesSentSuccess();
       await this.sleep(this.configuration.notificationPostMessageSentWaitInMs);
     });
   }

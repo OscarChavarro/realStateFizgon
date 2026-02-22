@@ -3,6 +3,9 @@
     "host": "localhost",
     "port": 5672
   },
+  "metrics": {
+    "httpPort": 9464
+  },
   "notificaton": {
     "postMessageSentWaitInMs": 500
   },

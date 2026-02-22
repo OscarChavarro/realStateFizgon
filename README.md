@@ -22,6 +22,7 @@ This system comprises several micro services that interacts with each other as s
 
 - Blue arrows means that a micro service controls a web browser using the CDP protocol.
 - Black arrows shows information flow.
+- Green arrows shows observability metrics flow.
 - Green background components are the micro services that makes up this project.
 
 The architecture componentes are:
@@ -165,6 +166,65 @@ mongosh --host localhost --port 27017 \
   --password <some password> \
   --authenticationDatabase admin idealistaScraper
 ```
+
+# Prometheus management
+
+To install:
+
+```bash
+brew update
+brew install prometheus
+brew services start prometheus
+```
+
+Navigate to `http://localhost:9090`.
+
+In order to enable basic authentication for Prometheus, start generating a hash from a given password:
+
+```bash
+cat > gen-pass.py <<'PY'
+import getpass, bcrypt
+password = getpass.getpass("Password: ").encode("utf-8")
+print(bcrypt.hashpw(password, bcrypt.gensalt()).decode("utf-8"))
+PY
+
+python3 -m pip install --user bcrypt
+HASH="$(python3 gen-pass.py)"
+rm -f gen-pass.py
+echo "$HASH"
+```
+
+Note that hash is in the `$HASH` environment variable, so use the same terminal to create a `web.yml` file:
+
+```bash
+mkdir -p ~/prometheus-sec
+cat > ~/prometheus-sec/web.yml <<EOF
+basic_auth_users:
+  grafana: $HASH
+EOF
+chmod 600 ~/prometheus-sec/web.yml
+```
+
+Copy the created file to `/opt/homebrew/etc/prometheus-web.yml` and add the line `/opt/homebrew/etc/prometheus.args ` to `/opt/homebrew/etc/prometheus.args`. Then restart prometheus:
+
+```bash
+brew services restart prometheus
+```
+
+Now navigating to `http://localhost:9090` should require a user and a password. Take note of this credentials
+and use them for `secrets.json` files in all micro services.
+
+# Grafana management
+
+This project uses Prometheus and Grafana for observability. To install in local environment, follow:
+
+```bash
+brew update
+brew install grafana
+brew services start grafana
+```
+
+Navigate to `http://localhost:3000` and change admin password.
 
 # Common installation on micro services
 

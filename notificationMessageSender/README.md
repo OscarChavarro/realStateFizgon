@@ -17,6 +17,7 @@ Required files:
 - `secrets.json` (copy from `secrets-example.json`)
 
 Relevant configuration:
+- `metrics.httpPort`: HTTP port used to expose observability endpoints (default `9464`).
 - `notificaton.postMessageSentWaitInMs`: wait time in milliseconds after consuming each message (default `3600000`, i.e. 3600 seconds).
 - `whiskeysocketswhatsapp.authFolderPath`: local folder to persist WhatsApp auth session.
 - `whiskeysocketswhatsapp.printQrInTerminal`: print QR in terminal when linking is needed.
@@ -26,6 +27,21 @@ Relevant configuration:
 Credentials and destination data are read from `secrets.json`:
 - `whiskeysocketswhatsapp.phoneNumber`: destination phone number (used to derive `@s.whatsapp.net` JID).
 - `whiskeysocketswhatsapp.destinationJid`: optional explicit destination JID (`...@s.whatsapp.net` or `...@g.us`). If set, it overrides `phoneNumber`.
+
+## Observability endpoints
+
+- `GET /health`: basic liveness endpoint.
+- `GET /metrics`: Prometheus exposition endpoint.
+  - Implemented with `prom-client`.
+  - Exposed metric: `notification_message_sender_whatsapp_messages_sent_success_total`.
+  - This counter is incremented after every successful WhatsApp send operation.
+  - Also includes default Node.js process metrics (`prom-client` default collectors).
+
+Example local scrape:
+
+```bash
+curl http://localhost:9464/metrics
+```
 
 ## Run
 

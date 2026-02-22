@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from '../../../config/configuration';
 import { PropertyFeatureGroup } from '../../../model/property/property-feature-group.model';
 import { PropertyImage } from '../../../model/property/property-image.model';
@@ -33,7 +33,9 @@ type ExtractedPropertyPayload = {
 
 @Injectable()
 export class PropertyDetailPageService {
+  private readonly logger = new Logger(PropertyDetailPageService.name);
   private static readonly DETAIL_CONTAINER_SELECTOR = 'main.detail-container';
+  private static readonly DEACTIVATED_DETAIL_SELECTOR = 'section.deactivated-detail';
   private static readonly SIDE_CONTENT_SELECTOR = '#side-content';
   private static readonly TITLE_SELECTOR = '.main-info__title-main';
   private static readonly LOCATION_SELECTOR = '.main-info__title-minor';
@@ -64,6 +66,11 @@ export class PropertyDetailPageService {
     }
     await this.waitForUrlAndDomComplete(client.Runtime, url);
     await this.throwIfOriginErrorPage(client.Runtime, url);
+    if (await this.isDeactivatedDetailPage(client.Runtime)) {
+      this.logger.warn(`Property URL is no longer available (deactivated-detail): ${url}`);
+      await this.mongoDatabaseService.saveClosedProperty(url);
+      return;
+    }
     await this.scrollPageToBottomAndBackToTop(client.Runtime);
     await this.extendAllPhotos(client.Runtime);
     await this.waitForImagesToLoad(client.Runtime);
@@ -348,6 +355,12 @@ export class PropertyDetailPageService {
     if (hasOriginError) {
       throw new Error(`Origin error page detected while processing URL: ${url}`);
     }
+  }
+
+  private async isDeactivatedDetailPage(runtime: RuntimeClient): Promise<boolean> {
+    return await this.evaluateExpression<boolean>(runtime, `(() => {
+      return document.querySelector(${JSON.stringify(PropertyDetailPageService.DEACTIVATED_DETAIL_SELECTOR)}) !== null;
+    })()`);
   }
 
   private async sleep(ms: number): Promise<void> {

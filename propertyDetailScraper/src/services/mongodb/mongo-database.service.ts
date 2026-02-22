@@ -36,6 +36,18 @@ export class MongoDatabaseService implements OnModuleDestroy {
     await collection.replaceOne({ _id: existing._id }, merged);
   }
 
+  async saveClosedProperty(url: string): Promise<void> {
+    const collection = await this.ensurePropertiesCollection();
+    await collection.replaceOne(
+      { url },
+      {
+        url,
+        closedBy: new Date()
+      } as Document,
+      { upsert: true }
+    );
+  }
+
   async validateConnectionOrExit(): Promise<void> {
     try {
       await this.connect();

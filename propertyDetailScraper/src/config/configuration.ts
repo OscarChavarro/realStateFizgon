@@ -38,6 +38,14 @@ type Secrets = {
     user?: string;
     password?: string;
   };
+  mongodb?: {
+    host?: string;
+    port?: number;
+    database?: string;
+    authSource?: string;
+    user?: string;
+    password?: string;
+  };
 };
 
 @Injectable()
@@ -121,5 +129,36 @@ export class Configuration {
 
   get rabbitMqPassword(): string {
     return this.secrets.rabbitmq?.password ?? '';
+  }
+
+  get mongoHost(): string {
+    return this.secrets.mongodb?.host ?? 'localhost';
+  }
+
+  get mongoPort(): number {
+    return this.secrets.mongodb?.port ?? 27017;
+  }
+
+  get mongoDatabase(): string {
+    return this.secrets.mongodb?.database ?? 'idealistaScraper';
+  }
+
+  get mongoAuthSource(): string {
+    return this.secrets.mongodb?.authSource ?? this.mongoDatabase;
+  }
+
+  get mongoUser(): string {
+    return this.secrets.mongodb?.user ?? '';
+  }
+
+  get mongoPassword(): string {
+    return this.secrets.mongodb?.password ?? '';
+  }
+
+  get mongoConnectionUri(): string {
+    const encodedUser = encodeURIComponent(this.mongoUser);
+    const encodedPassword = encodeURIComponent(this.mongoPassword);
+    const encodedAuthSource = encodeURIComponent(this.mongoAuthSource);
+    return `mongodb://${encodedUser}:${encodedPassword}@${this.mongoHost}:${this.mongoPort}/${this.mongoDatabase}?authSource=${encodedAuthSource}`;
   }
 }

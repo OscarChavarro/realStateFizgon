@@ -4,6 +4,7 @@ import { PropertyFeatureGroup } from '../../../model/property/property-feature-g
 import { PropertyImage } from '../../../model/property/property-image.model';
 import { PropertyMainFeatures } from '../../../model/property/property-main-features.model';
 import { Property } from '../../../model/property/property.model';
+import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
 
 type CdpClient = {
   Page: {
@@ -49,10 +50,12 @@ export class PropertyDetailPageService {
   private static readonly IMG_ELEMENT_SELECTOR = 'img';
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly mongoDatabaseService: MongoDatabaseService
+  ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
-    await client.Page.bringToFront();
     const navigation = await client.Page.navigate({ url });
     if (navigation.errorText) {
       throw new Error(`Navigation failed: ${navigation.errorText}`);
@@ -63,7 +66,7 @@ export class PropertyDetailPageService {
     await this.waitForImagesToLoad(client.Runtime);
     const property = await this.extractPropertyDataFromDOM(client.Runtime, url);
     if (property) {
-      this.logExtractedProperty(property);
+      await this.mongoDatabaseService.saveProperty(property);
     }
   }
 
@@ -420,18 +423,4 @@ export class PropertyDetailPageService {
     return value ?? null;
   }
 
-  private logExtractedProperty(property: Property): void {
-    const propertyForLog = {
-      ...property,
-      images: property.images.map((image) => {
-        if (image.title === null) {
-          return { url: image.url };
-        }
-
-        return image;
-      })
-    };
-    const serializedProperty = JSON.stringify(propertyForLog, null, 2);
-    console.log(`[PropertyDetailPageService] Extracted property model:\n${serializedProperty}`);
-  }
 }

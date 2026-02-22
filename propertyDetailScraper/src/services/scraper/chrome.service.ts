@@ -6,6 +6,7 @@ import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { PropertyDetailPageService } from './property/property-detail-page.service';
+import { MongoDatabaseService } from '../mongodb/mongo-database.service';
 
 type CdpClient = {
   Page: {
@@ -32,10 +33,12 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configuration: Configuration,
     private readonly rabbitMqService: RabbitMqService,
-    private readonly propertyDetailPageService: PropertyDetailPageService
+    private readonly propertyDetailPageService: PropertyDetailPageService,
+    private readonly mongoDatabaseService: MongoDatabaseService
   ) {}
 
   async onModuleInit(): Promise<void> {
+    await this.mongoDatabaseService.validateConnectionOrExit();
     await this.launchChrome();
     this.cdpClient = await this.openCdpClient();
 
@@ -59,7 +62,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private async openPropertyUrl(url: string): Promise<void> {
     await this.ensureCdpClient();
 
-    this.logger.log(`Processing details for property: ${url}`);
+    this.logger.log(`Processing: ${url}`);
     const client = this.cdpClient;
     if (!client) {
       throw new Error('CDP client is not initialized.');
@@ -67,7 +70,6 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.propertyDetailPageService.loadPropertyUrl(client, url);
-      this.logger.log(`Loaded details page: ${url}`);
     } catch (error) {
       if (!this.isClosedWebSocketError(error)) {
         throw error;

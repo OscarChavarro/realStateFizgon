@@ -13,7 +13,7 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
-  listing_scraper [label="propertyListingScraper", style="rounded,filled", fillcolor="#80ff80"];
+  listing_scraper [label="propertyListingIdealistaScraper", style="rounded,filled", fillcolor="#80ff80"];
   rabbitmq1 [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
@@ -36,7 +36,7 @@ digraph PropertyScraperArchitecture {
     >,
     margin="0.08,0.05"
   ];
-  detail_scraper [label="propertyDetailScraper", group="detail_column", style="rounded,filled", fillcolor="#80ff80"];
+  detail_scraper [label="propertyDetailIdealistaScraper", group="detail_column", style="rounded,filled", fillcolor="#80ff80"];
   mongodb [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">

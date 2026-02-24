@@ -3,6 +3,9 @@
     "host": "localhost",
     "port": 5672
   },
+  "whatsapp": {
+    "messageReceiveMode": "IGNORE"
+  },
   "metrics": {
     "httpPort": 9464
   },

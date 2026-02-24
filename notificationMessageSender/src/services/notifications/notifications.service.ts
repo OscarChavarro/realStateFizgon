@@ -3,6 +3,7 @@ import { Configuration } from '../../config/configuration';
 import { PrometheusMetricsService } from '../prometheus/prometheus-metrics.service';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { WhatsappMessageFormatter } from '../whatsapp/whatsapp-message-formatter';
+import { WhatsappWhiskeySocketsListenerService } from '../whatsapp/whatsapp-whiskey-sockets-listener.service';
 import { WhatsappWhiskeySocketsService } from '../whatsapp/whatsapp-whiskey-sockets.service';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class NotificationsService implements OnModuleInit {
     private readonly prometheusMetricsService: PrometheusMetricsService,
     private readonly rabbitMqService: RabbitMqService,
     private readonly whatsappMessageFormatter: WhatsappMessageFormatter,
+    private readonly whatsappWhiskeySocketsListenerService: WhatsappWhiskeySocketsListenerService,
     private readonly whatsappWhiskeySocketsService: WhatsappWhiskeySocketsService
   ) {}
 

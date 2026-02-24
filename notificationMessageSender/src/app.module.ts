@@ -6,6 +6,7 @@ import { PrometheusMetricsService } from './services/prometheus/prometheus-metri
 import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
 import { NotificationsService } from './services/notifications/notifications.service';
 import { WhatsappMessageFormatter } from './services/whatsapp/whatsapp-message-formatter';
+import { WhatsappWhiskeySocketsListenerService } from './services/whatsapp/whatsapp-whiskey-sockets-listener.service';
 import { WhatsappWhiskeySocketsService } from './services/whatsapp/whatsapp-whiskey-sockets.service';
 
 @Module({
@@ -21,6 +22,7 @@ import { WhatsappWhiskeySocketsService } from './services/whatsapp/whatsapp-whis
     RabbitMqService,
     WhatsappMessageFormatter,
     WhatsappWhiskeySocketsService,
+    WhatsappWhiskeySocketsListenerService,
     NotificationsService
   ]
 })

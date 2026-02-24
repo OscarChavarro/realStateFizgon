@@ -7,6 +7,9 @@ type Environment = {
     host: string;
     port: number;
   };
+  whatsapp?: {
+    messageReceiveMode?: string;
+  };
   metrics?: {
     httpPort?: number;
   };
@@ -119,6 +122,15 @@ export class Configuration {
     }
 
     return `${phoneNumber}@s.whatsapp.net`;
+  }
+
+  get whatsappMessageReceiveMode(): 'CONVERSATION' | 'IGNORE' | 'REPORT' | 'JSON' {
+    const configuredMode = this.environment.whatsapp?.messageReceiveMode ?? 'CONVERSATION';
+    const normalizedMode = configuredMode.trim().toUpperCase();
+    if (normalizedMode === 'IGNORE' || normalizedMode === 'REPORT' || normalizedMode === 'CONVERSATION' || normalizedMode === 'JSON') {
+      return normalizedMode;
+    }
+    return 'CONVERSATION';
   }
 
 }

@@ -10,7 +10,7 @@
   "scraper": {
     "home": {
       "url": "https://www.idealista.com/",
-      "mainSearchArea": "Madrid"
+	"mainSearchArea": "Madrid, Madrid"
     }
   },
   "timeouts": {

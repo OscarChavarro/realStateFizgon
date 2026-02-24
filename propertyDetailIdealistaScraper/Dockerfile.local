@@ -1,0 +1,46 @@
+FROM node:22-bookworm-slim AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:22-bookworm-slim AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chromium \
+    xvfb \
+    xdotool \
+    x11-utils \
+    x11vnc \
+    libdbus-1-3 \
+    dbus-x11 \
+    libsixel-bin \
+    xterm \
+    xosview \
+    nfs-common \
+    iputils-ping \
+    wget \
+    net-tools \
+    emacs-nox \
+    curl \
+    htop \
+    dumb-init \
+    ca-certificates \
+    && (apt-get install -y --no-install-recommends mwm || true) \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g mongosh \
+    && mkdir -p "/Applications/Google Chrome.app/Contents/MacOS" \
+    && ln -sf /usr/bin/chromium "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
+COPY environment.json ./environment.json
+COPY secrets-example.json ./secrets-example.json
+
+CMD ["dumb-init", "node", "dist/main.js"]

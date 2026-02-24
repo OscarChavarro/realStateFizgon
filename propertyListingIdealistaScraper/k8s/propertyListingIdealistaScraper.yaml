@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: property-listing-idealista-scraper
+  namespace: realStateFizgon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: property-listing-idealista-scraper
+  template:
+    metadata:
+      labels:
+        app: property-listing-idealista-scraper
+    spec:
+      containers:
+      - name: property-listing-idealista-scraper
+        image: YOUR_DOCKERHUB_USER/property-listing-idealista-scraper:local
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets.json
+          subPath: secrets.json
+          readOnly: true
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: property-listing-secrets
+          items:
+          - key: secrets.json
+            path: secrets.json

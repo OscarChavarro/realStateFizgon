@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: property-detail-images-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: NFS_SERVER_IP_OR_DNS
+    path: /exports/realStateFizgon-images
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: property-detail-images-pvc
+  namespace: realStateFizgon
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  volumeName: property-detail-images-pv
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: property-detail-idealista-scraper
+  namespace: realStateFizgon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: property-detail-idealista-scraper
+  template:
+    metadata:
+      labels:
+        app: property-detail-idealista-scraper
+    spec:
+      containers:
+      - name: property-detail-idealista-scraper
+        image: YOUR_DOCKERHUB_USER/property-detail-idealista-scraper:local
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets.json
+          subPath: secrets.json
+          readOnly: true
+        - name: images-persistent
+          mountPath: /app/output/images
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: property-detail-secrets
+          items:
+          - key: secrets.json
+            path: secrets.json
+      - name: images-persistent
+        persistentVolumeClaim:
+          claimName: property-detail-images-pvc

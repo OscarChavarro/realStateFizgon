@@ -1,4 +1,6 @@
-# Idealista Scraper
+# Real state scraper "Fizgon"
+
+This project scrapes real state web pages following a set of predefined filters, identifies new properties and sends Whatsapp notifications, to help people locating a house to buy or rent.
 
 ## Product highlights
 

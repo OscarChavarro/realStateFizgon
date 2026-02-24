@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-message-sender
+  namespace: realStateFizgon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-message-sender
+  template:
+    metadata:
+      labels:
+        app: notification-message-sender
+    spec:
+      containers:
+      - name: notification-message-sender
+        image: YOUR_DOCKERHUB_USER/notification-message-sender:local
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9464
+          name: metrics
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets.json
+          subPath: secrets.json
+          readOnly: true
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: notification-message-sender-secrets
+          items:
+          - key: secrets.json
+            path: secrets.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-message-sender
+  namespace: realStateFizgon
+  labels:
+    app: notification-message-sender
+spec:
+  selector:
+    app: notification-message-sender
+  ports:
+  - name: metrics
+    port: 9464
+    targetPort: 9464

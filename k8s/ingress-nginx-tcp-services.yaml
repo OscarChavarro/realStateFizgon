@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-services
+  namespace: ingress-nginx
+data:
+  "5672": "realStateFizgon/rabbitmq:5672"
+  "27017": "realStateFizgon/mongodb:27017"

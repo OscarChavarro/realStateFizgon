@@ -5,7 +5,7 @@ out/
 coverage/
 *.log
 output/logs/*
-propertyDetailScraper/output/images/
+propertyDetailIdealistaScraper/output/images/
 .env
 .env.*
 .DS_Store

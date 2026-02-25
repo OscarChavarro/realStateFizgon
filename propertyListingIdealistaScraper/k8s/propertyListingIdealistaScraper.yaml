@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: property-listing-idealista-scraper
-  namespace: realStateFizgon
+  namespace: realstate-fizgon
 spec:
   replicas: 1
   selector:
@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: property-listing-idealista-scraper
-        image: YOUR_DOCKERHUB_USER/property-listing-idealista-scraper:local
-        imagePullPolicy: Always
+        image: host.docker.internal:5001/property-listing-idealista-scraper:local
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: app-secrets
           mountPath: /app/secrets.json

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notification-message-sender
-  namespace: realStateFizgon
+  namespace: realstate-fizgon
 spec:
   replicas: 1
   selector:
@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: notification-message-sender
-        image: YOUR_DOCKERHUB_USER/notification-message-sender:local
-        imagePullPolicy: Always
+        image: host.docker.internal:5001/notification-message-sender:local
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9464
           name: metrics
@@ -37,7 +37,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: notification-message-sender
-  namespace: realStateFizgon
+  namespace: realstate-fizgon
   labels:
     app: notification-message-sender
 spec:

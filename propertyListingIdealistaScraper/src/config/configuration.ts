@@ -23,6 +23,7 @@ type Environment = {
     mainpage: {
       expressiontimeout: number;
       expressionpollinterval: number;
+      searchclickwaitms?: number;
     };
     filter: {
       stateclickwait: number;
@@ -133,6 +134,10 @@ export class Configuration {
 
   get mainPageExpressionPollIntervalMs(): number {
     return this.environment.timeouts?.mainpage?.expressionpollinterval ?? 200;
+  }
+
+  get mainPageSearchClickWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.mainpage?.searchclickwaitms ?? 1000);
   }
 
   get filterStateClickWaitMs(): number {

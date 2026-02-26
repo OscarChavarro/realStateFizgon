@@ -24,7 +24,8 @@
     },
     "mainpage": {
       "expressiontimeout": 30000,
-      "expressionpollinterval": 200
+      "expressionpollinterval": 200,
+      "searchclickwaitms": 2000
     },
     "filter": {
       "stateclickwait": 2000,

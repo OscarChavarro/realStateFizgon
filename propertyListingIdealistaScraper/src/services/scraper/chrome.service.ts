@@ -65,7 +65,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         this.chromeStderrFd = undefined;
       }
 
-      this.handleUnexpectedChromeExit(code, signal);
+      void this.handleUnexpectedChromeExit(code, signal);
     });
 
     await this.waitForCdp();
@@ -103,15 +103,13 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async openHomePage(): Promise<void> {
-    const targets = await CDP.List({ host: this.cdpHost, port: this.cdpPort });
-    const pageTarget = [...targets].reverse().find((target: { type?: string }) => target.type === 'page');
-
-    if (!pageTarget) {
+    const selectedTarget = await this.waitForPageTarget();
+    if (!selectedTarget) {
       throw new Error('No page target available in Chrome');
     }
 
-    this.logger.log(`Using existing page target ${String((pageTarget as { id?: string }).id ?? 'unknown')}.`);
-    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: pageTarget });
+    this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
 
     try {
       const { Page, Runtime } = client;
@@ -139,6 +137,35 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     } finally {
       await client.close();
     }
+  }
+
+  private async waitForPageTarget(): Promise<{ id?: string; url?: string; type?: string } | undefined> {
+    const timeoutMs = this.configuration.chromeCdpReadyTimeoutMs;
+    const pollIntervalMs = this.configuration.chromeCdpPollIntervalMs;
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      const targets = await CDP.List({ host: this.cdpHost, port: this.cdpPort });
+      const pageTargets = [...targets]
+        .filter((target: { type?: string }) => target.type === 'page')
+        .filter((target: { url?: string }) => {
+          const url = (target.url ?? '').trim().toLowerCase();
+          return !url.startsWith('devtools://');
+        });
+
+      const preferredTarget = pageTargets.find((target: { url?: string }) => {
+        const url = (target.url ?? '').trim();
+        return url.startsWith(this.configuration.scraperHomeUrl);
+      }) ?? pageTargets[0] ?? [...targets].reverse().find((target: { type?: string }) => target.type === 'page');
+
+      if (preferredTarget) {
+        return preferredTarget as { id?: string; url?: string; type?: string };
+      }
+
+      await this.sleep(pollIntervalMs);
+    }
+
+    return undefined;
   }
 
   private async recoverIfOriginError(Page: { reload(params?: { ignoreCache?: boolean }): Promise<void>; loadEventFired(cb: () => void): void }, Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }): Promise<void> {
@@ -256,7 +283,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     throw new Error(`Timeout waiting for expression: ${expression}`);
   }
 
-  private handleUnexpectedChromeExit(code: number | null, signal: NodeJS.Signals | null): void {
+  private async handleUnexpectedChromeExit(code: number | null, signal: NodeJS.Signals | null): Promise<void> {
     if (this.shuttingDown) {
       return;
     }
@@ -264,7 +291,40 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     const codeText = code === null ? 'null' : String(code);
     const signalText = signal ?? 'null';
     this.logger.error(`Chrome process exited unexpectedly (code=${codeText}, signal=${signalText}).`);
-    this.logger.error('Se perdió la conexión CDP con el browser; el microservicio se cerrará.');
+
+    const cdpStillReachable = await this.isCdpReachableAfterExit();
+    if (cdpStillReachable) {
+      this.logger.warn('Chrome launcher process exited, but CDP is still reachable. Continuing without shutting down.');
+      return;
+    }
+
+    this.logger.error('CDP connection to the browser was lost; the microservice will shut down.');
     process.exit(1);
+  }
+
+  private async isCdpReachableAfterExit(): Promise<boolean> {
+    const attempts = 5;
+    const waitMs = 250;
+
+    for (let i = 0; i < attempts; i += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
+      try {
+        const response = await fetch(`http://${this.cdpHost}:${this.cdpPort}/json/version`, {
+          signal: controller.signal
+        });
+        if (response.ok) {
+          return true;
+        }
+      } catch {
+        // Keep retrying; this is expected while Chrome is transitioning.
+      } finally {
+        clearTimeout(timer);
+      }
+
+      await this.sleep(waitMs);
+    }
+
+    return false;
   }
 }

@@ -91,6 +91,8 @@ export class MainPageService {
     );
     this.logger.log('Step 2/3 completed.');
 
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     await this.waitForExpression(
       client,
       "Boolean(document.querySelector('#btn-free-search, .btn-free-search, [id=\"btn-free-search\"]'))"

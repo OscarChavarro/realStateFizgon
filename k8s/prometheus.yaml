@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
 data:
   prometheus.yml: |
     global:
@@ -10,13 +10,13 @@ data:
     scrape_configs:
     - job_name: notification-message-sender
       static_configs:
-      - targets: ['notification-message-sender.realstate-fizgon.svc.cluster.local:9464']
+      - targets: ['notification-message-sender.real-state-fizgon.svc.cluster.local:9464']
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
 spec:
   replicas: 1
   selector:
@@ -54,7 +54,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
 spec:
   selector:
     app: prometheus

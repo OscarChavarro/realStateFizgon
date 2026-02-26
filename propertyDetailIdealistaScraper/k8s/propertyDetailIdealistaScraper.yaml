@@ -11,13 +11,13 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   nfs:
     server: NFS_SERVER_IP_OR_DNS
-    path: /exports/realstate-fizgon-images
+    path: /exports/real-state-fizgon-images
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: property-detail-images-pvc
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
 spec:
   storageClassName: ""
   accessModes:
@@ -31,7 +31,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: property-detail-idealista-scraper
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
 spec:
   replicas: 1
   selector:
@@ -42,10 +42,11 @@ spec:
       labels:
         app: property-detail-idealista-scraper
     spec:
+      hostname: roperty-detail-idealista-scraper
       containers:
       - name: property-detail-idealista-scraper
-        image: host.docker.internal:5001/property-detail-idealista-scraper:local
-        imagePullPolicy: IfNotPresent
+        image: property-detail-idealista-scraper:local
+        imagePullPolicy: Never
         volumeMounts:
         - name: app-secrets
           mountPath: /app/secrets.json

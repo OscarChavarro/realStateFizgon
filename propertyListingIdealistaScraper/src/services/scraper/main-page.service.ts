@@ -91,7 +91,7 @@ export class MainPageService {
     );
     this.logger.log('Step 2/3 completed.');
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, this.configuration.mainPageSearchClickWaitMs));
 
     await this.waitForExpression(
       client,
@@ -115,17 +115,28 @@ export class MainPageService {
     await this.waitForExpression(
       client,
       `(() => {
-        const home = ${JSON.stringify(scraperHomeUrl)};
-        const current = window.location.href;
-        return current !== home && current !== home.replace(/\\/$/, '');
+        const normalizeUrl = (value) => (value || '').replace(/\\/$/, '');
+        const home = normalizeUrl(${JSON.stringify(scraperHomeUrl)});
+        const current = normalizeUrl(window.location.href);
+        const changedUrl = current !== home;
+        const hasResultsDom = Boolean(
+          document.querySelector('#aside-filters')
+          || document.querySelector('.pagination')
+          || document.querySelector('article.item')
+          || document.querySelector('.items-container')
+          || document.querySelector('.item-info-container')
+        );
+        return changedUrl || hasResultsDom;
       })()`
     );
-    this.logger.log('Navigation to search results detected.');
+    this.logger.log('Search results state detected (URL changed or results DOM is present).');
   }
 
   private async waitForExpression(client: CdpClient, expression: string): Promise<void> {
     const timeout = this.configuration.mainPageExpressionTimeoutMs;
     const start = Date.now();
+    let lastCurrentUrl = '';
+    let lastTitle = '';
 
     while (Date.now() - start < timeout) {
       const evaluation = await client.Runtime.evaluate({
@@ -133,6 +144,7 @@ export class MainPageService {
           const matched = (${expression});
           const title = (document.title || '').toLowerCase();
           const text = (document.body?.innerText || '').toLowerCase();
+          const currentUrl = window.location.href;
           const hasOriginError = title.includes('425 unknown error')
             || title.includes('unknown error')
             || text.includes('error 425 unknown error')
@@ -140,7 +152,7 @@ export class MainPageService {
             || text.includes('unknown error')
             || text.includes('error 54113')
             || text.includes('varnish cache server');
-          return { matched, hasOriginError };
+          return { matched, hasOriginError, currentUrl, title };
         })()`,
         returnByValue: true
       });
@@ -149,7 +161,14 @@ export class MainPageService {
         throw new Error(evaluation.exceptionDetails.text);
       }
 
-      const value = evaluation.result?.value as { matched?: unknown; hasOriginError?: unknown } | undefined;
+      const value = evaluation.result?.value as {
+        matched?: unknown;
+        hasOriginError?: unknown;
+        currentUrl?: unknown;
+        title?: unknown;
+      } | undefined;
+      lastCurrentUrl = String(value?.currentUrl ?? '');
+      lastTitle = String(value?.title ?? '');
       if (value?.hasOriginError === true) {
         throw new Error(`Origin error page detected while waiting for expression: ${expression}`);
       }
@@ -161,7 +180,9 @@ export class MainPageService {
       await new Promise((resolve) => setTimeout(resolve, this.configuration.mainPageExpressionPollIntervalMs));
     }
 
-    throw new Error(`Timeout waiting for expression: ${expression}`);
+    throw new Error(
+      `Timeout waiting for expression: ${expression}. Last URL="${lastCurrentUrl}", title="${lastTitle}".`
+    );
   }
 
   private async evaluateOrThrow(client: CdpClient, expression: string): Promise<void> {

@@ -4,5 +4,5 @@ metadata:
   name: tcp-services
   namespace: ingress-nginx
 data:
-  "5672": "realstate-fizgon/rabbitmq:5672"
-  "27017": "realstate-fizgon/mongodb:27017"
+  "5672": "real-state-fizgon/rabbitmq:5672"
+  "27017": "real-state-fizgon/mongodb:27017"

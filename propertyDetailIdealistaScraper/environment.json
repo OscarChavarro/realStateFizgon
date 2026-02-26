@@ -2,7 +2,13 @@
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "path": "/tmp/googleChromeIdealistaScraperDetail",
-    "cdpPort": 9223
+    "cdpPort": 9223,
+    "chromiumOptions": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu"
+    ]
   },
   "rabbitmq": {
     "host": "localhost",
@@ -15,7 +21,8 @@
     "chrome": {
       "cdpreadytimeout": 60000,
       "cdprequesttimeout": 2000,
-      "cdppollinterval": 500
+      "cdppollinterval": 500,
+      "browserlaunchretrywaitms": 3600000
     },
     "consumer": {
       "delayafterurlms": 1000,

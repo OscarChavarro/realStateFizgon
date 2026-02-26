@@ -1,7 +1,14 @@
 {
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "path": "/tmp/googleChromeIdealistaScraper"
+    "path": "/tmp/googleChromeIdealistaScraper",
+    "chromiumOptions": [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--window-size=1920,1080"
+    ]
   },
   "rabbitmq": {
     "host": "localhost",
@@ -10,7 +17,7 @@
   "scraper": {
     "home": {
       "url": "https://www.idealista.com/",
-	"mainSearchArea": "Madrid, Madrid"
+      "mainSearchArea": "Madrid, Madrid"
     }
   },
   "timeouts": {
@@ -20,7 +27,8 @@
       "cdppollinterval": 500,
       "originerrorreloadwait": 1000,
       "expressiontimeout": 30000,
-      "expressionpollinterval": 200
+      "expressionpollinterval": 200,
+      "browserlaunchretrywaitms": 3600000
     },
     "mainpage": {
       "expressiontimeout": 30000,
@@ -43,7 +51,7 @@
           "plainOptions": [
             "Obra nueva",
             "Viviendas",
-            "Habitación",
+            "Habitaci\u00f3n",
             "Oficinas",
             "Locales o naves",
             "Traspasos",
@@ -85,7 +93,7 @@
             "2.400",
             "2.700",
             "3.000",
-            "Sin límite"
+            "Sin l\u00edmite"
           ],
           "maxOptions": [
             "500",
@@ -113,7 +121,7 @@
             "2.400",
             "2.700",
             "3.000",
-            "Sin límite"
+            "Sin l\u00edmite"
           ],
           "selectedMin": "1.400",
           "selectedMax": "1.800"
@@ -133,48 +141,48 @@
       {
         "size": {
           "minOptions": [
-            "40 m²",
-            "60 m²",
-            "80 m²",
-            "100 m²",
-            "120 m²",
-            "140 m²",
-            "160 m²",
-            "180 m²",
-            "200 m²",
-            "250 m²",
-            "300 m²",
-            "350 m²",
-            "400 m²",
-            "450 m²",
-            "500 m²",
-            "600 m²",
-            "700 m²",
-            "800 m²",
-            "900 m²",
-            "Sin límite"
+            "40 m\u00b2",
+            "60 m\u00b2",
+            "80 m\u00b2",
+            "100 m\u00b2",
+            "120 m\u00b2",
+            "140 m\u00b2",
+            "160 m\u00b2",
+            "180 m\u00b2",
+            "200 m\u00b2",
+            "250 m\u00b2",
+            "300 m\u00b2",
+            "350 m\u00b2",
+            "400 m\u00b2",
+            "450 m\u00b2",
+            "500 m\u00b2",
+            "600 m\u00b2",
+            "700 m\u00b2",
+            "800 m\u00b2",
+            "900 m\u00b2",
+            "Sin l\u00edmite"
           ],
           "maxOptions": [
-            "40 m²",
-            "60 m²",
-            "80 m²",
-            "100 m²",
-            "120 m²",
-            "140 m²",
-            "160 m²",
-            "180 m²",
-            "200 m²",
-            "250 m²",
-            "300 m²",
-            "350 m²",
-            "400 m²",
-            "450 m²",
-            "500 m²",
-            "600 m²",
-            "700 m²",
-            "800 m²",
-            "900 m²",
-            "Sin límite"
+            "40 m\u00b2",
+            "60 m\u00b2",
+            "80 m\u00b2",
+            "100 m\u00b2",
+            "120 m\u00b2",
+            "140 m\u00b2",
+            "160 m\u00b2",
+            "180 m\u00b2",
+            "200 m\u00b2",
+            "250 m\u00b2",
+            "300 m\u00b2",
+            "350 m\u00b2",
+            "400 m\u00b2",
+            "450 m\u00b2",
+            "500 m\u00b2",
+            "600 m\u00b2",
+            "700 m\u00b2",
+            "800 m\u00b2",
+            "900 m\u00b2",
+            "Sin l\u00edmite"
           ],
           "selectedMin": null,
           "selectedMax": null
@@ -183,15 +191,15 @@
       {
         "housingType": {
           "plainOptions": [
-            "Pisos, áticos y dúplex",
+            "Pisos, \u00e1ticos y d\u00faplex",
             "Pisos",
-            "Áticos",
-            "Dúplex",
+            "\u00c1ticos",
+            "D\u00faplex",
             "Casas y chalets",
             "Independientes",
             "Pareados",
             "Adosados",
-            "Casas rústicas"
+            "Casas r\u00fasticas"
           ],
           "selectedPlainOptions": [
             "Pisos"
@@ -213,11 +221,11 @@
         "equipment": {
           "plainOptions": [
             "Indiferente",
-            "Sólo cocina equipada",
+            "S\u00f3lo cocina equipada",
             "Amueblado"
           ],
           "selectedPlainOptions": [
-            "Sólo cocina equipada"
+            "S\u00f3lo cocina equipada"
           ]
         }
       },
@@ -228,9 +236,12 @@
             "1",
             "2",
             "3",
-            "4 habitaciones o más"
+            "4 habitaciones o m\u00e1s"
           ],
-          "selectedPlainOptions": ["2", "3"]
+          "selectedPlainOptions": [
+            "2",
+            "3"
+          ]
         }
       },
       {
@@ -238,7 +249,7 @@
           "plainOptions": [
             "1",
             "2",
-            "3 baños o más"
+            "3 ba\u00f1os o m\u00e1s"
           ],
           "selectedPlainOptions": []
         }
@@ -263,24 +274,27 @@
             "Aire acondicionado",
             "Armarios empotrados",
             "Ascensor",
-            "Balcón y terraza",
-            "Balcón",
+            "Balc\u00f3n y terraza",
+            "Balc\u00f3n",
             "Terraza",
             "Exterior",
             "Garaje",
-            "Jardín",
+            "Jard\u00edn",
             "Piscina",
             "Trastero",
             "Vivienda accesible",
             "Vivienda de lujo"
           ],
-          "selectedPlainOptions": ["Aire acondicionado", "Trastero"]
+          "selectedPlainOptions": [
+            "Aire acondicionado",
+            "Trastero"
+          ]
         }
       },
       {
         "floor": {
           "plainOptions": [
-            "Última planta",
+            "\u00daltima planta",
             "Plantas intermedias",
             "Bajos"
           ],
@@ -318,9 +332,9 @@
         "publicationDate": {
           "plainOptions": [
             "Indiferente",
-            "Últimas 24 horas",
-            "La última semana",
-            "El último mes"
+            "\u00daltimas 24 horas",
+            "La \u00faltima semana",
+            "El \u00faltimo mes"
           ],
           "selectedPlainOptions": []
         }

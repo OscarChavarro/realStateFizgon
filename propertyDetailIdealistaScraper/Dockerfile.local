@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
+    xauth \
     xdotool \
     x11-utils \
     x11vnc \
@@ -37,6 +38,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     htop \
     dumb-init \
+    chromium \
+    chromium-sandbox \
     && (apt-get install -y --no-install-recommends mwm || true) \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g mongosh
@@ -64,6 +67,14 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY environment.json ./environment.json
 COPY secrets-example.json ./secrets-example.json
+COPY start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
 RUN sed -i 's#/Applications/Google Chrome.app/Contents/MacOS/Google Chrome#/usr/local/bin/browser-cdp#g' environment.json
+RUN chmod +x /usr/local/bin/start-with-xvfb.sh \
+    && useradd -m -s /bin/bash scraper \
+    && echo 'scraper:password' | chpasswd \
+    && mkdir -p /app/output/logs /app/output/.vnc \
+    && chown -R scraper:scraper /app /home/scraper
 
-CMD ["dumb-init", "node", "dist/main.js"]
+USER scraper
+
+CMD ["dumb-init", "/usr/local/bin/start-with-xvfb.sh"]

@@ -2,7 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: real-state-http-ingress
-  namespace: realstate-fizgon
+  namespace: real-state-fizgon
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "32m"
 spec:

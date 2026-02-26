@@ -1,10 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import * as amqp from 'amqplib';
+import { appendFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { Configuration } from '../../config/configuration';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
+  private readonly fallbackFilePath = join(process.cwd(), 'output', 'audit', 'pending-property-urls.ndjson');
   private connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
   private channel: amqp.Channel | null = null;
 
@@ -15,12 +18,19 @@ export class RabbitMqService implements OnModuleDestroy {
       return;
     }
 
-    const channel = await this.getChannel();
-    for (const url of urls) {
-      channel.sendToQueue(this.configuration.rabbitMqQueue, Buffer.from(url), { persistent: true });
-    }
+    try {
+      const channel = await this.getChannel();
+      for (const url of urls) {
+        channel.sendToQueue(this.configuration.rabbitMqQueue, Buffer.from(url), { persistent: true });
+      }
 
-    this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
+      this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`RabbitMQ publish failed. URLs will be persisted locally for audit/retry. Error: ${message}`);
+      this.resetConnection();
+      this.persistUrlsLocally(urls, message);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -54,5 +64,27 @@ export class RabbitMqService implements OnModuleDestroy {
     await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
     this.channel = channel;
     return channel;
+  }
+
+  private persistUrlsLocally(urls: string[], reason: string): void {
+    mkdirSync(join(process.cwd(), 'output', 'audit'), { recursive: true });
+    const timestamp = new Date().toISOString();
+
+    for (const url of urls) {
+      appendFileSync(
+        this.fallbackFilePath,
+        `${JSON.stringify({ timestamp, url, reason })}\n`,
+        'utf-8'
+      );
+    }
+
+    this.logger.warn(
+      `Stored ${urls.length} URLs in local audit file: ${this.fallbackFilePath}`
+    );
+  }
+
+  private resetConnection(): void {
+    this.channel = null;
+    this.connection = null;
   }
 }

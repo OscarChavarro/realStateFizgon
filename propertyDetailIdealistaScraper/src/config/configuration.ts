@@ -7,6 +7,7 @@ type Environment = {
     binary: string;
     path: string;
     cdpPort: number;
+    chromiumOptions?: string[];
   };
   rabbitmq: {
     host: string;
@@ -20,6 +21,7 @@ type Environment = {
       cdpreadytimeout: number;
       cdprequesttimeout: number;
       cdppollinterval: number;
+      browserlaunchretrywaitms?: number;
     };
     consumer: {
       delayafterurlms: number;
@@ -85,6 +87,10 @@ export class Configuration {
     return this.environment.chrome.cdpPort ?? 9223;
   }
 
+  get chromiumOptions(): string[] {
+    return this.environment.chrome.chromiumOptions ?? [];
+  }
+
   get chromeCdpReadyTimeoutMs(): number {
     return this.environment.timeouts?.chrome?.cdpreadytimeout ?? 60000;
   }
@@ -95,6 +101,10 @@ export class Configuration {
 
   get chromeCdpPollIntervalMs(): number {
     return this.environment.timeouts?.chrome?.cdppollinterval ?? 500;
+  }
+
+  get chromeBrowserLaunchRetryWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.chrome?.browserlaunchretrywaitms ?? 3600000);
   }
 
   get delayAfterUrlMs(): number {

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { spawn, ChildProcess } from 'node:child_process';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { spawn, spawnSync, ChildProcess } from 'node:child_process';
+import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
@@ -128,38 +128,96 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private async launchChrome(): Promise<void> {
     const logsDir = join(process.cwd(), 'output', 'logs');
     mkdirSync(logsDir, { recursive: true });
-    this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
-    this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+    const browserBinary = this.resolveBrowserBinary();
 
-    this.chromeProcess = spawn(
-      this.configuration.chromeBinary,
-      [
-        `--remote-debugging-port=${this.configuration.chromeCdpPort}`,
-        `--user-data-dir=${this.configuration.chromePath}`,
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--new-window',
-        'about:blank'
-      ],
-      {
-        stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+    while (!this.shuttingDown) {
+      this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
+      this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+
+      try {
+        this.chromeProcess = spawn(
+          browserBinary,
+          [
+            `--remote-debugging-port=${this.configuration.chromeCdpPort}`,
+            `--user-data-dir=${this.configuration.chromePath}`,
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--new-window',
+            ...this.configuration.chromiumOptions,
+            'about:blank'
+          ],
+          {
+            stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+          }
+        );
+
+        await new Promise<void>((resolve, reject) => {
+          this.chromeProcess?.once('spawn', () => resolve());
+          this.chromeProcess?.once('error', (error) => reject(error));
+        });
+      } catch (error) {
+        this.closeChromeLogFds();
+        if (this.isBrowserBinaryMissingError(error)) {
+          const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+          this.logger.error(
+            `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
+          );
+          await this.sleep(waitMs);
+          continue;
+        }
+
+        throw error;
       }
+
+      this.chromeProcess.once('exit', (code, signal) => {
+        this.closeChromeLogFds();
+        this.handleUnexpectedChromeExit(code, signal);
+      });
+
+      await this.waitForCdp();
+      return;
+    }
+
+    throw new Error('Chrome launch aborted because the service is shutting down.');
+  }
+
+  private resolveBrowserBinary(): string {
+    const configuredBinary = this.configuration.chromeBinary;
+    const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
+
+    if (!isLinuxArm64) {
+      return configuredBinary;
+    }
+
+    const chromiumCandidates = [
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      'chromium',
+      'chromium-browser'
+    ];
+
+    for (const candidate of chromiumCandidates) {
+      if (candidate.startsWith('/')) {
+        try {
+          accessSync(candidate);
+          this.logger.log(`Detected linux/arm64. Using Chromium binary at "${candidate}".`);
+          return candidate;
+        } catch {
+          continue;
+        }
+      }
+
+      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
+      if (probe.status === 0) {
+        this.logger.log(`Detected linux/arm64. Using Chromium binary "${candidate}" from PATH.`);
+        return candidate;
+      }
+    }
+
+    this.logger.warn(
+      `Detected linux/arm64 but no Chromium binary was found. Falling back to configured binary "${configuredBinary}".`
     );
-
-    this.chromeProcess.once('exit', (code, signal) => {
-      if (this.chromeStdoutFd !== undefined) {
-        closeSync(this.chromeStdoutFd);
-        this.chromeStdoutFd = undefined;
-      }
-      if (this.chromeStderrFd !== undefined) {
-        closeSync(this.chromeStderrFd);
-        this.chromeStderrFd = undefined;
-      }
-
-      this.handleUnexpectedChromeExit(code, signal);
-    });
-
-    await this.waitForCdp();
+    return configuredBinary;
   }
 
   private async openCdpClient(): Promise<CdpClient> {
@@ -220,6 +278,27 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
   private async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private isBrowserBinaryMissingError(error: unknown): boolean {
+    const errnoError = error as NodeJS.ErrnoException | undefined;
+    if (errnoError?.code === 'ENOENT') {
+      return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return message.includes('ENOENT');
+  }
+
+  private closeChromeLogFds(): void {
+    if (this.chromeStdoutFd !== undefined) {
+      closeSync(this.chromeStdoutFd);
+      this.chromeStdoutFd = undefined;
+    }
+    if (this.chromeStderrFd !== undefined) {
+      closeSync(this.chromeStderrFd);
+      this.chromeStderrFd = undefined;
+    }
   }
 
   private async ensureCdpClient(): Promise<void> {

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { spawn, ChildProcess } from 'node:child_process';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
+import { spawn, spawnSync, ChildProcess } from 'node:child_process';
+import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
@@ -11,12 +11,14 @@ import { PropertyListingPaginationService } from './pagination/property-listing-
 @Injectable()
 export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromeService.name);
+  private readonly browserFailureHoldMs = 60 * 60 * 1000;
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
   private shuttingDown = false;
+  private debugHoldInProgress = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -26,8 +28,14 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.launchChrome();
-    await this.openHomePage();
+    try {
+      await this.launchChrome();
+      await this.openHomePage();
+    } catch (error) {
+      await this.holdForDebug(
+        `Browser startup flow failed. ${this.errorToMessage(error)}`
+      );
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -40,35 +48,93 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private async launchChrome(): Promise<void> {
     const logsDir = join(process.cwd(), 'output', 'logs');
     mkdirSync(logsDir, { recursive: true });
-    this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
-    this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+    const browserBinary = this.resolveBrowserBinary();
 
-    this.chromeProcess = spawn(this.configuration.chromeBinary, [
-      `--remote-debugging-port=${this.cdpPort}`,
-      `--user-data-dir=${this.configuration.chromePath}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--new-window',
-      this.configuration.scraperHomeUrl
-    ], {
-      stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
-    });
-    this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
+    while (!this.shuttingDown) {
+      this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
+      this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
 
-    this.chromeProcess.once('exit', (code, signal) => {
-      if (this.chromeStdoutFd !== undefined) {
-        closeSync(this.chromeStdoutFd);
-        this.chromeStdoutFd = undefined;
+      try {
+        this.chromeProcess = spawn(browserBinary, [
+          `--remote-debugging-port=${this.cdpPort}`,
+          `--user-data-dir=${this.configuration.chromePath}`,
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--new-window',
+          ...this.configuration.chromiumOptions,
+          this.configuration.scraperHomeUrl
+        ], {
+          stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+        });
+
+        await new Promise<void>((resolve, reject) => {
+          this.chromeProcess?.once('spawn', () => resolve());
+          this.chromeProcess?.once('error', (error) => reject(error));
+        });
+      } catch (error) {
+        this.closeChromeLogFds();
+        if (this.isBrowserBinaryMissingError(error)) {
+          const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+          this.logger.error(
+            `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
+          );
+          await this.sleep(waitMs);
+          continue;
+        }
+
+        throw error;
       }
-      if (this.chromeStderrFd !== undefined) {
-        closeSync(this.chromeStderrFd);
-        this.chromeStderrFd = undefined;
+
+      this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
+      this.chromeProcess.once('exit', (code, signal) => {
+        this.closeChromeLogFds();
+        void this.handleUnexpectedChromeExit(code, signal);
+      });
+
+      await this.waitForCdp();
+      return;
+    }
+
+    throw new Error('Chrome launch aborted because the service is shutting down.');
+  }
+
+  private resolveBrowserBinary(): string {
+    const configuredBinary = this.configuration.chromeBinary;
+    const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
+
+    if (!isLinuxArm64) {
+      return configuredBinary;
+    }
+
+    const chromiumCandidates = [
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      'chromium',
+      'chromium-browser'
+    ];
+
+    for (const candidate of chromiumCandidates) {
+      if (candidate.startsWith('/')) {
+        try {
+          accessSync(candidate);
+          this.logger.log(`Detected linux/arm64. Using Chromium binary at "${candidate}".`);
+          return candidate;
+        } catch {
+          continue;
+        }
       }
 
-      void this.handleUnexpectedChromeExit(code, signal);
-    });
+      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
+      if (probe.status === 0) {
+        this.logger.log(`Detected linux/arm64. Using Chromium binary "${candidate}" from PATH.`);
+        return candidate;
+      }
+    }
 
-    await this.waitForCdp();
+    this.logger.warn(
+      `Detected linux/arm64 but no Chromium binary was found. Falling back to configured binary "${configuredBinary}".`
+    );
+    return configuredBinary;
   }
 
   private async waitForCdp(): Promise<void> {
@@ -260,6 +326,27 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private isBrowserBinaryMissingError(error: unknown): boolean {
+    const errnoError = error as NodeJS.ErrnoException | undefined;
+    if (errnoError?.code === 'ENOENT') {
+      return true;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return message.includes('ENOENT');
+  }
+
+  private closeChromeLogFds(): void {
+    if (this.chromeStdoutFd !== undefined) {
+      closeSync(this.chromeStdoutFd);
+      this.chromeStdoutFd = undefined;
+    }
+    if (this.chromeStderrFd !== undefined) {
+      closeSync(this.chromeStderrFd);
+      this.chromeStderrFd = undefined;
+    }
+  }
+
   private async waitForExpression(
     Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
     expression: string
@@ -298,8 +385,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.error('CDP connection to the browser was lost; the microservice will shut down.');
-    process.exit(1);
+    await this.holdForDebug('CDP connection to the browser was lost.');
   }
 
   private async isCdpReachableAfterExit(): Promise<boolean> {
@@ -326,5 +412,39 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     }
 
     return false;
+  }
+
+  private async holdForDebug(reason: string): Promise<void> {
+    if (this.shuttingDown) {
+      return;
+    }
+
+    if (this.debugHoldInProgress) {
+      this.logger.warn('Debug hold is already active; keeping current hold window.');
+      return;
+    }
+
+    this.debugHoldInProgress = true;
+    const waitSeconds = Math.floor(this.browserFailureHoldMs / 1000);
+
+    this.logger.error(`Browser failure detected: ${reason}`);
+    this.logger.error(
+      `Keeping microservice alive for ${waitSeconds} seconds so the pod can be inspected.`
+    );
+
+    try {
+      await this.sleep(this.browserFailureHoldMs);
+    } finally {
+      this.debugHoldInProgress = false;
+      this.logger.warn('Debug hold finished. Browser automation is still stopped.');
+    }
+  }
+
+  private errorToMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return String(error);
   }
 }

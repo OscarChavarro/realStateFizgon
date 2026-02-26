@@ -6,6 +6,7 @@ type Environment = {
   chrome: {
     binary: string;
     path: string;
+    chromiumOptions?: string[];
   };
   rabbitmq: {
     host: string;
@@ -19,6 +20,7 @@ type Environment = {
       originerrorreloadwait: number;
       expressiontimeout: number;
       expressionpollinterval: number;
+      browserlaunchretrywaitms?: number;
     };
     mainpage: {
       expressiontimeout: number;
@@ -80,6 +82,10 @@ export class Configuration {
     return this.environment.chrome.path;
   }
 
+  get chromiumOptions(): string[] {
+    return this.environment.chrome.chromiumOptions ?? [];
+  }
+
   get rabbitMqHost(): string {
     return this.secrets.rabbitmq?.host ?? this.environment.rabbitmq?.host ?? 'localhost';
   }
@@ -126,6 +132,10 @@ export class Configuration {
 
   get chromeExpressionPollIntervalMs(): number {
     return this.environment.timeouts?.chrome?.expressionpollinterval ?? 200;
+  }
+
+  get chromeBrowserLaunchRetryWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.chrome?.browserlaunchretrywaitms ?? 3600000);
   }
 
   get mainPageExpressionTimeoutMs(): number {

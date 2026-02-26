@@ -56,35 +56,43 @@ export class ImageDownloader {
     private readonly rabbitMqService: RabbitMqService
   ) {}
 
-  validateImageDownloadFolder(): void {
+  async validateImageDownloadFolder(): Promise<void> {
     const configuredFolder = this.configuration.imageDownloadFolder;
     const folderPath = resolve(process.cwd(), configuredFolder);
     const incomingFolderPath = join(folderPath, '_incoming');
     const leftoversFolderPath = join(folderPath, '_leftovers');
+    const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+    const waitSeconds = Math.floor(waitMs / 1000);
 
-    try {
-      if (!existsSync(folderPath)) {
-        mkdirSync(folderPath, { recursive: true });
-      }
-      if (!existsSync(incomingFolderPath)) {
-        mkdirSync(incomingFolderPath, { recursive: true });
-      }
-      if (!existsSync(leftoversFolderPath)) {
-        mkdirSync(leftoversFolderPath, { recursive: true });
-      }
+    while (true) {
+      try {
+        if (!existsSync(folderPath)) {
+          mkdirSync(folderPath, { recursive: true });
+        }
+        if (!existsSync(incomingFolderPath)) {
+          mkdirSync(incomingFolderPath, { recursive: true });
+        }
+        if (!existsSync(leftoversFolderPath)) {
+          mkdirSync(leftoversFolderPath, { recursive: true });
+        }
 
-      accessSync(folderPath, constants.R_OK | constants.W_OK);
-      accessSync(incomingFolderPath, constants.R_OK | constants.W_OK);
-      accessSync(leftoversFolderPath, constants.R_OK | constants.W_OK);
+        accessSync(folderPath, constants.R_OK | constants.W_OK);
+        accessSync(incomingFolderPath, constants.R_OK | constants.W_OK);
+        accessSync(leftoversFolderPath, constants.R_OK | constants.W_OK);
 
-      const probeFile = join(incomingFolderPath, `.write-probe-${Date.now()}.tmp`);
-      writeFileSync(probeFile, 'ok');
-      unlinkSync(probeFile);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Image download folder validation failed: ${message}`);
-      this.logger.error(`Check permissions, free disk space, and path configured in environment.json: "${configuredFolder}".`);
-      process.exit(1);
+        const probeFile = join(incomingFolderPath, `.write-probe-${Date.now()}.tmp`);
+        writeFileSync(probeFile, 'ok');
+        unlinkSync(probeFile);
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Image download folder validation failed: ${message}`);
+        this.logger.error(`Check permissions, free disk space, and path configured in environment.json: "${configuredFolder}".`);
+        this.logger.error(
+          `NFS/shared-folder access is failing. Keeping pod alive for ${waitSeconds} seconds before retrying validation.`
+        );
+        await this.sleep(waitMs);
+      }
     }
   }
 
@@ -448,6 +456,10 @@ export class ImageDownloader {
     } catch {
       return false;
     }
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private getDownloadFolderPath(): string {

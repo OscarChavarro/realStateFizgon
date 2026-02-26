@@ -9,9 +9,11 @@ spec:
   accessModes:
   - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+  - nfsvers=4.1
   nfs:
-    server: NFS_SERVER_IP_OR_DNS
-    path: /exports/real-state-fizgon-images
+    server: ${NFS_SERVER}
+    path: ${NFS_SHARED_FOLDER}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -42,7 +44,12 @@ spec:
       labels:
         app: property-detail-idealista-scraper
     spec:
-      hostname: roperty-detail-idealista-scraper
+      hostname: property-detail-idealista-scraper
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        runAsNonRoot: true
       containers:
       - name: property-detail-idealista-scraper
         image: property-detail-idealista-scraper:local

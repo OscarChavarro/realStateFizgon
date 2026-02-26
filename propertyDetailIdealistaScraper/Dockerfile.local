@@ -17,29 +17,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb \
-    xauth \
-    xdotool \
-    x11-utils \
-    x11vnc \
-    libdbus-1-3 \
-    dbus-x11 \
-    libsixel-bin \
-    xterm \
-    xosview \
-    nfs-common \
-    iputils-ping \
-    wget \
-    net-tools \
-    emacs-nox \
-    make \
-    gcc \
-    g++ \
-    python3 \
-    htop \
-    dumb-init \
     chromium \
     chromium-sandbox \
+    dbus-x11 \
+    dumb-init \
+    emacs-nox \
+    g++ \
+    gcc \
+    htop \
+    iputils-ping \
+    libdbus-1-3 \
+    libsixel-bin \
+    make \
+    nfs-common \
+    net-tools \
+    python3 \
+    telnet \
+    wget \
+    x11-utils \
+    x11vnc \
+    xauth \
+    xdotool \
+    xosview \
+    xterm \
+    xvfb \
     && (apt-get install -y --no-install-recommends mwm || true) \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g mongosh
@@ -70,7 +71,8 @@ COPY secrets-example.json ./secrets-example.json
 COPY start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
 RUN sed -i 's#/Applications/Google Chrome.app/Contents/MacOS/Google Chrome#/usr/local/bin/browser-cdp#g' environment.json
 RUN chmod +x /usr/local/bin/start-with-xvfb.sh \
-    && useradd -m -s /bin/bash scraper \
+    && groupadd -g 1001 scraper \
+    && useradd -u 1001 -g 1001 -m -s /bin/bash scraper \
     && echo 'scraper:password' | chpasswd \
     && mkdir -p /app/output/logs /app/output/.vnc \
     && chown -R scraper:scraper /app /home/scraper

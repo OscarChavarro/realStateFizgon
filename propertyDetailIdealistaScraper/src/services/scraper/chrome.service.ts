@@ -48,8 +48,9 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.imageDownloader.validateImageDownloadFolder();
+    await this.imageDownloader.validateImageDownloadFolder();
     await this.mongoDatabaseService.validateConnectionOrExit();
+    await this.sleep(5 * 60 * 1000);
     await this.launchChrome();
     this.cdpClient = await this.openCdpClient();
 

@@ -17,28 +17,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb \
-    xauth \
-    xdotool \
-    x11-utils \
-    x11vnc \
-    libdbus-1-3 \
-    dbus-x11 \
-    libsixel-bin \
-    xterm \
-    xosview \
-    iputils-ping \
-    wget \
-    net-tools \
-    emacs-nox \
-    make \
-    gcc \
-    g++ \
-    python3 \
-    htop \
-    dumb-init \
     chromium \
     chromium-sandbox \
+    dbus-x11 \
+    dumb-init \
+    emacs-nox \
+    g++ \
+    gcc \
+    htop \
+    iputils-ping \
+    libdbus-1-3 \
+    libsixel-bin \
+    make \
+    net-tools \
+    python3 \
+    telnet \
+    wget \
+    x11-utils \
+    x11vnc \
+    xauth \
+    xdotool \
+    xosview \
+    xterm \
+    xvfb \
     && (apt-get install -y --no-install-recommends mwm || true) \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g mongosh

@@ -75,18 +75,27 @@ export class MongoDatabaseService implements OnModuleDestroy {
   }
 
   async validateConnectionOrExit(): Promise<void> {
-    try {
-      await this.connect();
-      const admin = this.mongoClient?.db('admin');
-      if (!admin) {
-        throw new Error('MongoDB admin database handle is not available.');
+    const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+    const waitSeconds = Math.floor(waitMs / 1000);
+
+    while (true) {
+      try {
+        await this.connect();
+        const admin = this.mongoClient?.db('admin');
+        if (!admin) {
+          throw new Error('MongoDB admin database handle is not available.');
+        }
+        await admin.command({ ping: 1 });
+        await this.ensurePropertiesCollectionAndUrlIndex();
+        return;
+      } catch {
+        this.logger.error('MongoDB connection/authentication failed.');
+        this.logger.error('Check propertyDetailScraper/secrets.json (mongodb credentials/authSource) and MongoDB network connectivity.');
+        this.logger.error(
+          `MongoDB validation failed. Keeping pod alive for ${waitSeconds} seconds before retrying so it can be debugged in Kubernetes.`
+        );
+        await this.sleep(waitMs);
       }
-      await admin.command({ ping: 1 });
-      await this.ensurePropertiesCollectionAndUrlIndex();
-    } catch {
-      this.logger.error('MongoDB connection/authentication failed.');
-      this.logger.error('Check propertyDetailScraper/secrets.json (mongodb credentials/authSource) and MongoDB network connectivity.');
-      process.exit(1);
     }
   }
 
@@ -139,5 +148,9 @@ export class MongoDatabaseService implements OnModuleDestroy {
       ...(existingWithoutId as Property & Document),
       ...incoming
     };
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

@@ -6,6 +6,7 @@ import { PropertyMainFeatures } from '../../../model/property/property-main-feat
 import { Property } from '../../../model/property/property.model';
 import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
 import { ImageDownloader } from '../../imagedownload/image-downloader';
+import { CookieAprovalDialogScraperService } from './cookie-aproval-dialog-scraper.service';
 
 type CdpClient = {
   Page: {
@@ -56,7 +57,8 @@ export class PropertyDetailPageService {
   constructor(
     private readonly configuration: Configuration,
     private readonly mongoDatabaseService: MongoDatabaseService,
-    private readonly imageDownloader: ImageDownloader
+    private readonly imageDownloader: ImageDownloader,
+    private readonly cookieAprovalDialogScraperService: CookieAprovalDialogScraperService
   ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
@@ -66,6 +68,7 @@ export class PropertyDetailPageService {
     }
     await this.waitForUrlAndDomComplete(client.Runtime, url);
     await this.throwIfOriginErrorPage(client.Runtime, url);
+    await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
     if (await this.isDeactivatedDetailPage(client.Runtime)) {
       this.logger.warn(`Property URL is no longer available (deactivated-detail): ${url}`);
       await this.mongoDatabaseService.saveClosedProperty(url);

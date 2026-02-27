@@ -33,6 +33,7 @@ type Environment = {
       imagesloadwaitms?: number;
       morephotosclickwaitms?: number;
       premediaexpansionwaitms?: number;
+      cookieaprovaldialogwaitms?: number;
     };
   };
 };
@@ -137,6 +138,10 @@ export class Configuration {
 
   get propertyDetailPagePreMediaExpansionWaitMs(): number {
     return this.environment.timeouts?.propertydetailpage?.premediaexpansionwaitms ?? 1000;
+  }
+
+  get cookieAprovalDialogWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.cookieaprovaldialogwaitms ?? 2000;
   }
 
   get rabbitMqHost(): string {

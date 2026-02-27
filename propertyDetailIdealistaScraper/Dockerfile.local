@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-sandbox \
     dbus-x11 \
+    dnsutils \
     dumb-init \
     emacs-nox \
     g++ \

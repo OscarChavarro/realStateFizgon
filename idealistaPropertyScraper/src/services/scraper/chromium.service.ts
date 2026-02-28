@@ -1,11 +1,10 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { spawn, spawnSync, ChildProcess } from 'node:child_process';
-import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
-import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { ProxyService } from '@real-state-fizgon/proxy';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { Configuration } from '../../config/configuration';
+import { ChromiumPageSyncService } from './chromium-page-sync.service';
+import { ChromiumProcessLiveCicleService } from './chromium-process-live-cicle.service';
 import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
 import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
@@ -14,14 +13,11 @@ import { ImageDownloader } from '../imagedownload/image-downloader';
 import { PropertyListPageService } from './property/property-list-page.service';
 
 @Injectable()
-export class ChromeService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(ChromeService.name);
+export class ChromiumService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ChromiumService.name);
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
   private readonly proxyService = new ProxyService();
   private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
-  private chromeProcess?: ChildProcess;
-  private chromeStdoutFd?: number;
-  private chromeStderrFd?: number;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
   private shuttingDown = false;
@@ -29,6 +25,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly configuration: Configuration,
+    private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    private readonly chromiumProcessLiveCicleService: ChromiumProcessLiveCicleService,
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
@@ -59,101 +57,18 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.shuttingDown = true;
-    if (this.chromeProcess && !this.chromeProcess.killed) {
-      this.chromeProcess.kill('SIGTERM');
-    }
+    this.chromiumProcessLiveCicleService.stopChromiumProcess();
   }
 
   private async launchChrome(): Promise<void> {
-    const logsDir = join(process.cwd(), 'output', 'logs');
-    mkdirSync(logsDir, { recursive: true });
-    const browserBinary = this.resolveBrowserBinary();
-
-    while (!this.shuttingDown) {
-      this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
-      this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
-
-      try {
-        this.chromeProcess = spawn(browserBinary, [
-          `--remote-debugging-port=${this.cdpPort}`,
-          `--user-data-dir=${this.configuration.chromePath}`,
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--new-window',
-          ...this.configuration.chromiumOptions,
-          this.configuration.scraperHomeUrl
-        ], {
-          stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
-        });
-
-        await new Promise<void>((resolve, reject) => {
-          this.chromeProcess?.once('spawn', () => resolve());
-          this.chromeProcess?.once('error', (error) => reject(error));
-        });
-      } catch (error) {
-        this.closeChromeLogFds();
-        if (this.isBrowserBinaryMissingError(error)) {
-          const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
-          this.logger.error(
-            `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
-          );
-          await this.sleep(waitMs);
-          continue;
-        }
-
-        throw error;
-      }
-
-      this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
-      this.chromeProcess.once('exit', (code, signal) => {
-        this.closeChromeLogFds();
+    await this.chromiumProcessLiveCicleService.launchChromiumProcess(
+      this.cdpPort,
+      (code, signal) => {
         void this.handleUnexpectedChromeExit(code, signal);
-      });
-
-      await this.waitForCdp();
-      return;
-    }
-
-    throw new Error('Chrome launch aborted because the service is shutting down.');
-  }
-
-  private resolveBrowserBinary(): string {
-    const configuredBinary = this.configuration.chromeBinary;
-    const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
-
-    if (!isLinuxArm64) {
-      return configuredBinary;
-    }
-
-    const chromiumCandidates = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      'chromium',
-      'chromium-browser'
-    ];
-
-    for (const candidate of chromiumCandidates) {
-      if (candidate.startsWith('/')) {
-        try {
-          accessSync(candidate);
-          this.logger.log(`Detected linux/arm64. Using Chromium binary at "${candidate}".`);
-          return candidate;
-        } catch {
-          continue;
-        }
-      }
-
-      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
-      if (probe.status === 0) {
-        this.logger.log(`Detected linux/arm64. Using Chromium binary "${candidate}" from PATH.`);
-        return candidate;
-      }
-    }
-
-    this.logger.warn(
-      `Detected linux/arm64 but no Chromium binary was found. Falling back to configured binary "${configuredBinary}".`
+      },
+      () => this.shuttingDown
     );
-    return configuredBinary;
+    await this.waitForCdp();
   }
 
   private async waitForCdp(): Promise<void> {
@@ -179,7 +94,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         clearTimeout(timer);
       }
 
-      await new Promise((resolve) => setTimeout(resolve, this.configuration.chromeCdpPollIntervalMs));
+      await this.chromiumPageSyncService.sleep(this.configuration.chromeCdpPollIntervalMs);
     }
 
     throw new Error(
@@ -218,7 +133,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Current page URL before automation: ${currentUrl}`);
       if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
         await Page.navigate({ url: this.configuration.scraperHomeUrl });
-        await this.waitForPageLoad(Page);
+        await this.chromiumPageSyncService.waitForPageLoad(Page);
         await this.captchaDetectorService.panicIfCaptchaDetected({
           runtime: Runtime,
           logger: this.logger,
@@ -232,9 +147,11 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         logger: this.logger,
         context: 'listing search results page load'
       });
-      await this.waitForExpression(
+      await this.chromiumPageSyncService.waitForExpression(
         Runtime,
-        "Boolean(document.querySelector('#aside-filters'))"
+        "Boolean(document.querySelector('#aside-filters'))",
+        this.configuration.chromeExpressionTimeoutMs,
+        this.configuration.chromeExpressionPollIntervalMs
       );
       await this.filtersService.execute(client);
       await this.propertyListingPaginationService.execute(client);
@@ -267,7 +184,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         return preferredTarget as { id?: string; url?: string; type?: string };
       }
 
-      await this.sleep(pollIntervalMs);
+      await this.chromiumPageSyncService.sleep(pollIntervalMs);
     }
 
     return undefined;
@@ -283,9 +200,9 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       }
 
       this.logger.warn(`Detected origin error page (attempt ${attempt}/${maxRetries}). Reloading in 1 second.`);
-      await this.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
+      await this.chromiumPageSyncService.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
       await Page.reload({ ignoreCache: true });
-      await this.waitForPageLoad(Page);
+      await this.chromiumPageSyncService.waitForPageLoad(Page);
     }
 
     throw new Error('Origin error page persisted after automatic reload attempts.');
@@ -325,14 +242,14 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(
           `Main page flow failed (attempt ${attempt}/${maxAttempts}): ${message}. Reloading home and retrying.`
         );
-        await this.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
+        await this.chromiumPageSyncService.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
 
         if (isOriginErrorVisible) {
           await Page.reload({ ignoreCache: true });
         } else {
           await Page.navigate({ url: this.configuration.scraperHomeUrl });
         }
-        await this.waitForPageLoad(Page);
+        await this.chromiumPageSyncService.waitForPageLoad(Page);
       }
     }
   }
@@ -354,60 +271,6 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     });
 
     return evaluation.result?.value === true;
-  }
-
-  private async waitForPageLoad(Page: { loadEventFired(cb: () => void): void }): Promise<void> {
-    await new Promise<void>((resolve) => {
-      Page.loadEventFired(() => resolve());
-    });
-  }
-
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private isBrowserBinaryMissingError(error: unknown): boolean {
-    const errnoError = error as NodeJS.ErrnoException | undefined;
-    if (errnoError?.code === 'ENOENT') {
-      return true;
-    }
-
-    const message = error instanceof Error ? error.message : String(error);
-    return message.includes('ENOENT');
-  }
-
-  private closeChromeLogFds(): void {
-    if (this.chromeStdoutFd !== undefined) {
-      closeSync(this.chromeStdoutFd);
-      this.chromeStdoutFd = undefined;
-    }
-    if (this.chromeStderrFd !== undefined) {
-      closeSync(this.chromeStderrFd);
-      this.chromeStderrFd = undefined;
-    }
-  }
-
-  private async waitForExpression(
-    Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> },
-    expression: string
-  ): Promise<void> {
-    const timeout = this.configuration.chromeExpressionTimeoutMs;
-    const start = Date.now();
-
-    while (Date.now() - start < timeout) {
-      const evaluation = await Runtime.evaluate({
-        expression,
-        returnByValue: true
-      });
-
-      if (evaluation.result?.value === true) {
-        return;
-      }
-
-      await this.sleep(this.configuration.chromeExpressionPollIntervalMs);
-    }
-
-    throw new Error(`Timeout waiting for expression: ${expression}`);
   }
 
   private async handleUnexpectedChromeExit(code: number | null, signal: NodeJS.Signals | null): Promise<void> {
@@ -448,7 +311,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         clearTimeout(timer);
       }
 
-      await this.sleep(waitMs);
+      await this.chromiumPageSyncService.sleep(waitMs);
     }
 
     return false;
@@ -473,7 +336,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     );
 
     try {
-      await this.sleep(this.browserFailureHoldMs);
+      await this.chromiumPageSyncService.sleep(this.browserFailureHoldMs);
     } finally {
       this.debugHoldInProgress = false;
       this.logger.warn('Debug hold finished. Browser automation is still stopped.');

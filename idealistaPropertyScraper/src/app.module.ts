@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
-import { ChromeService } from './services/scraper/chrome.service';
+import { ChromiumPageSyncService } from './services/scraper/chromium-page-sync.service';
+import { ChromiumService } from './services/scraper/chromium.service';
+import { ChromiumProcessLiveCicleService } from './services/scraper/chromium-process-live-cicle.service';
 import { FilterLoaderDetectionService } from './services/scraper/filters/filter-loader-detection.service';
 import { FilterActionExecutorService } from './services/scraper/filters/filter-action-executor.service';
 import { FilterAvailableOptionExtractor } from './services/scraper/filters/filter-available-option-extractor.service';
@@ -36,6 +38,8 @@ import { ImageUrlRulesService } from './services/imagedownload/image-url-rules.s
   ],
   providers: [
     Configuration,
+    ChromiumPageSyncService,
+    ChromiumProcessLiveCicleService,
     MainPageService,
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractor,
@@ -61,7 +65,7 @@ import { ImageUrlRulesService } from './services/imagedownload/image-url-rules.s
     PropertyDetailPageService,
     PropertyListPageService,
     PropertyListingPaginationService,
-    ChromeService
+    ChromiumService
   ]
 })
 export class AppModule {}

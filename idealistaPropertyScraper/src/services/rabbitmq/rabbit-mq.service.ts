@@ -7,6 +7,7 @@ import { Configuration } from '../../config/configuration';
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
+  private static readonly OUTGOING_NOTIFICATION_MESSAGES_QUEUE = 'outgoing-notification-messages';
   private readonly fallbackFilePath = join(process.cwd(), 'output', 'audit', 'pending-property-urls.ndjson');
   private connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
   private channel: amqp.Channel | null = null;
@@ -31,6 +32,14 @@ export class RabbitMqService implements OnModuleDestroy {
       this.resetConnection();
       this.persistUrlsLocally(urls, message);
     }
+  }
+
+  async publishIdealistaUpdateNotification(url: string, title: string | null): Promise<void> {
+    await this.publishJsonToQueue(RabbitMqService.OUTGOING_NOTIFICATION_MESSAGES_QUEUE, {
+      url,
+      title,
+      type: 'IDEALISTA_UPDATE'
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -64,6 +73,16 @@ export class RabbitMqService implements OnModuleDestroy {
     await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
     this.channel = channel;
     return channel;
+  }
+
+  private async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
+    const channel = await this.getChannel();
+    await channel.assertQueue(queueName, { durable: true });
+    const body = Buffer.from(JSON.stringify(payload), 'utf-8');
+    channel.sendToQueue(queueName, body, {
+      persistent: true,
+      contentType: 'application/json'
+    });
   }
 
   private persistUrlsLocally(urls: string[], reason: string): void {

@@ -13,3 +13,7 @@ npm run start
 # Usage
 
 If desired, use an account.
+
+# Related docs
+
+- [Anti-scraper detection measures](../doc/antiScraperDetectionMeasures.md)

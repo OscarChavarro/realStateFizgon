@@ -9,6 +9,7 @@ import { Configuration } from '../../config/configuration';
 import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
 import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
+import { MongoDatabaseService } from '../mongodb/mongo-database.service';
 
 @Injectable()
 export class ChromeService implements OnModuleInit, OnModuleDestroy {
@@ -28,7 +29,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     private readonly configuration: Configuration,
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
-    private readonly propertyListingPaginationService: PropertyListingPaginationService
+    private readonly propertyListingPaginationService: PropertyListingPaginationService,
+    private readonly mongoDatabaseService: MongoDatabaseService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -40,6 +42,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         retryWaitMs: this.configuration.chromeBrowserLaunchRetryWaitMs,
         logger: this.logger
       });
+      await this.mongoDatabaseService.validateConnectionOrExit();
       await this.launchChrome();
       await this.openHomePage();
     } catch (error) {

@@ -44,7 +44,7 @@ export class PropertyListingPaginationService {
       const hasNext = await this.hasNextButton(client);
       if (!hasNext) {
         this.logger.log(`Pagination finished at page ${page}.`);
-        await this.propertyListPageService.processUrls(allUrls);
+        await this.propertyListPageService.processUrls(client, allUrls);
         return;
       }
 
@@ -52,7 +52,7 @@ export class PropertyListingPaginationService {
       const clicked = await this.clickNextButton(client);
       if (!clicked) {
         this.logger.warn('Next button exists but could not be clicked. Stopping pagination.');
-        await this.propertyListPageService.processUrls(allUrls);
+        await this.propertyListPageService.processUrls(client, allUrls);
         return;
       }
 

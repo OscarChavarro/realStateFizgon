@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { RabbitMqService } from '../../rabbitmq/rabbit-mq.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
+import { PropertyDetailPageService } from './property-detail-page.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -18,7 +19,12 @@ type CdpClient = {
 
 @Injectable()
 export class PropertyListPageService {
-  constructor(private readonly rabbitMqService: RabbitMqService) {}
+  private readonly logger = new Logger(PropertyListPageService.name);
+
+  constructor(
+    private readonly mongoDatabaseService: MongoDatabaseService,
+    private readonly propertyDetailPageService: PropertyDetailPageService
+  ) {}
 
   async getPropertyUrls(client: CdpClient): Promise<string[]> {
     const result = await client.Runtime.evaluate({
@@ -68,7 +74,16 @@ export class PropertyListPageService {
     return value.filter((item): item is string => typeof item === 'string');
   }
 
-  async processUrls(urls: string[]): Promise<void> {
-    await this.rabbitMqService.publishPropertyUrls(urls);
+  async processUrls(client: CdpClient, urls: string[]): Promise<void> {
+    for (const url of urls) {
+      const exists = await this.mongoDatabaseService.propertyExistsByUrl(url);
+      if (exists) {
+        this.logger.log(`URL already exists in MongoDB, skipping processing: ${url}`);
+        continue;
+      }
+
+      this.logger.log(`URL should be processed (not found in MongoDB): ${url}`);
+      await this.propertyDetailPageService.loadPropertyUrl(client, url);
+    }
   }
 }

@@ -7,8 +7,10 @@ import { FilterUpdateService } from './services/scraper/filters/filter-update.se
 import { FiltersService } from './services/scraper/filters/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
 import { PropertyListingPaginationService } from './services/scraper/pagination/property-listing-pagination.service';
+import { PropertyDetailPageService } from './services/scraper/property/property-detail-page.service';
 import { PropertyListPageService } from './services/scraper/property/property-list-page.service';
 import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
+import { MongoDatabaseService } from './services/mongodb/mongo-database.service';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
     FilterUpdateService,
     FiltersService,
     RabbitMqService,
+    MongoDatabaseService,
+    PropertyDetailPageService,
     PropertyListPageService,
     PropertyListingPaginationService,
     ChromeService

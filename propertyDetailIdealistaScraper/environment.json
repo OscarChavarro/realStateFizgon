@@ -14,6 +14,15 @@
     "host": "localhost",
     "port": 5672
   },
+  "scraper": {
+    "home": {
+      "url": "https://www.idealista.com/",
+      "mainSearchArea": "Madrid,Madrid"
+    },
+    "searchResults": {
+      "randomPaginationEveryProcessedUrls": 18
+    }
+  },
   "images": {
     "downloadFolder": "./output/images"
   },
@@ -35,6 +44,15 @@
       "imagesloadwaitms": 2000,
       "morephotosclickwaitms": 400,
       "premediaexpansionwaitms": 1000
+    },
+    "mainpage": {
+      "expressiontimeout": 30000,
+      "expressionpollinterval": 200,
+      "searchclickwaitms": 2000
+    },
+    "searchresults": {
+      "backtoresultswaitms": 800,
+      "randompaginationclickwaitms": 1200
     }
   }
 }

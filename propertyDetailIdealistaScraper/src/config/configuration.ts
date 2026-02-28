@@ -13,6 +13,15 @@ type Environment = {
     host: string;
     port: number;
   };
+  scraper?: {
+    home?: {
+      url?: string;
+      mainSearchArea?: string;
+    };
+    searchResults?: {
+      randomPaginationEveryProcessedUrls?: number;
+    };
+  };
   images?: {
     downloadFolder?: string;
   };
@@ -34,6 +43,15 @@ type Environment = {
       morephotosclickwaitms?: number;
       premediaexpansionwaitms?: number;
       cookieaprovaldialogwaitms?: number;
+    };
+    mainpage?: {
+      expressiontimeout?: number;
+      expressionpollinterval?: number;
+      searchclickwaitms?: number;
+    };
+    searchresults?: {
+      backtoresultswaitms?: number;
+      randompaginationclickwaitms?: number;
     };
   };
 };
@@ -148,6 +166,14 @@ export class Configuration {
     return Math.max(0, this.environment.timeouts?.chrome?.browserlaunchretrywaitms ?? 3600000);
   }
 
+  get scraperHomeUrl(): string {
+    return this.environment.scraper?.home?.url ?? 'https://www.idealista.com/';
+  }
+
+  get mainSearchArea(): string {
+    return this.environment.scraper?.home?.mainSearchArea ?? 'Madrid,Madrid';
+  }
+
   get delayAfterUrlMs(): number {
     return this.environment.timeouts?.consumer?.delayafterurlms ?? 5000;
   }
@@ -182,6 +208,38 @@ export class Configuration {
 
   get cookieAprovalDialogWaitMs(): number {
     return this.environment.timeouts?.propertydetailpage?.cookieaprovaldialogwaitms ?? 2000;
+  }
+
+  get mainPageExpressionTimeoutMs(): number {
+    return this.environment.timeouts?.mainpage?.expressiontimeout ?? 30000;
+  }
+
+  get mainPageExpressionPollIntervalMs(): number {
+    return this.environment.timeouts?.mainpage?.expressionpollinterval ?? 200;
+  }
+
+  get mainPageSearchClickWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.mainpage?.searchclickwaitms ?? 1000);
+  }
+
+  get searchResultsBackToResultsWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.searchresults?.backtoresultswaitms ?? 800);
+  }
+
+  get searchResultsRandomPaginationClickWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.searchresults?.randompaginationclickwaitms ?? 1200);
+  }
+
+  get searchResultsRandomPaginationEveryProcessedUrls(): number {
+    return Math.max(1, this.environment.scraper?.searchResults?.randomPaginationEveryProcessedUrls ?? 18);
+  }
+
+  get chromeExpressionTimeoutMs(): number {
+    return this.mainPageExpressionTimeoutMs;
+  }
+
+  get chromeExpressionPollIntervalMs(): number {
+    return this.mainPageExpressionPollIntervalMs;
   }
 
   get rabbitMqHost(): string {

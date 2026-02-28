@@ -9,6 +9,7 @@ import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { PropertyDetailPageService } from './property/property-detail-page.service';
 import { MongoDatabaseService } from '../mongodb/mongo-database.service';
 import { ImageDownloader } from '../imagedownload/image-downloader';
+import { SearchResultsNavigationService } from './search-results-navigation.service';
 
 type CdpClient = {
   Page: {
@@ -40,13 +41,16 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private chromeStderrFd?: number;
   private cdpClient?: CdpClient;
   private shuttingDown = false;
+  private searchResultsUrl = '';
+  private processedDetailPages = 0;
 
   constructor(
     private readonly configuration: Configuration,
     private readonly rabbitMqService: RabbitMqService,
     private readonly propertyDetailPageService: PropertyDetailPageService,
     private readonly mongoDatabaseService: MongoDatabaseService,
-    private readonly imageDownloader: ImageDownloader
+    private readonly imageDownloader: ImageDownloader,
+    private readonly searchResultsNavigationService: SearchResultsNavigationService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -61,9 +65,13 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     });
     await this.launchChrome();
     this.cdpClient = await this.openCdpClient();
+    await this.ensureSearchResultsPrepared();
 
     await this.rabbitMqService.consumePropertyUrls(async (url) => {
-      await this.processPropertyUrlWithRetry(url);
+      const processed = await this.processPropertyUrlWithRetry(url);
+      if (processed) {
+        await this.returnToResultsAndMimicHumanNavigation();
+      }
       await this.sleep(this.configuration.delayAfterUrlMs);
     });
   }
@@ -81,9 +89,10 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async processPropertyUrlWithRetry(url: string): Promise<void> {
+  private async processPropertyUrlWithRetry(url: string): Promise<boolean> {
     if (await this.mongoDatabaseService.propertyExistsByUrl(url)) {
-      return;
+      this.logger.log(`Skipping already processed URL from queue: ${url}`);
+      return false;
     }
 
     const maxAttempts = this.configuration.consumerMaxUrlAttempts;
@@ -91,7 +100,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         await this.openPropertyUrlOnce(url);
-        return;
+        return true;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (attempt < maxAttempts) {
@@ -105,6 +114,8 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         process.exit(1);
       }
     }
+
+    return false;
   }
 
   private async openPropertyUrlOnce(url: string): Promise<void> {
@@ -339,6 +350,37 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
     await this.waitForCdp();
     this.cdpClient = await this.openCdpClient();
+    await this.ensureSearchResultsPrepared();
+  }
+
+  private async ensureSearchResultsPrepared(): Promise<void> {
+    const client = this.cdpClient;
+    if (!client) {
+      throw new Error('CDP client is not initialized.');
+    }
+
+    if (this.searchResultsUrl) {
+      return;
+    }
+
+    this.searchResultsUrl = await this.searchResultsNavigationService.openInitialSearchResults(client);
+  }
+
+  private async returnToResultsAndMimicHumanNavigation(): Promise<void> {
+    const client = this.cdpClient;
+    if (!client) {
+      throw new Error('CDP client is not initialized.');
+    }
+
+    this.searchResultsUrl = await this.searchResultsNavigationService.goBackToSearchResults(client, this.searchResultsUrl);
+    this.processedDetailPages += 1;
+
+    const hopInterval = this.configuration.searchResultsRandomPaginationEveryProcessedUrls;
+    if (this.processedDetailPages % hopInterval !== 0) {
+      return;
+    }
+
+    this.searchResultsUrl = await this.searchResultsNavigationService.clickRandomPaginationLink(client);
   }
 
   private isClosedWebSocketError(error: unknown): boolean {

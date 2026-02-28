@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: rabbitmq
   namespace: real-state-fizgon
 spec:
+  serviceName: rabbitmq
   replicas: 1
   selector:
     matchLabels:
@@ -26,6 +27,23 @@ spec:
           value: admin_change_me
         - name: RABBITMQ_DEFAULT_VHOST
           value: dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: real-state-fizgon
+spec:
+  clusterIP: None
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+  - name: management
+    port: 15672
+    targetPort: 15672
 ---
 apiVersion: v1
 kind: Service

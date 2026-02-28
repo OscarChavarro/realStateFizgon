@@ -54,6 +54,10 @@ spec:
       - name: idealista-property-scraper
         image: idealista-property-scraper:local
         imagePullPolicy: Never
+        ports:
+        - name: vnc-tcp
+          containerPort: 5900
+          protocol: TCP
         volumeMounts:
         - name: app-secrets
           mountPath: /app/secrets.json
@@ -71,3 +75,17 @@ spec:
       - name: images-persistent
         persistentVolumeClaim:
           claimName: idealista-property-images-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: idealista-property-scraper-vnc
+  namespace: real-state-fizgon
+spec:
+  selector:
+    app: idealista-property-scraper
+  ports:
+  - name: vnc-tcp
+    port: 5900
+    targetPort: 5900
+    protocol: TCP

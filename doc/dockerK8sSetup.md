@@ -9,6 +9,17 @@ Public DNS domain base: `<yourDomain>`.
 
 ## 1. Prerequisites
 
+The commands in this guide assume:
+- Bash shell
+- Current working directory is the repository root
+- `kubectl` context points to the target cluster
+
+Recommended at session start:
+
+```bash
+set -euo pipefail
+```
+
 ## 1.1 Install Docker
 
 Install Docker Desktop (macOS) or Docker Engine (Linux).
@@ -77,6 +88,15 @@ brew install k9s
 curl -sS https://webinstall.dev/k9s | bash
 ```
 
+## 1.5 Install helper CLI tools used by this guide
+
+Ubuntu Linux:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y jq gettext-base
+```
+
 ## 2. Kubernetes setup
 
 ## 2.1 Optional Cleanup (kind + Docker)
@@ -108,19 +128,21 @@ docker builder prune -af
 docker system df
 ```
 
+The command `docker system df` should ideally show zero usage after cleanup. If it does not, remove any remaining stopped containers, unused images, volumes, networks, and build cache.
+
 ## 2.2 Create cluster and namespace
 
 Create your cluster with your preferred local K8S provider:
 
 ```bash
-# Kind example, should work with minikube or other K8S implementations
+# Kind example, should work with minikube, kubeadm, k3s or other K8S implementations
 kind create cluster --name real-state-fizgon
 ```
 
 Then continue with generic Kubernetes commands:
 
 ```bash
-kubectl create namespace real-state-fizgon
+kubectl create namespace real-state-fizgon --dry-run=client -o yaml | kubectl apply -f -
 kubectl config set-context --current --namespace=real-state-fizgon
 ```
 
@@ -156,7 +178,10 @@ That ensures Kubernetes uses only images already present in the kind node.
 ## 3.1 RabbitMQ (with management plugin)
 
 ```bash
+# If you previously had RabbitMQ as Deployment, remove it before applying StatefulSet
+kubectl -n real-state-fizgon delete deployment rabbitmq --ignore-not-found=true
 kubectl apply -f k8s/rabbitmq.yaml
+kubectl -n real-state-fizgon rollout status statefulset/rabbitmq
 ```
 
 Initialize queue/users as in `doc/manualSetup.md`:
@@ -170,6 +195,8 @@ echo "Enter RabbitMQ password for user idealistascraper_user:"
 read -r -s RABBIT_IDEALISTA_PASSWORD
 echo
 export RABBIT_IDEALISTA_PASSWORD
+# Recreate user to keep this step idempotent
+kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl delete_user idealistascraper_user || true
 kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl add_user idealistascraper_user "$RABBIT_IDEALISTA_PASSWORD"
 kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_permissions -p dev idealistascraper_user ".*" ".*" ".*"
 kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_user_tags idealistascraper_user management
@@ -188,15 +215,18 @@ Expose management UI locally:
 kubectl -n real-state-fizgon port-forward svc/rabbitmq 15672:15672
 ```
 
+By this point should be possible to navigate to http://<ip>:15672 and log in with `admin` account.
+
 ## 3.2 MongoDB (StatefulSet + persistent volume)
 
 MongoDB is intentionally persistent (not volatile) in this setup.
 
 ```bash
 kubectl apply -f k8s/mongodb.yaml
+kubectl -n real-state-fizgon rollout status statefulset/mongodb
 ```
 
-Create app DB user (matches `idealistaPropertyScraper/secrets.json`):
+Create app DB user (matching `idealistaPropertyScraper/secrets.json`):
 
 ```bash
 MONGO_POD=$(kubectl -n real-state-fizgon get pod -l app=mongodb -o jsonpath='{.items[0].metadata.name}')
@@ -205,8 +235,21 @@ echo "Enter MongoDB password for user idealistascraper_user:"
 read -r -s MONGODB_IDEALISTA_PASSWORD
 echo
 export MONGODB_IDEALISTA_PASSWORD
-kubectl -n real-state-fizgon exec -it "$MONGO_POD" -- mongosh --eval "use idealistaScraper; db.createUser({user:\"idealistascraper_user\", pwd:\"$MONGODB_IDEALISTA_PASSWORD\", roles:[{role:\"readWrite\", db:\"idealistaScraper\"}]});"
+kubectl -n real-state-fizgon exec -it "$MONGO_POD" -- mongosh --eval "
+  db.getSiblingDB('idealistaScraper').createUser({
+    user: 'idealistascraper_user',
+    pwd: \"${MONGODB_IDEALISTA_PASSWORD}\",
+    roles: [{ role: 'readWrite', db: 'idealistaScraper' }]
+  });
+"
 ```
+
+Verify database access from `mongo` pod instance:
+```bash
+mongosh -u idealistascraper_user idealistaScraper
+```
+
+Note that after following this steps, `authSource` should be `idealistaScraper`.
 
 ## 3.3 Prometheus
 
@@ -255,12 +298,15 @@ kubectl apply -f k8s/prometheus.yaml
 kubectl apply -f k8s/grafana.yaml
 ```
 
-Port-forward local access:
+If need access to the systems, can use port-forward local access:
 
 ```bash
 kubectl -n real-state-fizgon port-forward svc/prometheus 9090:9090
 kubectl -n real-state-fizgon port-forward svc/grafana 3000:3000
 ```
+
+At this point should access for the first time Grafana at port `:3000` and use user `admin` and default password `admin` to access.
+Grafana web UI will require user to define a new administrative password.
 
 ## 4. Deploy current project micro services
 
@@ -268,6 +314,15 @@ kubectl -n real-state-fizgon port-forward svc/grafana 3000:3000
 
 Each service reads `secrets.json` from `/app/secrets.json`.
 `Dockerfile.local` includes `secrets-example.json`, but production credentials must be injected as Kubernetes Secret.
+
+Preflight check:
+
+```bash
+test -f idealistaPropertyScraper/secrets.json
+test -f notificationMessageSender/secrets.json
+command -v jq
+command -v envsubst
+```
 
 1. Update local files:
 - `idealistaPropertyScraper/secrets.json`
@@ -286,8 +341,6 @@ kubectl -n real-state-fizgon create secret generic notification-message-sender-s
 ```
 
 ## 4.2 Build, load, deploy, and restart each microservice
-
-If you rebuild an image, run the matching `kind load docker-image ...` again before `kubectl rollout restart`.
 
 ## 4.2.1 Set up an NFS shared folder in system host
 
@@ -390,16 +443,6 @@ kubectl describe pv idealista-property-images-pv
 
 ## 4.2.3 idealistaPropertyScraper
 
-Set up PV/PVC for `idealista-property-scraper` image persistence:
-
-```bash
-export NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)"
-export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)"
-envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
-| awk 'BEGIN { RS="---"; ORS="---\n" } NR<=2 { print }' \
-| kubectl apply -f -
-```
-
 Deploy/update pod:
 
 ```bash
@@ -409,10 +452,19 @@ kind load docker-image idealista-property-scraper:local --name real-state-fizgon
 NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)" \
 NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)" \
 envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
-| awk 'BEGIN { RS="---"; ORS="---\n" } NR==3 { print }' \
+| awk 'BEGIN { RS="---"; ORS="---\n" } NR>=3 { print }' \
 | kubectl apply -f -
 
 kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
+kubectl -n real-state-fizgon rollout status deployment/idealista-property-scraper
+```
+
+The scraper pod declares TCP port `5900` and exposes internal Service `idealista-property-scraper-vnc`.
+`x11vnc` remains disabled until started manually inside the pod, so this does not enable remote desktop by default.
+For secure diagnostics, prefer temporary local tunnel instead of public ingress:
+
+```bash
+kubectl -n real-state-fizgon port-forward svc/idealista-property-scraper-vnc 5900:5900
 ```
 
 ## 4.2.4 notificationMessageSender
@@ -422,6 +474,7 @@ docker build -t notification-message-sender:local -f notificationMessageSender/D
 kind load docker-image notification-message-sender:local --name real-state-fizgon
 kubectl apply -f notificationMessageSender/k8s/notificationMessageSender.yaml
 kubectl -n real-state-fizgon rollout restart deployment/notification-message-sender
+kubectl -n real-state-fizgon rollout status deployment/notification-message-sender
 ```
 
 ## 5. Configure Ingress (HTTP + TCP) for public subdomains
@@ -441,6 +494,8 @@ kubectl -n ingress-nginx patch deployment ingress-nginx-controller --type='json'
   -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--tcp-services-configmap=ingress-nginx/tcp-services"}]'
 ```
 
+If the patch reports `already exists`, verify the deployment args and continue.
+
 Expose TCP ports through ingress-nginx Service:
 
 ```bash
@@ -449,6 +504,8 @@ kubectl -n ingress-nginx patch service ingress-nginx-controller --type='json' -p
   {"op":"add","path":"/spec/ports/-","value":{"name":"mongodb-27017","port":27017,"targetPort":27017,"protocol":"TCP"}}
 ]'
 ```
+
+If the patch reports `already exists`, verify service ports and continue.
 
 Apply HTTP host-based ingress rules:
 
@@ -480,7 +537,7 @@ Use after updating image tags or secrets:
 ```bash
 kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
 kubectl -n real-state-fizgon rollout restart deployment/notification-message-sender
-kubectl -n real-state-fizgon rollout restart deployment/rabbitmq
+kubectl -n real-state-fizgon rollout restart statefulset/rabbitmq
 kubectl -n real-state-fizgon rollout restart deployment/prometheus
 kubectl -n real-state-fizgon rollout restart deployment/grafana
 kubectl -n real-state-fizgon rollout restart statefulset/mongodb
@@ -495,6 +552,18 @@ kubectl -n real-state-fizgon get svc
 kubectl -n real-state-fizgon get pvc
 kubectl -n real-state-fizgon get ingress
 kubectl -n ingress-nginx get svc ingress-nginx-controller
+```
+
+If any pod is stuck in `ContainerCreating` or `CrashLoopBackOff`, run:
+
+```bash
+kubectl -n real-state-fizgon get pods -o wide
+kubectl -n real-state-fizgon describe pod <pod-name>
+kubectl -n real-state-fizgon logs <pod-name> --previous
+kubectl get pv
+kubectl get pvc -n real-state-fizgon
+kubectl describe pv idealista-property-images-pv
+kubectl describe pvc idealista-property-images-pvc -n real-state-fizgon
 ```
 
 Tail logs:

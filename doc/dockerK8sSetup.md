@@ -273,6 +273,7 @@ Each service reads `secrets.json` from `/app/secrets.json`.
 1. Update local files:
 - `propertyListingIdealistaScraper/secrets.json`
 - `propertyDetailIdealistaScraper/secrets.json`
+- `idealistaPropertyScraper/secrets.json`
 - `notificationMessageSender/secrets.json`
 
 2. Create K8S secrets:
@@ -284,6 +285,10 @@ kubectl -n real-state-fizgon create secret generic property-listing-secrets \
 
 kubectl -n real-state-fizgon create secret generic property-detail-secrets \
   --from-file=secrets.json=propertyDetailIdealistaScraper/secrets.json \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n real-state-fizgon create secret generic idealista-property-secrets \
+  --from-file=secrets.json=idealistaPropertyScraper/secrets.json \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n real-state-fizgon create secret generic notification-message-sender-secrets \
@@ -427,7 +432,34 @@ envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < propertyDetailIdealistaScraper/k
 kubectl -n real-state-fizgon rollout restart deployment/property-detail-idealista-scraper
 ```
 
-## 4.2.5 notificationMessageSender
+## 4.2.5 idealistaPropertyScraper
+
+Set up PV/PVC for `idealista-property-scraper` image persistence:
+
+```bash
+export NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)"
+export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)"
+envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
+| awk 'BEGIN { RS="---"; ORS="---\n" } NR<=2 { print }' \
+| kubectl apply -f -
+```
+
+Deploy/update pod:
+
+```bash
+docker build -t idealista-property-scraper:local -f idealistaPropertyScraper/Dockerfile.local .
+kind load docker-image idealista-property-scraper:local --name real-state-fizgon
+
+NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)" \
+NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)" \
+envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
+| awk 'BEGIN { RS="---"; ORS="---\n" } NR==3 { print }' \
+| kubectl apply -f -
+
+kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
+```
+
+## 4.2.6 notificationMessageSender
 
 ```bash
 docker build -t notification-message-sender:local -f notificationMessageSender/Dockerfile.local notificationMessageSender

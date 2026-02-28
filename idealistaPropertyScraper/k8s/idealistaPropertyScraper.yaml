@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: idealista-property-images-pv
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+  - nfsvers=4.1
+  nfs:
+    server: ${NFS_SERVER}
+    path: ${NFS_SHARED_FOLDER}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: idealista-property-images-pvc
+  namespace: real-state-fizgon
+spec:
+  storageClassName: ""
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  volumeName: idealista-property-images-pv
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: idealista-property-scraper
+  namespace: real-state-fizgon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idealista-property-scraper
+  template:
+    metadata:
+      labels:
+        app: idealista-property-scraper
+    spec:
+      hostname: idealista-property-scraper
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        runAsNonRoot: true
+      containers:
+      - name: idealista-property-scraper
+        image: idealista-property-scraper:local
+        imagePullPolicy: Never
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets.json
+          subPath: secrets.json
+          readOnly: true
+        - name: images-persistent
+          mountPath: /app/output/images
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: idealista-property-secrets
+          items:
+          - key: secrets.json
+            path: secrets.json
+      - name: images-persistent
+        persistentVolumeClaim:
+          claimName: idealista-property-images-pvc

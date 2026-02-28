@@ -1,25 +1,36 @@
 digraph PropertyScraperArchitecture {
   rankdir=TB;
+  ranksep=0.9;
   node [shape=box, style=rounded];
 
-  browser_list [
+  idealista [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/chrome.png"/></TD>
-          <TD>Web browser for property list scraping</TD>
+          <TD><IMG SRC="doc/architecture/idealista.png"/></TD>
+          <TD ALIGN="LEFT">Idealista</TD>
         </TR>
       </TABLE>
     >,
     margin="0.08,0.05"
   ];
-  listing_scraper [label="propertyListingIdealistaScraper", style="rounded,filled", fillcolor="#80ff80"];
+  browser_idealista [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD><IMG SRC="doc/architecture/chrome.png"/></TD>
+          <TD>Instrumented web browser<BR/>(Chromium or Chrome)</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
   rabbitmq1 [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
-          <TD ALIGN="LEFT">Rabbit<BR/>(property-listing-urls queue)</TD>
+          <TD><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
+          <TD ALIGN="LEFT">Rabbit<BR/>(pending-image-urls-to-download queue)</TD>
         </TR>
       </TABLE>
     >,
@@ -29,32 +40,27 @@ digraph PropertyScraperArchitecture {
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
+          <TD><IMG SRC="doc/architecture/rabbitMq.png"/></TD>
           <TD ALIGN="LEFT">Rabbit<BR/>(outgoing-notification-messages queue)</TD>
         </TR>
       </TABLE>
     >,
     margin="0.08,0.05"
   ];
-  detail_scraper [label="propertyDetailIdealistaScraper", group="detail_column", style="rounded,filled", fillcolor="#80ff80"];
+  idealista_scraper [
+    label="idealistaPropertyScraper",
+    style="rounded,filled",
+    fillcolor="#80ff80",
+    fixedsize=true,
+    height=1.5,
+    width=3.8
+  ];
   mongodb [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/mongoDB.png"/></TD>
+          <TD><IMG SRC="doc/architecture/mongoDB.png"/></TD>
           <TD>MongoDB</TD>
-        </TR>
-      </TABLE>
-    >,
-    group="detail_column",
-    margin="0.08,0.05"
-  ];
-  browser_detail [
-    label=<
-      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
-        <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/chrome.png"/></TD>
-          <TD>Web browser for property detail scraping</TD>
         </TR>
       </TABLE>
     >,
@@ -65,7 +71,7 @@ digraph PropertyScraperArchitecture {
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/whatsapp.png"/></TD>
+          <TD><IMG SRC="doc/architecture/whatsapp.png"/></TD>
           <TD>Whatsapp</TD>
         </TR>
       </TABLE>
@@ -76,7 +82,7 @@ digraph PropertyScraperArchitecture {
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/prometheus.png"/></TD>
+          <TD><IMG SRC="doc/architecture/prometheus.png"/></TD>
           <TD>Prometheus</TD>
         </TR>
       </TABLE>
@@ -88,7 +94,7 @@ digraph PropertyScraperArchitecture {
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
-          <TD FIXEDSIZE="TRUE" WIDTH="20" HEIGHT="20"><IMG SRC="doc/architecture/grafana.png"/></TD>
+          <TD><IMG SRC="doc/architecture/grafana.png"/></TD>
           <TD>Grafana</TD>
         </TR>
       </TABLE>
@@ -97,23 +103,19 @@ digraph PropertyScraperArchitecture {
     color=darkgreen
   ];
 
-  { rank=same; browser_list; browser_detail; }
-  { rank=same; listing_scraper; rabbitmq1; detail_scraper; }
-  { rank=same; mongodb; }
+  { rank=min; idealista; }
+  { rank=same; idealista_scraper; rabbitmq2; }
 
-  browser_list -> listing_scraper;
-  browser_detail -> detail_scraper;
-  listing_scraper -> rabbitmq1 [minlen=2];
-  rabbitmq1 -> detail_scraper [minlen=2];
-  listing_scraper -> browser_list [color=blue];
-  detail_scraper -> browser_detail [color=blue];
-  detail_scraper -> mongodb [minlen=2];
-  mongodb -> detail_scraper [minlen=2];
-  detail_scraper -> rabbitmq2;
+  idealista -> browser_idealista [xlabel="Can use proxy"];
+  browser_idealista -> idealista_scraper;
+  idealista_scraper -> mongodb [minlen=2, dir=both];
+  idealista_scraper -> rabbitmq2 [style=invis, weight=100, constraint=false, minlen=2];
+  idealista_scraper -> rabbitmq1 [minlen=2];
+  idealista_scraper -> browser_idealista [color=blue];
+  idealista_scraper -> rabbitmq2 [tailport=e, headport=w, weight=100];
+  idealista_scraper -> prometheus [color=darkgreen];
   rabbitmq2 -> notification_message_sender;
   notification_message_sender -> whatsapp;
-  listing_scraper -> prometheus [color=darkgreen];
-  detail_scraper -> prometheus [color=darkgreen];
   notification_message_sender -> prometheus [color=darkgreen];
   prometheus -> grafana [color=darkgreen];
 }

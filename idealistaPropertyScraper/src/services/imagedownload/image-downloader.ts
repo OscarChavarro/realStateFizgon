@@ -50,6 +50,9 @@ export class ImageDownloader {
   private readonly initializedClients = new WeakSet<object>();
   private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
   private readonly activeDownloadTasks = new Set<Promise<void>>();
+  private lastImageNetworkActivityAt = 0;
+  private imageNetworkActivitySeen = false;
+  private imageNetworkActivityCounter = 0;
 
   constructor(
     private readonly configuration: Configuration,
@@ -113,11 +116,12 @@ export class ImageDownloader {
     });
 
     client.Network.loadingFailed((event) => {
+      this.markImageNetworkActivity();
       this.pendingImageRequests.delete((event as NetworkLoadingFailedEvent).requestId);
     });
   }
 
-  async waitForPendingImageDownloads(timeoutMs = 5000): Promise<void> {
+  async waitForPendingImageDownloads(timeoutMs = 15000): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       if (this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0) {
@@ -129,6 +133,43 @@ export class ImageDownloader {
     if (this.activeDownloadTasks.size > 0) {
       await Promise.allSettled([...this.activeDownloadTasks]);
     }
+  }
+
+  async waitForImageNetworkSettled(maxWaitMs = 12000, quietWindowMs = 1200): Promise<void> {
+    const start = Date.now();
+    const startCounter = this.imageNetworkActivityCounter;
+    const noActivityGraceMs = Math.min(2500, maxWaitMs);
+
+    while (Date.now() - start < maxWaitMs) {
+      await this.waitForPendingImageDownloads(Math.min(quietWindowMs, 1200));
+      const noPendingWork = this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0;
+      if (!noPendingWork) {
+        await this.sleep(120);
+        continue;
+      }
+
+      if (!this.imageNetworkActivitySeen) {
+        await this.sleep(200);
+        continue;
+      }
+
+      if (this.imageNetworkActivityCounter === startCounter) {
+        if (Date.now() - start >= noActivityGraceMs) {
+          return;
+        }
+        await this.sleep(200);
+        continue;
+      }
+
+      const idleMs = Date.now() - this.lastImageNetworkActivityAt;
+      if (idleMs >= quietWindowMs) {
+        return;
+      }
+
+      await this.sleep(120);
+    }
+
+    this.logger.warn(`Image network did not become idle in ${maxWaitMs}ms. Continuing with best-effort capture.`);
   }
 
   async movePropertyImagesFromIncoming(property: Property): Promise<void> {
@@ -207,6 +248,7 @@ export class ImageDownloader {
     if (!this.isIdealistaDomain(url)) {
       return;
     }
+    this.markImageNetworkActivity();
     this.pendingImageRequests.set(event.requestId, { url, mimeType });
   }
 
@@ -216,6 +258,7 @@ export class ImageDownloader {
       return;
     }
 
+    this.markImageNetworkActivity();
     this.pendingImageRequests.delete(event.requestId);
     const task = this.downloadFromNetworkBody(network, event.requestId, pending.url, pending.mimeType)
       .finally(() => this.activeDownloadTasks.delete(task));
@@ -254,10 +297,17 @@ export class ImageDownloader {
         extension
       });
       this.incomingImagesByKey.set(key, list);
+      this.markImageNetworkActivity();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Unable to capture image from CDP network (${url}): ${message}`);
     }
+  }
+
+  private markImageNetworkActivity(): void {
+    this.imageNetworkActivitySeen = true;
+    this.lastImageNetworkActivityAt = Date.now();
+    this.imageNetworkActivityCounter += 1;
   }
 
   private buildImageFilename(url: string, mimeType: string): string {

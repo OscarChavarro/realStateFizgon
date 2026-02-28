@@ -92,11 +92,11 @@ export class PropertyListPageService {
 
       const exists = await this.mongoDatabaseService.propertyExistsByUrl(url);
       if (exists) {
-        this.logger.log(`URL already exists in MongoDB, skipping processing: ${url}`);
+        this.logger.log(`Skipping existing: ${url}`);
         continue;
       }
 
-      this.logger.log(`URL should be processed (not found in MongoDB): ${url}`);
+      this.logger.log(`Processing new: ${url}`);
       await this.propertyDetailPageService.loadPropertyUrl(client, url);
       this.processedUrlsSinceLastSearch.add(url);
     }

@@ -91,6 +91,7 @@ export class PropertyDetailPageService {
       }
 
       const filteredProperty = this.filterPropertyImagesByBlurPattern(property);
+      await this.imageDownloader.waitForImageNetworkSettled();
       await this.mongoDatabaseService.saveProperty(filteredProperty);
       await this.imageDownloader.waitForPendingImageDownloads();
       await this.imageDownloader.movePropertyImagesFromIncoming(filteredProperty);
@@ -290,8 +291,11 @@ export class PropertyDetailPageService {
   private async waitForImagesToLoad(runtime: RuntimeClient): Promise<void> {
     await this.sleep(this.configuration.propertyDetailPageImagesLoadWaitMs);
 
-    const timeoutMs = Math.max(this.configuration.propertyDetailPageImagesLoadWaitMs, 3000);
+    const timeoutMs = Math.max(this.configuration.propertyDetailPageImagesLoadWaitMs * 4, 8000);
     const start = Date.now();
+    let stableIterations = 0;
+    let previousLoaded = -1;
+    let previousTotal = -1;
 
     while (Date.now() - start < timeoutMs) {
       const progress = await this.evaluateExpression<{ total: number; loaded: number }>(runtime, `(() => {
@@ -305,10 +309,9 @@ export class PropertyDetailPageService {
 
         let loaded = 0;
         for (const img of images) {
-          const hasCurrent = Boolean((img.currentSrc || '').trim());
-          const hasSrc = Boolean((img.getAttribute('src') || '').trim());
-          const hasService = Boolean((img.getAttribute('data-service') || '').trim());
-          const isLoaded = (img.complete && img.naturalWidth > 0) || hasCurrent || hasSrc || hasService;
+          const hasDecodedBitmap = img.complete && img.naturalWidth > 0;
+          const hasServiceUrl = Boolean((img.getAttribute('data-service') || '').trim());
+          const isLoaded = hasDecodedBitmap || hasServiceUrl;
           if (isLoaded) {
             loaded += 1;
           }
@@ -317,12 +320,33 @@ export class PropertyDetailPageService {
         return { total: images.length, loaded };
       })()`);
 
-      if (progress.total === 0 || progress.loaded >= progress.total) {
+      if (progress.total === 0) {
         return;
       }
 
+      if (progress.loaded === progress.total) {
+        stableIterations += 1;
+        if (stableIterations >= 2) {
+          return;
+        }
+      } else if (progress.loaded === previousLoaded && progress.total === previousTotal) {
+        stableIterations += 1;
+        if (stableIterations >= 4) {
+          this.logger.warn(
+            `Image DOM loading stabilized before full completion (${progress.loaded}/${progress.total}). Continuing with best-effort capture.`
+          );
+          return;
+        }
+      } else {
+        stableIterations = 0;
+      }
+
+      previousLoaded = progress.loaded;
+      previousTotal = progress.total;
       await this.sleep(Math.max(150, this.configuration.propertyDetailPageScrollIntervalMs));
     }
+
+    this.logger.warn('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
   }
 
   private async waitForUrlAndDomComplete(

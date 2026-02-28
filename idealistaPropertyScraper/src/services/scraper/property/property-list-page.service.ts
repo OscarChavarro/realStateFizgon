@@ -12,6 +12,9 @@ type RuntimeEvaluateResult = {
 };
 
 type CdpClient = {
+  Page: {
+    bringToFront(): Promise<void>;
+  };
   Runtime: {
     evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
   };
@@ -20,6 +23,7 @@ type CdpClient = {
 @Injectable()
 export class PropertyListPageService {
   private readonly logger = new Logger(PropertyListPageService.name);
+  private readonly processedUrlsSinceLastSearch = new Set<string>();
 
   constructor(
     private readonly mongoDatabaseService: MongoDatabaseService,
@@ -74,8 +78,18 @@ export class PropertyListPageService {
     return value.filter((item): item is string => typeof item === 'string');
   }
 
+  resetProcessedUrlsForCurrentSearch(): void {
+    this.processedUrlsSinceLastSearch.clear();
+    this.logger.log('Reset processed property URL cache for the current search cycle.');
+  }
+
   async processUrls(client: CdpClient, urls: string[]): Promise<void> {
     for (const url of urls) {
+      if (this.processedUrlsSinceLastSearch.has(url)) {
+        this.logger.log(`URL already processed in current search cycle, skipping click: ${url}`);
+        continue;
+      }
+
       const exists = await this.mongoDatabaseService.propertyExistsByUrl(url);
       if (exists) {
         this.logger.log(`URL already exists in MongoDB, skipping processing: ${url}`);
@@ -84,6 +98,7 @@ export class PropertyListPageService {
 
       this.logger.log(`URL should be processed (not found in MongoDB): ${url}`);
       await this.propertyDetailPageService.loadPropertyUrl(client, url);
+      this.processedUrlsSinceLastSearch.add(url);
     }
   }
 }

@@ -21,6 +21,7 @@ export class RabbitMqService implements OnModuleDestroy {
 
     try {
       const channel = await this.getChannel();
+      await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
       for (const url of urls) {
         channel.sendToQueue(this.configuration.rabbitMqQueue, Buffer.from(url), { persistent: true });
       }
@@ -70,12 +71,11 @@ export class RabbitMqService implements OnModuleDestroy {
     }
 
     const channel = await this.connection.createChannel();
-    await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
     this.channel = channel;
     return channel;
   }
 
-  private async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
+  async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
     const channel = await this.getChannel();
     await channel.assertQueue(queueName, { durable: true });
     const body = Buffer.from(JSON.stringify(payload), 'utf-8');

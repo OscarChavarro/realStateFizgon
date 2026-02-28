@@ -20,6 +20,9 @@
       "mainSearchArea": "Madrid, Madrid"
     }
   },
+  "images": {
+    "downloadFolder": "./output/images"
+  },
   "timeouts": {
     "chrome": {
       "cdpreadytimeout": 60000,
@@ -42,6 +45,14 @@
     },
     "pagination": {
       "clickwait": 1000
+    },
+    "propertydetailpage": {
+      "scrollintervalms": 200,
+      "scrollevents": 10,
+      "cookieaprovaldialogwaitms": 2000,
+      "imagesloadwaitms": 2000,
+      "morephotosclickwaitms": 400,
+      "premediaexpansionwaitms": 1000
     }
   },
   "filters": {

@@ -13,6 +13,9 @@ type RuntimeEvaluateResult = {
 };
 
 type CdpClient = {
+  Page: {
+    bringToFront(): Promise<void>;
+  };
   Runtime: {
     evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
   };
@@ -30,7 +33,6 @@ export class PropertyListingPaginationService {
 
   async execute(client: CdpClient): Promise<void> {
     let page = 1;
-    const allUrls: string[] = [];
 
     while (true) {
       await this.captchaDetectorService.panicIfCaptchaDetected({
@@ -39,12 +41,11 @@ export class PropertyListingPaginationService {
         context: `property listing page ${page}`
       });
       const pageUrls = await this.propertyListPageService.getPropertyUrls(client);
-      allUrls.push(...pageUrls);
+      await this.propertyListPageService.processUrls(client, pageUrls);
 
       const hasNext = await this.hasNextButton(client);
       if (!hasNext) {
         this.logger.log(`Pagination finished at page ${page}.`);
-        await this.propertyListPageService.processUrls(client, allUrls);
         return;
       }
 
@@ -52,7 +53,6 @@ export class PropertyListingPaginationService {
       const clicked = await this.clickNextButton(client);
       if (!clicked) {
         this.logger.warn('Next button exists but could not be clicked. Stopping pagination.');
-        await this.propertyListPageService.processUrls(client, allUrls);
         return;
       }
 

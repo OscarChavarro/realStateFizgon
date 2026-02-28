@@ -12,6 +12,9 @@ type Environment = {
     host: string;
     port: number;
   };
+  images?: {
+    downloadFolder?: string;
+  };
   timeouts: {
     chrome: {
       cdpreadytimeout: number;
@@ -34,6 +37,14 @@ type Environment = {
     };
     pagination: {
       clickwait: number;
+    };
+    propertydetailpage?: {
+      scrollintervalms?: number;
+      scrollevents?: number;
+      imagesloadwaitms?: number;
+      morephotosclickwaitms?: number;
+      premediaexpansionwaitms?: number;
+      cookieaprovaldialogwaitms?: number;
     };
   };
   scraper: {
@@ -212,6 +223,34 @@ export class Configuration {
 
   get paginationClickWaitMs(): number {
     return this.environment.timeouts?.pagination?.clickwait ?? 1000;
+  }
+
+  get imageDownloadFolder(): string {
+    return this.environment.images?.downloadFolder ?? './output/images';
+  }
+
+  get propertyDetailPageScrollIntervalMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.scrollintervalms ?? 200;
+  }
+
+  get propertyDetailPageScrollEvents(): number {
+    return this.environment.timeouts?.propertydetailpage?.scrollevents ?? 10;
+  }
+
+  get propertyDetailPageImagesLoadWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.imagesloadwaitms ?? 2000;
+  }
+
+  get propertyDetailPageMorePhotosClickWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.morephotosclickwaitms ?? 400;
+  }
+
+  get propertyDetailPagePreMediaExpansionWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.premediaexpansionwaitms ?? 1000;
+  }
+
+  get cookieAprovalDialogWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.cookieaprovaldialogwaitms ?? 2000;
   }
 
   get rabbitMqUser(): string {

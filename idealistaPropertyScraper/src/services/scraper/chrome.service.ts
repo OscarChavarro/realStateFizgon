@@ -10,6 +10,8 @@ import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
 import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
 import { MongoDatabaseService } from '../mongodb/mongo-database.service';
+import { ImageDownloader } from '../imagedownload/image-downloader';
+import { PropertyListPageService } from './property/property-list-page.service';
 
 @Injectable()
 export class ChromeService implements OnModuleInit, OnModuleDestroy {
@@ -30,7 +32,9 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
-    private readonly mongoDatabaseService: MongoDatabaseService
+    private readonly mongoDatabaseService: MongoDatabaseService,
+    private readonly imageDownloader: ImageDownloader,
+    private readonly propertyListPageService: PropertyListPageService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -43,6 +47,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
         logger: this.logger
       });
       await this.mongoDatabaseService.validateConnectionOrExit();
+      await this.imageDownloader.validateImageDownloadFolder();
       await this.launchChrome();
       await this.openHomePage();
     } catch (error) {
@@ -195,6 +200,15 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       const { Page, Runtime } = client;
       await Page.enable();
       await Runtime.enable();
+      await this.imageDownloader.initializeNetworkCapture(client as unknown as {
+        Network: {
+          enable(): Promise<void>;
+          responseReceived(callback: (event: unknown) => void): void;
+          loadingFinished(callback: (event: unknown) => void): void;
+          loadingFailed(callback: (event: unknown) => void): void;
+          getResponseBody(params: { requestId: string }): Promise<{ body: string; base64Encoded: boolean }>;
+        };
+      });
       await Page.bringToFront();
       const locationResult = await Runtime.evaluate({
         expression: 'window.location.href',
@@ -211,6 +225,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
           context: 'listing home page navigation'
         });
       }
+      this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
       await this.executeMainPageWithRetry(client, Page, Runtime);
       await this.captchaDetectorService.panicIfCaptchaDetected({
         runtime: Runtime,
@@ -291,6 +306,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         await this.recoverIfOriginError(Page, Runtime);
+        this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
         await this.mainPageService.execute(
           client,
           this.configuration.mainSearchArea,

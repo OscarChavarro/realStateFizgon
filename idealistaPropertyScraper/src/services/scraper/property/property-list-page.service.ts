@@ -1,24 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
+import { CdpClient } from './cdp-client.types';
 import { PropertyDetailPageService } from './property-detail-page.service';
-
-type RuntimeEvaluateResult = {
-  exceptionDetails?: {
-    text?: string;
-  };
-  result?: {
-    value?: unknown;
-  };
-};
-
-type CdpClient = {
-  Page: {
-    bringToFront(): Promise<void>;
-  };
-  Runtime: {
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
-  };
-};
 
 @Injectable()
 export class PropertyListPageService {

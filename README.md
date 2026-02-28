@@ -39,6 +39,7 @@ The architecture componentes are:
 This project depends on several components, such as RabbitMQ, MongoDB, Prometheus, Grafana and other services that interact with micro services. The whole environment can be deployed in several different ways:
 - [Manually in local host](./doc/manualSetup.md): recommended for learning only.
 - Docker images in Kubernetes pods: recommended for deployment to production environment.
+- [Proxy support (Nginx + ZeroTier)](./doc/proxySupport.md): guide for residential egress through a forward proxy.
 
 # Common installation on micro services
 

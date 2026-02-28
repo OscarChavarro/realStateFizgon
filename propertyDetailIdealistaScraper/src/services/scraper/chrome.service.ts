@@ -4,6 +4,7 @@ import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from '../../config/configuration';
+import { ProxyService } from '@real-state-fizgon/proxy';
 import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
 import { PropertyDetailPageService } from './property/property-detail-page.service';
 import { MongoDatabaseService } from '../mongodb/mongo-database.service';
@@ -32,6 +33,7 @@ type CdpClient = {
 @Injectable()
 export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromeService.name);
+  private readonly proxyService = new ProxyService();
   private readonly cdpHost = '127.0.0.1';
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
@@ -50,7 +52,13 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     await this.imageDownloader.validateImageDownloadFolder();
     await this.mongoDatabaseService.validateConnectionOrExit();
-    await this.sleep(5 * 60 * 1000);
+    await this.proxyService.validateProxyAccessOrWait({
+      enabled: this.configuration.proxyEnabled,
+      host: this.configuration.proxyHost,
+      port: this.configuration.proxyPort,
+      retryWaitMs: this.configuration.chromeBrowserLaunchRetryWaitMs,
+      logger: this.logger
+    });
     await this.launchChrome();
     this.cdpClient = await this.openCdpClient();
 

@@ -1,9 +1,12 @@
 FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
-COPY package*.json ./
+COPY propertyDetailIdealistaScraper/package*.json ./
+COPY modules/proxy /modules/proxy
+RUN npm --prefix /modules/proxy ci \
+    && npm --prefix /modules/proxy run build
 RUN npm ci
-COPY . .
+COPY propertyDetailIdealistaScraper/ ./
 RUN npm run build
 
 FROM node:22-bookworm-slim AS runtime
@@ -64,12 +67,14 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY package*.json ./
+COPY propertyDetailIdealistaScraper/package*.json ./
+COPY --from=builder /modules/proxy/package.json /modules/proxy/package.json
+COPY --from=builder /modules/proxy/dist /modules/proxy/dist
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
-COPY environment.json ./environment.json
-COPY secrets-example.json ./secrets-example.json
-COPY start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
+COPY propertyDetailIdealistaScraper/environment.json ./environment.json
+COPY propertyDetailIdealistaScraper/secrets-example.json ./secrets-example.json
+COPY propertyDetailIdealistaScraper/start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
 RUN sed -i 's#/Applications/Google Chrome.app/Contents/MacOS/Google Chrome#/usr/local/bin/browser-cdp#g' environment.json
 RUN chmod +x /usr/local/bin/start-with-xvfb.sh \
     && groupadd -g 1001 scraper \

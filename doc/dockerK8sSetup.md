@@ -298,7 +298,7 @@ If you rebuild an image, run the matching `kind load docker-image ...` again bef
 ## 4.2.1 propertyListingIdealistaScraper
 
 ```bash
-docker build -t property-listing-idealista-scraper:local -f propertyListingIdealistaScraper/Dockerfile.local propertyListingIdealistaScraper
+docker build -t property-listing-idealista-scraper:local -f propertyListingIdealistaScraper/Dockerfile.local .
 kind load docker-image property-listing-idealista-scraper:local --name real-state-fizgon
 kubectl apply -f propertyListingIdealistaScraper/k8s/propertyListingIdealistaScraper.yaml
 kubectl -n real-state-fizgon rollout restart deployment/property-listing-idealista-scraper
@@ -415,7 +415,7 @@ kubectl describe pv property-detail-images-pv
 ## 4.2.4 Deploy propertyDetailIdealistaScraper service pod
 
 ```bash
-docker build -t property-detail-idealista-scraper:local -f propertyDetailIdealistaScraper/Dockerfile.local propertyDetailIdealistaScraper
+docker build -t property-detail-idealista-scraper:local -f propertyDetailIdealistaScraper/Dockerfile.local .
 kind load docker-image property-detail-idealista-scraper:local --name real-state-fizgon
 
 NFS_SERVER="$(jq -er '.nfs.server' propertyDetailIdealistaScraper/secrets.json)" \

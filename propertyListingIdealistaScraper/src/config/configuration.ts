@@ -53,6 +53,13 @@ type Secrets = {
     user?: string;
     password?: string;
   };
+  proxy?: {
+    enable?: boolean;
+    host?: string;
+    port?: string | number;
+    user?: string;
+    password?: string;
+  };
 };
 
 @Injectable()
@@ -83,7 +90,40 @@ export class Configuration {
   }
 
   get chromiumOptions(): string[] {
-    return this.environment.chrome.chromiumOptions ?? [];
+    const baseOptions = this.environment.chrome.chromiumOptions ?? [];
+    return [...baseOptions, ...this.chromiumProxyOptions()];
+  }
+
+  private chromiumProxyOptions(): string[] {
+    if (!this.proxyEnabled) {
+      return [];
+    }
+
+    const host = (this.secrets.proxy?.host ?? '').trim();
+    const rawPort = this.secrets.proxy?.port;
+    const port = typeof rawPort === 'number'
+      ? String(rawPort)
+      : (rawPort ?? '').trim();
+
+    if (!host || !port) {
+      return [];
+    }
+
+    return [`--proxy-server=http://${host}:${port}`];
+  }
+
+  get proxyEnabled(): boolean {
+    return this.secrets.proxy?.enable ?? false;
+  }
+
+  get proxyHost(): string {
+    return (this.secrets.proxy?.host ?? '').trim();
+  }
+
+  get proxyPort(): number {
+    const rawPort = this.secrets.proxy?.port;
+    const port = typeof rawPort === 'number' ? rawPort : Number((rawPort ?? '').trim());
+    return Number.isFinite(port) ? port : 0;
   }
 
   get rabbitMqHost(): string {

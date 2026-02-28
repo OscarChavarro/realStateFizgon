@@ -21,6 +21,7 @@ export class RabbitMqService implements OnModuleDestroy {
       }
 
       const url = message.content.toString('utf-8');
+      this.logger.log(`Processing: ${url}`);
       try {
         await consumer(url);
         channel.ack(message);

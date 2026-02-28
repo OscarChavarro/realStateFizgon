@@ -3,6 +3,7 @@ import { spawn, spawnSync, ChildProcess } from 'node:child_process';
 import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
+import { ProxyService } from '@real-state-fizgon/proxy';
 import { Configuration } from '../../config/configuration';
 import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
@@ -12,6 +13,7 @@ import { PropertyListingPaginationService } from './pagination/property-listing-
 export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromeService.name);
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
+  private readonly proxyService = new ProxyService();
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
@@ -29,6 +31,13 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     try {
+      await this.proxyService.validateProxyAccessOrWait({
+        enabled: this.configuration.proxyEnabled,
+        host: this.configuration.proxyHost,
+        port: this.configuration.proxyPort,
+        retryWaitMs: this.configuration.chromeBrowserLaunchRetryWaitMs,
+        logger: this.logger
+      });
       await this.launchChrome();
       await this.openHomePage();
     } catch (error) {

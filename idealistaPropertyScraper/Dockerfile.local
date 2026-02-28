@@ -79,11 +79,8 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY idealistaPropertyScraper/environment.json ./environment.json
 COPY idealistaPropertyScraper/secrets-example.json ./secrets-example.json
-COPY idealistaPropertyScraper/k8s/googleChromeIdealistaScraper.tar.gz /tmp/googleChromeIdealistaScraper.tar.gz
 COPY idealistaPropertyScraper/start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
 RUN sed -i 's#/Applications/Google Chrome.app/Contents/MacOS/Google Chrome#/usr/local/bin/browser-cdp#g' environment.json
-RUN tar -xzf /tmp/googleChromeIdealistaScraper.tar.gz -C /tmp \
-    && rm -f /tmp/googleChromeIdealistaScraper.tar.gz
 RUN chmod +x /usr/local/bin/start-with-xvfb.sh \
     && groupadd -g 1001 scraper \
     && useradd -u 1001 -g 1001 -m -s /bin/bash scraper \

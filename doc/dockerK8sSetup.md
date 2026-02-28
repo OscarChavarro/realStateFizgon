@@ -92,8 +92,7 @@ Warning:
 kind delete cluster --name real-state-fizgon || true
 
 # Remove local project images used in this guide
-docker rmi property-listing-idealista-scraper:local 2>/dev/null || true
-docker rmi property-detail-idealista-scraper:local 2>/dev/null || true
+docker rmi idealista-property-scraper:local 2>/dev/null || true
 docker rmi notification-message-sender:local 2>/dev/null || true
 
 # Remove kind node image and registry image (optional)
@@ -135,8 +134,7 @@ Recommended records:
 - `grafana.<yourDomain>` -> `<yourDomain>`
 - `mongodb.<yourDomain>` -> `<yourDomain>`
 - `notification.<yourDomain>` -> `<yourDomain>`
-- `idealistalist.<yourDomain>` -> `<yourDomain>`
-- `idealistadetail.<yourDomain>` -> `<yourDomain>`
+- `idealista.<yourDomain>` -> `<yourDomain>`
 
 `mongodb` and AMQP (`rabbitmq` on port `5672`) are TCP services, so clients must connect with explicit port:
 - `mongodb.<yourDomain>:27017`
@@ -148,7 +146,7 @@ For local development with `kind`, do not use `localhost:5001` image tags in Dep
 Build images locally and copy them into the kind node with `kind load docker-image`.
 
 Current project Deployments are configured with:
-- image names without registry prefix (for example `property-listing-idealista-scraper:local`)
+- image names without registry prefix (for example `idealista-property-scraper:local`)
 - `imagePullPolicy: Never`
 
 That ensures Kubernetes uses only images already present in the kind node.
@@ -167,13 +165,14 @@ Initialize queue/users as in `doc/manualSetup.md`:
 # Obtain the name of the RabbitMQ pod
 RABBIT_POD=$(kubectl -n real-state-fizgon get pod -l app=rabbitmq -o jsonpath='{.items[0].metadata.name}')
 
-# User creation for micro services
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl add_user propertylist_user '<some password1>'
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl add_user propertydetail_user '<some password2>'
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_permissions -p dev propertylist_user ".*" ".*" ".*"
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_permissions -p dev propertydetail_user ".*" ".*" ".*"
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_user_tags propertylist_user management
-kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_user_tags propertydetail_user management
+# User creation for scraper services
+echo "Enter RabbitMQ password for user idealistascraper_user:"
+read -r -s RABBIT_IDEALISTA_PASSWORD
+echo
+export RABBIT_IDEALISTA_PASSWORD
+kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl add_user idealistascraper_user "$RABBIT_IDEALISTA_PASSWORD"
+kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_permissions -p dev idealistascraper_user ".*" ".*" ".*"
+kubectl -n real-state-fizgon exec -it "$RABBIT_POD" -- rabbitmqctl set_user_tags idealistascraper_user management
 
 # User creation for admin
 echo "Enter new password for RabbitMQ admin user:"
@@ -197,16 +196,16 @@ MongoDB is intentionally persistent (not volatile) in this setup.
 kubectl apply -f k8s/mongodb.yaml
 ```
 
-Create app DB user (matches `propertyDetailIdealistaScraper/secrets.json`):
+Create app DB user (matches `idealistaPropertyScraper/secrets.json`):
 
 ```bash
 MONGO_POD=$(kubectl -n real-state-fizgon get pod -l app=mongodb -o jsonpath='{.items[0].metadata.name}')
 
-echo "Enter MongoDB password for user propertydetail_user:"
-read -r -s MONGODB_PROPERTYDETAIL_PASSWORD
+echo "Enter MongoDB password for user idealistascraper_user:"
+read -r -s MONGODB_IDEALISTA_PASSWORD
 echo
-export MONGODB_PROPERTYDETAIL_PASSWORD
-kubectl -n real-state-fizgon exec -it "$MONGO_POD" -- mongosh --eval "use idealistaScraper; db.createUser({user:\"propertydetail_user\", pwd:\"$MONGODB_PROPERTYDETAIL_PASSWORD\", roles:[{role:\"readWrite\", db:\"idealistaScraper\"}]});"
+export MONGODB_IDEALISTA_PASSWORD
+kubectl -n real-state-fizgon exec -it "$MONGO_POD" -- mongosh --eval "use idealistaScraper; db.createUser({user:\"idealistascraper_user\", pwd:\"$MONGODB_IDEALISTA_PASSWORD\", roles:[{role:\"readWrite\", db:\"idealistaScraper\"}]});"
 ```
 
 ## 3.3 Prometheus
@@ -271,22 +270,12 @@ Each service reads `secrets.json` from `/app/secrets.json`.
 `Dockerfile.local` includes `secrets-example.json`, but production credentials must be injected as Kubernetes Secret.
 
 1. Update local files:
-- `propertyListingIdealistaScraper/secrets.json`
-- `propertyDetailIdealistaScraper/secrets.json`
 - `idealistaPropertyScraper/secrets.json`
 - `notificationMessageSender/secrets.json`
 
 2. Create K8S secrets:
 
 ```bash
-kubectl -n real-state-fizgon create secret generic property-listing-secrets \
-  --from-file=secrets.json=propertyListingIdealistaScraper/secrets.json \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-kubectl -n real-state-fizgon create secret generic property-detail-secrets \
-  --from-file=secrets.json=propertyDetailIdealistaScraper/secrets.json \
-  --dry-run=client -o yaml | kubectl apply -f -
-
 kubectl -n real-state-fizgon create secret generic idealista-property-secrets \
   --from-file=secrets.json=idealistaPropertyScraper/secrets.json \
   --dry-run=client -o yaml | kubectl apply -f -
@@ -300,25 +289,7 @@ kubectl -n real-state-fizgon create secret generic notification-message-sender-s
 
 If you rebuild an image, run the matching `kind load docker-image ...` again before `kubectl rollout restart`.
 
-## 4.2.1 propertyListingIdealistaScraper
-
-```bash
-docker build -t property-listing-idealista-scraper:local -f propertyListingIdealistaScraper/Dockerfile.local .
-kind load docker-image property-listing-idealista-scraper:local --name real-state-fizgon
-kubectl apply -f propertyListingIdealistaScraper/k8s/propertyListingIdealistaScraper.yaml
-kubectl -n real-state-fizgon rollout restart deployment/property-listing-idealista-scraper
-```
-
-The first time pod will not have access to RabbitMQ. Double check that `rabbitmq` is the host on `secrets.json`, and check again the credentials. Then load:
-
-```bash
-kubectl -n real-state-fizgon create secret generic property-listing-secrets   --from-file=secrets.json=propertyListingIdealistaScraper/secrets.json --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n real-state-fizgon rollout restart deployment/property-listing-idealista-scraper
-```
-
-By this point the first scraper should be running and queue `property-listing-urls` should be receiving messages. Use RabbitMQ web UI at port `:15672` of rabbitmq pod to verify it.
-
-## 4.2.2 Set up an NFS shared folder in system host
+## 4.2.1 Set up an NFS shared folder in system host
 
 Prepare host NFS export first (required for `/app/output/images` persistence):
 
@@ -331,13 +302,13 @@ sudo apt-get install -y nfs-kernel-server
 export NFS_SERVER_IP="$(docker network inspect kind -f '{{(index .IPAM.Config 0).Gateway}}')"
 echo "NFS_SERVER_IP=${NFS_SERVER_IP}"
 
-# Read NFS settings from propertyDetailIdealistaScraper/secrets.json
-export NFS_SERVER="$(jq -r '.nfs.server // empty' propertyDetailIdealistaScraper/secrets.json)"
-export NFS_SHARED_FOLDER="$(jq -r '.nfs.sharedFolder // empty' propertyDetailIdealistaScraper/secrets.json)"
+# Read NFS settings from idealistaPropertyScraper/secrets.json
+export NFS_SERVER="$(jq -r '.nfs.server // empty' idealistaPropertyScraper/secrets.json)"
+export NFS_SHARED_FOLDER="$(jq -r '.nfs.sharedFolder // empty' idealistaPropertyScraper/secrets.json)"
 NFS_CONFIG_VALID=true
 
 if [ -z "$NFS_SERVER" ] || [ -z "$NFS_SHARED_FOLDER" ]; then
-  echo "ERROR: nfs.server or nfs.sharedFolder is empty in propertyDetailIdealistaScraper/secrets.json"
+  echo "ERROR: nfs.server or nfs.sharedFolder is empty in idealistaPropertyScraper/secrets.json"
   NFS_CONFIG_VALID=false
 fi
 
@@ -355,7 +326,7 @@ if [ "$NFS_CONFIG_VALID" = true ]; then
   echo "NFS_SERVER=${NFS_SERVER}"
   echo "NFS_SHARED_FOLDER=${NFS_SHARED_FOLDER}"
 
-  # propertyDetailIdealistaScraper runs with UID/GID 1001 in K8S.
+  # idealistaPropertyScraper runs with UID/GID 1001 in K8S.
   # Ensure the shared folder is writable by that user/group.
   sudo mkdir -p "${NFS_SHARED_FOLDER}"
   sudo chown -R 1001:1001 "${NFS_SHARED_FOLDER}"
@@ -393,19 +364,19 @@ fi
 Warning:
 - The subnet returned by Docker can be IPv6 in some environments.
 - If it is IPv6, use that IPv6 subnet in `/etc/exports` instead of an IPv4 CIDR.
-- The shared folder must be writable for UID `1001` and GID `1001` because `propertyDetailIdealistaScraper` runs with that identity in K8S.
+- The shared folder must be writable for UID `1001` and GID `1001` because `idealistaPropertyScraper` runs with that identity in K8S.
 
-## 4.2.3 Set up K8S Persistent Volume (PV) with mounted NFS shared folder
+## 4.2.2 Set up K8S Persistent Volume (PV) with mounted NFS shared folder
 
 Set up PV/PVC for image download persistence:
-- Define `nfs.server` and `nfs.sharedFolder` in `propertyDetailIdealistaScraper/secrets.json`.
+- Define `nfs.server` and `nfs.sharedFolder` in `idealistaPropertyScraper/secrets.json`.
 - This mount persists downloaded images (`/app/output/images`) outside volatile pods.
-- `propertyDetailIdealistaScraper/k8s/propertyDetailIdealistaScraper.yaml` uses `storageClassName: ""` for both PV and PVC, so pre-bound static volumes work correctly without storage class mismatch.
+- `idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml` uses `storageClassName: ""` for both PV and PVC, so pre-bound static volumes work correctly without storage class mismatch.
 
 ```bash
-export NFS_SERVER="$(jq -er '.nfs.server' propertyDetailIdealistaScraper/secrets.json)"
-export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' propertyDetailIdealistaScraper/secrets.json)"
-envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < propertyDetailIdealistaScraper/k8s/propertyDetailIdealistaScraper.yaml \
+export NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)"
+export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)"
+envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
 | awk 'BEGIN { RS="---"; ORS="---\n" } NR<=2 { print }' \
 | kubectl apply -f -
 ```
@@ -414,25 +385,10 @@ Review the PV:
 
 ```bash
 kubectl get pv
-kubectl describe pv property-detail-images-pv
+kubectl describe pv idealista-property-images-pv
 ```
 
-## 4.2.4 Deploy propertyDetailIdealistaScraper service pod
-
-```bash
-docker build -t property-detail-idealista-scraper:local -f propertyDetailIdealistaScraper/Dockerfile.local .
-kind load docker-image property-detail-idealista-scraper:local --name real-state-fizgon
-
-NFS_SERVER="$(jq -er '.nfs.server' propertyDetailIdealistaScraper/secrets.json)" \
-NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' propertyDetailIdealistaScraper/secrets.json)" \
-envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < propertyDetailIdealistaScraper/k8s/propertyDetailIdealistaScraper.yaml \
-| awk 'BEGIN { RS="---"; ORS="---\n" } NR==3 { print }' \
-| kubectl apply -f -
-
-kubectl -n real-state-fizgon rollout restart deployment/property-detail-idealista-scraper
-```
-
-## 4.2.5 idealistaPropertyScraper
+## 4.2.3 idealistaPropertyScraper
 
 Set up PV/PVC for `idealista-property-scraper` image persistence:
 
@@ -459,7 +415,7 @@ envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/ide
 kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
 ```
 
-## 4.2.6 notificationMessageSender
+## 4.2.4 notificationMessageSender
 
 ```bash
 docker build -t notification-message-sender:local -f notificationMessageSender/Dockerfile.local notificationMessageSender
@@ -522,8 +478,7 @@ Important:
 Use after updating image tags or secrets:
 
 ```bash
-kubectl -n real-state-fizgon rollout restart deployment/property-listing-idealista-scraper
-kubectl -n real-state-fizgon rollout restart deployment/property-detail-idealista-scraper
+kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
 kubectl -n real-state-fizgon rollout restart deployment/notification-message-sender
 kubectl -n real-state-fizgon rollout restart deployment/rabbitmq
 kubectl -n real-state-fizgon rollout restart deployment/prometheus
@@ -545,8 +500,7 @@ kubectl -n ingress-nginx get svc ingress-nginx-controller
 Tail logs:
 
 ```bash
-kubectl -n real-state-fizgon logs deploy/property-listing-idealista-scraper -f
-kubectl -n real-state-fizgon logs deploy/property-detail-idealista-scraper -f
+kubectl -n real-state-fizgon logs deploy/idealista-property-scraper -f
 kubectl -n real-state-fizgon logs deploy/notification-message-sender -f
 ```
 
@@ -559,8 +513,7 @@ kubectl -n real-state-fizgon run metrics-test --rm -it --image=curlimages/curl -
 
 ## 8. Notes on architecture mapping
 
-- `propertyListingIdealistaScraper` publishes property URLs to RabbitMQ queue `property-listing-urls`.
-- `propertyDetailIdealistaScraper` consumes those URLs, stores property data in MongoDB, and publishes notification payloads to `outgoing-notification-messages`.
+- `idealistaPropertyScraper` performs integrated listing+detail scraping, stores property data in MongoDB, and publishes notification payloads to `outgoing-notification-messages`.
 - `notificationMessageSender` consumes outgoing notifications and sends WhatsApp messages.
 - Prometheus scrapes service metrics; Grafana visualizes them.
 

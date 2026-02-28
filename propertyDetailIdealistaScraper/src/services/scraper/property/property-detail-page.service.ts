@@ -7,6 +7,7 @@ import { Property } from '../../../model/property/property.model';
 import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
 import { ImageDownloader } from '../../imagedownload/image-downloader';
 import { CookieAprovalDialogScraperService } from './cookie-aproval-dialog-scraper.service';
+import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 
 type CdpClient = {
   Page: {
@@ -35,6 +36,7 @@ type ExtractedPropertyPayload = {
 @Injectable()
 export class PropertyDetailPageService {
   private readonly logger = new Logger(PropertyDetailPageService.name);
+  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
   private static readonly DETAIL_CONTAINER_SELECTOR = 'main.detail-container';
   private static readonly DEACTIVATED_DETAIL_SELECTOR = 'section.deactivated-detail';
   private static readonly SIDE_CONTENT_SELECTOR = '#side-content';
@@ -67,6 +69,11 @@ export class PropertyDetailPageService {
       throw new Error(`Navigation failed: ${navigation.errorText}`);
     }
     await this.waitForUrlAndDomComplete(client.Runtime, url);
+    await this.captchaDetectorService.panicIfCaptchaDetected({
+      runtime: client.Runtime,
+      logger: this.logger,
+      context: `property detail url "${url}"`
+    });
     await this.throwIfOriginErrorPage(client.Runtime, url);
     await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
     if (await this.isDeactivatedDetailPage(client.Runtime)) {

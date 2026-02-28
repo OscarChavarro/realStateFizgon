@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { Configuration } from '../../../config/configuration';
 import { PropertyListPageService } from '../property/property-list-page.service';
 
@@ -20,6 +21,7 @@ type CdpClient = {
 @Injectable()
 export class PropertyListingPaginationService {
   private readonly logger = new Logger(PropertyListingPaginationService.name);
+  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
 
   constructor(
     private readonly configuration: Configuration,
@@ -31,6 +33,11 @@ export class PropertyListingPaginationService {
     const allUrls: string[] = [];
 
     while (true) {
+      await this.captchaDetectorService.panicIfCaptchaDetected({
+        runtime: client.Runtime,
+        logger: this.logger,
+        context: `property listing page ${page}`
+      });
       const pageUrls = await this.propertyListPageService.getPropertyUrls(client);
       allUrls.push(...pageUrls);
 
@@ -52,6 +59,11 @@ export class PropertyListingPaginationService {
       await this.sleep(this.configuration.paginationClickWaitMs);
       await this.waitForUrlChange(client, currentUrl);
       await this.waitForListingsOrPagination(client);
+      await this.captchaDetectorService.panicIfCaptchaDetected({
+        runtime: client.Runtime,
+        logger: this.logger,
+        context: `property listing page ${page + 1}`
+      });
       page += 1;
       this.logger.log(`Moved to page ${page}.`);
     }

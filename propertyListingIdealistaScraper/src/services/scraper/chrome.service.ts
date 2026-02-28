@@ -4,6 +4,7 @@ import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import CDP = require('chrome-remote-interface');
 import { ProxyService } from '@real-state-fizgon/proxy';
+import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { Configuration } from '../../config/configuration';
 import { FiltersService } from './filters/filters.service';
 import { MainPageService } from './main-page.service';
@@ -14,6 +15,7 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromeService.name);
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
   private readonly proxyService = new ProxyService();
+  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
@@ -200,8 +202,18 @@ export class ChromeService implements OnModuleInit, OnModuleDestroy {
       if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
         await Page.navigate({ url: this.configuration.scraperHomeUrl });
         await this.waitForPageLoad(Page);
+        await this.captchaDetectorService.panicIfCaptchaDetected({
+          runtime: Runtime,
+          logger: this.logger,
+          context: 'listing home page navigation'
+        });
       }
       await this.executeMainPageWithRetry(client, Page, Runtime);
+      await this.captchaDetectorService.panicIfCaptchaDetected({
+        runtime: Runtime,
+        logger: this.logger,
+        context: 'listing search results page load'
+      });
       await this.waitForExpression(
         Runtime,
         "Boolean(document.querySelector('#aside-filters'))"

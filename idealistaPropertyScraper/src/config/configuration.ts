@@ -6,6 +6,7 @@ type Environment = {
   chrome: {
     binary: string;
     path: string;
+    userAgent?: string;
     chromiumOptions?: string[];
   };
   rabbitmq: {
@@ -28,6 +29,7 @@ type Environment = {
     mainpage: {
       expressiontimeout: number;
       expressionpollinterval: number;
+      firstloaddeviceverificationwaitms?: number;
       searchclickwaitms?: number;
     };
     filter: {
@@ -110,7 +112,7 @@ export class Configuration {
 
   get chromiumOptions(): string[] {
     const baseOptions = this.environment.chrome.chromiumOptions ?? [];
-    return [...baseOptions, ...this.chromiumProxyOptions()];
+    return [...baseOptions, ...this.chromiumProxyOptions(), ...this.chromiumUserAgentOptions()];
   }
 
   private chromiumProxyOptions(): string[] {
@@ -129,6 +131,15 @@ export class Configuration {
     }
 
     return [`--proxy-server=http://${host}:${port}`];
+  }
+
+  private chromiumUserAgentOptions(): string[] {
+    const userAgent = (this.environment.chrome.userAgent ?? '').trim();
+    if (!userAgent) {
+      return [];
+    }
+
+    return [`--user-agent=${userAgent}`];
   }
 
   get proxyEnabled(): boolean {
@@ -207,6 +218,10 @@ export class Configuration {
 
   get mainPageSearchClickWaitMs(): number {
     return Math.max(0, this.environment.timeouts?.mainpage?.searchclickwaitms ?? 1000);
+  }
+
+  get mainPageFirstLoadDeviceVerificationWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.mainpage?.firstloaddeviceverificationwaitms ?? 30000);
   }
 
   get filterStateClickWaitMs(): number {

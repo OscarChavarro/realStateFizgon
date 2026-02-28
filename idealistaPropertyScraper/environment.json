@@ -2,6 +2,7 @@
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "path": "/tmp/googleChromeIdealistaScraper",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
     "chromiumOptions": [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -36,6 +37,7 @@
     "mainpage": {
       "expressiontimeout": 30000,
       "expressionpollinterval": 200,
+      "firstloaddeviceverificationwaitms": 30000,
       "searchclickwaitms": 2000
     },
     "filter": {

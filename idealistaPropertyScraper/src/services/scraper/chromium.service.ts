@@ -22,6 +22,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   private readonly cdpPort = 9222;
   private shuttingDown = false;
   private debugHoldInProgress = false;
+  private firstHomePageWaitApplied = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -140,6 +141,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
           context: 'listing home page navigation'
         });
       }
+      await this.waitForFirstHomePageDeviceVerification();
       this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
       await this.executeMainPageWithRetry(client, Page, Runtime);
       await this.captchaDetectorService.panicIfCaptchaDetected({
@@ -159,6 +161,21 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     } finally {
       await client.close();
     }
+  }
+
+  private async waitForFirstHomePageDeviceVerification(): Promise<void> {
+    if (this.firstHomePageWaitApplied) {
+      return;
+    }
+
+    this.firstHomePageWaitApplied = true;
+    const waitMs = this.configuration.mainPageFirstLoadDeviceVerificationWaitMs;
+    const waitSeconds = Math.floor(waitMs / 1000);
+
+    this.logger.log(
+      `First home-page load detected. Waiting ${waitSeconds} seconds for device verification to complete before search automation.`
+    );
+    await this.chromiumPageSyncService.sleep(waitMs);
   }
 
   private async waitForPageTarget(): Promise<{ id?: string; url?: string; type?: string } | undefined> {

@@ -4,7 +4,9 @@ import { Configuration } from './config/configuration';
 import { ChromeService } from './services/scraper/chrome.service';
 import { FilterLoaderDetectionService } from './services/scraper/filters/filter-loader-detection.service';
 import { FilterActionExecutorService } from './services/scraper/filters/filter-action-executor.service';
+import { FilterAvailableOptionExtractor } from './services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectionReaderService } from './services/scraper/filters/filter-selection-reader.service';
+import { FilterSelectedOptionExtractor } from './services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterTextNormalizationService } from './services/scraper/filters/filter-text-normalization.service';
 import { FilterUpdateService } from './services/scraper/filters/filter-update.service';
 import { FiltersService } from './services/scraper/filters/filters.service';
@@ -20,6 +22,11 @@ import { PropertyListPageService } from './services/scraper/property/property-li
 import { RabbitMqService } from './services/rabbitmq/rabbit-mq.service';
 import { MongoDatabaseService } from './services/mongodb/mongo-database.service';
 import { ImageDownloader } from './services/imagedownload/image-downloader';
+import { ImageDownloadPathService } from './services/imagedownload/image-download-path.service';
+import { ImageFileNameService } from './services/imagedownload/image-file-name.service';
+import { ImageNetworkCaptureService } from './services/imagedownload/image-network-capture.service';
+import { ImagePendingQueuePublisherService } from './services/imagedownload/image-pending-queue-publisher.service';
+import { ImageUrlRulesService } from './services/imagedownload/image-url-rules.service';
 
 @Module({
   imports: [
@@ -31,6 +38,8 @@ import { ImageDownloader } from './services/imagedownload/image-downloader';
     Configuration,
     MainPageService,
     FilterLoaderDetectionService,
+    FilterAvailableOptionExtractor,
+    FilterSelectedOptionExtractor,
     FilterTextNormalizationService,
     FilterSelectionReaderService,
     FilterActionExecutorService,
@@ -38,6 +47,11 @@ import { ImageDownloader } from './services/imagedownload/image-downloader';
     FiltersService,
     RabbitMqService,
     MongoDatabaseService,
+    ImageDownloadPathService,
+    ImageUrlRulesService,
+    ImageFileNameService,
+    ImageNetworkCaptureService,
+    ImagePendingQueuePublisherService,
     ImageDownloader,
     CookieAprovalDialogScraperService,
     PropertyDetailNavigationService,

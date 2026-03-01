@@ -1,9 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
-import { FixDatabaseController } from './controllers/fix-database.controller';
 import { UpdatePropertiesController } from './controllers/update-properties.controller';
-import { PriceFixer } from './services/datamaintenance/price-fixer.service';
 import { ChromiumPageSyncService } from './services/scraper/chromium-page-sync.service';
 import { ChromiumFailureGuardService } from './services/scraper/chromium-failure-guard.service';
 import { ChromiumService } from './services/scraper/chromium.service';
@@ -44,7 +42,6 @@ import { ScraperStateMachineService } from './states/scraper-state-machine.servi
     })
   ],
   controllers: [
-    FixDatabaseController,
     UpdatePropertiesController
   ],
   providers: [
@@ -65,7 +62,6 @@ import { ScraperStateMachineService } from './states/scraper-state-machine.servi
     FiltersService,
     RabbitMqService,
     MongoDatabaseService,
-    PriceFixer,
     ImageDownloadPathService,
     ImageUrlRulesService,
     ImageFileNameService,

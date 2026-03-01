@@ -5,8 +5,8 @@ import { PriceFixer } from '../services/datamaintenance/price-fixer.service';
 export class FixDatabaseController {
   constructor(private readonly priceFixer: PriceFixer) {}
 
-  @Get('fixDatabase')
-  async fixDatabase(): Promise<{
+  @Get('fixDatabasePrices')
+  async fixDatabasePrices(): Promise<{
     status: string;
     scanned: number;
     updated: number;
@@ -20,4 +20,3 @@ export class FixDatabaseController {
     };
   }
 }
-

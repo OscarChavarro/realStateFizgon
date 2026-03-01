@@ -11,6 +11,8 @@ import { PropertyListingPaginationService } from './pagination/property-listing-
 import { MongoDatabaseService } from '../mongodb/mongo-database.service';
 import { ImageDownloader } from '../imagedownload/image-downloader';
 import { PropertyListPageService } from './property/property-list-page.service';
+import { ScraperState } from '../../states/scraper-state.enum';
+import { ScraperStateMachineService } from '../../states/scraper-state-machine.service';
 
 @Injectable()
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {
@@ -23,6 +25,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   private shuttingDown = false;
   private debugHoldInProgress = false;
   private firstHomePageWaitApplied = false;
+  private scraperLoopRunning = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -31,6 +34,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
+    private readonly scraperStateMachineService: ScraperStateMachineService,
     private readonly mongoDatabaseService: MongoDatabaseService,
     private readonly imageDownloader: ImageDownloader,
     private readonly propertyListPageService: PropertyListPageService
@@ -48,7 +52,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       await this.mongoDatabaseService.validateConnectionOrExit();
       await this.imageDownloader.validateImageDownloadFolder();
       await this.launchChrome();
-      await this.openHomePage();
+      this.startScraperStateLoop();
     } catch (error) {
       await this.holdForDebug(
         `Browser startup flow failed. ${this.errorToMessage(error)}`
@@ -103,6 +107,46 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  private async runScraperStateLoop(): Promise<void> {
+    while (!this.shuttingDown) {
+      const currentState = this.scraperStateMachineService.getCurrentState();
+      if (currentState === ScraperState.SCRAPING_FOR_NEW_PROPERTIES) {
+        await this.openHomePage();
+        continue;
+      }
+
+      if (currentState === ScraperState.UPDATING_PROPERTIES) {
+        await this.updatePropertiesFromDatabase();
+        continue;
+      }
+
+      if (
+        currentState === ScraperState.IDLE
+        && this.scraperStateMachineService.getPendingRequestsCount() > 0
+      ) {
+        this.scraperStateMachineService.setState(ScraperState.UPDATING_PROPERTIES);
+        continue;
+      }
+
+      await this.chromiumPageSyncService.sleep(500);
+    }
+  }
+
+  private startScraperStateLoop(): void {
+    if (this.scraperLoopRunning) {
+      return;
+    }
+
+    this.scraperLoopRunning = true;
+    void this.runScraperStateLoop()
+      .catch(async (error) => {
+        await this.holdForDebug(`Scraper state loop failed. ${this.errorToMessage(error)}`);
+      })
+      .finally(() => {
+        this.scraperLoopRunning = false;
+      });
+  }
+
   private async openHomePage(): Promise<void> {
     const selectedTarget = await this.waitForPageTarget();
     if (!selectedTarget) {
@@ -126,41 +170,96 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
         };
       });
       await Page.bringToFront();
-      const locationResult = await Runtime.evaluate({
-        expression: 'window.location.href',
-        returnByValue: true
-      });
-      const currentUrl = String(locationResult.result?.value ?? '');
-      this.logger.log(`Current page URL before automation: ${currentUrl}`);
-      if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
-        await Page.navigate({ url: this.configuration.scraperHomeUrl });
-        await this.chromiumPageSyncService.waitForPageLoad(Page);
-        await this.captchaDetectorService.panicIfCaptchaDetected({
-          runtime: Runtime,
-          logger: this.logger,
-          context: 'listing home page navigation'
-        });
-      }
-      await this.waitForFirstHomePageDeviceVerification();
-      this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-      await this.executeMainPageWithRetry(client, Page, Runtime);
-      await this.captchaDetectorService.panicIfCaptchaDetected({
-        runtime: Runtime,
-        logger: this.logger,
-        context: 'listing search results page load'
-      });
-      await this.chromiumPageSyncService.waitForExpression(
-        Runtime,
-        "Boolean(document.querySelector('#aside-filters'))",
-        this.configuration.chromeExpressionTimeoutMs,
-        this.configuration.chromeExpressionPollIntervalMs
-      );
-      await this.filtersService.execute(client);
+      await this.prepareSearchResultsWithFilters(client, Page, Runtime);
       await this.propertyListingPaginationService.execute(client);
       this.logger.log('MainPageService finished.');
+      this.scraperStateMachineService.finishScrapingForNewPropertiesCycle();
     } finally {
       await client.close();
     }
+  }
+
+  private async updatePropertiesFromDatabase(): Promise<void> {
+    const selectedTarget = await this.waitForPageTarget();
+    if (!selectedTarget) {
+      throw new Error('No page target available in Chrome');
+    }
+
+    this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')} for UPDATING_PROPERTIES state.`);
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
+
+    try {
+      const { Page, Runtime } = client;
+      await Page.enable();
+      await Runtime.enable();
+      await this.imageDownloader.initializeNetworkCapture(client as unknown as {
+        Network: {
+          enable(): Promise<void>;
+          responseReceived(callback: (event: unknown) => void): void;
+          loadingFinished(callback: (event: unknown) => void): void;
+          loadingFailed(callback: (event: unknown) => void): void;
+          getResponseBody(params: { requestId: string }): Promise<{ body: string; base64Encoded: boolean }>;
+        };
+      });
+      await Page.bringToFront();
+      await this.prepareSearchResultsWithFilters(client, Page, Runtime);
+
+      const openUrls = await this.mongoDatabaseService.getOpenPropertyUrls();
+      this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);
+      this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
+      await this.propertyListPageService.processExistingUrls(client, openUrls);
+      this.scraperStateMachineService.finishUpdatingPropertiesCycle();
+      this.logger.log('UPDATING_PROPERTIES cycle finished.');
+    } finally {
+      await client.close();
+    }
+  }
+
+  private async prepareSearchResultsWithFilters(
+    client: {
+      Page: {
+        reload(params?: { ignoreCache?: boolean }): Promise<void>;
+        loadEventFired(cb: () => void): void;
+      };
+      Runtime: {
+        enable(): Promise<void>;
+        evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
+      };
+    },
+    Page: { navigate(params: { url: string }): Promise<void>; reload(params?: { ignoreCache?: boolean }): Promise<void>; loadEventFired(cb: () => void): void },
+    Runtime: { evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }> }
+  ): Promise<void> {
+    const locationResult = await Runtime.evaluate({
+      expression: 'window.location.href',
+      returnByValue: true
+    });
+    const currentUrl = String(locationResult.result?.value ?? '');
+    this.logger.log(`Current page URL before automation: ${currentUrl}`);
+    if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
+      await Page.navigate({ url: this.configuration.scraperHomeUrl });
+      await this.chromiumPageSyncService.waitForPageLoad(Page);
+      await this.captchaDetectorService.panicIfCaptchaDetected({
+        runtime: Runtime,
+        logger: this.logger,
+        context: 'listing home page navigation'
+      });
+    }
+
+    await this.waitForFirstHomePageDeviceVerification();
+    this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
+    await this.executeMainPageWithRetry(client, Page, Runtime);
+    await this.captchaDetectorService.panicIfCaptchaDetected({
+      runtime: Runtime,
+      logger: this.logger,
+      context: 'listing search results page load'
+    });
+    await this.chromiumPageSyncService.waitForExpression(
+      Runtime,
+      "Boolean(document.querySelector('#aside-filters'))",
+      this.configuration.chromeExpressionTimeoutMs,
+      this.configuration.chromeExpressionPollIntervalMs
+    );
+    await this.filtersService.execute(client);
   }
 
   private async waitForFirstHomePageDeviceVerification(): Promise<void> {

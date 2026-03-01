@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
+import { UpdatePropertiesController } from './controllers/update-properties.controller';
 import { ChromiumPageSyncService } from './services/scraper/chromium-page-sync.service';
 import { ChromiumService } from './services/scraper/chromium.service';
 import { ChromiumProcessLiveCicleService } from './services/scraper/chromium-process-live-cicle.service';
@@ -29,6 +30,7 @@ import { ImageFileNameService } from './services/imagedownload/image-file-name.s
 import { ImageNetworkCaptureService } from './services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from './services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from './services/imagedownload/image-url-rules.service';
+import { ScraperStateMachineService } from './states/scraper-state-machine.service';
 
 @Module({
   imports: [
@@ -36,8 +38,12 @@ import { ImageUrlRulesService } from './services/imagedownload/image-url-rules.s
       isGlobal: true
     })
   ],
+  controllers: [
+    UpdatePropertiesController
+  ],
   providers: [
     Configuration,
+    ScraperStateMachineService,
     ChromiumPageSyncService,
     ChromiumProcessLiveCicleService,
     MainPageService,

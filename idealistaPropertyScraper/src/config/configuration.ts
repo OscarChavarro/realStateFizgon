@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 type Environment = {
+  api?: {
+    httpPort?: number;
+  };
   chrome: {
     binary: string;
     path: string;
@@ -305,5 +308,9 @@ export class Configuration {
     const encodedPassword = encodeURIComponent(this.mongoPassword);
     const encodedAuthSource = encodeURIComponent(this.mongoAuthSource);
     return `mongodb://${encodedUser}:${encodedPassword}@${this.mongoHost}:${this.mongoPort}/${this.mongoDatabase}?authSource=${encodedAuthSource}`;
+  }
+
+  get apiHttpPort(): number {
+    return Math.max(1, this.environment.api?.httpPort ?? 3000);
   }
 }

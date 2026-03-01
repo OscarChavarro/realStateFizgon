@@ -84,4 +84,17 @@ export class PropertyListPageService {
       this.processedUrlsSinceLastSearch.add(url);
     }
   }
+
+  async processExistingUrls(client: CdpClient, urls: string[]): Promise<void> {
+    for (const url of urls) {
+      if (this.processedUrlsSinceLastSearch.has(url)) {
+        this.logger.log(`URL already processed in current search cycle, skipping update: ${url}`);
+        continue;
+      }
+
+      this.logger.log(`Revalidating existing property: ${url}`);
+      await this.propertyDetailPageService.loadPropertyUrlFromDatabase(client, url);
+      this.processedUrlsSinceLastSearch.add(url);
+    }
+  }
 }

@@ -88,6 +88,14 @@ export class PropertyDetailNavigationService {
     throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
   }
 
+  async navigateDirectlyToUrl(runtime: RuntimeClient, targetUrl: string): Promise<void> {
+    await runtime.evaluate({
+      expression: `window.location.href = ${JSON.stringify(targetUrl)}; true;`,
+      returnByValue: true
+    });
+    await this.waitForDetailUrlAndDomComplete(runtime, targetUrl);
+  }
+
   async goBackToSearchResults(runtime: RuntimeClient): Promise<void> {
     await runtime.evaluate({
       expression: 'window.history.back(); true;',

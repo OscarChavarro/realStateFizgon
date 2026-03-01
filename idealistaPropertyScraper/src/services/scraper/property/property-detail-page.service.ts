@@ -28,36 +28,49 @@ export class PropertyDetailPageService {
 
     try {
       await this.navigationService.waitForDetailUrlAndDomComplete(client.Runtime, url);
-      await this.captchaDetectorService.panicIfCaptchaDetected({
-        runtime: client.Runtime,
-        logger: this.logger,
-        context: `property detail url "${url}"`
-      });
+      await this.processLoadedPropertyDetail(client, url);
+    } finally {
+      await this.navigationService.goBackToSearchResults(client.Runtime);
+    }
+  }
 
-      await this.interactionService.throwIfOriginErrorPage(client.Runtime);
-      await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
+  async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {
+    try {
+      await this.navigationService.navigateDirectlyToUrl(client.Runtime, url);
+      await this.processLoadedPropertyDetail(client, url);
+    } finally {
+      await this.navigationService.goBackToSearchResults(client.Runtime);
+    }
+  }
 
+  private async processLoadedPropertyDetail(client: CdpClient, url: string): Promise<void> {
+    await this.captchaDetectorService.panicIfCaptchaDetected({
+      runtime: client.Runtime,
+      logger: this.logger,
+      context: `property detail url "${url}"`
+    });
+
+    await this.interactionService.throwIfOriginErrorPage(client.Runtime);
+    await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
+
+    if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
+      await this.storageService.markPropertyClosed(url);
+      return;
+    }
+
+    await this.interactionService.revealDetailMedia(client.Runtime);
+
+    const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
+    if (!extractedProperty) {
       if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
         await this.storageService.markPropertyClosed(url);
         return;
       }
 
-      await this.interactionService.revealDetailMedia(client.Runtime);
-
-      const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
-      if (!extractedProperty) {
-        if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
-          await this.storageService.markPropertyClosed(url);
-          return;
-        }
-
-        throw new Error(`Property detail container was not found after loading URL: ${url}`);
-      }
-
-      const filteredProperty = this.domExtractorService.filterPropertyImagesByBlurPattern(extractedProperty);
-      await this.storageService.savePropertyWithImages(filteredProperty);
-    } finally {
-      await this.navigationService.goBackToSearchResults(client.Runtime);
+      throw new Error(`Property detail container was not found after loading URL: ${url}`);
     }
+
+    const filteredProperty = this.domExtractorService.filterPropertyImagesByBlurPattern(extractedProperty);
+    await this.storageService.savePropertyWithImages(filteredProperty);
   }
 }

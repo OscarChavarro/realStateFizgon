@@ -129,8 +129,7 @@ export class ImageNetworkCaptureService {
       await onImageBody({ requestId, url, mimeType, body });
       this.markImageNetworkActivity();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.warn(`Unable to capture image from CDP network (${url}): ${message}`);
+      // TODO: Should add metric. If not scraping property details should skip.
     }
   }
 

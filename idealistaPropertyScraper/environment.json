@@ -1,4 +1,7 @@
 {
+  "api": {
+    "httpPort": 8080
+  },
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "path": "/tmp/googleChromeIdealistaScraper",
@@ -37,7 +40,7 @@
     "mainpage": {
       "expressiontimeout": 30000,
       "expressionpollinterval": 200,
-      "firstloaddeviceverificationwaitms": 30000,
+      "firstloaddeviceverificationwaitms": 3000,
       "searchclickwaitms": 2000
     },
     "filter": {

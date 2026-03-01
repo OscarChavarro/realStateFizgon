@@ -74,6 +74,23 @@ export class MongoDatabaseService implements OnModuleDestroy {
     return existing !== null;
   }
 
+  async getOpenPropertyUrls(): Promise<string[]> {
+    const collection = await this.ensurePropertiesCollection();
+    const documents = await collection.find(
+      {
+        closedBy: { $exists: false },
+        url: { $type: 'string' }
+      },
+      {
+        projection: { _id: 0, url: 1 }
+      }
+    ).toArray();
+
+    return documents
+      .map((document) => (typeof document.url === 'string' ? document.url.trim() : ''))
+      .filter((url) => url.length > 0);
+  }
+
   async validateConnectionOrExit(): Promise<void> {
     const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);

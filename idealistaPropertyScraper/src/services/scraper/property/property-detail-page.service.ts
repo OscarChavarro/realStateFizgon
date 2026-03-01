@@ -46,6 +46,11 @@ export class PropertyDetailPageService {
 
       const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
       if (!extractedProperty) {
+        if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
+          await this.storageService.markPropertyClosed(url);
+          return;
+        }
+
         throw new Error(`Property detail container was not found after loading URL: ${url}`);
       }
 

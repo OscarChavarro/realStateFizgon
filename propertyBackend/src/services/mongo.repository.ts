@@ -67,6 +67,19 @@ export class MongoRepository {
     );
   }
 
+  async findAllPropertiesPaginated(page: number, pageSize: number): Promise<unknown[]> {
+    const collection = await this.mongoDatabaseService.getPropertiesCollection();
+    const skip = (page - 1) * pageSize;
+    const documents = await collection
+      .find({})
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .toArray();
+
+    return documents;
+  }
+
   private escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }

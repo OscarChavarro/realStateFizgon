@@ -1,0 +1,16 @@
+meta {
+  name: getProperties
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:8081/properties?page=1&pageSize=200
+  body: none
+  auth: none
+}
+
+params:query {
+  page: 1
+  pageSize: 200
+}

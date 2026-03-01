@@ -8,6 +8,22 @@ export type PropertyLookupResult = {
   propertyIdWasMissing: boolean;
 };
 
+export type PropertySortField =
+  | 'title'
+  | 'location'
+  | 'mainFeatures.area'
+  | 'mainFeatures.bedrooms'
+  | 'importedBy'
+  | 'price'
+  | 'propertyId';
+
+export type PropertySortOrder = 'asc' | 'desc';
+
+export type PropertySortCriterion = {
+  sortBy: PropertySortField;
+  order: PropertySortOrder;
+};
+
 @Injectable()
 export class MongoRepository {
   constructor(private readonly mongoDatabaseService: MongoDatabaseService) {}
@@ -67,12 +83,26 @@ export class MongoRepository {
     );
   }
 
-  async findAllPropertiesPaginated(page: number, pageSize: number): Promise<unknown[]> {
+  async findAllPropertiesPaginated(
+    page: number,
+    pageSize: number,
+    sortCriteria: PropertySortCriterion[]
+  ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
     const skip = (page - 1) * pageSize;
+    const mongoSort: Record<string, 1 | -1> = {};
+
+    for (const criterion of sortCriteria) {
+      mongoSort[criterion.sortBy] = criterion.order === 'asc' ? 1 : -1;
+    }
+
+    if (Object.keys(mongoSort).length === 0) {
+      mongoSort._id = -1;
+    }
+
     const documents = await collection
       .find({})
-      .sort({ _id: -1 })
+      .sort(mongoSort)
       .skip(skip)
       .limit(pageSize)
       .toArray();

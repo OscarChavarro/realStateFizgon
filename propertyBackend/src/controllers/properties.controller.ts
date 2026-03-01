@@ -1,6 +1,11 @@
-import { Controller, Get, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus, Query, Req } from '@nestjs/common';
 import { MongoDatabaseService } from '../services/mongo-database.service';
-import { MongoRepository } from '../services/mongo.repository';
+import { MongoRepository, PropertySortCriterion, PropertySortField, PropertySortOrder } from '../services/mongo.repository';
+
+type HttpRequestLike = {
+  originalUrl?: string;
+  url?: string;
+};
 
 @Controller('properties')
 export class PropertiesController {
@@ -17,6 +22,7 @@ export class PropertiesController {
 
   @Get()
   async getProperties(
+    @Req() request: HttpRequestLike,
     @Query('page') pageQuery?: string,
     @Query('pageSize') pageSizeQuery?: string
   ): Promise<{
@@ -34,6 +40,7 @@ export class PropertiesController {
 
     const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
     const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
+    const sortCriteria = this.parseSortCriteriaFromRawQuery(this.readRawQueryString(request));
 
     if (pageSize > totalElements) {
       this.throwPaginationBadRequest(
@@ -43,7 +50,7 @@ export class PropertiesController {
 
     const data = pageSize === 0
       ? []
-      : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize);
+      : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria);
     const normalizedData = data.map((item) => this.normalizePropertyTitle(item));
 
     return {
@@ -70,12 +77,84 @@ export class PropertiesController {
     return parsed;
   }
 
+  private parseSortCriteriaFromRawQuery(rawQuery: string): PropertySortCriterion[] {
+    const allowedSortFields = new Set<PropertySortField>([
+      'title',
+      'location',
+      'mainFeatures.area',
+      'mainFeatures.bedrooms',
+      'importedBy',
+      'price',
+      'propertyId'
+    ]);
+    const allowedQueryParams = new Set(['page', 'pageSize', 'sortBy', 'sortOrder']);
+    const params = new URLSearchParams(rawQuery);
+    const criteria: PropertySortCriterion[] = [];
+    const seenSortBy = new Set<PropertySortField>();
+    let currentOrder: PropertySortOrder = 'asc';
+
+    for (const [key, rawValue] of params.entries()) {
+      if (!allowedQueryParams.has(key)) {
+        this.throwSortBadRequest(`Unknown query parameter "${key}". Allowed parameters: page, pageSize, sortBy, sortOrder.`);
+      }
+
+      const value = rawValue.trim();
+      if (key === 'sortOrder') {
+        if (value !== 'asc' && value !== 'desc') {
+          this.throwSortBadRequest(`Invalid sortOrder="${rawValue}". Expected "asc" or "desc".`);
+        }
+        currentOrder = value;
+        continue;
+      }
+
+      if (key === 'sortBy') {
+        if (!allowedSortFields.has(value as PropertySortField)) {
+          this.throwSortBadRequest(
+            `Invalid sortBy="${rawValue}". Allowed values: ${Array.from(allowedSortFields).join(', ')}.`
+          );
+        }
+
+        const sortField = value as PropertySortField;
+        if (seenSortBy.has(sortField)) {
+          this.throwSortBadRequest(`Invalid sortBy="${rawValue}". Duplicate sort field is not allowed.`);
+        }
+
+        seenSortBy.add(sortField);
+        criteria.push({
+          sortBy: sortField,
+          order: currentOrder
+        });
+      }
+    }
+
+    return criteria;
+  }
+
+  private readRawQueryString(request?: HttpRequestLike): string {
+    const source = request?.originalUrl ?? request?.url ?? '';
+    const queryIndex = source.indexOf('?');
+    if (queryIndex < 0) {
+      return '';
+    }
+    return source.slice(queryIndex + 1);
+  }
+
   private throwPaginationBadRequest(message: string): never {
     throw new HttpException(
       {
         error: message,
         data: [],
         pagination: {}
+      },
+      HttpStatus.BAD_REQUEST
+    );
+  }
+
+  private throwSortBadRequest(message: string): never {
+    throw new HttpException(
+      {
+        data: null,
+        error: message
       },
       HttpStatus.BAD_REQUEST
     );

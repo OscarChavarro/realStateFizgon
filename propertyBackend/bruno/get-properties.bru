@@ -5,12 +5,16 @@ meta {
 }
 
 get {
-  url: http://localhost:8081/properties?page=1&pageSize=200
+  url: http://localhost:8081/properties?page=1&pageSize=100&sortOrder=asc&sortBy=title&sortOrder=desc&sortBy=mainFeatures.area
   body: none
   auth: none
 }
 
 params:query {
   page: 1
-  pageSize: 200
+  pageSize: 100
+  sortOrder: asc
+  sortBy: title
+  sortOrder: desc
+  sortBy: mainFeatures.area
 }

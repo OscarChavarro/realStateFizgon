@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Configuration } from './config/configuration';
 import { UpdatePropertiesController } from './controllers/update-properties.controller';
 import { ChromiumPageSyncService } from './services/scraper/chromium-page-sync.service';
+import { ChromiumFailureGuardService } from './services/scraper/chromium-failure-guard.service';
 import { ChromiumService } from './services/scraper/chromium.service';
 import { ChromiumProcessLiveCicleService } from './services/scraper/chromium-process-live-cicle.service';
 import { FilterLoaderDetectionService } from './services/scraper/filters/filter-loader-detection.service';
@@ -14,6 +15,7 @@ import { FilterTextNormalizationService } from './services/scraper/filters/filte
 import { FilterUpdateService } from './services/scraper/filters/filter-update.service';
 import { FiltersService } from './services/scraper/filters/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
+import { SearchResultsPreparationService } from './services/scraper/search-results-preparation.service';
 import { PropertyListingPaginationService } from './services/scraper/pagination/property-listing-pagination.service';
 import { CookieAprovalDialogScraperService } from './services/scraper/property/cookie-aproval-dialog-scraper.service';
 import { DeactivatedDetailStatusService } from './services/scraper/property/deactivated-detail-status.service';
@@ -46,7 +48,9 @@ import { ScraperStateMachineService } from './states/scraper-state-machine.servi
     Configuration,
     ScraperStateMachineService,
     ChromiumPageSyncService,
+    ChromiumFailureGuardService,
     ChromiumProcessLiveCicleService,
+    SearchResultsPreparationService,
     MainPageService,
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractor,

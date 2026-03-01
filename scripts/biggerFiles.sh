@@ -3,4 +3,4 @@ set -euo pipefail
 
 ./scripts/clean.sh
 
-wc -l `find . -type f | grep -v .git | grep -v package-lock | grep -v .jpg | grep -v .webp` | sort -n
+wc -l `find . -type f | grep -v .git | grep -v package-lock | grep -v .jpg | grep -v .png | grep -v .webp | grep -v whatsapp-auth` | sort -n

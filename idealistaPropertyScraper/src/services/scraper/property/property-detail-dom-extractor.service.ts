@@ -8,6 +8,7 @@ import { RuntimeClient } from './cdp-client.types';
 type ExtractedPropertyPayload = {
   title: string | null;
   location: string | null;
+  price: string | null;
   infoFeatures: string[];
   advertiserComment: string | null;
   featureGroups: Array<{ name: string; items: string[] }>;
@@ -21,6 +22,8 @@ export class PropertyDetailDomExtractorService {
   private static readonly SIDE_CONTENT_SELECTOR = '#side-content';
   private static readonly TITLE_SELECTOR = '.main-info__title-main';
   private static readonly LOCATION_SELECTOR = '.main-info__title-minor';
+  private static readonly PRICE_SELECTOR = '.info-data-price';
+  private static readonly PRICE_VALUE_SELECTOR = '.txt-bold';
   private static readonly INFO_FEATURES_SELECTOR = '.info-features > span';
   private static readonly ADVERTISER_COMMENT_SELECTOR = '.comment .adCommentsLanguage, .comment p';
   private static readonly DETAILS_CONTAINER_SELECTOR = '.details-property';
@@ -49,6 +52,12 @@ export class PropertyDetailDomExtractorService {
 
       const title = textOf(detailContainer.querySelector(${JSON.stringify(PropertyDetailDomExtractorService.TITLE_SELECTOR)})) || null;
       const location = textOf(detailContainer.querySelector(${JSON.stringify(PropertyDetailDomExtractorService.LOCATION_SELECTOR)})) || null;
+      const priceContainer = detailContainer.querySelector(${JSON.stringify(PropertyDetailDomExtractorService.PRICE_SELECTOR)});
+      const price = (
+        textOf(priceContainer?.querySelector(${JSON.stringify(PropertyDetailDomExtractorService.PRICE_VALUE_SELECTOR)}))
+        || textOf(priceContainer)
+        || null
+      );
 
       const infoFeatures = unique(
         Array.from(detailContainer.querySelectorAll(${JSON.stringify(PropertyDetailDomExtractorService.INFO_FEATURES_SELECTOR)}))
@@ -195,6 +204,7 @@ export class PropertyDetailDomExtractorService {
       return {
         title,
         location,
+        price,
         infoFeatures,
         advertiserComment,
         featureGroups,
@@ -217,6 +227,7 @@ export class PropertyDetailDomExtractorService {
       property.url,
       property.title,
       property.location,
+      property.price,
       property.mainFeatures,
       property.advertiserComment,
       property.featureGroups,
@@ -245,6 +256,7 @@ export class PropertyDetailDomExtractorService {
       url,
       payload.title,
       payload.location,
+      payload.price,
       mainFeatures,
       payload.advertiserComment,
       featureGroups,

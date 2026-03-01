@@ -64,9 +64,12 @@ digraph PropertyScraperArchitecture {
         </TR>
       </TABLE>
     >,
-    margin="0.08,0.05"
+    margin="0.08,0.05",
+    shape=cylinder
   ];
   notification_message_sender [label="notificationMessageSender", style="rounded,filled", fillcolor="#80ff80"];
+  property_backend [label="propertyBackend", style="rounded,filled", fillcolor="#80ff80"];
+  property_frontend [label="propertyFrontend", style="rounded,filled", fillcolor="#80ff80"];
   whatsapp [
     label=<
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
@@ -102,9 +105,41 @@ digraph PropertyScraperArchitecture {
     margin="0.08,0.05",
     color=darkgreen
   ];
+  browser_backoffice [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD><IMG SRC="doc/architecture/chrome.png"/></TD>
+          <TD>Web browser</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
+  fizgon_user [
+    label="👤 User",
+    shape=plaintext,
+    style="",
+    color=transparent,
+    fontcolor=black
+  ];
+  nfs_image_folder [label="nfsImageFolder", style="rounded,filled", shape=cylinder, fillcolor="#ffffff"];
+  images_nginx [
+    label=<
+      <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
+        <TR>
+          <TD><IMG SRC="doc/architecture/nginx.png"/></TD>
+          <TD>Static assets<BR/>web server</TD>
+        </TR>
+      </TABLE>
+    >,
+    margin="0.08,0.05"
+  ];
 
   { rank=min; idealista; }
   { rank=same; idealista_scraper; rabbitmq2; }
+  { rank=same; mongodb; grafana; }
+  { rank=max; fizgon_user; browser_backoffice; property_frontend; property_backend; }
 
   idealista -> browser_idealista [xlabel="Can use proxy"];
   browser_idealista -> idealista_scraper;
@@ -118,4 +153,12 @@ digraph PropertyScraperArchitecture {
   notification_message_sender -> whatsapp;
   notification_message_sender -> prometheus [color=darkgreen];
   prometheus -> grafana [color=darkgreen];
+  mongodb -> property_backend;
+  property_frontend -> browser_backoffice [minlen=2];
+  property_backend -> property_frontend [minlen=2];
+  browser_backoffice -> fizgon_user [minlen=2, dir=both];
+  idealista_scraper -> nfs_image_folder;
+  whatsapp -> fizgon_user;
+  nfs_image_folder -> images_nginx;
+  images_nginx -> browser_backoffice;
 }

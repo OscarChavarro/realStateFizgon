@@ -1,0 +1,20 @@
+:root {
+  --bg-start: #eef3ff;
+  --bg-end: #f5f7fb;
+  --panel: #ffffff;
+  --text: #1b1e28;
+  --muted: #5b6475;
+  --accent: #1769ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at 20% 20%, var(--bg-start), var(--bg-end));
+  min-height: 100vh;
+}

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: property-backend
+  namespace: real-state-fizgon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: property-backend
+  template:
+    metadata:
+      labels:
+        app: property-backend
+    spec:
+      hostname: property-backend
+      containers:
+      - name: property-backend
+        image: property-backend:local
+        imagePullPolicy: Never
+        ports:
+        - name: http
+          containerPort: 8081
+          protocol: TCP
+        volumeMounts:
+        - name: app-secrets
+          mountPath: /app/secrets.json
+          subPath: secrets.json
+          readOnly: true
+      volumes:
+      - name: app-secrets
+        secret:
+          secretName: property-backend-secrets
+          items:
+          - key: secrets.json
+            path: secrets.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: property-backend
+  namespace: real-state-fizgon
+  labels:
+    app: property-backend
+spec:
+  selector:
+    app: property-backend
+  ports:
+  - name: http
+    port: 8081
+    targetPort: 8081
+    protocol: TCP

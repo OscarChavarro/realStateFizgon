@@ -1,0 +1,13 @@
+<main class="dashboard-page">
+  <section class="dashboard-card">
+    <h1>Properties Dashboard</h1>
+    <p class="subtitle">Live MongoDB collection size</p>
+
+    <div class="value-row">
+      <span class="label">Total Properties</span>
+      <span class="value" [class.loading]="loading()">{{ count() }}</span>
+    </div>
+
+    <p class="timestamp">Last update: {{ lastUpdatedAt() || 'waiting...' }}</p>
+  </section>
+</main>

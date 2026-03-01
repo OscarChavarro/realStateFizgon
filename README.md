@@ -29,11 +29,8 @@ This system comprises several micro services that interacts with each other as s
 
 The architecture componentes are:
 
-- [Page list scraper](propertyListingIdealistaScraper/README.md): scraper that controls a Google Chrome web browser to get the list of properties given a set of filters. The resulting URLs for properties are written to RabbitMq. DEPRECATED.
-- [Page detail scraper](propertyDetailIdealistaScraper/README.md): consumes property URLs from RabbitMq and downloads property details from Idealista source using a second and separate instance of Google Chrome. Given the property information, the information is stored in the mongodb database, and notifications are sent via whatsapp. DEPRECATED.
 - [Idealista scraper](idealistaPropertyScraper/README.md): scraper that controls a Google Chrome web browser to retrieve property listings based on a set of filters, extracts each property detail from Idealista, stores the collected information in the MongoDB database, and sends notifications via WhatsApp.
 - [Notification message sender](notificationMessageSender/README.md): consumes messages from RabbitMq that are intended to be sent to a Whatsapp user or group.
-- Whatsapp notification sender: Service to send notification to whatsapp. Works reading messages written to RabbitMq.
 
 # Deployment
 

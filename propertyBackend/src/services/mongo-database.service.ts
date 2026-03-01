@@ -104,6 +104,10 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
     return { scanned, updated, skipped, failed };
   }
 
+  async getPropertiesCollection(): Promise<Collection<Document>> {
+    return this.ensurePropertiesCollection();
+  }
+
   private async ensurePropertiesCollection(): Promise<Collection<Document>> {
     if (!this.propertiesCollection) {
       await this.connect();

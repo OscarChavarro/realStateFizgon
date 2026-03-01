@@ -1,5 +1,8 @@
 {
   "api": {
     "port": 8081
+  },
+  "images": {
+    "downloadFolder": "../idealistaPropertyScraper/output/images"
   }
 }

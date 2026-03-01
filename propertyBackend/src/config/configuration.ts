@@ -6,6 +6,9 @@ type Environment = {
   api?: {
     port?: number;
   };
+  images?: {
+    downloadFolder?: string;
+  };
 };
 
 type Secrets = {
@@ -40,6 +43,10 @@ export class Configuration {
 
   get apiPort(): number {
     return Math.max(1, this.environment.api?.port ?? 8081);
+  }
+
+  get imageDownloadFolder(): string {
+    return this.environment.images?.downloadFolder ?? './output/images';
   }
 
   get mongoHost(): string {

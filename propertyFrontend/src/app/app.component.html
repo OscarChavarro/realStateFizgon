@@ -1,13 +1,67 @@
 <main class="dashboard-page">
-  <section class="dashboard-card">
-    <h1>Properties Dashboard</h1>
-    <p class="subtitle">Live MongoDB collection size</p>
+  <header class="top-bar">
+    <nav class="tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'DASHBOARD'"
+        (click)="selectTab('DASHBOARD')"
+      >
+        {{ t('DASHBOARD') }}
+      </button>
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'DATABASE_MAINTENANCE_TAB'"
+        (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
+      >
+        {{ t('DATABASE_MAINTENANCE_TAB') }}
+      </button>
+    </nav>
 
-    <div class="value-row">
-      <span class="label">Total Properties</span>
-      <span class="value" [class.loading]="loading()">{{ count() }}</span>
+    <div class="language-selector">
+      <label for="languageSelect">{{ t('LANGUAGE_LABEL') }}</label>
+      <select id="languageSelect" [value]="selectedLanguage()" (change)="onLanguageChange($any($event.target).value)">
+        <option value="en">{{ t('LANGUAGE_EN') }}</option>
+        <option value="sp">{{ t('LANGUAGE_SP') }}</option>
+      </select>
     </div>
+  </header>
 
-    <p class="timestamp">Last update: {{ lastUpdatedAt() || 'waiting...' }}</p>
-  </section>
+  @if (activeTab() === 'DASHBOARD') {
+    <section class="dashboard-card">
+      <h1>{{ t('PROPERTIES_DASHBOARD_TITLE') }}</h1>
+      <p class="subtitle">{{ t('LIVE_MONGODB_COLLECTION_SIZE') }}</p>
+
+      <div class="value-row">
+        <span class="label">{{ t('TOTAL_PROPERTIES') }}</span>
+        <span class="value" [class.loading]="loading()">{{ count() }}</span>
+      </div>
+
+      <p class="timestamp">{{ t('LAST_UPDATE') }}: {{ lastUpdatedAt() || t('WAITING') }}</p>
+    </section>
+  }
+
+  @if (activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+    <section class="dashboard-card">
+      <h1>{{ t('DATABASE_MAINTENANCE_TAB') }}</h1>
+      <div class="maintenance-actions">
+        @for (operation of maintenanceOperations; track operation.i18nId) {
+          <button
+            type="button"
+            class="maintenance-button"
+            [disabled]="maintenanceRunning()"
+            (click)="runDatabaseMaintenanceOperation(operation)"
+          >
+            {{ t(operation.i18nId) }}
+          </button>
+        }
+      </div>
+
+      <div class="maintenance-result">
+        <label for="maintenanceResult">{{ t('OPERATION_RESULT') }}</label>
+        <textarea id="maintenanceResult" [value]="maintenanceResultText()" readonly></textarea>
+      </div>
+    </section>
+  }
 </main>

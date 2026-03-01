@@ -4,6 +4,7 @@ import { PropertyMainFeatures } from './property-main-features.model';
 
 export class Property {
   constructor(
+    public readonly propertyId: string | null,
     public readonly url: string,
     public readonly title: string | null,
     public readonly location: string | null,

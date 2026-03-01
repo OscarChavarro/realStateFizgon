@@ -224,6 +224,7 @@ export class PropertyDetailDomExtractorService {
   filterPropertyImagesByBlurPattern(property: Property): Property {
     const images = property.images.filter((image) => this.isIdealistaBlurUrl(image.url));
     return new Property(
+      property.propertyId,
       property.url,
       property.title,
       property.location,
@@ -252,8 +253,10 @@ export class PropertyDetailDomExtractorService {
     );
     const images = payload.images.map((image) => new PropertyImage(image.url, image.title));
     const normalizedPrice = this.parsePriceToNumber(payload.price);
+    const propertyId = this.extractPropertyIdFromUrl(url);
 
     return new Property(
+      propertyId,
       url,
       payload.title,
       payload.location,
@@ -264,6 +267,20 @@ export class PropertyDetailDomExtractorService {
       payload.publicationAge,
       images
     );
+  }
+
+  private extractPropertyIdFromUrl(url: string): string | null {
+    const normalized = url.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const match = normalized.match(/\/inmueble\/(\d+)(?:\/|$)/i);
+    if (!match) {
+      return null;
+    }
+
+    return match[1] ?? null;
   }
 
   private buildMainFeatures(infoFeatures: string[]): PropertyMainFeatures {

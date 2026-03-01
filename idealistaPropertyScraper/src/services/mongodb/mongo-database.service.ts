@@ -31,18 +31,25 @@ export class MongoDatabaseService implements OnModuleDestroy {
     const collection = await this.ensurePropertiesCollection();
     const existing = await collection.findOne({ url: property.url });
     const importedBy = new Date();
+    const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
+    const normalizedProperty: Property = propertyId === property.propertyId
+      ? property
+      : {
+          ...property,
+          propertyId
+        };
 
     if (!existing) {
       await collection.insertOne({
-        ...property,
+        ...normalizedProperty,
         importedBy
       } as Property & Document);
-      await this.rabbitMqService.publishIdealistaUpdateNotification(property.url, property.title);
+      await this.rabbitMqService.publishIdealistaUpdateNotification(normalizedProperty.url, normalizedProperty.title);
       return;
     }
 
     const merged = {
-      ...this.mergeProperty(existing, property),
+      ...this.mergeProperty(existing, normalizedProperty),
       importedBy
     } as Property & Document;
     await collection.replaceOne({ _id: existing._id }, merged);
@@ -51,6 +58,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
   async saveClosedProperty(url: string, closedBy?: Date): Promise<void> {
     const collection = await this.ensurePropertiesCollection();
     const closeDate = closedBy ?? new Date();
+    const propertyId = this.extractPropertyIdFromUrl(url);
     await collection.updateOne(
       { url },
       {
@@ -59,6 +67,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
         },
         $setOnInsert: {
           url,
+          propertyId,
           importedBy: new Date()
         }
       },
@@ -249,5 +258,19 @@ export class MongoDatabaseService implements OnModuleDestroy {
 
     const parsed = Number.parseInt(digitsOnly, 10);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private extractPropertyIdFromUrl(url: string): string | null {
+    const normalized = url.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const match = normalized.match(/\/inmueble\/(\d+)(?:\/|$)/i);
+    if (!match) {
+      return null;
+    }
+
+    return match[1] ?? null;
   }
 }

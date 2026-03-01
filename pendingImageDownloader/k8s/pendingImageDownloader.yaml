@@ -1,32 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: idealista-property-scraper
+  name: pending-image-downloader
   namespace: real-state-fizgon
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: idealista-property-scraper
+      app: pending-image-downloader
   template:
     metadata:
       labels:
-        app: idealista-property-scraper
+        app: pending-image-downloader
     spec:
-      hostname: idealista-property-scraper
+      hostname: pending-image-downloader
       securityContext:
         runAsUser: 1001
         runAsGroup: 1001
         fsGroup: 1001
         runAsNonRoot: true
       containers:
-      - name: idealista-property-scraper
-        image: idealista-property-scraper:local
+      - name: pending-image-downloader
+        image: pending-image-downloader:local
         imagePullPolicy: Never
-        ports:
-        - name: vnc-tcp
-          containerPort: 5900
-          protocol: TCP
         volumeMounts:
         - name: app-secrets
           mountPath: /app/secrets.json
@@ -37,24 +33,11 @@ spec:
       volumes:
       - name: app-secrets
         secret:
-          secretName: idealista-property-secrets
+          secretName: pending-image-downloader-secrets
           items:
           - key: secrets.json
             path: secrets.json
       - name: images-persistent
         persistentVolumeClaim:
           claimName: idealista-property-images-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: idealista-property-scraper-vnc
-  namespace: real-state-fizgon
-spec:
-  selector:
-    app: idealista-property-scraper
-  ports:
-  - name: vnc-tcp
-    port: 5900
-    targetPort: 5900
-    protocol: TCP
+

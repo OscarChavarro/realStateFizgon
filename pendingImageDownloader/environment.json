@@ -1,0 +1,17 @@
+{
+  "rabbitmq": {
+    "host": "localhost",
+    "port": 5672
+  },
+  "images": {
+    "downloadFolder": "../idealistaPropertyScraper/output/images"
+  },
+  "timeouts": {
+    "startup": {
+      "folderValidationRetryWaitMs": 3600000
+    },
+    "download": {
+      "requestTimeoutMs": 30000
+    }
+  }
+}

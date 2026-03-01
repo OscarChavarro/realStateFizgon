@@ -1,0 +1,40 @@
+FROM node:22-bookworm-slim AS builder
+
+WORKDIR /app
+COPY pendingImageDownloader/package*.json ./
+RUN npm ci
+COPY pendingImageDownloader/ ./
+RUN npm run build
+
+FROM node:22-bookworm-slim AS runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    dnsutils \
+    dumb-init \
+    emacs-nox \
+    g++ \
+    gcc \
+    htop \
+    iputils-ping \
+    make \
+    nfs-common \
+    net-tools \
+    python3 \
+    telnet \
+    wget \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g mongosh
+
+WORKDIR /app
+COPY pendingImageDownloader/package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
+COPY pendingImageDownloader/environment.json ./environment.json
+COPY pendingImageDownloader/secrets-example.json ./secrets-example.json
+
+CMD ["dumb-init", "node", "dist/main.js"]
+

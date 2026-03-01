@@ -113,6 +113,7 @@ kind delete cluster --name real-state-fizgon || true
 
 # Remove local project images used in this guide
 docker rmi idealista-property-scraper:local 2>/dev/null || true
+docker rmi pending-image-downloader:local 2>/dev/null || true
 docker rmi notification-message-sender:local 2>/dev/null || true
 
 # Remove kind node image and registry image (optional)
@@ -172,6 +173,100 @@ Current project Deployments are configured with:
 - `imagePullPolicy: Never`
 
 That ensures Kubernetes uses only images already present in the kind node.
+
+## 2.5 Shared NFS folder and shared K8S PV/PVC
+
+Both `idealistaPropertyScraper` and `pendingImageDownloader` mount the same shared PVC `idealista-property-images-pvc` on `/app/output/images`.
+
+Prepare host NFS export first:
+
+```bash
+# Install NFS server in the host
+sudo apt-get update
+sudo apt-get install -y nfs-kernel-server
+
+# Use host network gateway as NFS server IP (host-side reachable by kind nodes)
+export NFS_SERVER_IP="$(docker network inspect kind -f '{{(index .IPAM.Config 0).Gateway}}')"
+echo "NFS_SERVER_IP=${NFS_SERVER_IP}"
+
+# Read NFS settings from secrets.json
+export NFS_SERVER="$(jq -r '.nfs.server // empty' idealistaPropertyScraper/secrets.json)"
+export NFS_SHARED_FOLDER="$(jq -r '.nfs.sharedFolder // empty' idealistaPropertyScraper/secrets.json)"
+NFS_CONFIG_VALID=true
+
+if [ -z "$NFS_SERVER" ] || [ -z "$NFS_SHARED_FOLDER" ]; then
+  echo "ERROR: nfs.server or nfs.sharedFolder is empty in idealistaPropertyScraper/secrets.json"
+  NFS_CONFIG_VALID=false
+fi
+
+if [ "$NFS_CONFIG_VALID" = true ]; then
+  case "$NFS_SHARED_FOLDER" in
+    /*) ;;
+    *)
+      echo "ERROR: nfs.sharedFolder must be an absolute path"
+      NFS_CONFIG_VALID=false
+      ;;
+  esac
+fi
+
+if [ "$NFS_CONFIG_VALID" = true ]; then
+  echo "NFS_SERVER=${NFS_SERVER}"
+  echo "NFS_SHARED_FOLDER=${NFS_SHARED_FOLDER}"
+
+  # Both services run with UID/GID 1001 in K8S.
+  sudo mkdir -p "${NFS_SHARED_FOLDER}"
+  sudo chown -R 1001:1001 "${NFS_SHARED_FOLDER}"
+  sudo chmod -R ug+rwX "${NFS_SHARED_FOLDER}"
+
+  # Get kind network subnet used by kind nodes and export it
+  export KIND_SUBNET="$(docker network inspect kind -f '{{(index .IPAM.Config 0).Subnet}}')"
+  echo "KIND_SUBNET=${KIND_SUBNET}"
+else
+  echo "NFS config is invalid. Skipping /etc/exports update commands."
+fi
+```
+
+Write `/etc/exports`:
+
+```bash
+if [ "$NFS_CONFIG_VALID" = true ] && [ -n "$KIND_SUBNET" ]; then
+  echo "${NFS_SHARED_FOLDER} ${KIND_SUBNET}(rw,sync,no_subtree_check)" | sudo tee /etc/exports > /dev/null
+else
+  echo "ERROR: KIND_SUBNET is empty or NFS config is invalid. /etc/exports not updated."
+fi
+```
+
+Reload NFS exports:
+
+```bash
+if [ "$NFS_CONFIG_VALID" = true ] && [ -n "$KIND_SUBNET" ]; then
+  sudo exportfs -a
+  sudo exportfs -v
+else
+  echo "Skipping exportfs because NFS config validation failed."
+fi
+```
+
+Create/update shared PV/PVC:
+
+```bash
+export NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)"
+export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)"
+envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < k8s/nfs-pv.yaml | kubectl apply -f -
+```
+
+Verify shared PV:
+
+```bash
+kubectl get pv
+kubectl describe pv idealista-property-images-pv
+kubectl -n real-state-fizgon get pvc idealista-property-images-pvc
+```
+
+Warning:
+- The subnet returned by Docker can be IPv6 in some environments.
+- If it is IPv6, use that IPv6 subnet in `/etc/exports` instead of an IPv4 CIDR.
+- Ensure `pendingImageDownloader/secrets.json` and `idealistaPropertyScraper/secrets.json` point to the same `nfs.server` and `nfs.sharedFolder`.
 
 ## 3. Deploy external services required by setup
 
@@ -319,6 +414,7 @@ Preflight check:
 
 ```bash
 test -f idealistaPropertyScraper/secrets.json
+test -f pendingImageDownloader/secrets.json
 test -f notificationMessageSender/secrets.json
 command -v jq
 command -v envsubst
@@ -326,13 +422,21 @@ command -v envsubst
 
 1. Update local files:
 - `idealistaPropertyScraper/secrets.json`
+- `pendingImageDownloader/secrets.json`
 - `notificationMessageSender/secrets.json`
+
+Note:
+- `idealistaPropertyScraper/secrets.json` and `pendingImageDownloader/secrets.json` must include the same `nfs.server` and `nfs.sharedFolder` values, because both services share the same NFS-backed PV.
 
 2. Create K8S secrets:
 
 ```bash
 kubectl -n real-state-fizgon create secret generic idealista-property-secrets \
   --from-file=secrets.json=idealistaPropertyScraper/secrets.json \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n real-state-fizgon create secret generic pending-image-downloader-secrets \
+  --from-file=secrets.json=pendingImageDownloader/secrets.json \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n real-state-fizgon create secret generic notification-message-sender-secrets \
@@ -342,106 +446,7 @@ kubectl -n real-state-fizgon create secret generic notification-message-sender-s
 
 ## 4.2 Build, load, deploy, and restart each microservice
 
-## 4.2.1 Set up an NFS shared folder in system host
-
-Prepare host NFS export first (required for `/app/output/images` persistence):
-
-```bash
-# Install NFS server in the host
-sudo apt-get update
-sudo apt-get install -y nfs-kernel-server
-
-# Use host network gateway as NFS server IP (host-side reachable by kind nodes)
-export NFS_SERVER_IP="$(docker network inspect kind -f '{{(index .IPAM.Config 0).Gateway}}')"
-echo "NFS_SERVER_IP=${NFS_SERVER_IP}"
-
-# Read NFS settings from idealistaPropertyScraper/secrets.json
-export NFS_SERVER="$(jq -r '.nfs.server // empty' idealistaPropertyScraper/secrets.json)"
-export NFS_SHARED_FOLDER="$(jq -r '.nfs.sharedFolder // empty' idealistaPropertyScraper/secrets.json)"
-NFS_CONFIG_VALID=true
-
-if [ -z "$NFS_SERVER" ] || [ -z "$NFS_SHARED_FOLDER" ]; then
-  echo "ERROR: nfs.server or nfs.sharedFolder is empty in idealistaPropertyScraper/secrets.json"
-  NFS_CONFIG_VALID=false
-fi
-
-if [ "$NFS_CONFIG_VALID" = true ]; then
-  case "$NFS_SHARED_FOLDER" in
-    /*) ;;
-    *)
-      echo "ERROR: nfs.sharedFolder must be an absolute path"
-      NFS_CONFIG_VALID=false
-      ;;
-  esac
-fi
-
-if [ "$NFS_CONFIG_VALID" = true ]; then
-  echo "NFS_SERVER=${NFS_SERVER}"
-  echo "NFS_SHARED_FOLDER=${NFS_SHARED_FOLDER}"
-
-  # idealistaPropertyScraper runs with UID/GID 1001 in K8S.
-  # Ensure the shared folder is writable by that user/group.
-  sudo mkdir -p "${NFS_SHARED_FOLDER}"
-  sudo chown -R 1001:1001 "${NFS_SHARED_FOLDER}"
-  sudo chmod -R ug+rwX "${NFS_SHARED_FOLDER}"
-
-  # Get kind network subnet used by kind nodes and export it
-  export KIND_SUBNET="$(docker network inspect kind -f '{{(index .IPAM.Config 0).Subnet}}')"
-  echo "KIND_SUBNET=${KIND_SUBNET}"
-else
-  echo "NFS config is invalid. Skipping /etc/exports update commands."
-fi
-```
-
-Write `/etc/exports` using that environment variable:
-
-```bash
-if [ "$NFS_CONFIG_VALID" = true ] && [ -n "$KIND_SUBNET" ]; then
-  echo "${NFS_SHARED_FOLDER} ${KIND_SUBNET}(rw,sync,no_subtree_check)" | sudo tee /etc/exports > /dev/null
-else
-  echo "ERROR: KIND_SUBNET is empty or NFS config is invalid. /etc/exports not updated."
-fi
-```
-
-Then reload exports:
-
-```bash
-if [ "$NFS_CONFIG_VALID" = true ] && [ -n "$KIND_SUBNET" ]; then
-  sudo exportfs -a
-  sudo exportfs -v
-else
-  echo "Skipping exportfs because NFS config validation failed."
-fi
-```
-
-Warning:
-- The subnet returned by Docker can be IPv6 in some environments.
-- If it is IPv6, use that IPv6 subnet in `/etc/exports` instead of an IPv4 CIDR.
-- The shared folder must be writable for UID `1001` and GID `1001` because `idealistaPropertyScraper` runs with that identity in K8S.
-
-## 4.2.2 Set up K8S Persistent Volume (PV) with mounted NFS shared folder
-
-Set up PV/PVC for image download persistence:
-- Define `nfs.server` and `nfs.sharedFolder` in `idealistaPropertyScraper/secrets.json`.
-- This mount persists downloaded images (`/app/output/images`) outside volatile pods.
-- `idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml` uses `storageClassName: ""` for both PV and PVC, so pre-bound static volumes work correctly without storage class mismatch.
-
-```bash
-export NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)"
-export NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)"
-envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
-| awk 'BEGIN { RS="---"; ORS="---\n" } NR<=2 { print }' \
-| kubectl apply -f -
-```
-
-Review the PV:
-
-```bash
-kubectl get pv
-kubectl describe pv idealista-property-images-pv
-```
-
-## 4.2.3 idealistaPropertyScraper
+## 4.2.1 idealistaPropertyScraper
 
 Deploy/update pod:
 
@@ -449,11 +454,7 @@ Deploy/update pod:
 docker build -t idealista-property-scraper:local -f idealistaPropertyScraper/Dockerfile.local .
 kind load docker-image idealista-property-scraper:local --name real-state-fizgon
 
-NFS_SERVER="$(jq -er '.nfs.server' idealistaPropertyScraper/secrets.json)" \
-NFS_SHARED_FOLDER="$(jq -er '.nfs.sharedFolder' idealistaPropertyScraper/secrets.json)" \
-envsubst '${NFS_SERVER} ${NFS_SHARED_FOLDER}' < idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml \
-| awk 'BEGIN { RS="---"; ORS="---\n" } NR>=3 { print }' \
-| kubectl apply -f -
+kubectl apply -f idealistaPropertyScraper/k8s/idealistaPropertyScraper.yaml
 
 kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
 kubectl -n real-state-fizgon rollout status deployment/idealista-property-scraper
@@ -467,7 +468,17 @@ For secure diagnostics, prefer temporary local tunnel instead of public ingress:
 kubectl -n real-state-fizgon port-forward svc/idealista-property-scraper-vnc 5900:5900
 ```
 
-## 4.2.4 notificationMessageSender
+## 4.2.2 pendingImageDownloader
+
+```bash
+docker build -t pending-image-downloader:local -f pendingImageDownloader/Dockerfile.local .
+kind load docker-image pending-image-downloader:local --name real-state-fizgon
+kubectl apply -f pendingImageDownloader/k8s/pendingImageDownloader.yaml
+kubectl -n real-state-fizgon rollout restart deployment/pending-image-downloader
+kubectl -n real-state-fizgon rollout status deployment/pending-image-downloader
+```
+
+## 4.2.3 notificationMessageSender
 
 ```bash
 docker build -t notification-message-sender:local -f notificationMessageSender/Dockerfile.local notificationMessageSender
@@ -536,6 +547,7 @@ Use after updating image tags or secrets:
 
 ```bash
 kubectl -n real-state-fizgon rollout restart deployment/idealista-property-scraper
+kubectl -n real-state-fizgon rollout restart deployment/pending-image-downloader
 kubectl -n real-state-fizgon rollout restart deployment/notification-message-sender
 kubectl -n real-state-fizgon rollout restart statefulset/rabbitmq
 kubectl -n real-state-fizgon rollout restart deployment/prometheus
@@ -570,6 +582,7 @@ Tail logs:
 
 ```bash
 kubectl -n real-state-fizgon logs deploy/idealista-property-scraper -f
+kubectl -n real-state-fizgon logs deploy/pending-image-downloader -f
 kubectl -n real-state-fizgon logs deploy/notification-message-sender -f
 ```
 
@@ -583,6 +596,7 @@ kubectl -n real-state-fizgon run metrics-test --rm -it --image=curlimages/curl -
 ## 8. Notes on architecture mapping
 
 - `idealistaPropertyScraper` performs integrated listing+detail scraping, stores property data in MongoDB, and publishes notification payloads to `outgoing-notification-messages`.
+- `pendingImageDownloader` consumes `pending-image-urls-to-download` and downloads missing images into the shared NFS folder.
 - `notificationMessageSender` consumes outgoing notifications and sends WhatsApp messages.
 - Prometheus scrapes service metrics; Grafana visualizes them.
 

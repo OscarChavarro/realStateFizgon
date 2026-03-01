@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { CookieAprovalDialogScraperService } from './cookie-aproval-dialog-scraper.service';
 import { CdpClient } from './cdp-client.types';
+import { DeactivatedDetailStatusService } from './deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from './property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from './property-detail-interaction.service';
 import { PropertyDetailNavigationService } from './property-detail-navigation.service';
@@ -16,6 +17,7 @@ export class PropertyDetailPageService {
     private readonly cookieAprovalDialogScraperService: CookieAprovalDialogScraperService,
     private readonly navigationService: PropertyDetailNavigationService,
     private readonly interactionService: PropertyDetailInteractionService,
+    private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
     private readonly domExtractorService: PropertyDetailDomExtractorService,
     private readonly storageService: PropertyDetailStorageService
   ) {}
@@ -53,8 +55,9 @@ export class PropertyDetailPageService {
     await this.interactionService.throwIfOriginErrorPage(client.Runtime);
     await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
 
-    if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
-      await this.storageService.markPropertyClosed(url);
+    const deactivatedStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
+    if (deactivatedStatus.isDeactivated) {
+      await this.storageService.markPropertyClosed(url, deactivatedStatus.closedBy ?? undefined);
       return;
     }
 
@@ -62,8 +65,9 @@ export class PropertyDetailPageService {
 
     const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
     if (!extractedProperty) {
-      if (await this.interactionService.isDeactivatedDetailPage(client.Runtime)) {
-        await this.storageService.markPropertyClosed(url);
+      const afterExtractionStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
+      if (afterExtractionStatus.isDeactivated) {
+        await this.storageService.markPropertyClosed(url, afterExtractionStatus.closedBy ?? undefined);
         return;
       }
 

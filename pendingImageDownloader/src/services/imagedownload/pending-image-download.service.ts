@@ -62,7 +62,17 @@ export class PendingImageDownloadService implements OnModuleInit {
     const filename = this.imageFileNameService.buildFilenameFromUrl(payload.url);
     const targetFilePath = join(targetFolderPath, filename);
     const imageData = await this.downloadImage(payload.url);
-    await writeFile(targetFilePath, imageData);
+    try {
+      await writeFile(targetFilePath, imageData, { flag: 'wx' });
+    } catch (error) {
+      const nodeError = error as NodeJS.ErrnoException;
+      if (nodeError.code === 'EEXIST') {
+        this.logger.log(`Image already exists. Skipping overwrite for URL: ${payload.url}`);
+        return;
+      }
+
+      throw error;
+    }
 
     this.logger.log(`Image saved: propertyId=${payload.propertyId}, file=${filename}`);
   }

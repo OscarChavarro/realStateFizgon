@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access } from 'node:fs/promises';
-import { join } from 'node:path';
 import { ImageUrlRulesService } from './image-url-rules.service';
 
 @Injectable()
@@ -43,20 +42,13 @@ export class ImageFileNameService {
     return '.img';
   }
 
-  async buildCompatibleTargetFilename(propertyFolderPath: string, imageUrl: string, downloadedExtension: string): Promise<string> {
+  buildCompatibleTargetFilename(imageUrl: string, downloadedExtension: string): string {
     const baseName = this.buildCompatibleBaseName(imageUrl);
     const expectedExtension = this.resolveImageExtension(imageUrl, '');
     const preferredExtension = expectedExtension === '.img' ? downloadedExtension : expectedExtension;
     const extension = preferredExtension || downloadedExtension || '.img';
 
-    let candidate = `${baseName}${extension}`;
-    let counter = 1;
-    while (await this.pathExists(join(propertyFolderPath, candidate))) {
-      candidate = `${baseName}-${counter}${extension}`;
-      counter += 1;
-    }
-
-    return candidate;
+    return `${baseName}${extension}`;
   }
 
   private normalizeExtension(extension: string): string {
@@ -95,7 +87,7 @@ export class ImageFileNameService {
     return value.replace(/[^a-zA-Z0-9_-]/g, '_');
   }
 
-  private async pathExists(path: string): Promise<boolean> {
+  async pathExists(path: string): Promise<boolean> {
     try {
       await access(path, constants.F_OK);
       return true;

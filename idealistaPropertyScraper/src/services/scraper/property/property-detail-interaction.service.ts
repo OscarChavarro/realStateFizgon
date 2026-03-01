@@ -6,7 +6,6 @@ import { RuntimeClient } from './cdp-client.types';
 export class PropertyDetailInteractionService {
   private readonly logger = new Logger(PropertyDetailInteractionService.name);
   private static readonly DETAIL_CONTAINER_SELECTOR = 'main.detail-container';
-  private static readonly DEACTIVATED_DETAIL_SELECTOR = 'section.deactivated-detail, .deactivated-detail_container_new';
   private static readonly SIDE_CONTENT_SELECTOR = '#side-content';
   private static readonly IMG_ELEMENT_SELECTOR = 'img';
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
@@ -29,19 +28,6 @@ export class PropertyDetailInteractionService {
     if (hasOriginError) {
       throw new Error('Wrong content.');
     }
-  }
-
-  async isDeactivatedDetailPage(runtime: RuntimeClient): Promise<boolean> {
-    return await this.evaluateExpression<boolean>(runtime, `(() => {
-      const deactivatedContainer = document.querySelector(${JSON.stringify(PropertyDetailInteractionService.DEACTIVATED_DETAIL_SELECTOR)});
-      if (deactivatedContainer) {
-        return true;
-      }
-
-      const bodyText = (document.body?.innerText || '').toLowerCase();
-      return bodyText.includes('este anuncio ya no está publicado')
-        || bodyText.includes('anuncio ya no está publicado');
-    })()`);
   }
 
   async revealDetailMedia(runtime: RuntimeClient): Promise<void> {

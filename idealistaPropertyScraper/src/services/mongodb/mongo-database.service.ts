@@ -48,13 +48,14 @@ export class MongoDatabaseService implements OnModuleDestroy {
     await collection.replaceOne({ _id: existing._id }, merged);
   }
 
-  async saveClosedProperty(url: string): Promise<void> {
+  async saveClosedProperty(url: string, closedBy?: Date): Promise<void> {
     const collection = await this.ensurePropertiesCollection();
+    const closeDate = closedBy ?? new Date();
     await collection.updateOne(
       { url },
       {
         $set: {
-          closedBy: new Date()
+          closedBy: closeDate
         },
         $setOnInsert: {
           url,
@@ -69,6 +70,18 @@ export class MongoDatabaseService implements OnModuleDestroy {
     const collection = await this.ensurePropertiesCollection();
     const existing = await collection.findOne(
       { url },
+      { projection: { _id: 1 } }
+    );
+    return existing !== null;
+  }
+
+  async isOpenPropertyByUrl(url: string): Promise<boolean> {
+    const collection = await this.ensurePropertiesCollection();
+    const existing = await collection.findOne(
+      {
+        url,
+        closedBy: { $exists: false }
+      },
       { projection: { _id: 1 } }
     );
     return existing !== null;

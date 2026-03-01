@@ -125,10 +125,16 @@ export class ImageDownloader {
       }
 
       const sourcePath = selectedFile.path;
-      const targetFilename = await this.imageFileNameService.buildCompatibleTargetFilename(propertyFolderPath, image.url, selectedFile.extension);
+      const targetFilename = this.imageFileNameService.buildCompatibleTargetFilename(image.url, selectedFile.extension);
       const targetPath = join(propertyFolderPath, targetFilename);
 
       try {
+        if (await this.imageFileNameService.pathExists(targetPath)) {
+          this.logger.log(`Image already exists. Skipping overwrite for URL: ${image.url}`);
+          await rm(sourcePath, { force: true });
+          continue;
+        }
+
         await rename(sourcePath, targetPath);
       } catch {
         this.logger.error(`Failed moving image for URL: ${image.url}`);

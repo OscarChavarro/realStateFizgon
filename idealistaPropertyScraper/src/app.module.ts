@@ -16,6 +16,7 @@ import { FiltersService } from './services/scraper/filters/filters.service';
 import { MainPageService } from './services/scraper/main-page.service';
 import { PropertyListingPaginationService } from './services/scraper/pagination/property-listing-pagination.service';
 import { CookieAprovalDialogScraperService } from './services/scraper/property/cookie-aproval-dialog-scraper.service';
+import { DeactivatedDetailStatusService } from './services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from './services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from './services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from './services/scraper/property/property-detail-navigation.service';
@@ -64,6 +65,7 @@ import { ScraperStateMachineService } from './states/scraper-state-machine.servi
     ImagePendingQueuePublisherService,
     ImageDownloader,
     CookieAprovalDialogScraperService,
+    DeactivatedDetailStatusService,
     PropertyDetailNavigationService,
     PropertyDetailInteractionService,
     PropertyDetailDomExtractorService,

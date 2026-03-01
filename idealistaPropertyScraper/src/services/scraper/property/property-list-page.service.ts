@@ -73,9 +73,9 @@ export class PropertyListPageService {
         continue;
       }
 
-      const exists = await this.mongoDatabaseService.propertyExistsByUrl(url);
-      if (exists) {
-        this.logger.log(`Skipping existing: ${url}`);
+      const isOpen = await this.mongoDatabaseService.isOpenPropertyByUrl(url);
+      if (isOpen) {
+        this.logger.log(`Skipping existing open property: ${url}`);
         continue;
       }
 

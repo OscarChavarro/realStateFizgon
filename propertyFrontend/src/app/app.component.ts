@@ -39,6 +39,13 @@ type DashboardPropertyRow = {
   price: string;
 };
 
+type SortDirection = 'asc' | 'desc';
+type SortField = 'importedBy' | 'title' | 'price';
+type SortCriterion = {
+  sortBy: SortField;
+  sortOrder: SortDirection;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -64,6 +71,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ];
   readonly maintenanceRunning = signal<boolean>(false);
   readonly maintenanceResultText = signal<string>('');
+  readonly sortCriteria = signal<SortCriterion[]>([]);
 
   async ngOnInit(): Promise<void> {
     this.loadSelectedLanguageFromSession();
@@ -87,7 +95,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async refreshDashboardData(): Promise<void> {
     try {
       const response = await firstValueFrom(
-        this.http.get<PropertiesResponse>(`${this.backendBaseUrl}/properties`)
+        this.http.get<PropertiesResponse>(this.buildPropertiesEndpointUrl())
       );
 
       this.count.set(response.pagination.totalElements ?? response.data.length);
@@ -117,6 +125,46 @@ export class AppComponent implements OnInit, OnDestroy {
 
   t(id: string): string {
     return this.i18nService.get(id, this.selectedLanguage());
+  }
+
+  async toggleSort(sortBy: SortField, sortOrder: SortDirection): Promise<void> {
+    const updated = [...this.sortCriteria()];
+    const existingIndex = updated.findIndex((criterion) => criterion.sortBy === sortBy);
+
+    if (existingIndex < 0) {
+      updated.push({ sortBy, sortOrder });
+    } else {
+      const existing = updated[existingIndex];
+      if (existing.sortOrder === sortOrder) {
+        updated.splice(existingIndex, 1);
+      } else {
+        updated[existingIndex] = {
+          sortBy,
+          sortOrder
+        };
+      }
+    }
+
+    this.sortCriteria.set(updated);
+    this.loading.set(true);
+    await this.refreshDashboardData();
+  }
+
+  getSortDirection(sortBy: SortField): SortDirection | null {
+    const criterion = this.sortCriteria().find((item) => item.sortBy === sortBy);
+    return criterion?.sortOrder ?? null;
+  }
+
+  getSortPriority(sortBy: SortField): number | null {
+    const index = this.sortCriteria().findIndex((item) => item.sortBy === sortBy);
+    if (index < 0) {
+      return null;
+    }
+    return index + 1;
+  }
+
+  shouldShowSortPriority(sortBy: SortField): boolean {
+    return this.sortCriteria().length > 1 && this.getSortPriority(sortBy) !== null;
   }
 
   async runDatabaseMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
@@ -199,5 +247,15 @@ export class AppComponent implements OnInit, OnDestroy {
         price
       };
     });
+  }
+
+  private buildPropertiesEndpointUrl(): string {
+    const url = new URL(`${this.backendBaseUrl}/properties`);
+    for (const criterion of this.sortCriteria()) {
+      url.searchParams.append('sortOrder', criterion.sortOrder);
+      url.searchParams.append('sortBy', criterion.sortBy);
+    }
+
+    return url.toString();
   }
 }

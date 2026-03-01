@@ -41,9 +41,90 @@
         <table class="spreadsheet-table">
           <thead>
             <tr>
-              <th>{{ t('CREATED_AT') }}</th>
-              <th>{{ t('TITLE') }}</th>
-              <th>{{ t('PRICE') }}</th>
+              <th>
+                <div class="th-content">
+                  <span>{{ t('CREATED_AT') }}</span>
+                  <div class="sort-controls">
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('importedBy') === 'asc'"
+                      (click)="toggleSort('importedBy', 'asc')"
+                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
+                    >
+                      <span class="material-symbols-outlined">arrow_upward</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('importedBy') === 'desc'"
+                      (click)="toggleSort('importedBy', 'desc')"
+                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
+                    >
+                      <span class="material-symbols-outlined">arrow_downward</span>
+                    </button>
+                    @if (shouldShowSortPriority('importedBy')) {
+                      <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
+                    }
+                  </div>
+                </div>
+              </th>
+              <th>
+                <div class="th-content">
+                  <span>{{ t('TITLE') }}</span>
+                  <div class="sort-controls">
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('title') === 'asc'"
+                      (click)="toggleSort('title', 'asc')"
+                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('TITLE')"
+                    >
+                      <span class="material-symbols-outlined">arrow_upward</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('title') === 'desc'"
+                      (click)="toggleSort('title', 'desc')"
+                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('TITLE')"
+                    >
+                      <span class="material-symbols-outlined">arrow_downward</span>
+                    </button>
+                    @if (shouldShowSortPriority('title')) {
+                      <span class="sort-priority">{{ getSortPriority('title') }}</span>
+                    }
+                  </div>
+                </div>
+              </th>
+              <th>
+                <div class="th-content">
+                  <span>{{ t('PRICE') }}</span>
+                  <div class="sort-controls">
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('price') === 'asc'"
+                      (click)="toggleSort('price', 'asc')"
+                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('PRICE')"
+                    >
+                      <span class="material-symbols-outlined">arrow_upward</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="sort-button"
+                      [class.active]="getSortDirection('price') === 'desc'"
+                      (click)="toggleSort('price', 'desc')"
+                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('PRICE')"
+                    >
+                      <span class="material-symbols-outlined">arrow_downward</span>
+                    </button>
+                    @if (shouldShowSortPriority('price')) {
+                      <span class="sort-priority">{{ getSortPriority('price') }}</span>
+                    }
+                  </div>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>

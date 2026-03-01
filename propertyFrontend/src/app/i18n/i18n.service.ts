@@ -59,6 +59,16 @@ export class I18nService {
       sp: 'Precio'
     },
     {
+      id: 'SORT_ASC',
+      en: 'Sort ascending',
+      sp: 'Orden ascendente'
+    },
+    {
+      id: 'SORT_DESC',
+      en: 'Sort descending',
+      sp: 'Orden descendente'
+    },
+    {
       id: 'NO_PROPERTIES_FOUND',
       en: 'No properties found',
       sp: 'No se encontraron propiedades'

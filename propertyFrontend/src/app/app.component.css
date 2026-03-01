@@ -182,12 +182,67 @@
   background: #f1f3f4;
   border: 1px solid #cfcfcf;
   border-top: 0;
-  padding: 0.5rem;
+  padding: 0.4rem 0.5rem;
   text-transform: uppercase;
   font-size: 0.86rem;
   letter-spacing: 0.02em;
   text-align: left;
   font-weight: 700;
+}
+
+.th-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sort-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.sort-button {
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 0;
+  background: transparent;
+  color: #7e868f;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sort-button .material-symbols-outlined {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.sort-button:hover {
+  background: #e6eaef;
+}
+
+.sort-button.active {
+  color: #1967d2;
+  background: #e8f0fe;
+}
+
+.sort-priority {
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: #1967d2;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .spreadsheet-table tbody td {

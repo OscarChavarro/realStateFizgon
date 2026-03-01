@@ -1,70 +1,97 @@
 .detail-panel {
   height: 100%;
-  padding: 1rem;
+  padding: 0.7rem;
   overflow: auto;
   background: #ffffff;
 }
 
 .detail-panel h2 {
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.55rem 0;
   color: #0f2e55;
-  font-size: 1.25rem;
+  font-size: 1.18rem;
 }
 
-.detail-panel dl {
-  margin: 0;
-  display: grid;
-  gap: 0.8rem;
+.detail-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-bottom: 0.5rem;
 }
 
-.detail-row {
-  display: grid;
-  gap: 0.25rem;
+.detail-meta-table th,
+.detail-meta-table td {
+  border: 1px solid #d9e0ed;
+  padding: 0.33rem 0.45rem;
+  vertical-align: middle;
 }
 
-.detail-row dt {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+.detail-meta-table th {
+  width: 16%;
+  text-align: left;
   color: #5f6b7b;
   font-weight: 700;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #f6f8fc;
 }
 
-.detail-row dd {
-  margin: 0;
+.detail-meta-table td {
   color: #1f2937;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
-.detail-row dd.url {
+.detail-meta-table td.url {
   word-break: break-all;
 }
 
-.detail-row dd.url a {
+.detail-meta-table td.url a {
   color: #1967d2;
   text-decoration: none;
   font-weight: 600;
 }
 
-.detail-row dd.url a:hover {
+.detail-meta-table td.url a:hover {
   text-decoration: underline;
+}
+
+.description-block {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.55rem;
+}
+
+.description-label,
+.carousel-label {
+  color: #5f6b7b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.description-textarea {
+  width: 100%;
+  min-height: 88px;
+  max-height: 128px;
+  border: 1px solid #d9e0ed;
+  border-radius: 5px;
+  padding: 0.45rem;
+  resize: none;
+  overflow-y: auto;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #1f2937;
+  background: #fbfcff;
+}
+
+.carousel-block {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .detail-panel.empty p {
   color: #5f6b7b;
   margin: 0;
-}
-
-.local-image-list {
-  margin: 0;
-  padding-left: 1rem;
-  display: grid;
-  gap: 0.25rem;
-}
-
-.local-image-list li {
-  word-break: break-all;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.84rem;
-  color: #2d3d56;
 }

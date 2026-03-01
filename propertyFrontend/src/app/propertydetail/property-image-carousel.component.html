@@ -1,0 +1,29 @@
+@if (localImageUrls.length > 0) {
+  <section class="image-carousel">
+    <div class="main-image">
+      <img
+        [src]="getSelectedImageSrc()"
+        [alt]="propertyId + '/' + localImageUrls[selectedImageIndex]"
+      />
+    </div>
+
+    <div #thumbnailStrip class="thumbnail-strip">
+      @for (localImageUrl of localImageUrls; track localImageUrl; let index = $index) {
+        <button
+          #thumbnailButton
+          type="button"
+          class="thumbnail-button"
+          [class.selected]="index === selectedImageIndex"
+          (click)="selectImage(index)"
+        >
+          <img
+            [src]="buildLocalImageSrc(localImageUrl)"
+            [alt]="propertyId + '/' + localImageUrl"
+          />
+        </button>
+      }
+    </div>
+  </section>
+} @else {
+  <section class="image-carousel empty">-</section>
+}

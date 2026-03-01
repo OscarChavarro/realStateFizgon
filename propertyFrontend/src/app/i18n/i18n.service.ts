@@ -34,11 +34,6 @@ export class I18nService {
       sp: 'Español 🇪🇸'
     },
     {
-      id: 'PROPERTIES_DASHBOARD_TITLE',
-      en: 'Properties Dashboard',
-      sp: 'Tablero de propiedades'
-    },
-    {
       id: 'TOTAL_PROPERTIES',
       en: 'Total properties',
       sp: 'Total de propiedades'
@@ -55,8 +50,13 @@ export class I18nService {
     },
     {
       id: 'PRICE',
-      en: 'Price',
-      sp: 'Precio'
+      en: 'Price (€/month)',
+      sp: 'Precio (€/mes)'
+    },
+    {
+      id: 'LOCATION',
+      en: 'Location',
+      sp: 'Ubicación'
     },
     {
       id: 'PROPERTY_DETAIL_SOURCE',
@@ -67,6 +67,11 @@ export class I18nService {
       id: 'PROPERTY_DETAIL_LOCAL_IMAGE_FILES',
       en: 'Local image files',
       sp: 'Archivos de imagen locales'
+    },
+    {
+      id: 'DESCRIPTION',
+      en: 'Description',
+      sp: 'Descripción'
     },
     {
       id: 'SORT_ASC',
@@ -84,24 +89,9 @@ export class I18nService {
       sp: 'No se encontraron propiedades'
     },
     {
-      id: 'LAST_UPDATE',
-      en: 'Last update',
-      sp: 'Última actualización'
-    },
-    {
-      id: 'WAITING',
-      en: 'waiting...',
-      sp: 'esperando...'
-    },
-    {
       id: 'LANGUAGE_LABEL',
       en: 'Language',
       sp: 'Idioma'
-    },
-    {
-      id: 'DATABASE_MAINTENANCE_INFO',
-      en: 'Database maintenance operations are available from backend endpoints.',
-      sp: 'Las operaciones de mantenimiento de base de datos están disponibles desde los endpoints del backend.'
     },
     {
       id: 'REMOVE_DANGLING_IMAGES',

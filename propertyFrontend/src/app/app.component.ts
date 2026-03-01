@@ -12,6 +12,7 @@ type PropertiesCountResponse = {
 };
 
 type FrontendSecrets = {
+  staticMedia?: string;
   backend?: {
     baseUrl?: string;
   };
@@ -20,11 +21,14 @@ type FrontendSecrets = {
 type PropertiesResponse = {
   error: string | null;
   data: Array<{
+    createdAt?: string | Date;
     propertyId?: string | number;
     createdBy?: string;
     importedBy?: string;
     title?: string;
     location?: string;
+    description?: string;
+    advertiserComment?: string;
     url?: string;
     price?: number | string | null;
     images?: Array<string | {
@@ -47,6 +51,7 @@ type DashboardPropertyRow = {
   url: string;
   price: string;
   location: string;
+  advertiserComment: string;
   localImageUrls: string[];
 };
 
@@ -72,12 +77,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly i18nService = inject(I18nService);
   private socket: Socket | null = null;
   private backendBaseUrl = AppComponent.DEFAULT_BACKEND_BASE_URL;
+  private staticMediaBaseUrl = 'http://localhost:666/';
   private isResizingWorkspace = false;
+  private lastTopBarTouchPointerUpAtMs = 0;
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
 
   readonly count = signal<number>(0);
   readonly loading = signal<boolean>(true);
-  readonly lastUpdatedAt = signal<string>('');
   readonly properties = signal<DashboardPropertyRow[]>([]);
   readonly selectedProperty = signal<PropertyDetailViewModel | null>(null);
   readonly lockedSelectedPropertyKey = signal<string | null>(null);
@@ -120,14 +126,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
       this.count.set(response.pagination.totalElements ?? response.data.length);
       this.properties.set(this.mapPropertiesForDashboard(response.data));
-      this.lastUpdatedAt.set(new Date().toISOString());
     } catch {
       const countResponse = await firstValueFrom(
         this.http.get<PropertiesCountResponse>(`${this.backendBaseUrl}/properties/count`)
       );
       this.count.set(countResponse.count);
       this.properties.set([]);
-      this.lastUpdatedAt.set(new Date().toISOString());
     } finally {
       this.loading.set(false);
     }
@@ -203,24 +207,25 @@ export class AppComponent implements OnInit, OnDestroy {
     event.preventDefault();
   }
 
-  toggleLeftPanel(): void {
-    if (this.leftPanelHidden()) {
+  cycleWorkspaceLayout(): void {
+    const leftHidden = this.leftPanelHidden();
+    const rightHidden = this.rightPanelHidden();
+
+    // split -> only left -> only right -> split
+    if (!leftHidden && !rightHidden) {
+      this.rightPanelHidden.set(true);
       this.leftPanelHidden.set(false);
       return;
     }
 
-    this.leftPanelHidden.set(true);
-    this.rightPanelHidden.set(false);
-  }
-
-  toggleRightPanel(): void {
-    if (this.rightPanelHidden()) {
+    if (!leftHidden && rightHidden) {
+      this.leftPanelHidden.set(true);
       this.rightPanelHidden.set(false);
       return;
     }
 
-    this.rightPanelHidden.set(true);
     this.leftPanelHidden.set(false);
+    this.rightPanelHidden.set(false);
   }
 
   getWorkspaceColumns(): string {
@@ -303,20 +308,29 @@ export class AppComponent implements OnInit, OnDestroy {
           ? configuredBaseUrl.slice(0, -1)
           : configuredBaseUrl;
       }
+
+      const configuredStaticMedia = secrets.staticMedia?.trim();
+      if (configuredStaticMedia) {
+        this.staticMediaBaseUrl = configuredStaticMedia.endsWith('/')
+          ? configuredStaticMedia
+          : `${configuredStaticMedia}/`;
+      }
     } catch {
       this.backendBaseUrl = AppComponent.DEFAULT_BACKEND_BASE_URL;
     }
   }
 
+  getStaticMediaBaseUrl(): string {
+    return this.staticMediaBaseUrl;
+  }
+
   private mapPropertiesForDashboard(rawRows: PropertiesResponse['data']): DashboardPropertyRow[] {
     const mappedRows = rawRows.map((row) => {
-      const createdAtRaw = typeof row.createdBy === 'string' && row.createdBy.length > 0
-        ? row.createdBy
-        : (typeof row.importedBy === 'string' ? row.importedBy : '');
-      const createdAtDate = createdAtRaw ? new Date(createdAtRaw) : null;
-      const createdAt = createdAtDate && !Number.isNaN(createdAtDate.getTime())
-        ? createdAtDate.toISOString()
-        : '';
+      const createdAt = this.toDateOnlyString(
+        row.createdAt
+        ?? row.createdBy
+        ?? row.importedBy
+      );
       const propertyId = row.propertyId === undefined || row.propertyId === null
         ? ''
         : String(row.propertyId);
@@ -328,6 +342,9 @@ export class AppComponent implements OnInit, OnDestroy {
       const location = typeof row.location === 'string' && row.location.trim().length > 0
         ? row.location.trim()
         : '';
+      const advertiserComment = typeof row.advertiserComment === 'string' && row.advertiserComment.trim().length > 0
+        ? row.advertiserComment.trim()
+        : (typeof row.description === 'string' ? row.description.trim() : '');
       const price = row.price === null || row.price === undefined
         ? '-'
         : String(row.price);
@@ -340,6 +357,7 @@ export class AppComponent implements OnInit, OnDestroy {
         url,
         price,
         location,
+        advertiserComment,
         localImageUrls
       };
     });
@@ -359,6 +377,40 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     return mappedRows;
+  }
+
+  private toDateOnlyString(value: unknown): string {
+    if (typeof value === 'string') {
+      const raw = value.trim();
+      if (!raw) {
+        return '';
+      }
+
+      const isoDatePrefix = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (isoDatePrefix) {
+        return isoDatePrefix[1];
+      }
+
+      const parsedFromString = new Date(raw);
+      if (!Number.isNaN(parsedFromString.getTime())) {
+        return this.formatLocalDate(parsedFromString);
+      }
+
+      return '';
+    }
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return this.formatLocalDate(value);
+    }
+
+    return '';
+  }
+
+  private formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private buildPropertiesEndpointUrl(): string {
@@ -410,8 +462,124 @@ export class AppComponent implements OnInit, OnDestroy {
     this.leftPanelWidthPercent.set(clamped);
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent): void {
+    if (event.repeat || event.defaultPrevented) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingTarget(target)) {
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      if (this.activeTab() !== 'DASHBOARD') {
+        return;
+      }
+      event.preventDefault();
+      this.selectPropertyByKeyboard(-1);
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      if (this.activeTab() !== 'DASHBOARD') {
+        return;
+      }
+      event.preventDefault();
+      this.selectPropertyByKeyboard(1);
+      return;
+    }
+
+    if (event.key.toLowerCase() === 'f') {
+      event.preventDefault();
+      void this.toggleFullscreen();
+    }
+  }
+
+  onTopBarDoubleClick(): void {
+    void this.toggleFullscreen();
+  }
+
+  onTopBarPointerUp(event: PointerEvent): void {
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+
+    const now = Date.now();
+    const delta = now - this.lastTopBarTouchPointerUpAtMs;
+    this.lastTopBarTouchPointerUpAtMs = now;
+
+    if (delta <= 350) {
+      this.lastTopBarTouchPointerUpAtMs = 0;
+      void this.toggleFullscreen();
+    }
+  }
+
   @HostListener('window:mouseup')
   onWindowMouseUp(): void {
     this.isResizingWorkspace = false;
+  }
+
+  private isTypingTarget(target: HTMLElement | null): boolean {
+    if (!target) {
+      return false;
+    }
+
+    const tagName = target.tagName.toLowerCase();
+    return tagName === 'input'
+      || tagName === 'textarea'
+      || tagName === 'select'
+      || target.isContentEditable;
+  }
+
+  private async toggleFullscreen(): Promise<void> {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    const rootElement = document.documentElement;
+    if (rootElement.requestFullscreen) {
+      await rootElement.requestFullscreen();
+    }
+  }
+
+  private selectPropertyByKeyboard(delta: -1 | 1): void {
+    const rows = this.properties();
+    if (rows.length === 0) {
+      return;
+    }
+
+    const lockedKey = this.lockedSelectedPropertyKey();
+    const selected = this.selectedProperty();
+
+    let currentIndex = -1;
+    if (lockedKey) {
+      currentIndex = rows.findIndex((row) => this.getPropertyRowKey(row) === lockedKey);
+    } else if (selected) {
+      currentIndex = rows.findIndex((row) => this.getPropertyRowKey(row) === this.getPropertyRowKey(selected));
+    }
+
+    if (currentIndex < 0) {
+      currentIndex = 0;
+    }
+
+    const nextIndex = Math.min(rows.length - 1, Math.max(0, currentIndex + delta));
+    const nextRow = rows[nextIndex];
+    const nextKey = this.getPropertyRowKey(nextRow);
+
+    this.selectedProperty.set(nextRow);
+    this.lockedSelectedPropertyKey.set(nextKey);
+  }
+
+  getWorkspaceCycleIcon(): string {
+    if (!this.leftPanelHidden() && !this.rightPanelHidden()) {
+      return 'vertical_split';
+    }
+    if (!this.leftPanelHidden() && this.rightPanelHidden()) {
+      return 'left_panel_open';
+    }
+    return 'right_panel_open';
   }
 }

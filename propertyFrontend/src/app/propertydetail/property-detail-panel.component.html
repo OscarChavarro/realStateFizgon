@@ -1,44 +1,42 @@
 @if (property) {
   <section class="detail-panel">
     <h2>{{ property.title }}</h2>
-    <dl>
-      <div class="detail-row">
-        <dt>Price</dt>
-        <dd>{{ property.price }}</dd>
-      </div>
-      <div class="detail-row">
-        <dt>Created At</dt>
-        <dd>{{ property.createdAt || '-' }}</dd>
-      </div>
-      <div class="detail-row">
-        <dt>Location</dt>
-        <dd>{{ property.location || '-' }}</dd>
-      </div>
-      <div class="detail-row">
-        <dt>{{ t('PROPERTY_DETAIL_SOURCE') }}</dt>
-        <dd class="url">
-          @if (property.url) {
-            <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
-          } @else {
-            -
-          }
-        </dd>
-      </div>
-      <div class="detail-row">
-        <dt>{{ t('PROPERTY_DETAIL_LOCAL_IMAGE_FILES') }}</dt>
-        <dd>
-          @if (property.localImageUrls.length > 0) {
-            <ul class="local-image-list">
-              @for (localImageUrl of property.localImageUrls; track localImageUrl) {
-                <li>{{ property.propertyId }} / {{ localImageUrl }}</li>
-              }
-            </ul>
-          } @else {
-            -
-          }
-        </dd>
-      </div>
-    </dl>
+    <table class="detail-meta-table">
+      <tbody>
+        <tr>
+          <th>{{ t('PRICE') }}</th>
+          <td>{{ property.price }}</td>
+          <th>{{ t('CREATED_AT') }}</th>
+          <td>{{ property.createdAt || '-' }}</td>
+        </tr>
+        <tr>
+          <th>{{ t('LOCATION') }}</th>
+          <td>{{ property.location || '-' }}</td>
+          <th>{{ t('PROPERTY_DETAIL_SOURCE') }}</th>
+          <td class="url">
+            @if (property.url) {
+              <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
+            } @else {
+              -
+            }
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="carousel-block">
+      <label class="carousel-label">{{ t('PROPERTY_DETAIL_LOCAL_IMAGE_FILES') }}</label>
+      <app-property-image-carousel
+        [propertyId]="property.propertyId"
+        [localImageUrls]="property.localImageUrls"
+        [staticMediaBaseUrl]="staticMediaBaseUrl"
+      ></app-property-image-carousel>
+    </div>
+
+    <div class="description-block">
+      <label class="description-label">{{ t('DESCRIPTION') }}</label>
+      <textarea class="description-textarea" readonly>{{ property.advertiserComment || '-' }}</textarea>
+    </div>
   </section>
 } @else {
   <section class="detail-panel empty">

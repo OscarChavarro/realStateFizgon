@@ -104,6 +104,59 @@ export class MongoDatabaseService implements OnModuleDestroy {
       .filter((url) => url.length > 0);
   }
 
+  async fixStringPricesToNumbers(): Promise<{
+    scanned: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+  }> {
+    const collection = await this.ensurePropertiesCollection();
+    const cursor = collection.find(
+      {
+        price: { $exists: true, $type: 'string' }
+      },
+      {
+        projection: { _id: 1, price: 1 }
+      }
+    );
+
+    let scanned = 0;
+    let updated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for await (const document of cursor) {
+      scanned += 1;
+      const normalizedPrice = this.parseStringPriceToNumber(document.price);
+
+      if (normalizedPrice === null) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        const result = await collection.updateOne(
+          { _id: document._id },
+          { $set: { price: normalizedPrice } }
+        );
+        if (result.modifiedCount > 0) {
+          updated += 1;
+        } else {
+          skipped += 1;
+        }
+      } catch {
+        failed += 1;
+      }
+    }
+
+    return {
+      scanned,
+      updated,
+      skipped,
+      failed
+    };
+  }
+
   async validateConnectionOrExit(): Promise<void> {
     const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);
@@ -182,5 +235,19 @@ export class MongoDatabaseService implements OnModuleDestroy {
 
   private async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private parseStringPriceToNumber(value: unknown): number | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const digitsOnly = value.replace(/\D+/g, '');
+    if (digitsOnly.length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(digitsOnly, 10);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 }

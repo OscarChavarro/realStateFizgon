@@ -7,7 +7,7 @@ export class Property {
     public readonly url: string,
     public readonly title: string | null,
     public readonly location: string | null,
-    public readonly price: string | null,
+    public readonly price: number | null,
     public readonly mainFeatures: PropertyMainFeatures,
     public readonly advertiserComment: string | null,
     public readonly featureGroups: PropertyFeatureGroup[],

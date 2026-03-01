@@ -18,6 +18,16 @@ npm install --verbose
 npm run build
 cd ..
 
+cd propertyBackend
+npm install --verbose
+npm run build
+cd ..
+
+cd propertyFrontend
+npm install --verbose
+npm run build
+cd ..
+
 cd notificationMessageSender
 npm install --verbose
 npm run build

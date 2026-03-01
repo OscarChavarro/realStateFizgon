@@ -251,12 +251,13 @@ export class PropertyDetailDomExtractorService {
       (group) => new PropertyFeatureGroup(group.name, group.items)
     );
     const images = payload.images.map((image) => new PropertyImage(image.url, image.title));
+    const normalizedPrice = this.parsePriceToNumber(payload.price);
 
     return new Property(
       url,
       payload.title,
       payload.location,
-      payload.price,
+      normalizedPrice,
       mainFeatures,
       payload.advertiserComment,
       featureGroups,
@@ -297,5 +298,19 @@ export class PropertyDetailDomExtractorService {
     } catch {
       return false;
     }
+  }
+
+  private parsePriceToNumber(rawPrice: string | null): number | null {
+    if (!rawPrice) {
+      return null;
+    }
+
+    const digitsOnly = rawPrice.replace(/\D+/g, '');
+    if (digitsOnly.length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(digitsOnly, 10);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 }

@@ -9,12 +9,13 @@ export type DatabaseMaintenanceOperationResult = {
 export abstract class DatabaseMaintenanceOperation {
   constructor(
     public readonly i18nId: string,
-    private readonly endpointUrl: string
+    private readonly endpointPath: string
   ) {}
 
-  async execute(http: HttpClient): Promise<DatabaseMaintenanceOperationResult> {
+  async execute(http: HttpClient, backendBaseUrl: string): Promise<DatabaseMaintenanceOperationResult> {
+    const endpointUrl = this.buildEndpointUrl(backendBaseUrl);
     const response = await firstValueFrom(
-      http.get<unknown>(this.endpointUrl, { observe: 'response' })
+      http.get<unknown>(endpointUrl, { observe: 'response' })
     );
 
     return this.toResult(response);
@@ -26,5 +27,11 @@ export abstract class DatabaseMaintenanceOperation {
       body: response.body
     };
   }
-}
 
+  private buildEndpointUrl(backendBaseUrl: string): string {
+    const base = backendBaseUrl.endsWith('/')
+      ? backendBaseUrl.slice(0, -1)
+      : backendBaseUrl;
+    return `${base}${this.endpointPath}`;
+  }
+}

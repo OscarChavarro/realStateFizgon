@@ -44,10 +44,11 @@ export class PropertiesController {
     const data = pageSize === 0
       ? []
       : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize);
+    const normalizedData = data.map((item) => this.normalizePropertyTitle(item));
 
     return {
       error: null,
-      data,
+      data: normalizedData,
       pagination: {
         page,
         pageSize,
@@ -78,5 +79,26 @@ export class PropertiesController {
       },
       HttpStatus.BAD_REQUEST
     );
+  }
+
+  private normalizePropertyTitle(item: unknown): unknown {
+    if (typeof item !== 'object' || item === null) {
+      return item;
+    }
+
+    const candidate = item as { title?: unknown };
+    if (typeof candidate.title !== 'string') {
+      return item;
+    }
+
+    const prefix = 'Alquiler de piso en ';
+    if (!candidate.title.startsWith(prefix)) {
+      return item;
+    }
+
+    return {
+      ...(item as Record<string, unknown>),
+      title: candidate.title.slice(prefix.length)
+    };
   }
 }

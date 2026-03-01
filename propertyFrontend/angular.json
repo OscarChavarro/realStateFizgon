@@ -21,6 +21,11 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
+                "glob": "secrets.json",
+                "input": ".",
+                "output": "/"
+              },
+              {
                 "glob": "**/*",
                 "input": "public"
               }

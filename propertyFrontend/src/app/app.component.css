@@ -159,6 +159,80 @@
   overflow-wrap: anywhere;
 }
 
+.spreadsheet-table-wrapper {
+  margin-top: 1rem;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.spreadsheet-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.95rem;
+  color: #202124;
+}
+
+.spreadsheet-table thead th {
+  background: #f1f3f4;
+  border: 1px solid #cfcfcf;
+  border-top: 0;
+  padding: 0.5rem;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+  text-align: left;
+  font-weight: 700;
+}
+
+.spreadsheet-table tbody td {
+  border: 1px solid #e0e0e0;
+  padding: 0.48rem 0.55rem;
+  vertical-align: middle;
+  background: #ffffff;
+}
+
+.spreadsheet-table tbody tr:nth-child(even) td {
+  background: #fafafa;
+}
+
+.spreadsheet-table tbody td:nth-child(1) {
+  width: 25%;
+  color: #3c4043;
+  font-size: 0.86rem;
+}
+
+.spreadsheet-table tbody td:nth-child(2) {
+  width: 55%;
+}
+
+.spreadsheet-table tbody td:nth-child(3) {
+  width: 20%;
+  text-align: right;
+  font-weight: 600;
+}
+
+.spreadsheet-table a {
+  color: #1967d2;
+  text-decoration: none;
+}
+
+.spreadsheet-table a:hover {
+  text-decoration: underline;
+}
+
+.spreadsheet-table .empty-row {
+  text-align: center;
+  color: #5f6368;
+  padding: 0.85rem;
+  font-style: italic;
+}
+
 .maintenance-actions {
   margin-top: 0.8rem;
   display: grid;

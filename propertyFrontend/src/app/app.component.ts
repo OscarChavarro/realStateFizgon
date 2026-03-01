@@ -10,6 +10,35 @@ type PropertiesCountResponse = {
   count: number;
 };
 
+type FrontendSecrets = {
+  backend?: {
+    baseUrl?: string;
+  };
+};
+
+type PropertiesResponse = {
+  error: string | null;
+  data: Array<{
+    createdBy?: string;
+    importedBy?: string;
+    title?: string;
+    url?: string;
+    price?: number | string | null;
+  }>;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalElements: number;
+  };
+};
+
+type DashboardPropertyRow = {
+  createdAt: string;
+  title: string;
+  url: string;
+  price: string;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -18,13 +47,16 @@ type PropertiesCountResponse = {
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
+  private static readonly DEFAULT_BACKEND_BASE_URL = 'http://192.168.1.110:4200';
   private readonly http = inject(HttpClient);
   private readonly i18nService = inject(I18nService);
   private socket: Socket | null = null;
+  private backendBaseUrl = AppComponent.DEFAULT_BACKEND_BASE_URL;
 
   readonly count = signal<number>(0);
   readonly loading = signal<boolean>(true);
   readonly lastUpdatedAt = signal<string>('');
+  readonly properties = signal<DashboardPropertyRow[]>([]);
   readonly selectedLanguage = signal<SupportedLanguage>('en');
   readonly activeTab = signal<'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB'>('DASHBOARD');
   readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
@@ -35,7 +67,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     this.loadSelectedLanguageFromSession();
-    await this.refreshCount();
+    await this.loadBackendConfiguration();
+    await this.refreshDashboardData();
     this.connectUpdatesSocket();
   }
 
@@ -45,20 +78,31 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private connectUpdatesSocket(): void {
-    this.socket = io('http://localhost:8081');
+    this.socket = io(this.backendBaseUrl);
     this.socket.on('properties-count-updated', async () => {
-      await this.refreshCount();
+      await this.refreshDashboardData();
     });
   }
 
-  private async refreshCount(): Promise<void> {
-    const response = await firstValueFrom(
-      this.http.get<PropertiesCountResponse>('http://localhost:8081/properties/count')
-    );
+  private async refreshDashboardData(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<PropertiesResponse>(`${this.backendBaseUrl}/properties`)
+      );
 
-    this.count.set(response.count);
-    this.lastUpdatedAt.set(new Date().toISOString());
-    this.loading.set(false);
+      this.count.set(response.pagination.totalElements ?? response.data.length);
+      this.properties.set(this.mapPropertiesForDashboard(response.data));
+      this.lastUpdatedAt.set(new Date().toISOString());
+    } catch {
+      const countResponse = await firstValueFrom(
+        this.http.get<PropertiesCountResponse>(`${this.backendBaseUrl}/properties/count`)
+      );
+      this.count.set(countResponse.count);
+      this.properties.set([]);
+      this.lastUpdatedAt.set(new Date().toISOString());
+    } finally {
+      this.loading.set(false);
+    }
   }
 
   selectTab(tabId: 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB'): void {
@@ -77,10 +121,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async runDatabaseMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
     this.maintenanceRunning.set(true);
-    this.maintenanceResultText.set('');
+      this.maintenanceResultText.set('');
 
     try {
-      const result = await operation.execute(this.http);
+      const result = await operation.execute(this.http, this.backendBaseUrl);
       const resultPayload = {
         status: result.status,
         body: result.body
@@ -112,5 +156,48 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.selectedLanguage.set('en');
     sessionStorage.setItem(AppComponent.SELECTED_LANGUAGE_KEY, 'en');
+  }
+
+  private async loadBackendConfiguration(): Promise<void> {
+    try {
+      const secrets = await firstValueFrom(
+        this.http.get<FrontendSecrets>('/secrets.json')
+      );
+      const configuredBaseUrl = secrets.backend?.baseUrl?.trim();
+      if (configuredBaseUrl) {
+        this.backendBaseUrl = configuredBaseUrl.endsWith('/')
+          ? configuredBaseUrl.slice(0, -1)
+          : configuredBaseUrl;
+      }
+    } catch {
+      this.backendBaseUrl = AppComponent.DEFAULT_BACKEND_BASE_URL;
+    }
+  }
+
+  private mapPropertiesForDashboard(rawRows: PropertiesResponse['data']): DashboardPropertyRow[] {
+    return rawRows.map((row) => {
+      const createdAtRaw = typeof row.createdBy === 'string' && row.createdBy.length > 0
+        ? row.createdBy
+        : (typeof row.importedBy === 'string' ? row.importedBy : '');
+      const createdAtDate = createdAtRaw ? new Date(createdAtRaw) : null;
+      const createdAt = createdAtDate && !Number.isNaN(createdAtDate.getTime())
+        ? createdAtDate.toISOString()
+        : '';
+
+      const title = typeof row.title === 'string' && row.title.trim().length > 0
+        ? row.title.trim()
+        : '-';
+      const url = typeof row.url === 'string' ? row.url.trim() : '';
+      const price = row.price === null || row.price === undefined
+        ? '-'
+        : String(row.price);
+
+      return {
+        createdAt,
+        title,
+        url,
+        price
+      };
+    });
   }
 }

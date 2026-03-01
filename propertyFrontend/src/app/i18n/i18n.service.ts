@@ -39,14 +39,29 @@ export class I18nService {
       sp: 'Tablero de propiedades'
     },
     {
-      id: 'LIVE_MONGODB_COLLECTION_SIZE',
-      en: 'Live MongoDB collection size',
-      sp: 'Tamaño en vivo de la colección de MongoDB'
-    },
-    {
       id: 'TOTAL_PROPERTIES',
       en: 'Total properties',
       sp: 'Total de propiedades'
+    },
+    {
+      id: 'CREATED_AT',
+      en: 'Created at',
+      sp: 'Creado en'
+    },
+    {
+      id: 'TITLE',
+      en: 'Title',
+      sp: 'Título'
+    },
+    {
+      id: 'PRICE',
+      en: 'Price',
+      sp: 'Precio'
+    },
+    {
+      id: 'NO_PROPERTIES_FOUND',
+      en: 'No properties found',
+      sp: 'No se encontraron propiedades'
     },
     {
       id: 'LAST_UPDATE',

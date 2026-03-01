@@ -31,11 +31,45 @@
   @if (activeTab() === 'DASHBOARD') {
     <section class="dashboard-card">
       <h1>{{ t('PROPERTIES_DASHBOARD_TITLE') }}</h1>
-      <p class="subtitle">{{ t('LIVE_MONGODB_COLLECTION_SIZE') }}</p>
 
       <div class="value-row">
         <span class="label">{{ t('TOTAL_PROPERTIES') }}</span>
         <span class="value" [class.loading]="loading()">{{ count() }}</span>
+      </div>
+
+      <div class="spreadsheet-table-wrapper">
+        <table class="spreadsheet-table">
+          <thead>
+            <tr>
+              <th>{{ t('CREATED_AT') }}</th>
+              <th>{{ t('TITLE') }}</th>
+              <th>{{ t('PRICE') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (properties().length === 0) {
+              <tr>
+                <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+              </tr>
+            } @else {
+              @for (property of properties(); track property.url + property.createdAt) {
+                <tr>
+                  <td>{{ property.createdAt || '-' }}</td>
+                  <td>
+                    @if (property.url) {
+                      <a [href]="property.url" target="_blank" rel="noopener noreferrer">
+                        {{ property.title }}
+                      </a>
+                    } @else {
+                      {{ property.title }}
+                    }
+                  </td>
+                  <td>{{ property.price }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
       </div>
 
       <p class="timestamp">{{ t('LAST_UPDATE') }}: {{ lastUpdatedAt() || t('WAITING') }}</p>

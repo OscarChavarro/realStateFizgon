@@ -51,7 +51,7 @@ export class PropertiesController {
     const data = pageSize === 0
       ? []
       : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria);
-    const normalizedData = data.map((item) => this.normalizePropertyTitle(item));
+    const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
 
     return {
       error: null,
@@ -160,24 +160,68 @@ export class PropertiesController {
     );
   }
 
-  private normalizePropertyTitle(item: unknown): unknown {
+  private normalizePropertyPayload(item: unknown): unknown {
     if (typeof item !== 'object' || item === null) {
       return item;
     }
 
-    const candidate = item as { title?: unknown };
-    if (typeof candidate.title !== 'string') {
-      return item;
+    const payload = { ...(item as Record<string, unknown>) };
+
+    const title = typeof payload.title === 'string' ? payload.title : null;
+    if (title) {
+      const prefix = 'Alquiler de piso en ';
+      if (title.startsWith(prefix)) {
+        payload.title = title.slice(prefix.length);
+      }
     }
 
-    const prefix = 'Alquiler de piso en ';
-    if (!candidate.title.startsWith(prefix)) {
-      return item;
+    payload.images = this.normalizeImagesWithLocalUrl(payload.images);
+
+    return payload;
+  }
+
+  private normalizeImagesWithLocalUrl(images: unknown): unknown {
+    if (!Array.isArray(images)) {
+      return images;
     }
 
-    return {
-      ...(item as Record<string, unknown>),
-      title: candidate.title.slice(prefix.length)
-    };
+    return images.map((imageItem) => {
+      if (typeof imageItem === 'string') {
+        return {
+          url: imageItem,
+          localUrl: this.buildLocalImageNameFromUrl(imageItem)
+        };
+      }
+
+      if (typeof imageItem === 'object' && imageItem !== null) {
+        const imageObject = imageItem as Record<string, unknown>;
+        const imageUrl = typeof imageObject.url === 'string' ? imageObject.url : '';
+        return {
+          ...imageObject,
+          localUrl: this.buildLocalImageNameFromUrl(imageUrl)
+        };
+      }
+
+      return imageItem;
+    });
+  }
+
+  private buildLocalImageNameFromUrl(url: string): string | null {
+    if (!url) {
+      return null;
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      const segments = parsedUrl.pathname.split('/').filter((segment) => segment.length > 0);
+      const lastFourSegments = segments.slice(-4);
+      if (lastFourSegments.length < 4) {
+        return null;
+      }
+
+      return lastFourSegments.join('_');
+    } catch {
+      return null;
+    }
   }
 }

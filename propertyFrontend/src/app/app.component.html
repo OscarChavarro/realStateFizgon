@@ -29,128 +29,154 @@
   </header>
 
   @if (activeTab() === 'DASHBOARD') {
-    <section class="dashboard-card">
-      <h1>{{ t('PROPERTIES_DASHBOARD_TITLE') }}</h1>
-
-      <div class="value-row">
-        <span class="label">{{ t('TOTAL_PROPERTIES') }}</span>
-        <span class="value" [class.loading]="loading()">{{ count() }}</span>
+    <section class="dashboard-workspace">
+      <div class="workspace-summary">
+        <h1>{{ t('PROPERTIES_DASHBOARD_TITLE') }}</h1>
+        <div class="value-row">
+          <span class="label">{{ t('TOTAL_PROPERTIES') }}</span>
+          <span class="value" [class.loading]="loading()">{{ count() }}</span>
+        </div>
       </div>
 
-      <div class="spreadsheet-table-wrapper">
-        <table class="spreadsheet-table">
-          <thead>
-            <tr>
-              <th>
-                <div class="th-content">
-                  <span>{{ t('CREATED_AT') }}</span>
-                  <div class="sort-controls">
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('importedBy') === 'asc'"
-                      (click)="toggleSort('importedBy', 'asc')"
-                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
-                    >
-                      <span class="material-symbols-outlined">arrow_upward</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('importedBy') === 'desc'"
-                      (click)="toggleSort('importedBy', 'desc')"
-                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
-                    >
-                      <span class="material-symbols-outlined">arrow_downward</span>
-                    </button>
-                    @if (shouldShowSortPriority('importedBy')) {
-                      <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
-                    }
-                  </div>
-                </div>
-              </th>
-              <th>
-                <div class="th-content">
-                  <span>{{ t('TITLE') }}</span>
-                  <div class="sort-controls">
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('title') === 'asc'"
-                      (click)="toggleSort('title', 'asc')"
-                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('TITLE')"
-                    >
-                      <span class="material-symbols-outlined">arrow_upward</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('title') === 'desc'"
-                      (click)="toggleSort('title', 'desc')"
-                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('TITLE')"
-                    >
-                      <span class="material-symbols-outlined">arrow_downward</span>
-                    </button>
-                    @if (shouldShowSortPriority('title')) {
-                      <span class="sort-priority">{{ getSortPriority('title') }}</span>
-                    }
-                  </div>
-                </div>
-              </th>
-              <th>
-                <div class="th-content">
-                  <span>{{ t('PRICE') }}</span>
-                  <div class="sort-controls">
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('price') === 'asc'"
-                      (click)="toggleSort('price', 'asc')"
-                      [attr.aria-label]="t('SORT_ASC') + ' ' + t('PRICE')"
-                    >
-                      <span class="material-symbols-outlined">arrow_upward</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="sort-button"
-                      [class.active]="getSortDirection('price') === 'desc'"
-                      (click)="toggleSort('price', 'desc')"
-                      [attr.aria-label]="t('SORT_DESC') + ' ' + t('PRICE')"
-                    >
-                      <span class="material-symbols-outlined">arrow_downward</span>
-                    </button>
-                    @if (shouldShowSortPriority('price')) {
-                      <span class="sort-priority">{{ getSortPriority('price') }}</span>
-                    }
-                  </div>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            @if (properties().length === 0) {
-              <tr>
-                <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
-              </tr>
-            } @else {
-              @for (property of properties(); track property.url + property.createdAt) {
+      <div #workspaceContainer class="workspace-panels" [style.grid-template-columns]="getWorkspaceColumns()">
+        <section class="workspace-panel left" [class.hidden]="leftPanelHidden()">
+          <div class="spreadsheet-table-wrapper">
+            <table class="spreadsheet-table">
+              <thead>
                 <tr>
-                  <td>{{ property.createdAt || '-' }}</td>
-                  <td>
-                    @if (property.url) {
-                      <a [href]="property.url" target="_blank" rel="noopener noreferrer">
-                        {{ property.title }}
-                      </a>
-                    } @else {
-                      {{ property.title }}
-                    }
-                  </td>
-                  <td>{{ property.price }}</td>
+                  <th>
+                    <div class="th-content">
+                      <span>{{ t('CREATED_AT') }}</span>
+                      <div class="sort-controls">
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('importedBy') === 'asc'"
+                          (click)="toggleSort('importedBy', 'asc')"
+                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
+                        >
+                          <span class="material-symbols-outlined">arrow_upward</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('importedBy') === 'desc'"
+                          (click)="toggleSort('importedBy', 'desc')"
+                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
+                        >
+                          <span class="material-symbols-outlined">arrow_downward</span>
+                        </button>
+                        @if (shouldShowSortPriority('importedBy')) {
+                          <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
+                        }
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="th-content">
+                      <span>{{ t('TITLE') }}</span>
+                      <div class="sort-controls">
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('title') === 'asc'"
+                          (click)="toggleSort('title', 'asc')"
+                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('TITLE')"
+                        >
+                          <span class="material-symbols-outlined">arrow_upward</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('title') === 'desc'"
+                          (click)="toggleSort('title', 'desc')"
+                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('TITLE')"
+                        >
+                          <span class="material-symbols-outlined">arrow_downward</span>
+                        </button>
+                        @if (shouldShowSortPriority('title')) {
+                          <span class="sort-priority">{{ getSortPriority('title') }}</span>
+                        }
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="th-content">
+                      <span>{{ t('PRICE') }}</span>
+                      <div class="sort-controls">
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('price') === 'asc'"
+                          (click)="toggleSort('price', 'asc')"
+                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('PRICE')"
+                        >
+                          <span class="material-symbols-outlined">arrow_upward</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="sort-button"
+                          [class.active]="getSortDirection('price') === 'desc'"
+                          (click)="toggleSort('price', 'desc')"
+                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('PRICE')"
+                        >
+                          <span class="material-symbols-outlined">arrow_downward</span>
+                        </button>
+                        @if (shouldShowSortPriority('price')) {
+                          <span class="sort-priority">{{ getSortPriority('price') }}</span>
+                        }
+                      </div>
+                    </div>
+                  </th>
                 </tr>
-              }
-            }
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                @if (properties().length === 0) {
+                  <tr>
+                    <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+                  </tr>
+                } @else {
+                  @for (property of properties(); track property.url + property.createdAt) {
+                    <tr
+                      class="property-row"
+                      [class.locked]="isPropertyRowLocked(property)"
+                      (mouseenter)="onPropertyRowHover(property)"
+                      (click)="onPropertyRowClick(property)"
+                    >
+                      <td>{{ property.createdAt || '-' }}</td>
+                      <td>
+                        <span class="title-text">{{ property.title }}</span>
+                      </td>
+                      <td>{{ property.price }}</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="workspace-splitter" (mousedown)="onSplitterMouseDown($event)">
+          <div class="splitter-controls">
+            <button type="button" class="splitter-button" (click)="toggleLeftPanel()">
+              <span class="material-symbols-outlined">
+                {{ leftPanelHidden() ? 'left_panel_open' : 'left_panel_close' }}
+              </span>
+            </button>
+            <button type="button" class="splitter-button" (click)="toggleRightPanel()">
+              <span class="material-symbols-outlined">
+                {{ rightPanelHidden() ? 'right_panel_open' : 'right_panel_close' }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <section class="workspace-panel right" [class.hidden]="rightPanelHidden()">
+          <app-property-detail-panel
+            [property]="selectedProperty()"
+            [selectedLanguage]="selectedLanguage()"
+          ></app-property-detail-panel>
+        </section>
       </div>
 
       <p class="timestamp">{{ t('LAST_UPDATE') }}: {{ lastUpdatedAt() || t('WAITING') }}</p>

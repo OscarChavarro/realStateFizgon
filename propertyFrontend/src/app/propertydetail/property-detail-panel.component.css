@@ -1,0 +1,70 @@
+.detail-panel {
+  height: 100%;
+  padding: 1rem;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.detail-panel h2 {
+  margin: 0 0 1rem 0;
+  color: #0f2e55;
+  font-size: 1.25rem;
+}
+
+.detail-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.detail-row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.detail-row dt {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #5f6b7b;
+  font-weight: 700;
+}
+
+.detail-row dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.detail-row dd.url {
+  word-break: break-all;
+}
+
+.detail-row dd.url a {
+  color: #1967d2;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.detail-row dd.url a:hover {
+  text-decoration: underline;
+}
+
+.detail-panel.empty p {
+  color: #5f6b7b;
+  margin: 0;
+}
+
+.local-image-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.local-image-list li {
+  word-break: break-all;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.84rem;
+  color: #2d3d56;
+}

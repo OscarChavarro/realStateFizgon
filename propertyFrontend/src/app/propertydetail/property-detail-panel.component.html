@@ -1,0 +1,48 @@
+@if (property) {
+  <section class="detail-panel">
+    <h2>{{ property.title }}</h2>
+    <dl>
+      <div class="detail-row">
+        <dt>Price</dt>
+        <dd>{{ property.price }}</dd>
+      </div>
+      <div class="detail-row">
+        <dt>Created At</dt>
+        <dd>{{ property.createdAt || '-' }}</dd>
+      </div>
+      <div class="detail-row">
+        <dt>Location</dt>
+        <dd>{{ property.location || '-' }}</dd>
+      </div>
+      <div class="detail-row">
+        <dt>{{ t('PROPERTY_DETAIL_SOURCE') }}</dt>
+        <dd class="url">
+          @if (property.url) {
+            <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
+          } @else {
+            -
+          }
+        </dd>
+      </div>
+      <div class="detail-row">
+        <dt>{{ t('PROPERTY_DETAIL_LOCAL_IMAGE_FILES') }}</dt>
+        <dd>
+          @if (property.localImageUrls.length > 0) {
+            <ul class="local-image-list">
+              @for (localImageUrl of property.localImageUrls; track localImageUrl) {
+                <li>{{ property.propertyId }} / {{ localImageUrl }}</li>
+              }
+            </ul>
+          } @else {
+            -
+          }
+        </dd>
+      </div>
+    </dl>
+  </section>
+} @else {
+  <section class="detail-panel empty">
+    <h2>No property selected</h2>
+    <p>Move the mouse over a title on the left table to preview details here.</p>
+  </section>
+}

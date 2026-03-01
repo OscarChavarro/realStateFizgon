@@ -59,6 +59,16 @@ export class I18nService {
       sp: 'Precio'
     },
     {
+      id: 'PROPERTY_DETAIL_SOURCE',
+      en: 'Source',
+      sp: 'Fuente'
+    },
+    {
+      id: 'PROPERTY_DETAIL_LOCAL_IMAGE_FILES',
+      en: 'Local image files',
+      sp: 'Archivos de imagen locales'
+    },
+    {
       id: 'SORT_ASC',
       en: 'Sort ascending',
       sp: 'Orden ascendente'

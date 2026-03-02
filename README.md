@@ -32,6 +32,12 @@ The architecture componentes are:
 - [Idealista scraper](idealistaPropertyScraper/README.md): scraper that controls a Google Chrome web browser to retrieve property listings based on a set of filters, extracts each property detail from Idealista, stores the collected information in the MongoDB database, and sends notifications via WhatsApp.
 - [Notification message sender](notificationMessageSender/README.md): consumes messages from RabbitMq that are intended to be sent to a Whatsapp user or group.
 
+# Frontend
+
+This system includes the scraper backend needed to get information from internet public source, and store a copy of relevan data in a database, and associated images to local storage for further processing. The system also includes a frontend to query the local downloaded data.
+
+![Frontend usage example](doc/frontend.png)
+
 # Deployment
 
 This project depends on several components, such as RabbitMQ, MongoDB, Prometheus, Grafana and other services that interact with micro services. The whole environment can be deployed in several different ways:

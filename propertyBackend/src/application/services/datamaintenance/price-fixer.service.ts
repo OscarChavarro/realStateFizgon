@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MongoDatabaseService } from 'src/services/mongo-database.service';
+import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 
 @Injectable()
 export class PriceFixer {

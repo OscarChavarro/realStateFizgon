@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Collection, Db, Document, MongoClient } from 'mongodb';
-import { Configuration } from 'src/config/configuration';
+import { Configuration } from 'src/infrastructure/config/configuration';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {

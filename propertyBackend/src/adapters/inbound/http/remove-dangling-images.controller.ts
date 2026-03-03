@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { DanglingImagesCleanupService } from 'src/services/datamaintenance/dangling-images-cleanup.service';
+import { DanglingImagesCleanupService } from 'src/application/services/datamaintenance/dangling-images-cleanup.service';
 
 @Controller()
 export class RemoveDanglingImagesController {

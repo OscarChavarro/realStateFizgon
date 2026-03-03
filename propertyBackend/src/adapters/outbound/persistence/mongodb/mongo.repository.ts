@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Document, WithId } from 'mongodb';
-import { MongoDatabaseService } from 'src/services/mongo-database.service';
+import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 
 export type PropertyLookupResult = {
   property: WithId<Document>;

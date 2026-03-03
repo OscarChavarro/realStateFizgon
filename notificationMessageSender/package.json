@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "start": "node -r ../scripts/runtime/register-src-dist.cjs dist/main.js",
-    "start:dev": "ts-node -r ../scripts/runtime/register-src-dev.cjs src/main.ts"
+    "start": "node -r ./scripts/runtime/register-src-dist.cjs dist/main.js",
+    "start:dev": "ts-node -r ./scripts/runtime/register-src-dev.cjs src/main.ts"
   },
   "dependencies": {
     "@nestjs/common": "11.1.14",

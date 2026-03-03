@@ -1,17 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { Configuration } from 'src/config/configuration';
-import { FixDatabaseController } from 'src/controllers/fix-database.controller';
-import { PropertiesController } from 'src/controllers/properties.controller';
-import { RemoveDanglingImagesController } from 'src/controllers/remove-dangling-images.controller';
-import { PropertiesUpdatesGateway } from 'src/gateways/properties-updates.gateway';
-import { DanglingImagesCleanupService } from 'src/services/datamaintenance/dangling-images-cleanup.service';
-import { FileSystemOperationsService } from 'src/services/datamaintenance/file-system-operations.service';
-import { PriceFixer } from 'src/services/datamaintenance/price-fixer.service';
-import { PropertyImagesDatabaseCleanupService } from 'src/services/datamaintenance/property-images-database-cleanup.service';
-import { MongoDatabaseService } from 'src/services/mongo-database.service';
-import { MongoRepository } from 'src/services/mongo.repository';
-import { PropertiesMonitorService } from 'src/services/properties-monitor.service';
+import { Configuration } from 'src/infrastructure/config/configuration';
+import { FixDatabaseController } from 'src/adapters/inbound/http/fix-database.controller';
+import { PropertiesController } from 'src/adapters/inbound/http/properties.controller';
+import { RemoveDanglingImagesController } from 'src/adapters/inbound/http/remove-dangling-images.controller';
+import { PropertiesUpdatesGateway } from 'src/adapters/inbound/websocket/properties-updates.gateway';
+import { DanglingImagesCleanupService } from 'src/application/services/datamaintenance/dangling-images-cleanup.service';
+import { FileSystemOperationsService } from 'src/adapters/outbound/filesystem/file-system-operations.service';
+import { PriceFixer } from 'src/application/services/datamaintenance/price-fixer.service';
+import { PropertyImagesDatabaseCleanupService } from 'src/application/services/datamaintenance/property-images-database-cleanup.service';
+import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
+import { MongoRepository } from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
+import { PropertiesMonitorService } from 'src/application/services/properties-monitor.service';
 
 @Module({
   imports: [

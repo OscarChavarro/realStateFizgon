@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Dirent } from 'node:fs';
 import { join } from 'node:path';
-import { Configuration } from 'src/config/configuration';
-import { MongoRepository, PropertyLookupResult } from 'src/services/mongo.repository';
-import { FileSystemOperationsService } from 'src/services/datamaintenance/file-system-operations.service';
-import { PropertyImagesDatabaseCleanupService } from 'src/services/datamaintenance/property-images-database-cleanup.service';
+import { Configuration } from 'src/infrastructure/config/configuration';
+import { MongoRepository, PropertyLookupResult } from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
+import { FileSystemOperationsService } from 'src/adapters/outbound/filesystem/file-system-operations.service';
+import { PropertyImagesDatabaseCleanupService } from 'src/application/services/datamaintenance/property-images-database-cleanup.service';
 
 type RemoveDanglingImagesResult = {
   scannedPropertyFolders: number;

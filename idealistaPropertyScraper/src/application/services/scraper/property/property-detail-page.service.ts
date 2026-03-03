@@ -1,0 +1,80 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
+import { CookieAprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-aproval-dialog-scraper.service';
+import { CdpClient } from 'src/application/services/scraper/property/cdp-client.types';
+import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
+import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
+import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
+import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
+import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
+
+@Injectable()
+export class PropertyDetailPageService {
+  private readonly logger = new Logger(PropertyDetailPageService.name);
+  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
+
+  constructor(
+    private readonly cookieAprovalDialogScraperService: CookieAprovalDialogScraperService,
+    private readonly navigationService: PropertyDetailNavigationService,
+    private readonly interactionService: PropertyDetailInteractionService,
+    private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
+    private readonly domExtractorService: PropertyDetailDomExtractorService,
+    private readonly storageService: PropertyDetailStorageService
+  ) {}
+
+  async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
+    const clicked = await this.navigationService.clickPropertyLinkFromResults(client.Runtime, url);
+    if (!clicked) {
+      throw new Error(`Property URL is not visible in current results DOM and cannot be clicked: ${url}`);
+    }
+
+    try {
+      await this.navigationService.waitForDetailUrlAndDomComplete(client.Runtime, url);
+      await this.processLoadedPropertyDetail(client, url);
+    } finally {
+      await this.navigationService.goBackToSearchResults(client.Runtime);
+    }
+  }
+
+  async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {
+    try {
+      await this.navigationService.navigateDirectlyToUrl(client.Runtime, url);
+      await this.processLoadedPropertyDetail(client, url);
+    } finally {
+      await this.navigationService.goBackToSearchResults(client.Runtime);
+    }
+  }
+
+  private async processLoadedPropertyDetail(client: CdpClient, url: string): Promise<void> {
+    await this.captchaDetectorService.panicIfCaptchaDetected({
+      runtime: client.Runtime,
+      logger: this.logger,
+      context: `property detail url "${url}"`
+    });
+
+    await this.interactionService.throwIfOriginErrorPage(client.Runtime);
+    await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
+
+    const deactivatedStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
+    if (deactivatedStatus.isDeactivated) {
+      await this.storageService.markPropertyClosed(url, deactivatedStatus.closedBy ?? undefined);
+      return;
+    }
+
+    await this.interactionService.revealDetailMedia(client.Runtime);
+
+    const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
+    if (!extractedProperty) {
+      const afterExtractionStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
+      if (afterExtractionStatus.isDeactivated) {
+        await this.storageService.markPropertyClosed(url, afterExtractionStatus.closedBy ?? undefined);
+        return;
+      }
+
+      throw new Error(`Property detail container was not found after loading URL: ${url}`);
+    }
+
+    const filteredProperty = this.domExtractorService.filterPropertyImagesByBlurPattern(extractedProperty);
+    await this.storageService.savePropertyWithImages(filteredProperty);
+  }
+}

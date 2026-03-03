@@ -1,4 +1,4 @@
-import { RuntimeDomain } from './runtime-domain.type';
+import { RuntimeDomain } from 'src/services/scraper/filters/runtime-domain.type';
 
 export type CdpClient = {
   Runtime: RuntimeDomain;

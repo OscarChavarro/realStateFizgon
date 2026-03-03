@@ -1,6 +1,6 @@
 import { Component, Input, inject } from '@angular/core';
-import { I18nService, SupportedLanguage } from '../i18n/i18n.service';
-import { PropertyImageCarouselComponent } from './property-image-carousel.component';
+import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { PropertyImageCarouselComponent } from 'src/app/propertydetail/property-image-carousel.component';
 
 export type PropertyDetailViewModel = {
   createdAt: string;

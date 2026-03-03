@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ChildProcess, spawn, spawnSync } from 'node:child_process';
 import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
-import { Configuration } from '../../config/configuration';
+import { Configuration } from 'src/config/configuration';
 
 @Injectable()
 export class ChromiumProcessLiveCicleService {

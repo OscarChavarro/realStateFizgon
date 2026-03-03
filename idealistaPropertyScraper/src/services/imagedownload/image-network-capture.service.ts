@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ImageResponseBodyPayload } from './image-response-body-payload.type';
-import { NetworkDomain } from './network-domain.type';
-import { NetworkLoadingFailedEvent } from './network-loading-failed-event.type';
-import { NetworkLoadingFinishedEvent } from './network-loading-finished-event.type';
-import { NetworkResponseReceivedEvent } from './network-response-received-event.type';
+import { ImageResponseBodyPayload } from 'src/services/imagedownload/image-response-body-payload.type';
+import { NetworkDomain } from 'src/services/imagedownload/network-domain.type';
+import { NetworkLoadingFailedEvent } from 'src/services/imagedownload/network-loading-failed-event.type';
+import { NetworkLoadingFinishedEvent } from 'src/services/imagedownload/network-loading-finished-event.type';
+import { NetworkResponseReceivedEvent } from 'src/services/imagedownload/network-response-received-event.type';
 
 @Injectable()
 export class ImageNetworkCaptureService {

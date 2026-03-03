@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from '../../../config/configuration';
-import { RuntimeClient } from './cdp-client.types';
+import { Configuration } from 'src/config/configuration';
+import { RuntimeClient } from 'src/services/scraper/property/cdp-client.types';
 
 @Injectable()
 export class PropertyDetailInteractionService {

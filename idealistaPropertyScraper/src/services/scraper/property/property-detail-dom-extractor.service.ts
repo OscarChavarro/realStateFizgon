@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PropertyFeatureGroup } from '../../../model/property/property-feature-group.model';
-import { PropertyImage } from '../../../model/property/property-image.model';
-import { PropertyMainFeatures } from '../../../model/property/property-main-features.model';
-import { Property } from '../../../model/property/property.model';
-import { RuntimeClient } from './cdp-client.types';
+import { PropertyFeatureGroup } from 'src/model/property/property-feature-group.model';
+import { PropertyImage } from 'src/model/property/property-image.model';
+import { PropertyMainFeatures } from 'src/model/property/property-main-features.model';
+import { Property } from 'src/model/property/property.model';
+import { RuntimeClient } from 'src/services/scraper/property/cdp-client.types';
 
 type ExtractedPropertyPayload = {
   title: string | null;

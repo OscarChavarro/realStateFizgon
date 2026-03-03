@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Property } from '../../../model/property/property.model';
-import { ImageDownloader } from '../../imagedownload/image-downloader';
-import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
+import { Property } from 'src/model/property/property.model';
+import { ImageDownloader } from 'src/services/imagedownload/image-downloader';
+import { MongoDatabaseService } from 'src/services/mongodb/mongo-database.service';
 
 @Injectable()
 export class PropertyDetailStorageService {

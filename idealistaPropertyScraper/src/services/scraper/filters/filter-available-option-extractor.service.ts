@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from './cdp-client.type';
-import { MinMaxOptions } from './min-max-options.type';
+import { CdpClient } from 'src/services/scraper/filters/cdp-client.type';
+import { MinMaxOptions } from 'src/services/scraper/filters/min-max-options.type';
 
 @Injectable()
 export class FilterAvailableOptionExtractor {

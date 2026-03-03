@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AsideFiltersPayload } from './aside-filters-payload.type';
-import { CdpClient } from './cdp-client.type';
-import { FilterAvailableOptionExtractor } from './filter-available-option-extractor.service';
-import { FilterSelectedOptionExtractor } from './filter-selected-option-extractor.service';
-import { FilterUpdateService } from './filter-update.service';
-import { Filter } from './filter.interface';
-import { FilterType } from '../../../model/filters/filter-type.enum';
-import { SupportedFilters } from './supported-filters';
+import { AsideFiltersPayload } from 'src/services/scraper/filters/aside-filters-payload.type';
+import { CdpClient } from 'src/services/scraper/filters/cdp-client.type';
+import { FilterAvailableOptionExtractor } from 'src/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterSelectedOptionExtractor } from 'src/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterUpdateService } from 'src/services/scraper/filters/filter-update.service';
+import { Filter } from 'src/services/scraper/filters/filter.interface';
+import { FilterType } from 'src/model/filters/filter-type.enum';
+import { SupportedFilters } from 'src/services/scraper/filters/supported-filters';
 
 @Injectable()
 export class FiltersService {

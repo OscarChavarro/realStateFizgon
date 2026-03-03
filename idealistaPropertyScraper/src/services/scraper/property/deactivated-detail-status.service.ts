@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RuntimeClient } from './cdp-client.types';
+import { RuntimeClient } from 'src/services/scraper/property/cdp-client.types';
 
 type DeactivatedDetailDetectionResult = {
   isDeactivated: boolean;

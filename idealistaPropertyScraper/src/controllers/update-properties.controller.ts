@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { ScraperState } from '../states/scraper-state.enum';
-import { ScraperStateMachineService } from '../states/scraper-state-machine.service';
+import { ScraperState } from 'src/states/scraper-state.enum';
+import { ScraperStateMachineService } from 'src/states/scraper-state-machine.service';
 
 @Controller()
 export class UpdatePropertiesController {

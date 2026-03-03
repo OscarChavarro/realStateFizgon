@@ -1,17 +1,17 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ProxyService } from '@real-state-fizgon/proxy';
-import { Configuration } from '../../config/configuration';
-import { ChromiumPageSyncService } from './chromium-page-sync.service';
-import { ChromiumProcessLiveCicleService } from './chromium-process-live-cicle.service';
-import { PropertyListingPaginationService } from './pagination/property-listing-pagination.service';
-import { MongoDatabaseService } from '../mongodb/mongo-database.service';
-import { ImageDownloader } from '../imagedownload/image-downloader';
-import { PropertyListPageService } from './property/property-list-page.service';
-import { ScraperState } from '../../states/scraper-state.enum';
-import { ScraperStateMachineService } from '../../states/scraper-state-machine.service';
-import { SearchResultsPreparationService } from './search-results-preparation.service';
-import { ChromiumFailureGuardService } from './chromium-failure-guard.service';
+import { Configuration } from 'src/config/configuration';
+import { ChromiumPageSyncService } from 'src/services/scraper/chromium-page-sync.service';
+import { ChromiumProcessLiveCicleService } from 'src/services/scraper/chromium-process-live-cicle.service';
+import { PropertyListingPaginationService } from 'src/services/scraper/pagination/property-listing-pagination.service';
+import { MongoDatabaseService } from 'src/services/mongodb/mongo-database.service';
+import { ImageDownloader } from 'src/services/imagedownload/image-downloader';
+import { PropertyListPageService } from 'src/services/scraper/property/property-list-page.service';
+import { ScraperState } from 'src/states/scraper-state.enum';
+import { ScraperStateMachineService } from 'src/states/scraper-state-machine.service';
+import { SearchResultsPreparationService } from 'src/services/scraper/search-results-preparation.service';
+import { ChromiumFailureGuardService } from 'src/services/scraper/chromium-failure-guard.service';
 
 @Injectable()
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {

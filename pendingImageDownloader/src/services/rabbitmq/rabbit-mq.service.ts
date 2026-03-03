@@ -1,12 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import * as amqp from 'amqplib';
-import { Configuration } from '../../config/configuration';
+import { Channel, connect } from 'amqplib';
+import { Configuration } from 'src/config/configuration';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
   private readonly logger = new Logger(RabbitMqService.name);
-  private connection: Awaited<ReturnType<typeof amqp.connect>> | null = null;
-  private channel: amqp.Channel | null = null;
+  private connection: Awaited<ReturnType<typeof connect>> | null = null;
+  private channel: Channel | null = null;
 
   constructor(private readonly configuration: Configuration) {}
 
@@ -53,13 +53,13 @@ export class RabbitMqService implements OnModuleDestroy {
     }
   }
 
-  private async getChannel(): Promise<amqp.Channel> {
+  private async getChannel(): Promise<Channel> {
     if (this.channel) {
       return this.channel;
     }
 
     if (!this.connection) {
-      this.connection = await amqp.connect({
+      this.connection = await connect({
         protocol: 'amqp',
         hostname: this.configuration.rabbitMqHost,
         port: this.configuration.rabbitMqPort,

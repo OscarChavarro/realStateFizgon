@@ -1,4 +1,4 @@
-import { DatabaseMaintenanceOperation } from './database-maintenance-operation';
+import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
 
 export class RemoveDanglingImagesOperation extends DatabaseMaintenanceOperation {
   constructor() {

@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { PropertiesUpdatesGateway } from '../gateways/properties-updates.gateway';
-import { MongoDatabaseService } from './mongo-database.service';
+import { PropertiesUpdatesGateway } from 'src/gateways/properties-updates.gateway';
+import { MongoDatabaseService } from 'src/services/mongo-database.service';
 
 @Injectable()
 export class PropertiesMonitorService implements OnModuleInit, OnModuleDestroy {

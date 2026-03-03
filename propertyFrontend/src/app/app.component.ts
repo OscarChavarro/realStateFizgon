@@ -2,10 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
-import { DatabaseMaintenanceOperation } from './databasemaintenance/database-maintenance-operation';
-import { RemoveDanglingImagesOperation } from './databasemaintenance/remove-dangling-images.operation';
-import { I18nService, SupportedLanguage } from './i18n/i18n.service';
-import { PropertyDetailPanelComponent, PropertyDetailViewModel } from './propertydetail/property-detail-panel.component';
+import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
+import { RemoveDanglingImagesOperation } from 'src/app/databasemaintenance/remove-dangling-images.operation';
+import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { PropertyDetailPanelComponent, PropertyDetailViewModel } from 'src/app/propertydetail/property-detail-panel.component';
 
 type PropertiesCountResponse = {
   count: number;

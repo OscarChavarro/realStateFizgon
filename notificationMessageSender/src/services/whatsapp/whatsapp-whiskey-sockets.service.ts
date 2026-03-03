@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import * as qrcode from 'qrcode-terminal';
+import { generate } from 'qrcode-terminal';
 import pino from 'pino';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { Configuration } from '../../config/configuration';
+import { Configuration } from 'src/config/configuration';
 
 type ConnectionUpdate = {
   connection?: string;
@@ -128,7 +128,7 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
 
         if (qr && this.configuration.whiskeySocketsWhatsappPrintQrInTerminal) {
           this.logger.warn('Scan this QR with WhatsApp to link the device.');
-          qrcode.generate(qr, { small: true });
+          generate(qr, { small: true });
         }
 
         if (connection === 'open') {

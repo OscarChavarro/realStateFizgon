@@ -1,4 +1,4 @@
-import { IdealistaCaptchaSolverService } from './idealista-captcha-solver.service';
+import { IdealistaCaptchaSolverService } from 'src/idealista/idealista-captcha-solver.service';
 
 export type RuntimeClient = {
   evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;

@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, WithId } from 'mongodb';
-import { Configuration } from '../../config/configuration';
-import { Property } from '../../model/property/property.model';
-import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
+import { Configuration } from 'src/config/configuration';
+import { Property } from 'src/model/property/property.model';
+import { RabbitMqService } from 'src/services/rabbitmq/rabbit-mq.service';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy {

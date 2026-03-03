@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { PriceFixer } from '../services/datamaintenance/price-fixer.service';
+import { PriceFixer } from 'src/services/datamaintenance/price-fixer.service';
 
 @Controller()
 export class FixDatabaseController {

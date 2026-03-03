@@ -1,4 +1,4 @@
-import { FilterType } from '../../../model/filters/filter-type.enum';
+import { FilterType } from 'src/model/filters/filter-type.enum';
 
 export abstract class Filter {
   protected plainOptions: string[] = [];

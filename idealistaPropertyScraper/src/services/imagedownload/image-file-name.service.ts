@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { access } from 'node:fs/promises';
-import { ImageUrlRulesService } from './image-url-rules.service';
+import { ImageUrlRulesService } from 'src/services/imagedownload/image-url-rules.service';
 
 @Injectable()
 export class ImageFileNameService {

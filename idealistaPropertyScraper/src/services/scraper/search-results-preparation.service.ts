@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { Configuration } from '../../config/configuration';
-import { FiltersService } from './filters/filters.service';
-import { MainPageService } from './main-page.service';
-import { ChromiumPageSyncService } from './chromium-page-sync.service';
-import { PropertyListPageService } from './property/property-list-page.service';
+import { Configuration } from 'src/config/configuration';
+import { FiltersService } from 'src/services/scraper/filters/filters.service';
+import { MainPageService } from 'src/services/scraper/main-page.service';
+import { ChromiumPageSyncService } from 'src/services/scraper/chromium-page-sync.service';
+import { PropertyListPageService } from 'src/services/scraper/property/property-list-page.service';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;

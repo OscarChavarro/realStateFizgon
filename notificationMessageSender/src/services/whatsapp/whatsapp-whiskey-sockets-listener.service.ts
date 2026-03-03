@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Configuration } from '../../config/configuration';
-import { WhatsappWhiskeySocketsService } from './whatsapp-whiskey-sockets.service';
+import { Configuration } from 'src/config/configuration';
+import { WhatsappWhiskeySocketsService } from 'src/services/whatsapp/whatsapp-whiskey-sockets.service';
 
 @Injectable()
 export class WhatsappWhiskeySocketsListenerService implements OnModuleDestroy {

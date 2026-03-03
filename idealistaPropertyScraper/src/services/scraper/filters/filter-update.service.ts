@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { FilterLoaderDetectionService } from './filter-loader-detection.service';
-import { Filter } from './filter.interface';
-import { FilterType } from '../../../model/filters/filter-type.enum';
-import { SupportedFilters } from './supported-filters';
-import { FilterTextNormalizationService } from './filter-text-normalization.service';
-import { FilterSelectionReaderService } from './filter-selection-reader.service';
-import { FilterActionExecutorService } from './filter-action-executor.service';
-import { CdpClient, MinMaxSelection } from './filter-cdp-client.types';
+import { FilterLoaderDetectionService } from 'src/services/scraper/filters/filter-loader-detection.service';
+import { Filter } from 'src/services/scraper/filters/filter.interface';
+import { FilterType } from 'src/model/filters/filter-type.enum';
+import { SupportedFilters } from 'src/services/scraper/filters/supported-filters';
+import { FilterTextNormalizationService } from 'src/services/scraper/filters/filter-text-normalization.service';
+import { FilterSelectionReaderService } from 'src/services/scraper/filters/filter-selection-reader.service';
+import { FilterActionExecutorService } from 'src/services/scraper/filters/filter-action-executor.service';
+import { CdpClient, MinMaxSelection } from 'src/services/scraper/filters/filter-cdp-client.types';
 
 @Injectable()
 export class FilterUpdateService {

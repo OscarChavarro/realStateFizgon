@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Configuration } from '../../config/configuration';
-import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
-import { ImageDownloadPathService } from './image-download-path.service';
-import { ImageFileNameService } from './image-file-name.service';
+import { Configuration } from 'src/config/configuration';
+import { RabbitMqService } from 'src/services/rabbitmq/rabbit-mq.service';
+import { ImageDownloadPathService } from 'src/services/imagedownload/image-download-path.service';
+import { ImageFileNameService } from 'src/services/imagedownload/image-file-name.service';
 
 type PendingImageDownloadMessage = {
   url: string;

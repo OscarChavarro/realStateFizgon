@@ -1,2 +1,2 @@
-export { ProxyService } from './service/proxy/proxy.service';
-export type { ProxyValidationOptions } from './service/proxy/proxy.service';
+export { ProxyService } from 'src/service/proxy/proxy.service';
+export type { ProxyValidationOptions } from 'src/service/proxy/proxy.service';

@@ -1,19 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Configuration } from '../../config/configuration';
-import { Property } from '../../model/property/property.model';
-import { DownloadedIncomingImage } from './downloaded-incoming-image.type';
-import { ImageDownloadPathService } from './image-download-path.service';
-import { ImageFileNameService } from './image-file-name.service';
-import { ImageNetworkCaptureService } from './image-network-capture.service';
-import { ImagePendingQueuePublisherService } from './image-pending-queue-publisher.service';
-import { ImageResponseBodyPayload } from './image-response-body-payload.type';
-import { ImageUrlRulesService } from './image-url-rules.service';
-import { NetworkEnabledCdpClient } from './network-enabled-cdp-client.type';
-import { NetworkLoadingFailedEvent } from './network-loading-failed-event.type';
-import { NetworkLoadingFinishedEvent } from './network-loading-finished-event.type';
-import { NetworkResponseReceivedEvent } from './network-response-received-event.type';
+import { Configuration } from 'src/config/configuration';
+import { Property } from 'src/model/property/property.model';
+import { DownloadedIncomingImage } from 'src/services/imagedownload/downloaded-incoming-image.type';
+import { ImageDownloadPathService } from 'src/services/imagedownload/image-download-path.service';
+import { ImageFileNameService } from 'src/services/imagedownload/image-file-name.service';
+import { ImageNetworkCaptureService } from 'src/services/imagedownload/image-network-capture.service';
+import { ImagePendingQueuePublisherService } from 'src/services/imagedownload/image-pending-queue-publisher.service';
+import { ImageResponseBodyPayload } from 'src/services/imagedownload/image-response-body-payload.type';
+import { ImageUrlRulesService } from 'src/services/imagedownload/image-url-rules.service';
+import { NetworkEnabledCdpClient } from 'src/services/imagedownload/network-enabled-cdp-client.type';
+import { NetworkLoadingFailedEvent } from 'src/services/imagedownload/network-loading-failed-event.type';
+import { NetworkLoadingFinishedEvent } from 'src/services/imagedownload/network-loading-finished-event.type';
+import { NetworkResponseReceivedEvent } from 'src/services/imagedownload/network-response-received-event.type';
 
 @Injectable()
 export class ImageDownloader {

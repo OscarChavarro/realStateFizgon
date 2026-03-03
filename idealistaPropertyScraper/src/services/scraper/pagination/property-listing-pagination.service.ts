@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { Configuration } from '../../../config/configuration';
-import { PropertyListPageService } from '../property/property-list-page.service';
+import { Configuration } from 'src/config/configuration';
+import { PropertyListPageService } from 'src/services/scraper/property/property-list-page.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {

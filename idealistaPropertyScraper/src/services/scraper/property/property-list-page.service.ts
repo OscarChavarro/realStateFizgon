@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MongoDatabaseService } from '../../mongodb/mongo-database.service';
-import { CdpClient } from './cdp-client.types';
-import { PropertyDetailPageService } from './property-detail-page.service';
+import { MongoDatabaseService } from 'src/services/mongodb/mongo-database.service';
+import { CdpClient } from 'src/services/scraper/property/cdp-client.types';
+import { PropertyDetailPageService } from 'src/services/scraper/property/property-detail-page.service';
 
 @Injectable()
 export class PropertyListPageService {

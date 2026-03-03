@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { CookieAprovalDialogScraperService } from './cookie-aproval-dialog-scraper.service';
-import { CdpClient } from './cdp-client.types';
-import { DeactivatedDetailStatusService } from './deactivated-detail-status.service';
-import { PropertyDetailDomExtractorService } from './property-detail-dom-extractor.service';
-import { PropertyDetailInteractionService } from './property-detail-interaction.service';
-import { PropertyDetailNavigationService } from './property-detail-navigation.service';
-import { PropertyDetailStorageService } from './property-detail-storage.service';
+import { CookieAprovalDialogScraperService } from 'src/services/scraper/property/cookie-aproval-dialog-scraper.service';
+import { CdpClient } from 'src/services/scraper/property/cdp-client.types';
+import { DeactivatedDetailStatusService } from 'src/services/scraper/property/deactivated-detail-status.service';
+import { PropertyDetailDomExtractorService } from 'src/services/scraper/property/property-detail-dom-extractor.service';
+import { PropertyDetailInteractionService } from 'src/services/scraper/property/property-detail-interaction.service';
+import { PropertyDetailNavigationService } from 'src/services/scraper/property/property-detail-navigation.service';
+import { PropertyDetailStorageService } from 'src/services/scraper/property/property-detail-storage.service';
 
 @Injectable()
 export class PropertyDetailPageService {

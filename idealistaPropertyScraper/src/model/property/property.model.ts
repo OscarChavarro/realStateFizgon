@@ -1,6 +1,6 @@
-import { PropertyFeatureGroup } from './property-feature-group.model';
-import { PropertyImage } from './property-image.model';
-import { PropertyMainFeatures } from './property-main-features.model';
+import { PropertyFeatureGroup } from 'src/model/property/property-feature-group.model';
+import { PropertyImage } from 'src/model/property/property-image.model';
+import { PropertyMainFeatures } from 'src/model/property/property-main-features.model';
 
 export class Property {
   constructor(

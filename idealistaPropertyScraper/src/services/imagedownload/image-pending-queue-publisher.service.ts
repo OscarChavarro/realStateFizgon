@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RabbitMqService } from '../rabbitmq/rabbit-mq.service';
+import { RabbitMqService } from 'src/services/rabbitmq/rabbit-mq.service';
 
 @Injectable()
 export class ImagePendingQueuePublisherService {

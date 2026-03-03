@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from '../../../config/configuration';
+import { Configuration } from 'src/config/configuration';
 
 type RuntimeClient = {
   evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;

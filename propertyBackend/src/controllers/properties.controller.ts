@@ -1,6 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Query, Req } from '@nestjs/common';
-import { MongoDatabaseService } from '../services/mongo-database.service';
-import { MongoRepository, PropertySortCriterion, PropertySortField, PropertySortOrder } from '../services/mongo.repository';
+import { MongoDatabaseService } from 'src/services/mongo-database.service';
+import { MongoRepository, PropertySortCriterion, PropertySortField, PropertySortOrder } from 'src/services/mongo.repository';
 
 type HttpRequestLike = {
   originalUrl?: string;

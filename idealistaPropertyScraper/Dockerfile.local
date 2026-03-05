@@ -77,6 +77,7 @@ COPY --from=builder /modules/proxy/package.json /modules/proxy/package.json
 COPY --from=builder /modules/proxy/dist /modules/proxy/dist
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY idealistaPropertyScraper/scripts/runtime ./scripts/runtime
 COPY idealistaPropertyScraper/environment.json ./environment.json
 COPY idealistaPropertyScraper/secrets-example.json ./secrets-example.json
 COPY idealistaPropertyScraper/k8s/x11vnc-launcher.sh /usr/local/bin/x

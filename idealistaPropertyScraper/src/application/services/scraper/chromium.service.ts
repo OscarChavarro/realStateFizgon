@@ -48,6 +48,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       await this.mongoDatabaseService.validateConnectionOrExit();
       await this.imageDownloader.validateImageDownloadFolder();
       await this.launchChrome();
+      await this.loadHomePageOnce();
       this.startScraperStateLoop();
     } catch (error) {
       await this.chromiumFailureGuardService.holdForDebug(
@@ -125,11 +126,11 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
 
-      if (
-        currentState === ScraperState.IDLE
-        && this.scraperStateMachineService.getPendingRequestsCount() > 0
-      ) {
-        this.scraperStateMachineService.setState(ScraperState.UPDATING_PROPERTIES);
+      if (currentState === ScraperState.IDLE && this.scraperStateMachineService.getPendingRequestsCount() > 0) {
+        const nextRequestedState = this.scraperStateMachineService.consumeNextRequestedState();
+        if (nextRequestedState) {
+          this.scraperStateMachineService.setState(nextRequestedState);
+        }
         continue;
       }
 
@@ -154,6 +155,26 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       .finally(() => {
         this.scraperLoopRunning = false;
       });
+  }
+
+  private async loadHomePageOnce(): Promise<void> {
+    const selectedTarget = await this.waitForPageTarget();
+    if (!selectedTarget) {
+      throw new Error('No page target available in Chrome');
+    }
+
+    this.logger.log(`Loading initial home page on target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
+
+    try {
+      const { Page } = client;
+      await Page.enable();
+      await Page.navigate({ url: this.configuration.scraperHomeUrl });
+      await this.chromiumPageSyncService.waitForPageLoad(Page);
+      this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');
+    } finally {
+      await client.close();
+    }
   }
 
   private async openHomePage(): Promise<void> {

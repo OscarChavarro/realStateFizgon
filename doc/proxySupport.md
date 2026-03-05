@@ -9,9 +9,15 @@ You can implement a forward proxy in Nginx with a configuration like:
 ```nginx
 server {
     listen 3128;
-    listen [::]:3128;
     server_name _;
 
+    access_log /var/log/nginx/forward_proxy_access.log;
+    error_log  /var/log/nginx/forward_proxy_error.log warn;
+
+    resolver 1.1.1.1 8.8.8.8 ipv6=off valid=300s;
+    resolver_timeout 10s;
+
+    allow 10.243.0.0/16;
     allow 192.168.0.0/16;
     deny all;
 
@@ -20,9 +26,21 @@ server {
 
     proxy_connect;
     proxy_connect_allow 443 80;
+    proxy_connect_connect_timeout 10s;
+    proxy_connect_read_timeout 60s;
+    proxy_connect_send_timeout 60s;
 
     location / {
         proxy_pass http://$host$request_uri;
+        proxy_http_version 1.1;
+
+        # Avoid adding proxy headers
+        proxy_set_header Host $host;
+        proxy_set_header Connection "";
+        proxy_set_header Proxy-Connection "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Forwarded-Proto "";
+        proxy_set_header Via "";
     }
 }
 ```
@@ -31,6 +49,18 @@ Important:
 - This is not supported by stock Nginx packages out of the box.
 - You need an Nginx build that includes `ngx_http_proxy_connect_module`.
 - Module source: `https://github.com/chobits/ngx_http_proxy_connect_module.git`
+
+To create the user/password file use:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y apache2-utils
+echo "Enter nginx proxy username:"
+read -r NGINX_PROXY_USER
+sudo htpasswd -c /etc/nginx/proxy.htpasswd "$NGINX_PROXY_USER"
+```
+
+Test the connection to any web address using the proxy
 
 ## 2. Build/install exercise for Nginx + proxy_connect
 

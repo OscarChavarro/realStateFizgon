@@ -51,6 +51,6 @@ cleanup() {
 
 trap cleanup INT TERM EXIT
 
-node dist/main.js &
+node -r /app/scripts/runtime/register-src-dist.cjs dist/main.js &
 NODE_PID=$!
 wait "${NODE_PID}"

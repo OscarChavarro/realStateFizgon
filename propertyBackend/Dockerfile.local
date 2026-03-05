@@ -24,7 +24,8 @@ WORKDIR /app
 COPY propertyBackend/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY propertyBackend/scripts/runtime ./scripts/runtime
 COPY propertyBackend/environment.json ./environment.json
 COPY propertyBackend/secrets-example.json ./secrets-example.json
 
-CMD ["dumb-init", "node", "dist/main.js"]
+CMD ["dumb-init", "node", "-r", "./scripts/runtime/register-src-dist.cjs", "dist/main.js"]

@@ -15,5 +15,14 @@ export class UpdatePropertiesController {
       pendingRequests
     };
   }
-}
 
+  @Get('scrapeProperties')
+  requestScrapeProperties(): { status: string; state: ScraperState; pendingRequests: number } {
+    const pendingRequests = this.scraperStateMachineService.enqueueScrapePropertiesRequest();
+    return {
+      status: 'queued',
+      state: this.scraperStateMachineService.getCurrentState(),
+      pendingRequests
+    };
+  }
+}

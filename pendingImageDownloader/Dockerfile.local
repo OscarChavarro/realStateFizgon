@@ -33,8 +33,8 @@ WORKDIR /app
 COPY pendingImageDownloader/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY pendingImageDownloader/scripts/runtime ./scripts/runtime
 COPY pendingImageDownloader/environment.json ./environment.json
 COPY pendingImageDownloader/secrets-example.json ./secrets-example.json
 
-CMD ["dumb-init", "node", "dist/main.js"]
-
+CMD ["dumb-init", "node", "-r", "./scripts/runtime/register-src-dist.cjs", "dist/main.js"]

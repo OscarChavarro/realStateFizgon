@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
 type Environment = {
+  initialState?: string;
   api?: {
     httpPort?: number;
   };
@@ -90,6 +92,7 @@ type Secrets = {
 export class Configuration {
   private readonly environment: Environment;
   private readonly secrets: Secrets;
+  private readonly logger = new Logger(Configuration.name);
 
   constructor() {
     const raw = readFileSync(join(process.cwd(), 'environment.json'), 'utf-8');
@@ -312,5 +315,19 @@ export class Configuration {
 
   get apiHttpPort(): number {
     return Math.max(1, this.environment.api?.httpPort ?? 3000);
+  }
+
+  get initialScraperState(): ScraperState {
+    const raw = (this.environment.initialState ?? '').toString().trim().toUpperCase();
+    if (raw === ScraperState.SCRAPING_FOR_NEW_PROPERTIES) {
+      return ScraperState.SCRAPING_FOR_NEW_PROPERTIES;
+    }
+    if (raw === ScraperState.UPDATING_PROPERTIES) {
+      return ScraperState.UPDATING_PROPERTIES;
+    }
+    if (raw && raw !== ScraperState.IDLE) {
+      this.logger.warn(`Unknown initialState "${raw}". Falling back to ${ScraperState.IDLE}.`);
+    }
+    return ScraperState.IDLE;
   }
 }

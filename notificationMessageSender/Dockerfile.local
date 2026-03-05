@@ -32,7 +32,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
+COPY scripts/runtime ./scripts/runtime
 COPY environment.json ./environment.json
 COPY secrets-example.json ./secrets-example.json
 
-CMD ["dumb-init", "node", "dist/main.js"]
+CMD ["dumb-init", "node", "-r", "./scripts/runtime/register-src-dist.cjs", "dist/main.js"]

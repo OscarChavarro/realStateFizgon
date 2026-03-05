@@ -1,4 +1,5 @@
 {
+  "initialState": "IDLE",
   "api": {
     "httpPort": 8080
   },

@@ -3,7 +3,7 @@ import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solv
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
-import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium-page-sync.service';
+import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 
 type RuntimeDomain = {
@@ -173,4 +173,3 @@ export class SearchResultsPreparationService {
     return evaluation.result?.value === true;
   }
 }
-

@@ -11,7 +11,10 @@
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
-      "--disable-gpu",
+      "--enable-webgl",
+      "--ignore-gpu-blocklist",
+      "--use-gl=swiftshader",
+      "--use-angle=swiftshader",
       "--window-size=1920,1080"
     ]
   },

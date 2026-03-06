@@ -5,7 +5,6 @@
   },
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "path": "/tmp/googleChromeIdealistaScraper",
     "chromiumOptions": [
       "--no-sandbox",
       "--disable-setuid-sandbox",

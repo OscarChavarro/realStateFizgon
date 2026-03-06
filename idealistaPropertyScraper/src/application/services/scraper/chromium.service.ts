@@ -19,6 +19,7 @@ import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ChromiumService.name);
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
+  private readonly initialHardeningStabilizationWaitMs = 5000;
   private readonly proxyService = new ProxyService();
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
@@ -175,12 +176,26 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
 
     try {
-      const { Page } = client;
+      const { Page, Runtime } = client;
       await Page.enable();
+      await Runtime.enable();
+      const initialUrl = await Runtime.evaluate({
+        expression: 'window.location.href',
+        returnByValue: true
+      });
+      const initialUrlValue = String(initialUrl.result?.value ?? '').trim();
+      if (initialUrlValue !== 'about:blank') {
+        this.logger.warn(`Initial target URL is "${initialUrlValue}". Forcing about:blank before first hardened navigation.`);
+        await Page.navigate({ url: 'about:blank' });
+        await this.chromiumPageSyncService.waitForPageLoad(Page);
+      }
+
       await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
+      this.logger.log(`Waiting ${Math.floor(this.initialHardeningStabilizationWaitMs / 1000)} seconds after hardening before first target navigation.`);
+      await this.chromiumPageSyncService.sleep(this.initialHardeningStabilizationWaitMs);
       await Page.navigate({ url: this.configuration.scraperHomeUrl });
       await this.chromiumPageSyncService.waitForPageLoad(Page);
       this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');

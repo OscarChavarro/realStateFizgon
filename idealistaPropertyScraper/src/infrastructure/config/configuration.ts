@@ -10,7 +10,6 @@ type Environment = {
   };
   chrome: {
     binary: string;
-    path: string;
     chromiumOptions?: string[];
   };
   rabbitmq: {
@@ -86,6 +85,7 @@ type Secrets = {
     password?: string;
   };
   chrome?: {
+    path?: string;
     userAgent?: string;
     acceptLanguage?: string;
     extraHeaders?: Record<string, string>;
@@ -123,7 +123,8 @@ export class Configuration {
   }
 
   get chromePath(): string {
-    return this.environment.chrome.path;
+    const path = (this.secrets.chrome?.path ?? '').trim();
+    return path || '/tmp/googleChromeIdealistaScraper';
   }
 
   get chromeUserAgent(): string {

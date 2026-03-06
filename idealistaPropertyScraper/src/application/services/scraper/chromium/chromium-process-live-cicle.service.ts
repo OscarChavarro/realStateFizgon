@@ -35,7 +35,7 @@ export class ChromiumProcessLiveCicleService {
           '--no-default-browser-check',
           '--new-window',
           ...chromiumOptions,
-          this.configuration.scraperHomeUrl
+          'about:blank'
         ], {
           stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
         });

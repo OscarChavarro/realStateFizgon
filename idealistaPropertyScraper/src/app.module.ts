@@ -5,6 +5,7 @@ import { UpdatePropertiesController } from 'src/adapters/inbound/http/update-pro
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
 import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium/chromium-permission-registrar.service';
 import { ChromiumService } from 'src/application/services/scraper/chromium.service';
 import { ChromiumProcessLiveCicleService } from 'src/application/services/scraper/chromium/chromium-process-live-cicle.service';
@@ -52,6 +53,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ChromiumPageSyncService,
     ChromiumFailureGuardService,
     ChromiumGeolocationService,
+    ChromiumNetworkHeadersService,
     ChromiumPermissionRegistrarService,
     ChromiumProcessLiveCicleService,
     SearchResultsPreparationService,

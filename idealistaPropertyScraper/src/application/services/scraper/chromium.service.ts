@@ -13,6 +13,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
 
 @Injectable()
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {
@@ -31,6 +32,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     private readonly searchResultsPreparationService: SearchResultsPreparationService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
+    private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
     private readonly scraperStateMachineService: ScraperStateMachineService,
     private readonly mongoDatabaseService: MongoDatabaseService,
@@ -84,6 +86,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     await this.waitForCdp();
     await this.chromiumGeolocationService.grantStartupPermissions(this.cdpHost, this.cdpPort);
     this.chromiumGeolocationService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
+    this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
   }
 
   private async waitForCdp(): Promise<void> {
@@ -174,6 +177,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     try {
       const { Page } = client;
       await Page.enable();
+      await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
@@ -198,6 +202,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       const { Page, Runtime } = client;
       await Page.enable();
       await Runtime.enable();
+      await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
@@ -233,6 +238,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       const { Page, Runtime } = client;
       await Page.enable();
       await Runtime.enable();
+      await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);

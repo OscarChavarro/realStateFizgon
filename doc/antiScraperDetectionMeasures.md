@@ -43,3 +43,13 @@ User agent (UA) is an specific signature that identifies the operating system an
 Other than specifying a UA, TLS signatures should be updated to be coherent with the UA.
 
 In this project, TLS fingerprints are dictated by the real Chrome/Chromium binary. We cannot spoof the TLS stack without replacing the browser binary, so we normalize the configured UA to match the detected browser version at launch time. If `environment.json` defines a UA with a mismatching Chrome/Chromium version, the version token is replaced with the actual browser version. If the UA doesn't include a Chrome/Chromium token, we fall back to a normalized Chrome UA that matches the running binary and OS. This keeps TLS and UA coherent without introducing mismatched signatures.
+
+TLS is a handshake fingerprint (cipher suites, extensions, and their ordering) produced by the browser's TLS stack. That fingerprint is tied to the browser binary and its TLS implementation, while the User Agent is only an HTTP header. If they don't match (e.g., UA says Chrome 145 but TLS looks like Chrome 141), it is a strong bot signal.
+
+## Careful definition of cookies
+
+Antibot detector analysis compares the data from geolocation with probable user setup for a region. For example, an Spanish site, with Spanish market (such as idealista) and geolocated as being used from Spain, most probably will have Spanish locale defined in `Accept-Language` header.
+
+To double check behaviors of a real human controlled web browser against CDP instrumentalized web browser, it is recommended to use the [httpbin tool](https://httpbin.org/anything). Browse from a normal browser session, then browse from the instrumentalized web browser and then compare the headers.
+
+Code has been added to `CdpNetworkClient` class to take care of this.

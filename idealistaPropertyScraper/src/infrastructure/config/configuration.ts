@@ -87,6 +87,8 @@ type Secrets = {
   };
   chrome?: {
     userAgent?: string;
+    acceptLanguage?: string;
+    extraHeaders?: Record<string, string>;
   };
   geolocation?: {
     latitude?: number;
@@ -126,6 +128,28 @@ export class Configuration {
 
   get chromeUserAgent(): string {
     return (this.secrets.chrome?.userAgent ?? '').trim();
+  }
+
+  get chromeAcceptLanguage(): string {
+    return (this.secrets.chrome?.acceptLanguage ?? '').trim();
+  }
+
+  get chromeExtraHeaders(): Record<string, string> {
+    const extra = this.secrets.chrome?.extraHeaders;
+    if (!extra || typeof extra !== 'object') {
+      return {};
+    }
+
+    const sanitized: Record<string, string> = {};
+    for (const [key, value] of Object.entries(extra)) {
+      const headerKey = (key ?? '').toString().trim();
+      const headerValue = (value ?? '').toString().trim();
+      if (!headerKey || !headerValue) {
+        continue;
+      }
+      sanitized[headerKey] = headerValue;
+    }
+    return sanitized;
   }
 
   get chromiumOptions(): string[] {

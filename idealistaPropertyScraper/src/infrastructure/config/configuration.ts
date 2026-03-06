@@ -86,6 +86,12 @@ type Secrets = {
     user?: string;
     password?: string;
   };
+  geolocation?: {
+    latitude?: number;
+    longitude?: number;
+    accuracy?: number;
+    allowlist?: string[];
+  };
 };
 
 @Injectable()
@@ -184,6 +190,35 @@ export class Configuration {
 
   get mainSearchArea(): string {
     return this.environment.scraper.home.mainSearchArea;
+  }
+
+  get geolocationOverride(): { latitude: number; longitude: number; accuracy: number } | undefined {
+    const geolocation = this.secrets.geolocation;
+    if (!geolocation) {
+      return undefined;
+    }
+
+    const latitude = Number(geolocation.latitude);
+    const longitude = Number(geolocation.longitude);
+    const accuracy = Number.isFinite(geolocation.accuracy) ? Number(geolocation.accuracy) : 50;
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      this.logger.warn('Invalid geolocation configuration. Skipping geolocation override.');
+      return undefined;
+    }
+
+    return { latitude, longitude, accuracy };
+  }
+
+  get geolocationAllowlist(): string[] {
+    const allowlist = this.secrets.geolocation?.allowlist;
+    if (!Array.isArray(allowlist)) {
+      return [];
+    }
+
+    return allowlist
+      .map((entry) => (entry ?? '').toString().trim())
+      .filter((entry) => entry.length > 0);
   }
 
   get chromeCdpReadyTimeoutMs(): number {

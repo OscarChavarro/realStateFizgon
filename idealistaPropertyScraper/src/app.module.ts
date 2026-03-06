@@ -4,6 +4,7 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 import { UpdatePropertiesController } from 'src/adapters/inbound/http/update-properties.controller';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium-page-sync.service';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium-failure-guard.service';
+import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium-permission-registrar.service';
 import { ChromiumService } from 'src/application/services/scraper/chromium.service';
 import { ChromiumProcessLiveCicleService } from 'src/application/services/scraper/chromium-process-live-cicle.service';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
@@ -49,6 +50,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ScraperStateMachineService,
     ChromiumPageSyncService,
     ChromiumFailureGuardService,
+    ChromiumPermissionRegistrarService,
     ChromiumProcessLiveCicleService,
     SearchResultsPreparationService,
     MainPageService,

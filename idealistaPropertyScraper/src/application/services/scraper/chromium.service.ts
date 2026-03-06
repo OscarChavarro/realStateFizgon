@@ -12,6 +12,13 @@ import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium-failure-guard.service';
+import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium-permission-registrar.service';
+
+type CdpEmulationClient = {
+  Emulation?: {
+    setGeolocationOverride?: (params: { latitude: number; longitude: number; accuracy: number }) => Promise<void>;
+  };
+};
 
 @Injectable()
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {
@@ -29,6 +36,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     private readonly chromiumProcessLiveCicleService: ChromiumProcessLiveCicleService,
     private readonly searchResultsPreparationService: SearchResultsPreparationService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
+    private readonly chromiumPermissionRegistrarService: ChromiumPermissionRegistrarService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
     private readonly scraperStateMachineService: ScraperStateMachineService,
     private readonly mongoDatabaseService: MongoDatabaseService,
@@ -80,6 +88,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       () => this.shuttingDown
     );
     await this.waitForCdp();
+    await this.grantStartupGeolocationPermissions();
   }
 
   private async waitForCdp(): Promise<void> {
@@ -163,12 +172,20 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       throw new Error('No page target available in Chrome');
     }
 
+    const geolocationAllowlist = this.configuration.geolocationAllowlist;
     this.logger.log(`Loading initial home page on target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
 
     try {
       const { Page } = client;
       await Page.enable();
+      this.chromiumPermissionRegistrarService.registerPageNavigationListener(client, Page, geolocationAllowlist);
+      await this.chromiumPermissionRegistrarService.ensureOriginIsAuthorized(
+        client,
+        this.configuration.scraperHomeUrl,
+        geolocationAllowlist
+      );
+      await this.applyGeolocationOverride(client);
       await Page.navigate({ url: this.configuration.scraperHomeUrl });
       await this.chromiumPageSyncService.waitForPageLoad(Page);
       this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');
@@ -183,6 +200,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       throw new Error('No page target available in Chrome');
     }
 
+    const geolocationAllowlist = this.configuration.geolocationAllowlist;
     this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
 
@@ -190,6 +208,13 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       const { Page, Runtime } = client;
       await Page.enable();
       await Runtime.enable();
+      this.chromiumPermissionRegistrarService.registerPageNavigationListener(client, Page, geolocationAllowlist);
+      await this.chromiumPermissionRegistrarService.ensureOriginIsAuthorized(
+        client,
+        this.configuration.scraperHomeUrl,
+        geolocationAllowlist
+      );
+      await this.applyGeolocationOverride(client);
       await this.imageDownloader.initializeNetworkCapture(client as unknown as {
         Network: {
           enable(): Promise<void>;
@@ -215,6 +240,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       throw new Error('No page target available in Chrome');
     }
 
+    const geolocationAllowlist = this.configuration.geolocationAllowlist;
     this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')} for UPDATING_PROPERTIES state.`);
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
 
@@ -222,6 +248,13 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       const { Page, Runtime } = client;
       await Page.enable();
       await Runtime.enable();
+      this.chromiumPermissionRegistrarService.registerPageNavigationListener(client, Page, geolocationAllowlist);
+      await this.chromiumPermissionRegistrarService.ensureOriginIsAuthorized(
+        client,
+        this.configuration.scraperHomeUrl,
+        geolocationAllowlist
+      );
+      await this.applyGeolocationOverride(client);
       await this.imageDownloader.initializeNetworkCapture(client as unknown as {
         Network: {
           enable(): Promise<void>;
@@ -272,6 +305,46 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     }
 
     return undefined;
+  }
+
+  private async applyGeolocationOverride(client: CdpEmulationClient): Promise<void> {
+    const geolocationOverride = this.configuration.geolocationOverride;
+    if (geolocationOverride && client.Emulation?.setGeolocationOverride) {
+      try {
+        await client.Emulation.setGeolocationOverride(geolocationOverride);
+      } catch (error) {
+        this.logger.warn(`Failed to set geolocation override. ${this.errorToMessage(error)}`);
+      }
+    }
+  }
+
+  private async grantStartupGeolocationPermissions(): Promise<void> {
+    const geolocationAllowlist = this.configuration.geolocationAllowlist;
+    if (geolocationAllowlist.length === 0) {
+      return;
+    }
+
+    let client: { close(): Promise<void> } | undefined;
+    try {
+      const versionInfo = (await CDP.Version({ host: this.cdpHost, port: this.cdpPort })) as {
+        webSocketDebuggerUrl?: string;
+      };
+      const webSocketDebuggerUrl = versionInfo?.webSocketDebuggerUrl;
+      if (!webSocketDebuggerUrl) {
+        this.logger.warn('CDP version info did not include a browser WebSocket URL. Skipping geolocation pre-grant.');
+        return;
+      }
+
+      const browserClient = await CDP({ target: webSocketDebuggerUrl });
+      client = browserClient as { close(): Promise<void> };
+      await this.chromiumPermissionRegistrarService.grantGeolocationPermissions(browserClient, geolocationAllowlist);
+    } catch (error) {
+      this.logger.warn(`Failed to pre-grant geolocation permissions. ${this.errorToMessage(error)}`);
+    } finally {
+      if (client) {
+        await client.close();
+      }
+    }
   }
 
   private errorToMessage(error: unknown): string {

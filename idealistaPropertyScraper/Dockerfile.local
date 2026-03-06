@@ -36,6 +36,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libdbus-1-3 \
     libsixel-bin \
     make \
+    mesa-utils \
+    mesa-utils-extra \
     nfs-common \
     net-tools \
     python3 \

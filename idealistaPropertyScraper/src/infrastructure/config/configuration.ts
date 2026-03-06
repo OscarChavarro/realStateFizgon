@@ -11,7 +11,6 @@ type Environment = {
   chrome: {
     binary: string;
     path: string;
-    userAgent?: string;
     chromiumOptions?: string[];
   };
   rabbitmq: {
@@ -86,6 +85,9 @@ type Secrets = {
     user?: string;
     password?: string;
   };
+  chrome?: {
+    userAgent?: string;
+  };
   geolocation?: {
     latitude?: number;
     longitude?: number;
@@ -122,6 +124,10 @@ export class Configuration {
     return this.environment.chrome.path;
   }
 
+  get chromeUserAgent(): string {
+    return (this.secrets.chrome?.userAgent ?? '').trim();
+  }
+
   get chromiumOptions(): string[] {
     const baseOptions = this.environment.chrome.chromiumOptions ?? [];
     return [...baseOptions, ...this.chromiumProxyOptions(), ...this.chromiumUserAgentOptions()];
@@ -146,7 +152,7 @@ export class Configuration {
   }
 
   private chromiumUserAgentOptions(): string[] {
-    const userAgent = (this.environment.chrome.userAgent ?? '').trim();
+    const userAgent = this.chromeUserAgent;
     if (!userAgent) {
       return [];
     }

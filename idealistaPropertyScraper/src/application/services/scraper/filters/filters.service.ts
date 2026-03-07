@@ -7,18 +7,22 @@ import { FilterUpdateService } from 'src/application/services/scraper/filters/fi
 import { Filter } from 'src/application/services/scraper/filters/filter.interface';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
+import { Configuration } from 'src/infrastructure/config/configuration';
 
 @Injectable()
 export class FiltersService {
   private readonly logger = new Logger(FiltersService.name);
   private readonly extractedFiltersFromDom = new SupportedFilters();
-  private readonly preloadedFiltersFromConfiguration = new SupportedFilters().loadFromConfiguration();
+  private readonly preloadedFiltersFromConfiguration = new SupportedFilters();
 
   constructor(
     private readonly filterUpdateService: FilterUpdateService,
     private readonly filterAvailableOptionExtractor: FilterAvailableOptionExtractor,
-    private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractor
-  ) {}
+    private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractor,
+    private readonly configuration: Configuration
+  ) {
+    this.applyConfiguredFilterDefinitions();
+  }
 
   async execute(client: CdpClient): Promise<void> {
     await client.Runtime.enable();
@@ -203,5 +207,25 @@ export class FiltersService {
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private applyConfiguredFilterDefinitions(): void {
+    for (const filter of this.preloadedFiltersFromConfiguration.getSupportedFilters()) {
+      const definition = this.configuration.getFilterDefinitionByName(filter.getName());
+      if (!definition) {
+        continue;
+      }
+
+      if (filter.getType() === FilterType.MIN_MAX) {
+        filter.setMinOptions(definition.minOptions);
+        filter.setMaxOptions(definition.maxOptions);
+        filter.setSelectedMin(definition.selectedMin);
+        filter.setSelectedMax(definition.selectedMax);
+        continue;
+      }
+
+      filter.setPlainOptions(definition.plainOptions);
+      filter.setSelectedPlainOptions(definition.selectedPlainOptions);
+    }
   }
 }

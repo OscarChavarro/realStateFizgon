@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { FilterDefinition } from 'src/infrastructure/config/filter-definition.type';
 
 type Environment = {
   initialState?: string;
@@ -60,6 +61,16 @@ type Environment = {
       mainSearchArea: string;
     };
   };
+  filters?: {
+    definitions?: Array<Record<string, {
+      plainOptions?: unknown[];
+      minOptions?: unknown[];
+      maxOptions?: unknown[];
+      selectedPlainOptions?: unknown[];
+      selectedMin?: unknown;
+      selectedMax?: unknown;
+    }>>;
+  };
 };
 
 type Secrets = {
@@ -100,10 +111,30 @@ type Secrets = {
   };
 };
 
+const FILTER_DEFINITION_KEY_BY_FILTER_NAME: Record<string, string> = {
+  'Tipo de inmueble': 'propertyType',
+  'Precio': 'price',
+  'Tipo de alquiler': 'rentalType',
+  'Tamaño': 'size',
+  'Tipo de vivienda': 'housingType',
+  'Otras denominaciones': 'otherDenominations',
+  Equipamiento: 'equipment',
+  Habitaciones: 'rooms',
+  'Baños': 'bathrooms',
+  Estado: 'condition',
+  'Características': 'features',
+  Planta: 'floor',
+  'Eficiencia Energética': 'energyEfficiency',
+  Multimedia: 'multimedia',
+  'Tipo de anuncio': 'listingType',
+  'Fecha de publicación': 'publicationDate'
+};
+
 @Injectable()
 export class Configuration {
   private readonly environment: Environment;
   private readonly secrets: Secrets;
+  private readonly filterDefinitionsByKey: Record<string, FilterDefinition>;
   private readonly logger = new Logger(Configuration.name);
 
   constructor() {
@@ -118,6 +149,7 @@ export class Configuration {
 
     const secretsRaw = readFileSync(secretsPath, 'utf-8');
     this.secrets = JSON.parse(secretsRaw) as Secrets;
+    this.filterDefinitionsByKey = this.loadFilterDefinitionsByKey();
   }
 
   get chromeBinary(): string {
@@ -252,6 +284,15 @@ export class Configuration {
     return allowlist
       .map((entry) => (entry ?? '').toString().trim())
       .filter((entry) => entry.length > 0);
+  }
+
+  getFilterDefinitionByName(filterName: string): FilterDefinition | undefined {
+    const definitionKey = FILTER_DEFINITION_KEY_BY_FILTER_NAME[filterName];
+    if (!definitionKey) {
+      return undefined;
+    }
+
+    return this.filterDefinitionsByKey[definitionKey];
   }
 
   get chromeCdpReadyTimeoutMs(): number {
@@ -399,5 +440,52 @@ export class Configuration {
       this.logger.warn(`Unknown initialState "${raw}". Falling back to ${ScraperState.IDLE}.`);
     }
     return ScraperState.IDLE;
+  }
+
+  private loadFilterDefinitionsByKey(): Record<string, FilterDefinition> {
+    const definitions = this.environment.filters?.definitions ?? [];
+    const accumulator: Record<string, FilterDefinition> = {};
+
+    for (const entry of definitions) {
+      const definitionKey = Object.keys(entry)[0];
+      if (!definitionKey) {
+        continue;
+      }
+
+      const definition = entry[definitionKey];
+      if (!definition || typeof definition !== 'object') {
+        continue;
+      }
+
+      accumulator[definitionKey] = this.sanitizeFilterDefinition(definition);
+    }
+
+    return accumulator;
+  }
+
+  private sanitizeFilterDefinition(definition: {
+    plainOptions?: unknown[];
+    minOptions?: unknown[];
+    maxOptions?: unknown[];
+    selectedPlainOptions?: unknown[];
+    selectedMin?: unknown;
+    selectedMax?: unknown;
+  }): FilterDefinition {
+    return {
+      plainOptions: this.normalizeStringArray(definition.plainOptions),
+      minOptions: this.normalizeStringArray(definition.minOptions),
+      maxOptions: this.normalizeStringArray(definition.maxOptions),
+      selectedPlainOptions: this.normalizeStringArray(definition.selectedPlainOptions),
+      selectedMin: typeof definition.selectedMin === 'string' ? definition.selectedMin : null,
+      selectedMax: typeof definition.selectedMax === 'string' ? definition.selectedMax : null
+    };
+  }
+
+  private normalizeStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((entry): entry is string => typeof entry === 'string');
   }
 }

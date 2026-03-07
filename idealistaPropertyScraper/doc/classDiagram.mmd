@@ -1,0 +1,207 @@
+classDiagram
+    %% Class name spaces
+    namespace Root {
+        class AppModule
+    }
+
+    namespace Infrastructure {
+        class Configuration
+    }
+
+    namespace DomainProperty {
+        class Property
+        class PropertyFeatureGroup
+        class PropertyImage
+        class PropertyMainFeatures
+    }
+
+    namespace DomainFilters {
+        class Bathrooms
+        class Condition
+        class EnergyEfficiency
+        class Equipment
+        class Features
+        class Floor
+        class HousingType
+        class ListingType
+        class Multimedia
+        class OtherDenominations
+        class Price
+        class PropertyType
+        class PublicationDate
+        class RentalType
+        class Rooms
+        class Size
+    }
+
+    namespace ApplicationState {
+        class ScraperStateMachineService
+    }
+
+    namespace ApplicationChromium {
+        class ChromiumFailureGuardService
+        class ChromiumGeolocationService
+        class ChromiumNetworkHeadersService
+        class ChromiumPageSyncService
+        class ChromiumPermissionRegistrarService
+        class ChromiumProcessLifecycleService
+        class ChromiumUserAgentTlsService
+        class NetworkHeaderClient
+        class UserAgentOverrideClient
+    }
+
+    namespace ApplicationFilters {
+        class Filter
+        class FilterActionExecutorService
+        class FilterAvailableOptionExtractor
+        class FilterLoaderDetectionService
+        class FilterSelectedOptionExtractor
+        class FilterSelectionReaderService
+        class FilterTextNormalizationService
+        class FilterUpdateService
+        class FiltersService
+        class SupportedFilters
+    }
+
+    namespace ApplicationProperty {
+        class CookieApprovalDialogScraperService
+        class DeactivatedDetailStatusService
+        class PropertyDetailDomExtractorService
+        class PropertyDetailInteractionService
+        class PropertyDetailNavigationService
+        class PropertyDetailPageService
+        class PropertyDetailStorageService
+        class PropertyListPageService
+    }
+
+    namespace ApplicationPagination {
+        class PropertyListingPaginationService
+    }
+
+    namespace ApplicationScraper {
+        class ChromiumService
+        class MainPageService
+        class OriginErrorDetectorService
+        class SearchResultsPreparationService
+    }
+
+    namespace ApplicationImageDownload {
+        class ImageDownloadPathService
+        class ImageDownloader
+        class ImageFileNameService
+        class ImageNetworkCaptureService
+        class ImagePendingQueuePublisherService
+        class ImageUrlRulesService
+    }
+
+    namespace AdaptersInbound {
+        class UpdatePropertiesController
+    }
+
+    namespace AdaptersOutbound {
+        class MongoDatabaseService
+        class RabbitMqService
+    }
+
+    %% Inheritance
+    Filter <|-- Bathrooms : extends
+    Filter <|-- Condition : extends
+    Filter <|-- EnergyEfficiency : extends
+    Filter <|-- Equipment : extends
+    Filter <|-- Features : extends
+    Filter <|-- Floor : extends
+    Filter <|-- HousingType : extends
+    Filter <|-- ListingType : extends
+    Filter <|-- Multimedia : extends
+    Filter <|-- OtherDenominations : extends
+    Filter <|-- Price : extends
+    Filter <|-- PropertyType : extends
+    Filter <|-- PublicationDate : extends
+    Filter <|-- RentalType : extends
+    Filter <|-- Rooms : extends
+    Filter <|-- Size : extends
+
+    %% Aggregation / Composition
+    Property *-- PropertyFeatureGroup : contains
+    Property *-- PropertyImage : contains
+    Property *-- PropertyMainFeatures : contains
+    ChromiumFailureGuardService o-- ChromiumPageSyncService : injects
+    ChromiumFailureGuardService o-- Configuration : injects
+    ChromiumGeolocationService o-- ChromiumPageSyncService : injects
+    ChromiumGeolocationService o-- ChromiumPermissionRegistrarService : injects
+    ChromiumGeolocationService o-- Configuration : injects
+    ChromiumNetworkHeadersService o-- ChromiumPageSyncService : injects
+    ChromiumNetworkHeadersService o-- ChromiumUserAgentTlsService : injects
+    ChromiumNetworkHeadersService o-- Configuration : injects
+    ChromiumProcessLifecycleService o-- ChromiumUserAgentTlsService : injects
+    ChromiumProcessLifecycleService o-- Configuration : injects
+    ChromiumService o-- ChromiumFailureGuardService : injects
+    ChromiumService o-- ChromiumGeolocationService : injects
+    ChromiumService o-- ChromiumNetworkHeadersService : injects
+    ChromiumService o-- ChromiumPageSyncService : injects
+    ChromiumService o-- ChromiumProcessLifecycleService : injects
+    ChromiumService o-- Configuration : injects
+    ChromiumService o-- ImageDownloader : injects
+    ChromiumService o-- MongoDatabaseService : injects
+    ChromiumService o-- PropertyListingPaginationService : injects
+    ChromiumService o-- PropertyListPageService : injects
+    ChromiumService o-- ScraperStateMachineService : injects
+    ChromiumService o-- SearchResultsPreparationService : injects
+    ChromiumUserAgentTlsService o-- Configuration : injects
+    CookieApprovalDialogScraperService o-- Configuration : injects
+    FilterLoaderDetectionService o-- Configuration : injects
+    FiltersService o-- FilterAvailableOptionExtractor : injects
+    FiltersService o-- FilterSelectedOptionExtractor : injects
+    FiltersService o-- FilterUpdateService : injects
+    FilterUpdateService o-- FilterActionExecutorService : injects
+    FilterUpdateService o-- FilterLoaderDetectionService : injects
+    FilterUpdateService o-- FilterSelectionReaderService : injects
+    FilterUpdateService o-- FilterTextNormalizationService : injects
+    ImageDownloader o-- Configuration : injects
+    ImageDownloader o-- ImageDownloadPathService : injects
+    ImageDownloader o-- ImageFileNameService : injects
+    ImageDownloader o-- ImageNetworkCaptureService : injects
+    ImageDownloader o-- ImagePendingQueuePublisherService : injects
+    ImageDownloader o-- ImageUrlRulesService : injects
+    ImageFileNameService o-- ImageUrlRulesService : injects
+    ImagePendingQueuePublisherService o-- RabbitMqService : injects
+    MainPageService o-- Configuration : injects
+    MainPageService o-- OriginErrorDetectorService : injects
+    MongoDatabaseService o-- Configuration : injects
+    MongoDatabaseService o-- RabbitMqService : injects
+    PropertyDetailInteractionService o-- Configuration : injects
+    PropertyDetailInteractionService o-- OriginErrorDetectorService : injects
+    PropertyDetailNavigationService o-- Configuration : injects
+    PropertyDetailPageService o-- CookieApprovalDialogScraperService : injects
+    PropertyDetailPageService o-- DeactivatedDetailStatusService : injects
+    PropertyDetailPageService o-- PropertyDetailDomExtractorService : injects
+    PropertyDetailPageService o-- PropertyDetailInteractionService : injects
+    PropertyDetailPageService o-- PropertyDetailNavigationService : injects
+    PropertyDetailPageService o-- PropertyDetailStorageService : injects
+    PropertyDetailStorageService o-- ImageDownloader : injects
+    PropertyDetailStorageService o-- MongoDatabaseService : injects
+    PropertyListingPaginationService o-- Configuration : injects
+    PropertyListingPaginationService o-- PropertyListPageService : injects
+    PropertyListPageService o-- MongoDatabaseService : injects
+    PropertyListPageService o-- PropertyDetailPageService : injects
+    RabbitMqService o-- Configuration : injects
+    ScraperStateMachineService o-- Configuration : injects
+    SearchResultsPreparationService o-- ChromiumPageSyncService : injects
+    SearchResultsPreparationService o-- Configuration : injects
+    SearchResultsPreparationService o-- FiltersService : injects
+    SearchResultsPreparationService o-- MainPageService : injects
+    SearchResultsPreparationService o-- OriginErrorDetectorService : injects
+    SearchResultsPreparationService o-- PropertyListPageService : injects
+    UpdatePropertiesController o-- ScraperStateMachineService : injects
+
+    %% Associations
+    FilterSelectionReaderService --> Filter : method-param
+    FiltersService --> Filter : method-param
+    FilterUpdateService --> Filter : method-param
+    FilterUpdateService --> SupportedFilters : method-param
+    ImageDownloader --> Property : method-param
+    MongoDatabaseService --> Property : property
+    PropertyDetailDomExtractorService --> Property : method-return
+    PropertyDetailDomExtractorService --> PropertyMainFeatures : method-return
+    PropertyDetailStorageService --> Property : method-param
+    SupportedFilters --> Filter : property

@@ -53,14 +53,14 @@ npm run start:dev
 
 The service exposes two HTTP endpoints (port comes from `environment.json.api.httpPort`, default `8080` in this project):
 
-- `GET /scrapeProperties`: queue a full scrape cycle for new properties.
-- `GET /updateProperties`: queue revalidation of existing open properties.
+- `POST /scrapeProperties`: queue a full scrape cycle for new properties.
+- `POST /updateProperties`: queue revalidation of existing open properties.
 
 Examples:
 
 ```bash
-curl http://localhost:8080/scrapeProperties
-curl http://localhost:8080/updateProperties
+curl -X POST http://localhost:8080/scrapeProperties
+curl -X POST http://localhost:8080/updateProperties
 ```
 
 ## Runtime Outputs

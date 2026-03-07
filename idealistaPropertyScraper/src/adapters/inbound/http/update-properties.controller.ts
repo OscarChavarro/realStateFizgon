@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Post } from '@nestjs/common';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 
@@ -6,7 +6,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
 export class UpdatePropertiesController {
   constructor(private readonly scraperStateMachineService: ScraperStateMachineService) {}
 
-  @Get('updateProperties')
+  @Post('updateProperties')
   requestUpdateProperties(): { status: string; state: ScraperState; pendingRequests: number } {
     const pendingRequests = this.scraperStateMachineService.enqueueUpdatePropertiesRequest();
     return {
@@ -16,7 +16,7 @@ export class UpdatePropertiesController {
     };
   }
 
-  @Get('scrapeProperties')
+  @Post('scrapeProperties')
   requestScrapeProperties(): { status: string; state: ScraperState; pendingRequests: number } {
     const pendingRequests = this.scraperStateMachineService.enqueueScrapePropertiesRequest();
     return {

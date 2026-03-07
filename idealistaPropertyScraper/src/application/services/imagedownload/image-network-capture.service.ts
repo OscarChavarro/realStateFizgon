@@ -129,7 +129,8 @@ export class ImageNetworkCaptureService {
       await onImageBody({ requestId, url, mimeType, body });
       this.markImageNetworkActivity();
     } catch (error) {
-      // TODO: Should add metric. If not scraping property details should skip.
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(`Failed to capture image response body for "${url}" (requestId=${requestId}): ${message}`);
     }
   }
 

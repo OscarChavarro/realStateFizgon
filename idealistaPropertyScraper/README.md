@@ -49,6 +49,27 @@ Run (development):
 npm run start:dev
 ```
 
+## Linting
+
+This project uses ESLint with TypeScript support (`eslint.config.mjs`).
+
+Run lint checks:
+
+```bash
+npm run lint
+```
+
+Auto-fix lint issues when possible:
+
+```bash
+npm run lint:fix
+```
+
+Notes:
+
+- Lint targets `src/**/*.ts`.
+- Current setup fails on lint errors and allows warnings.
+
 ## Trigger Scraper Flows
 
 The service exposes two HTTP endpoints (port comes from `environment.json.api.httpPort`, default `8080` in this project):

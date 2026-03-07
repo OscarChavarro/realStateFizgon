@@ -2,7 +2,6 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import CDP = require('chrome-remote-interface');
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumCdpReadinessService } from 'src/application/services/scraper/chromium/chromium-cdp-readiness.service';
-import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'src/application/services/scraper/chromium/chromium-page-target.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
@@ -12,21 +11,20 @@ import { ChromiumGeolocationService } from 'src/application/services/scraper/chr
 import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
 import { InfrastructurePreCheckService } from 'src/application/services/scraper/infrastructure-pre-check.service';
 import { ScraperCdpClient } from 'src/application/services/scraper/chromium/scraper-cdp-client.type';
+import { HomeSearchPreparationFlowService } from 'src/application/services/scraper/flows/home-search-preparation-flow.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 
 @Injectable()
-export class ChromiumService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(ChromiumService.name);
+export class ChromiumOrchestratorService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ChromiumOrchestratorService.name);
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
-  private readonly initialHardeningStabilizationWaitMs = 5000;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
   private shuttingDown = false;
 
   constructor(
     private readonly configuration: Configuration,
-    private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumCdpReadinessService: ChromiumCdpReadinessService,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
@@ -36,6 +34,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     private readonly infrastructurePreCheckService: InfrastructurePreCheckService,
     private readonly scraperStateLoopService: ScraperStateLoopService,
     private readonly imageDownloader: ImageDownloader,
+    private readonly homeSearchPreparationFlowService: HomeSearchPreparationFlowService,
     private readonly scrapeNewPropertiesFlowService: ScrapeNewPropertiesFlowService,
     private readonly updateExistingPropertiesFlowService: UpdateExistingPropertiesFlowService
   ) {}
@@ -44,7 +43,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.infrastructurePreCheckService.runBeforeScraperStartup();
       await this.launchChrome();
-      await this.loadHomePageOnce();
+      await this.homeSearchPreparationFlowService.execute(this.cdpHost, this.cdpPort);
       this.scraperStateLoopService.start({
         onScrapingForNewProperties: async () => this.runScrapeNewPropertiesCycle(),
         onUpdatingProperties: async () => this.runUpdateExistingPropertiesCycle(),
@@ -90,54 +89,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     await this.chromiumGeolocationService.grantStartupPermissions(this.cdpHost, this.cdpPort);
     this.chromiumGeolocationService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
     this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
-  }
-
-  private async loadHomePageOnce(): Promise<void> {
-    const selectedTarget = await this.chromiumPageTargetService.waitForPageTarget(this.cdpHost, this.cdpPort);
-    if (!selectedTarget) {
-      throw new Error('No page target available in Chrome');
-    }
-
-    this.logger.log(`Loading initial home page on target ${String(selectedTarget.id ?? 'unknown')}.`);
-    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
-
-    try {
-      const { Page, Runtime } = client;
-      await Page.enable();
-      await Runtime.enable();
-      const initialUrl = await Runtime.evaluate({
-        expression: 'window.location.href',
-        returnByValue: true
-      });
-      const initialUrlValue = String(initialUrl.result?.value ?? '').trim();
-      if (initialUrlValue !== 'about:blank') {
-        this.logger.warn(`Initial target URL is "${initialUrlValue}". Forcing about:blank before first hardened navigation.`);
-        await Page.navigate({ url: 'about:blank' });
-        await this.chromiumPageSyncService.waitForPageLoad(
-          Page,
-          Runtime,
-          this.configuration.chromeCdpReadyTimeoutMs,
-          this.configuration.chromeCdpPollIntervalMs
-        );
-      }
-
-      await this.chromiumNetworkHeadersService.applyHeaders(client);
-      this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
-      await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
-      await this.chromiumGeolocationService.applyGeolocationOverride(client);
-      this.logger.log(`Waiting ${Math.floor(this.initialHardeningStabilizationWaitMs / 1000)} seconds after hardening before first target navigation.`);
-      await this.chromiumPageSyncService.sleep(this.initialHardeningStabilizationWaitMs);
-      await Page.navigate({ url: this.configuration.scraperHomeUrl });
-      await this.chromiumPageSyncService.waitForPageLoad(
-        Page,
-        Runtime,
-        this.configuration.chromeCdpReadyTimeoutMs,
-        this.configuration.chromeCdpPollIntervalMs
-      );
-      this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');
-    } finally {
-      await client.close();
-    }
   }
 
   private async runScrapeNewPropertiesCycle(): Promise<void> {

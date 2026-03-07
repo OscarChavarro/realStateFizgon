@@ -9,9 +9,10 @@ import { OriginErrorDetectorModule } from 'src/application/services/scraper/orig
 import { ScraperPaginationModule } from 'src/application/services/scraper/pagination/scraper-pagination.module';
 import { ScraperPropertyModule } from 'src/application/services/scraper/property/scraper-property.module';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { ChromiumService } from 'src/application/services/scraper/chromium.service';
+import { ChromiumOrchestratorService } from 'src/application/services/scraper/chromium-orchestrator.service';
 import { ScraperStateModule } from 'src/application/services/state/scraper-state.module';
 import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { HomeSearchPreparationFlowService } from 'src/application/services/scraper/flows/home-search-preparation-flow.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 
@@ -29,12 +30,13 @@ import { UpdateExistingPropertiesFlowService } from 'src/application/services/sc
   ],
   providers: [
     InfrastructurePreCheckService,
+    HomeSearchPreparationFlowService,
     ScrapeNewPropertiesFlowService,
     UpdateExistingPropertiesFlowService,
     MainPageService,
     SearchResultsPreparationService,
-    ChromiumService
+    ChromiumOrchestratorService
   ],
-  exports: [ChromiumService]
+  exports: [ChromiumOrchestratorService]
 })
 export class ScraperOrchestrationModule {}

@@ -3,7 +3,7 @@ import CDP = require('chrome-remote-interface');
 import { ProxyService } from '@real-state-fizgon/proxy';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
-import { ChromiumProcessLiveCicleService } from 'src/application/services/scraper/chromium/chromium-process-live-cicle.service';
+import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
@@ -29,7 +29,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configuration: Configuration,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
-    private readonly chromiumProcessLiveCicleService: ChromiumProcessLiveCicleService,
+    private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
     private readonly searchResultsPreparationService: SearchResultsPreparationService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
@@ -66,11 +66,11 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.shuttingDown = true;
-    this.chromiumProcessLiveCicleService.stopChromiumProcess();
+    this.chromiumProcessLifecycleService.stopChromiumProcess();
   }
 
   private async launchChrome(): Promise<void> {
-    await this.chromiumProcessLiveCicleService.launchChromiumProcess(
+    await this.chromiumProcessLifecycleService.launchChromiumProcess(
       this.cdpPort,
       (code, signal) => {
         void this.chromiumFailureGuardService.handleUnexpectedChromeExit({

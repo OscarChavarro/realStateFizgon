@@ -56,7 +56,7 @@
     "propertydetailpage": {
       "scrollintervalms": 200,
       "scrollevents": 10,
-      "cookieaprovaldialogwaitms": 2000,
+      "cookieapprovaldialogwaitms": 2000,
       "imagesloadwaitms": 2000,
       "morephotosclickwaitms": 400,
       "premediaexpansionwaitms": 1000

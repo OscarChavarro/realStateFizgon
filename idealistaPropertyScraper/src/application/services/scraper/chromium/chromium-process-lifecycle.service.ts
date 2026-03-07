@@ -6,8 +6,8 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
 
 @Injectable()
-export class ChromiumProcessLiveCicleService {
-  private readonly logger = new Logger(ChromiumProcessLiveCicleService.name);
+export class ChromiumProcessLifecycleService {
+  private readonly logger = new Logger(ChromiumProcessLifecycleService.name);
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;

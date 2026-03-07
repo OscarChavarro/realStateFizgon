@@ -9,7 +9,7 @@ import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/
 import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium/chromium-permission-registrar.service';
 import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
 import { ChromiumService } from 'src/application/services/scraper/chromium.service';
-import { ChromiumProcessLiveCicleService } from 'src/application/services/scraper/chromium/chromium-process-live-cicle.service';
+import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
 import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
@@ -22,7 +22,7 @@ import { MainPageService } from 'src/application/services/scraper/main-page.serv
 import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
-import { CookieAprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-aproval-dialog-scraper.service';
+import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
@@ -58,7 +58,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ChromiumNetworkHeadersService,
     ChromiumPermissionRegistrarService,
     ChromiumUserAgentTlsService,
-    ChromiumProcessLiveCicleService,
+    ChromiumProcessLifecycleService,
     SearchResultsPreparationService,
     MainPageService,
     OriginErrorDetectorService,
@@ -78,7 +78,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ImageNetworkCaptureService,
     ImagePendingQueuePublisherService,
     ImageDownloader,
-    CookieAprovalDialogScraperService,
+    CookieApprovalDialogScraperService,
     DeactivatedDetailStatusService,
     PropertyDetailNavigationService,
     PropertyDetailInteractionService,

@@ -6,8 +6,8 @@ type RuntimeClient = {
 };
 
 @Injectable()
-export class CookieAprovalDialogScraperService {
-  private readonly logger = new Logger(CookieAprovalDialogScraperService.name);
+export class CookieApprovalDialogScraperService {
+  private readonly logger = new Logger(CookieApprovalDialogScraperService.name);
 
   constructor(private readonly configuration: Configuration) {}
 
@@ -49,9 +49,9 @@ export class CookieAprovalDialogScraperService {
       return;
     }
 
-    await this.sleep(this.configuration.cookieAprovalDialogWaitMs);
+    await this.sleep(this.configuration.cookieApprovalDialogWaitMs);
     this.logger.log('Accepted Didomi cookie approval dialog.');
-    await this.sleep(this.configuration.cookieAprovalDialogWaitMs);
+    await this.sleep(this.configuration.cookieApprovalDialogWaitMs);
   }
 
   private async evaluateExpression<T>(runtime: RuntimeClient, expression: string): Promise<T> {

@@ -49,6 +49,8 @@ type Environment = {
       imagesloadwaitms?: number;
       morephotosclickwaitms?: number;
       premediaexpansionwaitms?: number;
+      cookieapprovaldialogwaitms?: number;
+      // Deprecated typo kept for backward compatibility with older environment.json files.
       cookieaprovaldialogwaitms?: number;
     };
   };
@@ -336,8 +338,10 @@ export class Configuration {
     return this.environment.timeouts?.propertydetailpage?.premediaexpansionwaitms ?? 1000;
   }
 
-  get cookieAprovalDialogWaitMs(): number {
-    return this.environment.timeouts?.propertydetailpage?.cookieaprovaldialogwaitms ?? 2000;
+  get cookieApprovalDialogWaitMs(): number {
+    return this.environment.timeouts?.propertydetailpage?.cookieapprovaldialogwaitms
+      ?? this.environment.timeouts?.propertydetailpage?.cookieaprovaldialogwaitms
+      ?? 2000;
   }
 
   get rabbitMqUser(): string {

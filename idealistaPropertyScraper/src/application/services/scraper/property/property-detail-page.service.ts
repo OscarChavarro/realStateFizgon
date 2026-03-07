@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { CookieAprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-aproval-dialog-scraper.service';
+import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
@@ -14,7 +14,7 @@ export class PropertyDetailPageService {
   private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
 
   constructor(
-    private readonly cookieAprovalDialogScraperService: CookieAprovalDialogScraperService,
+    private readonly cookieApprovalDialogScraperService: CookieApprovalDialogScraperService,
     private readonly navigationService: PropertyDetailNavigationService,
     private readonly interactionService: PropertyDetailInteractionService,
     private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
@@ -53,7 +53,7 @@ export class PropertyDetailPageService {
     });
 
     await this.interactionService.throwIfOriginErrorPage(client.Runtime);
-    await this.cookieAprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
+    await this.cookieApprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
 
     const deactivatedStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
     if (deactivatedStatus.isDeactivated) {

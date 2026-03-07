@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()

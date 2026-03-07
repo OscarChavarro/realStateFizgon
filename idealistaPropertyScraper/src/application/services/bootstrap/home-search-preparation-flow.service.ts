@@ -5,8 +5,8 @@ import { ChromiumNetworkHeadersService } from 'src/application/services/chromium
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class HomeSearchPreparationFlowService {

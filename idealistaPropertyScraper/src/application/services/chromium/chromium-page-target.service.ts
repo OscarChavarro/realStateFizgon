@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { CdpPageTarget } from 'src/application/services/chromium/cdp-page-target.type';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class ChromiumPageTargetService {

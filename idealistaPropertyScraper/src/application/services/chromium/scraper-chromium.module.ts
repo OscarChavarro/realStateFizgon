@@ -8,7 +8,7 @@ import { ChromiumPageTargetService } from 'src/application/services/chromium/chr
 import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
   imports: [ConfigurationModule],

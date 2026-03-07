@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class MainPageService {

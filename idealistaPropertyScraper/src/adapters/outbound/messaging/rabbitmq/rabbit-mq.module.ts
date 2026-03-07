@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
-import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
   imports: [ConfigurationModule],

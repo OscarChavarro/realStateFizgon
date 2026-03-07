@@ -6,8 +6,8 @@ import { MainPageService } from 'src/application/services/scraper/main-page.serv
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 type RuntimeDomain = {

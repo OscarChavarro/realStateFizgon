@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigurationSourceService } from 'src/infrastructure/config/configuration-source.service';
+import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
 
 @Injectable()
 export class MongoConfig {

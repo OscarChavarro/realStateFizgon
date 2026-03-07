@@ -3,7 +3,7 @@ import { ConfirmChannel, ChannelModel, connect, Options } from 'amqplib';
 import { once } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { RabbitConfig } from 'src/infrastructure/config/rabbit.config';
+import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()

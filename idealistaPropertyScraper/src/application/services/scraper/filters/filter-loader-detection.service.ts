@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()

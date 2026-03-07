@@ -7,7 +7,7 @@ import { UserAgentOverridePayload } from 'src/application/services/chromium/user
 import { UserAgentOverrideClient } from 'src/application/services/chromium/user-agent-override-client';
 import { NetworkHeaderClient } from 'src/application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 type PageTarget = {

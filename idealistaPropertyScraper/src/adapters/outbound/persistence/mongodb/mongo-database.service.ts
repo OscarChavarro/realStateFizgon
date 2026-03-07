@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { MongoConfig } from 'src/infrastructure/config/mongo.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
 import { Property } from 'src/domain/property/property.model';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
 import { sleep } from 'src/infrastructure/sleep';

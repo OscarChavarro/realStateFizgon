@@ -13,8 +13,8 @@ import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 

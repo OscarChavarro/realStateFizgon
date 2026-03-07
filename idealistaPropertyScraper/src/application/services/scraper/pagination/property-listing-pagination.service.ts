@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()

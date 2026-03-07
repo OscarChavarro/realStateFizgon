@@ -11,7 +11,7 @@ import { ScraperPropertyModule } from 'src/application/services/scraper/property
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ScraperBootstrapService } from 'src/application/services/scraper/scraper-bootstrap.service';
 import { ScraperStateModule } from 'src/application/services/state/scraper-state.module';
-import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';

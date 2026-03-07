@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ProxyService } from '@real-state-fizgon/proxy';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
-import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 
 @Injectable()
 export class InfrastructurePreCheckService {

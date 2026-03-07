@@ -6,7 +6,7 @@ import { ImageFileNameService } from 'src/application/services/imagedownload/ima
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
   imports: [ConfigurationModule, RabbitMqModule],

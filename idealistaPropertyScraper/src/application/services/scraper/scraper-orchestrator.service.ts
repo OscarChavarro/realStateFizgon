@@ -9,7 +9,7 @@ import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()

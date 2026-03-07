@@ -7,7 +7,7 @@ import { FilterUpdateService } from 'src/application/services/scraper/filters/fi
 import { Filter } from 'src/application/services/scraper/filters/filter.interface';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
-import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class FiltersService {

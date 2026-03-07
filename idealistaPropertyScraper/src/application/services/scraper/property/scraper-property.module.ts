@@ -10,7 +10,7 @@ import { PropertyDetailNavigationService } from 'src/application/services/scrape
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
+import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
   imports: [

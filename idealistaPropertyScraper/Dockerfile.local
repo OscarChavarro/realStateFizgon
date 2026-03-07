@@ -15,6 +15,7 @@ RUN npm run build
 FROM node:22-bookworm-slim AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV XVFB_SCREEN=1920x1080x24
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -29,6 +30,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dnsutils \
     dumb-init \
     emacs-nox \
+    fonts-dejavu \
+    fonts-freefont-ttf \
+    fonts-liberation \
+    fonts-noto \
+    fonts-noto-core \
+    fonts-noto-ui-core \
     g++ \
     gcc \
     htop \
@@ -38,8 +45,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     mesa-utils \
     mesa-utils-extra \
-    nfs-common \
     net-tools \
+    nfs-common \
     python3 \
     telnet \
     wget \
@@ -47,6 +54,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11vnc \
     xauth \
     xdotool \
+    xfonts-base \
     xosview \
     xterm \
     xvfb \
@@ -90,6 +98,13 @@ RUN chmod +x /usr/local/bin/start-with-xvfb.sh /usr/local/bin/x \
     && useradd -u 1001 -g 1001 -m -s /bin/bash scraper \
     && echo 'scraper:password' | chpasswd \
     && mkdir -p /app/output/logs /app/output/.vnc /app/output/images \
+    && if command -v mwm >/dev/null 2>&1; then \
+         if [ -f /etc/X11/mwm/system.mwmrc ]; then \
+           sed -i -E 's#"New Window"[[:space:]]+f\\.exec[[:space:]]+"xterm[[:space:]]*&"#"New Window"\t\tf.exec "uxterm -ls -sb -fn 10x20 &"#g' /etc/X11/mwm/system.mwmrc; \
+         else \
+           echo "WARNING: /etc/X11/mwm/system.mwmrc not found; mwm menu was not patched."; \
+         fi; \
+       fi \
     && chown -R scraper:scraper /app /home/scraper
 
 USER scraper

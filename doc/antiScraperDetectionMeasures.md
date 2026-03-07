@@ -59,3 +59,10 @@ Code has been added to `CdpNetworkClient` class to take care of this.
 Some sites such as idealista can use Google account based authentication. Creating secondary Google accounts can be used to create profile folders, and keep them in the NFS shared folder. For login, Google blocks access to CDP instrumentalized browser, so browser should be opened manually on a remote session with `--no-sandbox --user-data-dir=<profile-folder>` options, log in to google and close the browser. Then the scraper controlled by CDP can open the browser using the same profile folder and the target site can be used from a logged in user.
 
 This way it is expected to have increased reputation and avoid being blocked due to fresh profile or anonymous login.
+
+## 8. GUI signature
+
+X11 session should be configured with detail in mind:
+- Screen resolution set to a commonly used one, such as 1920x1080.
+- Available fonts similar to common fonts in distributions.
+- Configure the browser to be in fullscreen inside the X11 session.

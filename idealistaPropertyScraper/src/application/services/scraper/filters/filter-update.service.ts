@@ -6,7 +6,8 @@ import { SupportedFilters } from 'src/application/services/scraper/filters/suppo
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
-import { CdpClient, MinMaxSelection } from 'src/application/services/scraper/filters/filter-cdp-client.types';
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
 @Injectable()
 export class FilterUpdateService {

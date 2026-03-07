@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.types';
+import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 
 @Injectable()

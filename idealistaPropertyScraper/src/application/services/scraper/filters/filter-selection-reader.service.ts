@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Filter } from 'src/application/services/scraper/filters/filter.interface';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
-import { CdpClient, MinMaxSelection } from 'src/application/services/scraper/filters/filter-cdp-client.types';
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
 @Injectable()
 export class FilterSelectionReaderService {

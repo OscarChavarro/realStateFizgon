@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/filters/filter-cdp-client.types';
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
 @Injectable()
 export class FilterActionExecutorService {

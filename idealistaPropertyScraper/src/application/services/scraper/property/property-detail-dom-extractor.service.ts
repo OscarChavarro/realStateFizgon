@@ -3,7 +3,7 @@ import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
-import { RuntimeClient } from 'src/application/services/scraper/property/cdp-client.types';
+import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 
 type ExtractedPropertyPayload = {
   title: string | null;

@@ -46,10 +46,16 @@ In this project, TLS fingerprints are dictated by the real Chrome/Chromium binar
 
 TLS is a handshake fingerprint (cipher suites, extensions, and their ordering) produced by the browser's TLS stack. That fingerprint is tied to the browser binary and its TLS implementation, while the User Agent is only an HTTP header. If they don't match (e.g., UA says Chrome 145 but TLS looks like Chrome 141), it is a strong bot signal.
 
-## Careful definition of cookies
+## 6. Careful definition of cookies
 
 Antibot detector analysis compares the data from geolocation with probable user setup for a region. For example, an Spanish site, with Spanish market (such as idealista) and geolocated as being used from Spain, most probably will have Spanish locale defined in `Accept-Language` header.
 
 To double check behaviors of a real human controlled web browser against CDP instrumentalized web browser, it is recommended to use the [httpbin tool](https://httpbin.org/anything). Browse from a normal browser session, then browse from the instrumentalized web browser and then compare the headers.
 
 Code has been added to `CdpNetworkClient` class to take care of this.
+
+## 7. Smart use of google accounts
+
+Some sites such as idealista can use Google account based authentication. Creating secondary Google accounts can be used to create profile folders, and keep them in the NFS shared folder. For login, Google blocks access to CDP instrumentalized browser, so browser should be opened manually on a remote session with `--no-sandbox --user-data-dir=<profile-folder>` options, log in to google and close the browser. Then the scraper controlled by CDP can open the browser using the same profile folder and the target site can be used from a logged in user.
+
+This way it is expected to have increased reputation and avoid being blocked due to fresh profile or anonymous login.

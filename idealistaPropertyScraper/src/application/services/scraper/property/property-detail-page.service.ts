@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { CookieAprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-aproval-dialog-scraper.service';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.types';
+import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
-import { RuntimeClient } from 'src/application/services/scraper/property/cdp-client.types';
+import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 
 @Injectable()
 export class PropertyDetailNavigationService {

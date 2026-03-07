@@ -4,27 +4,11 @@ import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
-
-type CdpNetworkClient = {
-  Network?: {
-    enable?: () => Promise<void>;
-    setExtraHTTPHeaders?: (params: { headers: Record<string, string> }) => Promise<void>;
-    setUserAgentOverride?: (params: {
-      userAgent: string;
-      acceptLanguage?: string;
-      platform?: string;
-      userAgentMetadata?: UserAgentMetadata;
-    }) => Promise<void>;
-  };
-  Emulation?: {
-    setUserAgentOverride?: (params: {
-      userAgent: string;
-      acceptLanguage?: string;
-      platform?: string;
-      userAgentMetadata?: UserAgentMetadata;
-    }) => Promise<void>;
-  };
-};
+import { CdpNetworkClient } from 'src/application/services/scraper/chromium/cdp-network-client.type';
+import { UserAgentMetadata } from 'src/application/services/scraper/chromium/user-agent-metadata.type';
+import { UserAgentOverridePayload } from 'src/application/services/scraper/chromium/user-agent-override-payload.type';
+import { UserAgentOverrideClient } from 'src/application/services/scraper/chromium/user-agent-override-client';
+import { NetworkHeaderClient } from 'src/application/services/scraper/chromium/network-header-client';
 
 type PageTarget = {
   id?: string;
@@ -34,26 +18,9 @@ type PageTarget = {
 };
 
 type HeaderOverrides = {
-  userAgentOverride?: {
-    userAgent: string;
-    acceptLanguage?: string;
-    platform?: string;
-    userAgentMetadata?: UserAgentMetadata;
-  };
+  userAgentOverride?: UserAgentOverridePayload;
   extraHeaders: Record<string, string>;
   signature: string;
-};
-
-type UserAgentMetadata = {
-  brands: { brand: string; version: string }[];
-  fullVersionList?: { brand: string; version: string }[];
-  platform: string;
-  platformVersion: string;
-  architecture: string;
-  model: string;
-  mobile: boolean;
-  bitness?: string;
-  wow64?: boolean;
 };
 
 @Injectable()
@@ -182,37 +149,15 @@ export class ChromiumNetworkHeadersService {
   }
 
   private async applyOverridesToClient(client: CdpNetworkClient, overrides: HeaderOverrides): Promise<boolean> {
-    if (!client.Network) {
+    const networkHeaderClient = new NetworkHeaderClient(client, this.logger);
+    if (!networkHeaderClient.hasNetworkDomain()) {
       return false;
     }
 
-    try {
-      await client.Network.enable?.();
-    } catch (error) {
-      this.logger.warn(`Failed to enable Network domain. ${this.errorToMessage(error)}`);
-    }
-
-    if (overrides.userAgentOverride) {
-      try {
-        if (client.Emulation?.setUserAgentOverride) {
-          await client.Emulation.setUserAgentOverride(overrides.userAgentOverride);
-        } else if (client.Network.setUserAgentOverride) {
-          await client.Network.setUserAgentOverride(overrides.userAgentOverride);
-        } else {
-          this.logger.warn('Neither Emulation.setUserAgentOverride nor Network.setUserAgentOverride is available.');
-        }
-      } catch (error) {
-        this.logger.warn(`Failed to override user agent metadata. ${this.errorToMessage(error)}`);
-      }
-    }
-
-    try {
-      if (Object.keys(overrides.extraHeaders).length > 0 && client.Network.setExtraHTTPHeaders) {
-        await client.Network.setExtraHTTPHeaders({ headers: overrides.extraHeaders });
-      }
-    } catch (error) {
-      this.logger.warn(`Failed to set extra headers. ${this.errorToMessage(error)}`);
-    }
+    await networkHeaderClient.enableNetworkDomain();
+    const userAgentOverrideClient = new UserAgentOverrideClient(client, this.logger);
+    await userAgentOverrideClient.apply(overrides.userAgentOverride);
+    await networkHeaderClient.applyExtraHeaders(overrides.extraHeaders);
 
     return true;
   }

@@ -7,6 +7,7 @@ import { ChromiumFailureGuardService } from 'src/application/services/scraper/ch
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
 import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium/chromium-permission-registrar.service';
+import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
 import { ChromiumService } from 'src/application/services/scraper/chromium.service';
 import { ChromiumProcessLiveCicleService } from 'src/application/services/scraper/chromium/chromium-process-live-cicle.service';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
@@ -55,6 +56,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ChromiumGeolocationService,
     ChromiumNetworkHeadersService,
     ChromiumPermissionRegistrarService,
+    ChromiumUserAgentTlsService,
     ChromiumProcessLiveCicleService,
     SearchResultsPreparationService,
     MainPageService,

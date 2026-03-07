@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChildProcess, spawn, spawnSync } from 'node:child_process';
-import { accessSync, closeSync, mkdirSync, openSync } from 'node:fs';
+import { ChildProcess, spawn } from 'node:child_process';
+import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
 
 @Injectable()
 export class ChromiumProcessLiveCicleService {
@@ -11,7 +12,10 @@ export class ChromiumProcessLiveCicleService {
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
+  ) {}
 
   async launchChromiumProcess(
     cdpPort: number,
@@ -20,7 +24,7 @@ export class ChromiumProcessLiveCicleService {
   ): Promise<void> {
     const logsDir = join(process.cwd(), 'output', 'logs');
     mkdirSync(logsDir, { recursive: true });
-    const browserBinary = this.resolveBrowserBinary();
+    const browserBinary = this.chromiumUserAgentTlsService.resolveBrowserBinary(this.logger);
 
     while (!isShuttingDown()) {
       this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
@@ -78,45 +82,6 @@ export class ChromiumProcessLiveCicleService {
     this.closeChromeLogFds();
   }
 
-  private resolveBrowserBinary(): string {
-    const configuredBinary = this.configuration.chromeBinary;
-    const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
-
-    if (!isLinuxArm64) {
-      return configuredBinary;
-    }
-
-    const chromiumCandidates = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      'chromium',
-      'chromium-browser'
-    ];
-
-    for (const candidate of chromiumCandidates) {
-      if (candidate.startsWith('/')) {
-        try {
-          accessSync(candidate);
-          this.logger.log(`Detected linux/arm64. Using Chromium binary at "${candidate}".`);
-          return candidate;
-        } catch {
-          continue;
-        }
-      }
-
-      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
-      if (probe.status === 0) {
-        this.logger.log(`Detected linux/arm64. Using Chromium binary "${candidate}" from PATH.`);
-        return candidate;
-      }
-    }
-
-    this.logger.warn(
-      `Detected linux/arm64 but no Chromium binary was found. Falling back to configured binary "${configuredBinary}".`
-    );
-    return configuredBinary;
-  }
-
   private isBrowserBinaryMissingError(error: unknown): boolean {
     const errnoError = error as NodeJS.ErrnoException | undefined;
     if (errnoError?.code === 'ENOENT') {
@@ -134,8 +99,12 @@ export class ChromiumProcessLiveCicleService {
     );
     const requestedUserAgent =
       this.configuration.chromeUserAgent || this.extractUserAgentOption(configuredOptions);
-    const browserVersion = this.detectBrowserVersion(browserBinary);
-    const resolvedUserAgent = this.resolveUserAgent(requestedUserAgent, browserVersion);
+    const browserVersion = this.chromiumUserAgentTlsService.getBrowserVersion(browserBinary, this.logger);
+    const resolvedUserAgent = this.chromiumUserAgentTlsService.resolveUserAgentForLaunch(
+      requestedUserAgent,
+      browserVersion,
+      this.logger
+    );
 
     if (resolvedUserAgent) {
       baseOptions.push(`--user-agent=${resolvedUserAgent}`);
@@ -147,81 +116,6 @@ export class ChromiumProcessLiveCicleService {
   private extractUserAgentOption(options: string[]): string {
     const match = [...options].reverse().find((option) => option.startsWith('--user-agent='));
     return match ? match.replace('--user-agent=', '').trim() : '';
-  }
-
-  private resolveUserAgent(requestedUserAgent: string, browserVersion?: string): string | undefined {
-    const trimmed = requestedUserAgent.trim();
-    if (!browserVersion) {
-      if (!trimmed) {
-        return undefined;
-      }
-      this.logger.warn('Unable to detect browser version. Using configured userAgent without TLS alignment.');
-      return trimmed;
-    }
-
-    if (!trimmed) {
-      return this.buildDefaultUserAgent(browserVersion);
-    }
-
-    const { normalized, changed, found } = this.normalizeUserAgentVersion(trimmed, browserVersion);
-    if (!found) {
-      this.logger.warn(
-        'Configured userAgent has no Chrome/Chromium version. Replacing with a normalized UA to keep TLS coherent.'
-      );
-      return this.buildDefaultUserAgent(browserVersion);
-    }
-
-    if (changed) {
-      this.logger.warn(
-        `Configured userAgent version does not match browser version ${browserVersion}. Using normalized UA.`
-      );
-      this.logger.warn(`Configured userAgent: ${trimmed}`);
-      this.logger.warn(`Normalized userAgent: ${normalized}`);
-    }
-
-    return normalized;
-  }
-
-  private normalizeUserAgentVersion(
-    userAgent: string,
-    browserVersion: string
-  ): { normalized: string; changed: boolean; found: boolean } {
-    const versionPattern = /(Chrome|Chromium)\/([0-9]+(?:\.[0-9]+){0,3})/gi;
-    let found = false;
-    const normalized = userAgent.replace(versionPattern, (_match, name: string) => {
-      found = true;
-      return `${name}/${browserVersion}`;
-    });
-    return { normalized, changed: found && normalized !== userAgent, found };
-  }
-
-  private buildDefaultUserAgent(browserVersion: string): string {
-    return `Mozilla/5.0 (${this.getPlatformToken()}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${browserVersion} Safari/537.36`;
-  }
-
-  private getPlatformToken(): string {
-    if (process.platform === 'darwin') {
-      return 'Macintosh; Intel Mac OS X 10_15_7';
-    }
-    if (process.platform === 'win32') {
-      return 'Windows NT 10.0; Win64; x64';
-    }
-    return process.arch === 'arm64' ? 'X11; Linux aarch64' : 'X11; Linux x86_64';
-  }
-
-  private detectBrowserVersion(browserBinary: string): string | undefined {
-    try {
-      const result = spawnSync(browserBinary, ['--version'], { encoding: 'utf8' });
-      const output = `${result.stdout ?? ''} ${result.stderr ?? ''}`.trim();
-      if (!output) {
-        return undefined;
-      }
-      const match = output.match(/(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+|\d+\.\d+)/);
-      return match ? match[1] : undefined;
-    } catch (error) {
-      this.logger.warn(`Failed to detect browser version from "${browserBinary}": ${String(error)}`);
-      return undefined;
-    }
   }
 
   private closeChromeLogFds(): void {

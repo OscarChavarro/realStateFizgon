@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { spawnSync } from 'node:child_process';
-import { accessSync } from 'node:fs';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { CdpNetworkClient } from 'src/application/services/scraper/chromium/cdp-network-client.type';
@@ -9,6 +7,7 @@ import { UserAgentMetadata } from 'src/application/services/scraper/chromium/use
 import { UserAgentOverridePayload } from 'src/application/services/scraper/chromium/user-agent-override-payload.type';
 import { UserAgentOverrideClient } from 'src/application/services/scraper/chromium/user-agent-override-client';
 import { NetworkHeaderClient } from 'src/application/services/scraper/chromium/network-header-client';
+import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
 
 type PageTarget = {
   id?: string;
@@ -32,7 +31,8 @@ export class ChromiumNetworkHeadersService {
 
   constructor(
     private readonly configuration: Configuration,
-    private readonly chromiumPageSyncService: ChromiumPageSyncService
+    private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
   ) {}
 
   async applyHeaders(client: CdpNetworkClient): Promise<void> {
@@ -164,8 +164,9 @@ export class ChromiumNetworkHeadersService {
 
   private buildOverrides(): HeaderOverrides {
     const requestedUserAgent = this.configuration.chromeUserAgent;
-    const browserVersion = this.detectBrowserVersion(this.resolveBrowserBinary());
-    const userAgent = this.resolveUserAgent(requestedUserAgent, browserVersion);
+    const browserBinary = this.chromiumUserAgentTlsService.resolveBrowserBinary();
+    const browserVersion = this.chromiumUserAgentTlsService.getBrowserVersion(browserBinary);
+    const userAgent = this.chromiumUserAgentTlsService.resolveUserAgentForHeaders(requestedUserAgent, browserVersion);
     const acceptLanguage = this.configuration.chromeAcceptLanguage;
     const cdpAcceptLanguage = this.toCdpAcceptLanguage(acceptLanguage);
     const extraHeaders = { ...this.configuration.chromeExtraHeaders };
@@ -217,33 +218,6 @@ export class ChromiumNetworkHeadersService {
       }
     }
     return normalized;
-  }
-
-  private resolveUserAgent(requestedUserAgent: string, browserVersion?: string): string | undefined {
-    const trimmed = (requestedUserAgent ?? '').trim();
-    if (!trimmed) {
-      return undefined;
-    }
-
-    if (!browserVersion) {
-      return trimmed;
-    }
-
-    const { normalized } = this.normalizeUserAgentVersion(trimmed, browserVersion);
-    return normalized;
-  }
-
-  private normalizeUserAgentVersion(
-    userAgent: string,
-    browserVersion: string
-  ): { normalized: string; changed: boolean; found: boolean } {
-    const versionPattern = /(Chrome|Chromium)\/([0-9]+(?:\.[0-9]+){0,3})/gi;
-    let found = false;
-    const normalized = userAgent.replace(versionPattern, (_match, name: string) => {
-      found = true;
-      return `${name}/${browserVersion}`;
-    });
-    return { normalized, changed: found && normalized !== userAgent, found };
   }
 
   private buildUserAgentMetadata(userAgent: string): UserAgentMetadata | undefined {
@@ -339,55 +313,6 @@ export class ChromiumNetworkHeadersService {
       return this.extractArchitecture(userAgent) === 'arm' ? 'Linux armv8l' : 'Linux x86_64';
     }
     return undefined;
-  }
-
-  private detectBrowserVersion(browserBinary: string): string | undefined {
-    try {
-      const result = spawnSync(browserBinary, ['--version'], { encoding: 'utf8' });
-      const output = `${result.stdout ?? ''} ${result.stderr ?? ''}`.trim();
-      if (!output) {
-        return undefined;
-      }
-      const match = output.match(/(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+|\d+\.\d+)/);
-      return match ? match[1] : undefined;
-    } catch (error) {
-      this.logger.warn(`Failed to detect browser version from "${browserBinary}": ${String(error)}`);
-      return undefined;
-    }
-  }
-
-  private resolveBrowserBinary(): string {
-    const configuredBinary = this.configuration.chromeBinary;
-    const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
-
-    if (!isLinuxArm64) {
-      return configuredBinary;
-    }
-
-    const chromiumCandidates = [
-      '/usr/bin/chromium',
-      '/usr/bin/chromium-browser',
-      'chromium',
-      'chromium-browser'
-    ];
-
-    for (const candidate of chromiumCandidates) {
-      if (candidate.startsWith('/')) {
-        try {
-          accessSync(candidate);
-          return candidate;
-        } catch {
-          continue;
-        }
-      }
-
-      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
-      if (probe.status === 0) {
-        return candidate;
-      }
-    }
-
-    return configuredBinary;
   }
 
   private getTargetKey(target: PageTarget): string | undefined {

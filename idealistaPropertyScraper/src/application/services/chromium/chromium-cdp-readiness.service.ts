@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
-import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
+import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 
 @Injectable()
 export class ChromiumCdpReadinessService {

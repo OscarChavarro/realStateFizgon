@@ -1,11 +1,11 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ChromiumCdpReadinessService } from 'src/application/services/scraper/chromium/chromium-cdp-readiness.service';
-import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
-import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
-import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
-import { InfrastructurePreCheckService } from 'src/application/services/scraper/infrastructure-pre-check.service';
-import { HomeSearchPreparationFlowService } from 'src/application/services/scraper/flows/home-search-preparation-flow.service';
+import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
+import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
+import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
+import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
+import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
+import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 
 @Injectable()

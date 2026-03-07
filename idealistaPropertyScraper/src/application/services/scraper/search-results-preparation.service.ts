@@ -4,9 +4,9 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
-import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
+import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
+import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;

@@ -1,4 +1,4 @@
-import { UserAgentMetadata } from 'src/application/services/scraper/chromium/user-agent-metadata.type';
+import { UserAgentMetadata } from 'src/application/services/chromium/user-agent-metadata.type';
 
 export type UserAgentOverridePayload = {
   userAgent: string;

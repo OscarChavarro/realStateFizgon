@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { CdpNetworkClient } from 'src/application/services/scraper/chromium/cdp-network-client.type';
+import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
 
 export class NetworkHeaderClient {
   constructor(

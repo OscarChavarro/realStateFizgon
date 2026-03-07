@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
-import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
+import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 
 @Injectable()
 export class PropertyDetailInteractionService {

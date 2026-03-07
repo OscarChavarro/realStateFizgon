@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from 'src/infrastructure/config/configuration';
-import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
-import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
-import { ChromiumPageTargetService } from 'src/application/services/scraper/chromium/chromium-page-target.service';
-import { ScraperCdpClient } from 'src/application/services/scraper/chromium/scraper-cdp-client.type';
+import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
+import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
+import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
+import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 
 @Injectable()
 export class HomeSearchPreparationFlowService {

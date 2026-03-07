@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { ScraperCdpClient } from 'src/application/services/scraper/chromium/scraper-cdp-client.type';
+import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 
 @Injectable()
 export class UpdateExistingPropertiesFlowService {

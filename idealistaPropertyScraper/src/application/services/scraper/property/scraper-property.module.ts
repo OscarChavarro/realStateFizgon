@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongoDatabaseModule } from 'src/adapters/outbound/persistence/mongodb/mongo-database.module';
 import { ImageDownloadModule } from 'src/application/services/imagedownload/image-download.module';
-import { OriginErrorDetectorModule } from 'src/application/services/scraper/origin-error-detector.module';
+import { OriginErrorDetectorModule } from 'src/application/services/resilience/origin-error-detector.module';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';

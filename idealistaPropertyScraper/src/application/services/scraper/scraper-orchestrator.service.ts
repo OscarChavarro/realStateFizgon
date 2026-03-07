@@ -3,11 +3,11 @@ import CDP = require('chrome-remote-interface');
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
-import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
-import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
-import { ScraperCdpClient } from 'src/application/services/scraper/chromium/scraper-cdp-client.type';
-import { ChromiumPageTargetService } from 'src/application/services/scraper/chromium/chromium-page-target.service';
+import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
+import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
+import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 

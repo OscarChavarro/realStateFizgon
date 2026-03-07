@@ -3,7 +3,7 @@ import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { Configuration } from 'src/infrastructure/config/configuration';
-import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
+import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {

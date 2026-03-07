@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { CdpNetworkClient } from 'src/application/services/scraper/chromium/cdp-network-client.type';
-import { UserAgentOverridePayload } from 'src/application/services/scraper/chromium/user-agent-override-payload.type';
+import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
+import { UserAgentOverridePayload } from 'src/application/services/chromium/user-agent-override-payload.type';
 
 export class UserAgentOverrideClient {
   constructor(

@@ -83,6 +83,14 @@ export class ScraperConfig {
     return Math.max(1, this.configurationSourceService.environment.api?.httpPort ?? 3000);
   }
 
+  get endpointsUser(): string {
+    return this.configurationSourceService.secrets.endpoints.user;
+  }
+
+  get endpointsPassword(): string {
+    return this.configurationSourceService.secrets.endpoints.password;
+  }
+
   get initialScraperState(): ScraperState {
     const raw = (this.configurationSourceService.environment.initialState ?? '').toString().trim().toUpperCase();
     if (raw === ScraperState.SCRAPING_FOR_NEW_PROPERTIES) {

@@ -16,7 +16,8 @@ import {
   EnvironmentMainPageTimeoutSchema,
   EnvironmentPaginationTimeoutSchema,
   EnvironmentPropertyDetailPageTimeoutSchema,
-  EnvironmentScraperSchema
+  EnvironmentScraperSchema,
+  SecretsEndpointsSchema
 } from 'src/infrastructure/config/validation/scraper.schema';
 
 const EnvironmentTimeoutsSchema = z.object({
@@ -43,7 +44,8 @@ export const SecretsSchema = z.object({
   mongodb: SecretsMongoSchema.optional(),
   proxy: SecretsProxySchema.optional(),
   chrome: SecretsChromeSchema.optional(),
-  geolocation: SecretsGeolocationSchema.optional()
+  geolocation: SecretsGeolocationSchema.optional(),
+  endpoints: SecretsEndpointsSchema
 }).passthrough();
 
 export type Environment = z.infer<typeof EnvironmentSchema>;

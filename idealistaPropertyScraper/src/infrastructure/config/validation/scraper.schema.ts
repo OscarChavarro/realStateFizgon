@@ -42,6 +42,11 @@ export const EnvironmentScraperSchema = z.object({
   }).strict()
 }).strict();
 
+export const SecretsEndpointsSchema = z.object({
+  user: z.string().min(1, 'endpoints.user is required.'),
+  password: z.string().min(1, 'endpoints.password is required.')
+}).strict();
+
 export const FilterDefinitionValueSchema = z.object({
   plainOptions: z.array(z.string()).optional(),
   minOptions: z.array(z.string()).optional(),

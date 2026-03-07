@@ -4,7 +4,7 @@ import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.t
 import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractor } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
-import { Filter } from 'src/application/services/scraper/filters/filter.interface';
+import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';

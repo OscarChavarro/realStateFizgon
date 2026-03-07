@@ -1,4 +1,4 @@
-import { Filter } from 'src/application/services/scraper/filters/filter.interface';
+import { Filter } from 'src/domain/filters/filter';
 import { Bathrooms } from 'src/domain/filters/bathrooms.filter';
 import { Condition } from 'src/domain/filters/condition.filter';
 import { EnergyEfficiency } from 'src/domain/filters/energy-efficiency.filter';

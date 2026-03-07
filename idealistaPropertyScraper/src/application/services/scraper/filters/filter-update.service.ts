@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
-import { Filter } from 'src/application/services/scraper/filters/filter.interface';
+import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';

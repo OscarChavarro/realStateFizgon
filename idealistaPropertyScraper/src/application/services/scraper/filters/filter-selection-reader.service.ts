@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Filter } from 'src/application/services/scraper/filters/filter.interface';
+import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';

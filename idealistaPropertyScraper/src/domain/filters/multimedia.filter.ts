@@ -1,4 +1,4 @@
-import { Filter } from 'src/application/services/scraper/filters/filter.interface';
+import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 
 export class Multimedia extends Filter {

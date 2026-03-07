@@ -1,19 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { CdpPageTarget } from 'src/application/services/chromium/cdp-page-target.type';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class ChromiumPageTargetService {
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly scraperConfig: ScraperConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
   async waitForPageTarget(host: string, port: number): Promise<CdpPageTarget | undefined> {
-    const timeoutMs = this.configuration.chromeCdpReadyTimeoutMs;
-    const pollIntervalMs = this.configuration.chromeCdpPollIntervalMs;
+    const timeoutMs = this.chromeConfig.chromeCdpReadyTimeoutMs;
+    const pollIntervalMs = this.chromeConfig.chromeCdpPollIntervalMs;
     const start = Date.now();
 
     while (Date.now() - start < timeoutMs) {
@@ -27,7 +29,7 @@ export class ChromiumPageTargetService {
 
       const preferredTarget = pageTargets.find((target: { url?: string }) => {
         const url = (target.url ?? '').trim();
-        return url.startsWith(this.configuration.scraperHomeUrl);
+        return url.startsWith(this.scraperConfig.scraperHomeUrl);
       }) ?? pageTargets[0] ?? [...targets].reverse().find((target: { type?: string }) => target.type === 'page');
 
       if (preferredTarget) {

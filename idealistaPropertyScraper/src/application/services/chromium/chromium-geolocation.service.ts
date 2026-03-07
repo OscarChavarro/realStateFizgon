@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
 
@@ -34,23 +34,23 @@ export class ChromiumGeolocationService {
   private readonly geolocationTargetOrigins = new Map<string, string>();
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumPermissionRegistrarService: ChromiumPermissionRegistrarService
   ) {}
 
   registerPageNavigationListener(client: CdpBrowserClient, page: CdpPage): void {
-    const allowlist = this.configuration.geolocationAllowlist;
+    const allowlist = this.chromeConfig.geolocationAllowlist;
     this.chromiumPermissionRegistrarService.registerPageNavigationListener(client, page, allowlist);
   }
 
   async ensureOriginIsAuthorized(client: CdpBrowserClient, urlOrOrigin: string): Promise<void> {
-    const allowlist = this.configuration.geolocationAllowlist;
+    const allowlist = this.chromeConfig.geolocationAllowlist;
     await this.chromiumPermissionRegistrarService.ensureOriginIsAuthorized(client, urlOrOrigin, allowlist);
   }
 
   async applyGeolocationOverride(client: CdpEmulationClient): Promise<void> {
-    const geolocationOverride = this.configuration.geolocationOverride;
+    const geolocationOverride = this.chromeConfig.geolocationOverride;
     if (geolocationOverride && client.Emulation?.setGeolocationOverride) {
       try {
         await client.Emulation.setGeolocationOverride(geolocationOverride);
@@ -61,7 +61,7 @@ export class ChromiumGeolocationService {
   }
 
   async grantStartupPermissions(cdpHost: string, cdpPort: number): Promise<void> {
-    const geolocationAllowlist = this.configuration.geolocationAllowlist;
+    const geolocationAllowlist = this.chromeConfig.geolocationAllowlist;
     if (geolocationAllowlist.length === 0) {
       return;
     }
@@ -94,7 +94,7 @@ export class ChromiumGeolocationService {
       return;
     }
 
-    if (!this.configuration.geolocationOverride) {
+    if (!this.chromeConfig.geolocationOverride) {
       return;
     }
 
@@ -113,7 +113,7 @@ export class ChromiumGeolocationService {
     cdpPort: number,
     isShuttingDown: () => boolean
   ): Promise<void> {
-    const pollIntervalMs = Math.max(this.configuration.chromeCdpPollIntervalMs, 2000);
+    const pollIntervalMs = Math.max(this.chromeConfig.chromeCdpPollIntervalMs, 2000);
 
     while (!isShuttingDown()) {
       try {
@@ -127,12 +127,12 @@ export class ChromiumGeolocationService {
   }
 
   private async applyGeolocationOverrideToOpenTargets(cdpHost: string, cdpPort: number): Promise<void> {
-    const geolocationOverride = this.configuration.geolocationOverride;
+    const geolocationOverride = this.chromeConfig.geolocationOverride;
     if (!geolocationOverride) {
       return;
     }
 
-    const allowlist = this.configuration.geolocationAllowlist;
+    const allowlist = this.chromeConfig.geolocationAllowlist;
     const targets = await CDP.List({ host: cdpHost, port: cdpPort });
     const activeTargets = new Set<string>();
 

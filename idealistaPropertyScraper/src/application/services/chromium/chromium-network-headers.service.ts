@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
 import { UserAgentMetadata } from 'src/application/services/chromium/user-agent-metadata.type';
@@ -8,6 +7,7 @@ import { UserAgentOverridePayload } from 'src/application/services/chromium/user
 import { UserAgentOverrideClient } from 'src/application/services/chromium/user-agent-override-client';
 import { NetworkHeaderClient } from 'src/application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 type PageTarget = {
   id?: string;
@@ -30,7 +30,7 @@ export class ChromiumNetworkHeadersService {
   private readonly loggedAcceptLanguageNormalizations = new Set<string>();
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
   ) {}
@@ -60,7 +60,7 @@ export class ChromiumNetworkHeadersService {
     cdpPort: number,
     isShuttingDown: () => boolean
   ): Promise<void> {
-    const pollIntervalMs = Math.max(this.configuration.chromeCdpPollIntervalMs, 250);
+    const pollIntervalMs = Math.max(this.chromeConfig.chromeCdpPollIntervalMs, 250);
 
     while (!isShuttingDown()) {
       try {
@@ -163,13 +163,13 @@ export class ChromiumNetworkHeadersService {
   }
 
   private buildOverrides(): HeaderOverrides {
-    const requestedUserAgent = this.configuration.chromeUserAgent;
+    const requestedUserAgent = this.chromeConfig.chromeUserAgent;
     const browserBinary = this.chromiumUserAgentTlsService.resolveBrowserBinary();
     const browserVersion = this.chromiumUserAgentTlsService.getBrowserVersion(browserBinary);
     const userAgent = this.chromiumUserAgentTlsService.resolveUserAgentForHeaders(requestedUserAgent, browserVersion);
-    const acceptLanguage = this.configuration.chromeAcceptLanguage;
+    const acceptLanguage = this.chromeConfig.chromeAcceptLanguage;
     const cdpAcceptLanguage = this.toCdpAcceptLanguage(acceptLanguage);
-    const extraHeaders = { ...this.configuration.chromeExtraHeaders };
+    const extraHeaders = { ...this.chromeConfig.chromeExtraHeaders };
 
     const userAgentMetadata = userAgent ? this.buildUserAgentMetadata(userAgent) : undefined;
     const platform = userAgent ? this.buildNavigatorPlatform(userAgent) : undefined;

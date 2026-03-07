@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class PropertyDetailInteractionService {
@@ -12,7 +12,7 @@ export class PropertyDetailInteractionService {
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly scraperConfig: ScraperConfig,
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
@@ -31,20 +31,20 @@ export class PropertyDetailInteractionService {
   }
 
   private async extendAllPhotos(runtime: RuntimeClient): Promise<void> {
-    await this.sleep(this.configuration.propertyDetailPagePreMediaExpansionWaitMs);
+    await this.sleep(this.scraperConfig.propertyDetailPagePreMediaExpansionWaitMs);
     const clickedCount = await this.clickAllMorePhotosIfExists(runtime);
     if (clickedCount === 0) {
       return;
     }
 
-    await this.sleep(this.configuration.propertyDetailPageScrollIntervalMs);
+    await this.sleep(this.scraperConfig.propertyDetailPageScrollIntervalMs);
     await this.scrollPageToBottomAndBackToTop(runtime);
   }
 
   private async waitForImagesToLoad(runtime: RuntimeClient): Promise<void> {
-    await this.sleep(this.configuration.propertyDetailPageImagesLoadWaitMs);
+    await this.sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
 
-    const timeoutMs = Math.max(this.configuration.propertyDetailPageImagesLoadWaitMs * 4, 8000);
+    const timeoutMs = Math.max(this.scraperConfig.propertyDetailPageImagesLoadWaitMs * 4, 8000);
     const start = Date.now();
     let stableIterations = 0;
     let previousLoaded = -1;
@@ -96,15 +96,15 @@ export class PropertyDetailInteractionService {
 
       previousLoaded = progress.loaded;
       previousTotal = progress.total;
-      await this.sleep(Math.max(150, this.configuration.propertyDetailPageScrollIntervalMs));
+      await this.sleep(Math.max(150, this.scraperConfig.propertyDetailPageScrollIntervalMs));
     }
 
     this.logger.warn('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
   }
 
   private async scrollPageToBottomAndBackToTop(runtime: RuntimeClient): Promise<void> {
-    const events = Math.max(1, this.configuration.propertyDetailPageScrollEvents);
-    const interval = Math.max(0, this.configuration.propertyDetailPageScrollIntervalMs);
+    const events = Math.max(1, this.scraperConfig.propertyDetailPageScrollEvents);
+    const interval = Math.max(0, this.scraperConfig.propertyDetailPageScrollIntervalMs);
 
     for (let step = 0; step <= events; step += 1) {
       const progress = step / events;
@@ -159,7 +159,7 @@ export class PropertyDetailInteractionService {
       }
 
       clicks += 1;
-      await this.sleep(this.configuration.propertyDetailPageMorePhotosClickWaitMs);
+      await this.sleep(this.scraperConfig.propertyDetailPageMorePhotosClickWaitMs);
     }
 
     return clicks;

@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
@@ -25,7 +26,8 @@ export class SearchResultsPreparationService {
   private firstHomePageWaitApplied = false;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly scraperConfig: ScraperConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
@@ -40,13 +42,13 @@ export class SearchResultsPreparationService {
     });
     const currentUrl = String(locationResult.result?.value ?? '');
     this.logger.log(`Current page URL before automation: ${currentUrl}`);
-    if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
-      await page.navigate({ url: this.configuration.scraperHomeUrl });
+    if (!currentUrl.startsWith(this.scraperConfig.scraperHomeUrl)) {
+      await page.navigate({ url: this.scraperConfig.scraperHomeUrl });
       await this.chromiumPageSyncService.waitForPageLoad(
         page,
         runtime,
-        this.configuration.chromeCdpReadyTimeoutMs,
-        this.configuration.chromeCdpPollIntervalMs
+        this.chromeConfig.chromeCdpReadyTimeoutMs,
+        this.chromeConfig.chromeCdpPollIntervalMs
       );
       await this.captchaDetectorService.panicIfCaptchaDetected({
         runtime,
@@ -66,8 +68,8 @@ export class SearchResultsPreparationService {
     await this.chromiumPageSyncService.waitForExpression(
       runtime,
       "Boolean(document.querySelector('#aside-filters'))",
-      this.configuration.chromeExpressionTimeoutMs,
-      this.configuration.chromeExpressionPollIntervalMs
+      this.chromeConfig.chromeExpressionTimeoutMs,
+      this.chromeConfig.chromeExpressionPollIntervalMs
     );
     await this.filtersService.execute(client);
   }
@@ -78,7 +80,7 @@ export class SearchResultsPreparationService {
     }
 
     this.firstHomePageWaitApplied = true;
-    const waitMs = this.configuration.mainPageFirstLoadDeviceVerificationWaitMs;
+    const waitMs = this.scraperConfig.mainPageFirstLoadDeviceVerificationWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);
 
     this.logger.log(
@@ -100,8 +102,8 @@ export class SearchResultsPreparationService {
         this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
         await this.mainPageService.execute(
           client,
-          this.configuration.mainSearchArea,
-          this.configuration.scraperHomeUrl
+          this.scraperConfig.mainSearchArea,
+          this.scraperConfig.scraperHomeUrl
         );
         await this.recoverIfOriginError(page, runtime);
         return;
@@ -116,18 +118,18 @@ export class SearchResultsPreparationService {
         this.logger.warn(
           `Main page flow failed (attempt ${attempt}/${maxAttempts}): ${message}. Reloading home and retrying.`
         );
-        await this.chromiumPageSyncService.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
+        await this.chromiumPageSyncService.sleep(this.chromeConfig.chromeOriginErrorReloadWaitMs);
 
         if (isOriginErrorVisible) {
           await page.reload({ ignoreCache: true });
         } else {
-          await page.navigate({ url: this.configuration.scraperHomeUrl });
+          await page.navigate({ url: this.scraperConfig.scraperHomeUrl });
         }
         await this.chromiumPageSyncService.waitForPageLoad(
           page,
           runtime,
-          this.configuration.chromeCdpReadyTimeoutMs,
-          this.configuration.chromeCdpPollIntervalMs
+          this.chromeConfig.chromeCdpReadyTimeoutMs,
+          this.chromeConfig.chromeCdpPollIntervalMs
         );
       }
     }
@@ -143,13 +145,13 @@ export class SearchResultsPreparationService {
       }
 
       this.logger.warn(`Detected origin error page (attempt ${attempt}/${maxRetries}). Reloading in 1 second.`);
-      await this.chromiumPageSyncService.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
+      await this.chromiumPageSyncService.sleep(this.chromeConfig.chromeOriginErrorReloadWaitMs);
       await page.reload({ ignoreCache: true });
       await this.chromiumPageSyncService.waitForPageLoad(
         page,
         runtime,
-        this.configuration.chromeCdpReadyTimeoutMs,
-        this.configuration.chromeCdpPollIntervalMs
+        this.chromeConfig.chromeCdpReadyTimeoutMs,
+        this.chromeConfig.chromeCdpPollIntervalMs
       );
     }
 

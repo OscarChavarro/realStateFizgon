@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { MongoConfig } from 'src/infrastructure/config/mongo.config';
 import { Property } from 'src/domain/property/property.model';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
 
@@ -14,7 +15,8 @@ export class MongoDatabaseService implements OnModuleDestroy {
   private propertiesCollection?: Collection<Property & Document>;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly mongoConfig: MongoConfig,
     private readonly rabbitMqService: RabbitMqService
   ) {}
 
@@ -184,7 +186,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
   }
 
   async validateConnectionOrExit(): Promise<void> {
-    const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+    const waitMs = this.chromeConfig.chromeBrowserLaunchRetryWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);
 
     while (true) {
@@ -225,11 +227,11 @@ export class MongoDatabaseService implements OnModuleDestroy {
       return;
     }
 
-    this.mongoClient = new MongoClient(this.configuration.mongoConnectionUri);
+    this.mongoClient = new MongoClient(this.mongoConfig.mongoConnectionUri);
     await this.mongoClient.connect();
-    this.database = this.mongoClient.db(this.configuration.mongoDatabase);
+    this.database = this.mongoClient.db(this.mongoConfig.mongoDatabase);
     this.propertiesCollection = this.database.collection<Property & Document>(MongoDatabaseService.PROPERTIES_COLLECTION);
-    this.logger.log(`Connected to MongoDB database "${this.configuration.mongoDatabase}".`);
+    this.logger.log(`Connected to MongoDB database "${this.mongoConfig.mongoDatabase}".`);
   }
 
   private async ensurePropertiesCollectionAndUrlIndex(): Promise<void> {

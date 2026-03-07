@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 @Injectable()
 export class ChromiumFailureGuardService {
@@ -8,7 +8,7 @@ export class ChromiumFailureGuardService {
   private debugHoldInProgress = false;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
@@ -69,7 +69,7 @@ export class ChromiumFailureGuardService {
 
     for (let i = 0; i < attempts; i += 1) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
+      const timer = setTimeout(() => controller.abort(), this.chromeConfig.chromeCdpRequestTimeoutMs);
       try {
         const response = await fetch(`http://${cdpHost}:${cdpPort}/json/version`, {
           signal: controller.signal

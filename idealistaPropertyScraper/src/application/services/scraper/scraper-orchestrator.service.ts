@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
@@ -10,6 +9,7 @@ import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class ScraperOrchestratorService {
@@ -17,7 +17,7 @@ export class ScraperOrchestratorService {
   private readonly browserFailureHoldMs = 60 * 60 * 1000;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly scraperConfig: ScraperConfig,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
@@ -79,7 +79,7 @@ export class ScraperOrchestratorService {
       await Runtime.enable();
       await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
-      await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
+      await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.scraperConfig.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
       await this.imageDownloader.initializeNetworkCapture(client);
       await Page.bringToFront();

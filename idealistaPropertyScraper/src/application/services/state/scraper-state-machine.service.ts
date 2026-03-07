@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class ScraperStateMachineService {
@@ -9,8 +9,8 @@ export class ScraperStateMachineService {
   private currentState: ScraperState;
   private readonly requestedStateQueue: ScraperState[] = [];
 
-  constructor(private readonly configuration: Configuration) {
-    this.currentState = configuration.initialScraperState;
+  constructor(private readonly scraperConfig: ScraperConfig) {
+    this.currentState = scraperConfig.initialScraperState;
     this.logger.log(`Initial scraper state set to: ${this.currentState}.`);
   }
 

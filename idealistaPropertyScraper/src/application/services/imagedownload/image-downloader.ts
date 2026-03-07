@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { Property } from 'src/domain/property/property.model';
 import { DownloadedIncomingImage } from 'src/application/services/imagedownload/downloaded-incoming-image.type';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
@@ -14,6 +13,8 @@ import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class ImageDownloader {
@@ -21,7 +22,8 @@ export class ImageDownloader {
   private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly scraperConfig: ScraperConfig,
     private readonly imageDownloadPathService: ImageDownloadPathService,
     private readonly imageUrlRulesService: ImageUrlRulesService,
     private readonly imageFileNameService: ImageFileNameService,
@@ -30,8 +32,8 @@ export class ImageDownloader {
   ) {}
 
   async validateImageDownloadFolder(): Promise<void> {
-    const configuredFolder = this.configuration.imageDownloadFolder;
-    const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+    const configuredFolder = this.scraperConfig.imageDownloadFolder;
+    const waitMs = this.chromeConfig.chromeBrowserLaunchRetryWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);
 
     while (true) {
@@ -94,8 +96,8 @@ export class ImageDownloader {
       return;
     }
 
-    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.configuration.imageDownloadFolder);
-    const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.configuration.imageDownloadFolder), propertyId);
+    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
+    const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.scraperConfig.imageDownloadFolder), propertyId);
     await mkdir(propertyFolderPath, { recursive: true });
 
     for (const image of property.images) {
@@ -159,7 +161,7 @@ export class ImageDownloader {
       return;
     }
 
-    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.configuration.imageDownloadFolder);
+    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
     const filename = this.imageFileNameService.buildImageFilename(url, mimeType);
     const filepath = join(incomingFolderPath, filename);
     await writeFile(filepath, bytes);
@@ -180,7 +182,7 @@ export class ImageDownloader {
   }
 
   private async moveRemainingIncomingToLeftovers(incomingFolderPath: string): Promise<void> {
-    const leftoversFolderPath = this.imageDownloadPathService.getLeftoversFolderPath(this.configuration.imageDownloadFolder);
+    const leftoversFolderPath = this.imageDownloadPathService.getLeftoversFolderPath(this.scraperConfig.imageDownloadFolder);
     await mkdir(leftoversFolderPath, { recursive: true });
     const entries = await readdir(incomingFolderPath, { withFileTypes: true });
 

@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class HomeSearchPreparationFlowService {
@@ -13,7 +14,8 @@ export class HomeSearchPreparationFlowService {
   private readonly initialHardeningStabilizationWaitMs = 5000;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly scraperConfig: ScraperConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
@@ -44,25 +46,25 @@ export class HomeSearchPreparationFlowService {
         await this.chromiumPageSyncService.waitForPageLoad(
           Page,
           Runtime,
-          this.configuration.chromeCdpReadyTimeoutMs,
-          this.configuration.chromeCdpPollIntervalMs
+          this.chromeConfig.chromeCdpReadyTimeoutMs,
+          this.chromeConfig.chromeCdpPollIntervalMs
         );
       }
 
       await this.chromiumNetworkHeadersService.applyHeaders(client);
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
-      await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
+      await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.scraperConfig.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
       this.logger.log(
         `Waiting ${Math.floor(this.initialHardeningStabilizationWaitMs / 1000)} seconds after hardening before first target navigation.`
       );
       await this.chromiumPageSyncService.sleep(this.initialHardeningStabilizationWaitMs);
-      await Page.navigate({ url: this.configuration.scraperHomeUrl });
+      await Page.navigate({ url: this.scraperConfig.scraperHomeUrl });
       await this.chromiumPageSyncService.waitForPageLoad(
         Page,
         Runtime,
-        this.configuration.chromeCdpReadyTimeoutMs,
-        this.configuration.chromeCdpPollIntervalMs
+        this.chromeConfig.chromeCdpReadyTimeoutMs,
+        this.chromeConfig.chromeCdpPollIntervalMs
       );
       this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');
     } finally {

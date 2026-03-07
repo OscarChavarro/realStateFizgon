@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 type RuntimeClient = {
   evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;
@@ -9,7 +9,7 @@ type RuntimeClient = {
 export class CookieApprovalDialogScraperService {
   private readonly logger = new Logger(CookieApprovalDialogScraperService.name);
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(private readonly scraperConfig: ScraperConfig) {}
 
   async acceptCookiesIfVisible(runtime: RuntimeClient): Promise<void> {
     const clicked = await this.evaluateExpression<boolean>(runtime, `(() => {
@@ -49,9 +49,9 @@ export class CookieApprovalDialogScraperService {
       return;
     }
 
-    await this.sleep(this.configuration.cookieApprovalDialogWaitMs);
+    await this.sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
     this.logger.log('Accepted Didomi cookie approval dialog.');
-    await this.sleep(this.configuration.cookieApprovalDialogWaitMs);
+    await this.sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
   }
 
   private async evaluateExpression<T>(runtime: RuntimeClient, expression: string): Promise<T> {

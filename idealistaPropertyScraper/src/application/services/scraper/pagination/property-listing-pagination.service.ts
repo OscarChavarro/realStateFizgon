@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class PropertyListingPaginationService {
@@ -10,7 +11,8 @@ export class PropertyListingPaginationService {
   private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
+    private readonly scraperConfig: ScraperConfig,
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
@@ -39,7 +41,7 @@ export class PropertyListingPaginationService {
         return;
       }
 
-      await this.sleep(this.configuration.paginationClickWaitMs);
+      await this.sleep(this.scraperConfig.paginationClickWaitMs);
       await this.waitForUrlChange(client, currentUrl);
       await this.waitForListingsOrPagination(client);
       await this.captchaDetectorService.panicIfCaptchaDetected({
@@ -104,8 +106,8 @@ export class PropertyListingPaginationService {
   }
 
   private async waitForUrlChange(client: CdpClient, previousUrl: string): Promise<void> {
-    const timeout = this.configuration.chromeExpressionTimeoutMs;
-    const pollInterval = this.configuration.chromeExpressionPollIntervalMs;
+    const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
+    const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
     const start = Date.now();
 
     while (Date.now() - start < timeout) {
@@ -120,8 +122,8 @@ export class PropertyListingPaginationService {
   }
 
   private async waitForListingsOrPagination(client: CdpClient): Promise<void> {
-    const timeout = this.configuration.chromeExpressionTimeoutMs;
-    const pollInterval = this.configuration.chromeExpressionPollIntervalMs;
+    const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
+    const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
     const start = Date.now();
 
     while (Date.now() - start < timeout) {

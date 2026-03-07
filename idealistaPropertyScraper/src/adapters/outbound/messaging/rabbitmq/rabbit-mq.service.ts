@@ -3,7 +3,7 @@ import { ConfirmChannel, ChannelModel, connect, Options } from 'amqplib';
 import { once } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { RabbitConfig } from 'src/infrastructure/config/rabbit.config';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
@@ -16,7 +16,7 @@ export class RabbitMqService implements OnModuleDestroy {
   private channelPromise: Promise<ConfirmChannel> | null = null;
   private shuttingDown = false;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(private readonly rabbitConfig: RabbitConfig) {}
 
   async publishPropertyUrls(urls: string[]): Promise<void> {
     if (urls.length === 0) {
@@ -26,18 +26,18 @@ export class RabbitMqService implements OnModuleDestroy {
     try {
       await this.publishWithRetry(async () => {
         const channel = await this.getChannel();
-        await channel.assertQueue(this.configuration.rabbitMqQueue, { durable: true });
+        await channel.assertQueue(this.rabbitConfig.rabbitMqQueue, { durable: true });
         for (const url of urls) {
           await this.sendWithBackpressure(
             channel,
-            this.configuration.rabbitMqQueue,
+            this.rabbitConfig.rabbitMqQueue,
             Buffer.from(url),
             { persistent: true }
           );
         }
         await channel.waitForConfirms();
-      }, this.configuration.rabbitMqQueue);
-      this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.configuration.rabbitMqQueue}".`);
+      }, this.rabbitConfig.rabbitMqQueue);
+      this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.rabbitConfig.rabbitMqQueue}".`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`RabbitMQ publish failed. URLs will be persisted locally for audit/retry. Error: ${message}`);
@@ -112,11 +112,11 @@ export class RabbitMqService implements OnModuleDestroy {
     const connectionPromise = (async () => {
       const connection = await connect({
         protocol: 'amqp',
-        hostname: this.configuration.rabbitMqHost,
-        port: this.configuration.rabbitMqPort,
-        vhost: this.configuration.rabbitMqVhost,
-        username: this.configuration.rabbitMqUser,
-        password: this.configuration.rabbitMqPassword
+        hostname: this.rabbitConfig.rabbitMqHost,
+        port: this.rabbitConfig.rabbitMqPort,
+        vhost: this.rabbitConfig.rabbitMqVhost,
+        username: this.rabbitConfig.rabbitMqUser,
+        password: this.rabbitConfig.rabbitMqPassword
       });
       this.attachConnectionLifecycleHandlers(connection);
       this.connection = connection;

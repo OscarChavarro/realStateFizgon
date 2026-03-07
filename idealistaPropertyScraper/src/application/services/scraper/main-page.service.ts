@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class MainPageService {
   private readonly logger = new Logger(MainPageService.name);
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly scraperConfig: ScraperConfig,
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
@@ -79,7 +79,7 @@ export class MainPageService {
     );
     this.logger.log('Step 2/3 completed.');
 
-    await new Promise((resolve) => setTimeout(resolve, this.configuration.mainPageSearchClickWaitMs));
+    await new Promise((resolve) => setTimeout(resolve, this.scraperConfig.mainPageSearchClickWaitMs));
 
     await this.waitForExpression(
       client,
@@ -121,7 +121,7 @@ export class MainPageService {
   }
 
   private async waitForExpression(client: CdpClient, expression: string): Promise<void> {
-    const timeout = this.configuration.mainPageExpressionTimeoutMs;
+    const timeout = this.scraperConfig.mainPageExpressionTimeoutMs;
     const start = Date.now();
     let lastCurrentUrl = '';
     let lastTitle = '';
@@ -160,7 +160,7 @@ export class MainPageService {
         return;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, this.configuration.mainPageExpressionPollIntervalMs));
+      await new Promise((resolve) => setTimeout(resolve, this.scraperConfig.mainPageExpressionPollIntervalMs));
     }
 
     throw new Error(

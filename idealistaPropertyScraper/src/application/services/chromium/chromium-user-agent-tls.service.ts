@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 type LoggerLike = {
   log(message: string): void;
@@ -16,14 +16,14 @@ export class ChromiumUserAgentTlsService {
   private cachedBrowserVersion?: string;
   private cachedBrowserVersionBinary?: string;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(private readonly chromeConfig: ChromeConfig) {}
 
   resolveBrowserBinary(logger?: LoggerLike): string {
     if (this.resolvedBrowserBinary) {
       return this.resolvedBrowserBinary;
     }
 
-    const configuredBinary = this.configuration.chromeBinary;
+    const configuredBinary = this.chromeConfig.chromeBinary;
     const isLinuxArm64 = process.platform === 'linux' && process.arch === 'arm64';
 
     if (!isLinuxArm64) {

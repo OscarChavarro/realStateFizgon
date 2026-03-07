@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ProxyService } from '@real-state-fizgon/proxy';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 @Injectable()
 export class InfrastructurePreCheckService {
@@ -10,17 +10,17 @@ export class InfrastructurePreCheckService {
   private readonly proxyService = new ProxyService();
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly mongoDatabaseService: MongoDatabaseService,
     private readonly imageDownloader: ImageDownloader
   ) {}
 
   async runBeforeScraperStartup(): Promise<void> {
     await this.proxyService.validateProxyAccessOrWait({
-      enabled: this.configuration.proxyEnabled,
-      host: this.configuration.proxyHost,
-      port: this.configuration.proxyPort,
-      retryWaitMs: this.configuration.chromeBrowserLaunchRetryWaitMs,
+      enabled: this.chromeConfig.proxyEnabled,
+      host: this.chromeConfig.proxyHost,
+      port: this.chromeConfig.proxyPort,
+      retryWaitMs: this.chromeConfig.chromeBrowserLaunchRetryWaitMs,
       logger: this.logger
     });
 

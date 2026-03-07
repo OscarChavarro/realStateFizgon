@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {
@@ -13,7 +13,7 @@ export class ChromiumProcessLifecycleService {
   private chromeStderrFd?: number;
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
   ) {}
 
@@ -34,7 +34,7 @@ export class ChromiumProcessLifecycleService {
         const chromiumOptions = this.resolveChromiumOptions(browserBinary);
         this.chromeProcess = spawn(browserBinary, [
           `--remote-debugging-port=${cdpPort}`,
-          `--user-data-dir=${this.configuration.chromePath}`,
+          `--user-data-dir=${this.chromeConfig.chromePath}`,
           '--no-first-run',
           '--no-default-browser-check',
           '--new-window',
@@ -52,7 +52,7 @@ export class ChromiumProcessLifecycleService {
         this.closeChromeLogFds();
 
         if (this.isBrowserBinaryMissingError(error)) {
-          const waitMs = this.configuration.chromeBrowserLaunchRetryWaitMs;
+          const waitMs = this.chromeConfig.chromeBrowserLaunchRetryWaitMs;
           this.logger.error(
             `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
           );
@@ -93,12 +93,12 @@ export class ChromiumProcessLifecycleService {
   }
 
   private resolveChromiumOptions(browserBinary: string): string[] {
-    const configuredOptions = this.configuration.chromiumOptions;
+    const configuredOptions = this.chromeConfig.chromiumOptions;
     const baseOptions = configuredOptions.filter(
       (option) => !option.startsWith('--user-agent=')
     );
     const requestedUserAgent =
-      this.configuration.chromeUserAgent || this.extractUserAgentOption(configuredOptions);
+      this.chromeConfig.chromeUserAgent || this.extractUserAgentOption(configuredOptions);
     const browserVersion = this.chromiumUserAgentTlsService.getBrowserVersion(browserBinary, this.logger);
     const resolvedUserAgent = this.chromiumUserAgentTlsService.resolveUserAgentForLaunch(
       requestedUserAgent,

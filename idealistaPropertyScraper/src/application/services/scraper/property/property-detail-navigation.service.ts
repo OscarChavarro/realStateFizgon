@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 @Injectable()
 export class PropertyDetailNavigationService {
@@ -16,7 +16,7 @@ export class PropertyDetailNavigationService {
     return complete && hasResults;
   })()`;
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(private readonly chromeConfig: ChromeConfig) {}
 
   async clickPropertyLinkFromResults(runtime: RuntimeClient, targetUrl: string): Promise<boolean> {
     return await this.evaluateExpression<boolean>(runtime, `(() => {
@@ -66,7 +66,7 @@ export class PropertyDetailNavigationService {
   }
 
   async waitForDetailUrlAndDomComplete(runtime: RuntimeClient, targetUrl: string): Promise<void> {
-    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
+    const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
     const start = Date.now();
 
     while (Date.now() - start < timeout) {
@@ -82,7 +82,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await this.sleep(this.configuration.chromeCdpPollIntervalMs);
+      await this.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
@@ -102,7 +102,7 @@ export class PropertyDetailNavigationService {
       returnByValue: true
     });
 
-    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
+    const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
     const start = Date.now();
     while (Date.now() - start < timeout) {
       const isReady = await this.evaluateExpression<boolean>(runtime, PropertyDetailNavigationService.SEARCH_RESULTS_READY_EXPRESSION);
@@ -111,7 +111,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await this.sleep(this.configuration.chromeCdpPollIntervalMs);
+      await this.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error('Timeout waiting to return to search results after detail processing.');

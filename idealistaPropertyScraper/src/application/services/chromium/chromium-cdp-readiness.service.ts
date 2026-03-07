@@ -1,24 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Configuration } from 'src/infrastructure/config/configuration';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
+import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 
 @Injectable()
 export class ChromiumCdpReadinessService {
   private readonly logger = new Logger(ChromiumCdpReadinessService.name);
 
   constructor(
-    private readonly configuration: Configuration,
+    private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
   async waitForReadyEndpoint(host: string, port: number): Promise<void> {
-    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
+    const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
     const start = Date.now();
     let lastError: unknown;
 
     while (Date.now() - start < timeout) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
+      const timer = setTimeout(() => controller.abort(), this.chromeConfig.chromeCdpRequestTimeoutMs);
 
       try {
         const response = await fetch(`http://${host}:${port}/json/version`, {
@@ -35,7 +35,7 @@ export class ChromiumCdpReadinessService {
         clearTimeout(timer);
       }
 
-      await this.chromiumPageSyncService.sleep(this.configuration.chromeCdpPollIntervalMs);
+      await this.chromiumPageSyncService.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error(

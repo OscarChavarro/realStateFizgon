@@ -7,7 +7,7 @@ import { FilterUpdateService } from 'src/application/services/scraper/filters/fi
 import { Filter } from 'src/application/services/scraper/filters/filter.interface';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
-import { Configuration } from 'src/infrastructure/config/configuration';
+import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
 
 @Injectable()
 export class FiltersService {
@@ -19,7 +19,7 @@ export class FiltersService {
     private readonly filterUpdateService: FilterUpdateService,
     private readonly filterAvailableOptionExtractor: FilterAvailableOptionExtractor,
     private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractor,
-    private readonly configuration: Configuration
+    private readonly scraperConfig: ScraperConfig
   ) {
     this.applyConfiguredFilterDefinitions();
   }
@@ -211,7 +211,7 @@ export class FiltersService {
 
   private applyConfiguredFilterDefinitions(): void {
     for (const filter of this.preloadedFiltersFromConfiguration.getSupportedFilters()) {
-      const definition = this.configuration.getFilterDefinitionByName(filter.getName());
+      const definition = this.scraperConfig.getFilterDefinitionByName(filter.getName());
       if (!definition) {
         continue;
       }

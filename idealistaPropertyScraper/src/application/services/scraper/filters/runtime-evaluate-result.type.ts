@@ -4,5 +4,6 @@ export type RuntimeEvaluateResult = {
   };
   result?: {
     value?: unknown;
+    description?: string;
   };
 };

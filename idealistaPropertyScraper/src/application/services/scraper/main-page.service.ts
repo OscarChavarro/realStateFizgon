@@ -1,23 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
-
-type RuntimeEvaluateResult = {
-  exceptionDetails?: {
-    text?: string;
-  };
-  result?: {
-    value?: unknown;
-    description?: string;
-  };
-};
-
-type CdpClient = {
-  Runtime: {
-    enable(): Promise<void>;
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
-  };
-};
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
 @Injectable()
 export class MainPageService {

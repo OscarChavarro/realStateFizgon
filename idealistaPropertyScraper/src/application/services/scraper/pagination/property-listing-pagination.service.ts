@@ -2,24 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-
-type RuntimeEvaluateResult = {
-  exceptionDetails?: {
-    text?: string;
-  };
-  result?: {
-    value?: unknown;
-  };
-};
-
-type CdpClient = {
-  Page: {
-    bringToFront(): Promise<void>;
-  };
-  Runtime: {
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
-  };
-};
+import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 
 @Injectable()
 export class PropertyListingPaginationService {

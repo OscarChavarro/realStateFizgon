@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
@@ -15,17 +16,6 @@ type PageDomain = {
   navigate(params: { url: string }): Promise<void>;
   reload(params?: { ignoreCache?: boolean }): Promise<void>;
   loadEventFired(cb: () => void): void;
-};
-
-type FilterClient = {
-  Page: {
-    reload(params?: { ignoreCache?: boolean }): Promise<void>;
-    loadEventFired(cb: () => void): void;
-  };
-  Runtime: {
-    enable(): Promise<void>;
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
-  };
 };
 
 @Injectable()
@@ -43,7 +33,7 @@ export class SearchResultsPreparationService {
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
-  async prepareSearchResultsWithFilters(client: FilterClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
+  async prepareSearchResultsWithFilters(client: CdpClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
     const locationResult = await runtime.evaluate({
       expression: 'window.location.href',
       returnByValue: true
@@ -93,12 +83,7 @@ export class SearchResultsPreparationService {
   }
 
   private async executeMainPageWithRetry(
-    client: {
-      Runtime: {
-        enable(): Promise<void>;
-        evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
-      };
-    },
+    client: CdpClient,
     page: PageDomain,
     runtime: RuntimeDomain
   ): Promise<void> {

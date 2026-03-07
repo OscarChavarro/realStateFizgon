@@ -1,24 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
-
-type RuntimeEvaluateResult = {
-  exceptionDetails?: {
-    text?: string;
-  };
-  result?: {
-    value?: unknown;
-  };
-};
-
-type CdpClient = {
-  Runtime: {
-    evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<RuntimeEvaluateResult>;
-  };
-  Page: {
-    reload(params?: { ignoreCache?: boolean }): Promise<void>;
-    loadEventFired(cb: () => void): void;
-  };
-};
+import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
 @Injectable()
 export class FilterLoaderDetectionService {

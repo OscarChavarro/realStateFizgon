@@ -14,6 +14,7 @@ import { SearchResultsPreparationService } from 'src/application/services/scrape
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
+import { ScraperCdpClient } from 'src/application/services/scraper/chromium/scraper-cdp-client.type';
 
 @Injectable()
 export class ChromiumService implements OnModuleInit, OnModuleDestroy {
@@ -173,7 +174,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(`Loading initial home page on target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
-    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
 
     try {
       const { Page, Runtime } = client;
@@ -211,7 +212,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
-    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
 
     try {
       const { Page, Runtime } = client;
@@ -221,15 +222,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
-      await this.imageDownloader.initializeNetworkCapture(client as unknown as {
-        Network: {
-          enable(): Promise<void>;
-          responseReceived(callback: (event: unknown) => void): void;
-          loadingFinished(callback: (event: unknown) => void): void;
-          loadingFailed(callback: (event: unknown) => void): void;
-          getResponseBody(params: { requestId: string }): Promise<{ body: string; base64Encoded: boolean }>;
-        };
-      });
+      await this.imageDownloader.initializeNetworkCapture(client);
       await Page.bringToFront();
       await this.searchResultsPreparationService.prepareSearchResultsWithFilters(client, Page, Runtime);
       await this.propertyListingPaginationService.execute(client);
@@ -247,7 +240,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')} for UPDATING_PROPERTIES state.`);
-    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget });
+    const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
 
     try {
       const { Page, Runtime } = client;
@@ -257,15 +250,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.configuration.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
-      await this.imageDownloader.initializeNetworkCapture(client as unknown as {
-        Network: {
-          enable(): Promise<void>;
-          responseReceived(callback: (event: unknown) => void): void;
-          loadingFinished(callback: (event: unknown) => void): void;
-          loadingFailed(callback: (event: unknown) => void): void;
-          getResponseBody(params: { requestId: string }): Promise<{ body: string; base64Encoded: boolean }>;
-        };
-      });
+      await this.imageDownloader.initializeNetworkCapture(client);
       await Page.bringToFront();
       await this.searchResultsPreparationService.prepareSearchResultsWithFilters(client, Page, Runtime);
 

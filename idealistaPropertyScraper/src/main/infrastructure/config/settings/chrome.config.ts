@@ -43,7 +43,7 @@ export class ChromeConfig {
   }
 
   get chromiumOptions(): string[] {
-    const baseOptions = this.configurationSourceService.environment.chrome.chromiumOptions ?? [];
+    const baseOptions = this.configurationSourceService.secrets.chrome?.chromiumOptions ?? [];
     return [...baseOptions, ...this.chromiumProxyOptions(), ...this.chromiumUserAgentOptions()];
   }
 

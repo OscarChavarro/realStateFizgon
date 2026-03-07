@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
 export const EnvironmentChromeSchema = z.object({
-  binary: z.string().min(1, 'chrome.binary is required.'),
-  chromiumOptions: z.array(z.string()).optional()
+  binary: z.string().min(1, 'chrome.binary is required.')
 }).strict();
 
 export const EnvironmentChromeTimeoutSchema = z.object({
@@ -25,6 +24,7 @@ export const SecretsProxySchema = z.object({
 
 export const SecretsChromeSchema = z.object({
   path: z.string().optional(),
+  chromiumOptions: z.array(z.string()).optional(),
   userAgent: z.string().optional(),
   acceptLanguage: z.string().optional(),
   extraHeaders: z.record(z.string(), z.string()).optional()

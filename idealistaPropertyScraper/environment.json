@@ -4,17 +4,7 @@
     "httpPort": 8080
   },
   "chrome": {
-    "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "chromiumOptions": [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--enable-webgl",
-      "--ignore-gpu-blocklist",
-      "--use-gl=swiftshader",
-      "--use-angle=swiftshader",
-      "--window-size=1920,1080"
-    ]
+    "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
   },
   "rabbitmq": {
     "host": "localhost",

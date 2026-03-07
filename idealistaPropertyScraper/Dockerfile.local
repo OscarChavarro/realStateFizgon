@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-sandbox \
+    dbus \
     dbus-x11 \
     dnsutils \
     dumb-init \

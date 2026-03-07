@@ -25,7 +25,9 @@ function registerSrcAlias(mode) {
     if (typeof request === 'string' && request.startsWith('src/')) {
       const packageRoot = findPackageRoot(parent && parent.filename ? parent.filename : undefined);
       const suffix = request.slice(4);
-      const targetBaseDir = mode === 'dev' ? path.join(packageRoot, 'src') : path.join(packageRoot, 'dist');
+      const targetBaseDir = mode === 'dev'
+        ? path.join(packageRoot, 'src', 'main')
+        : path.join(packageRoot, 'dist');
       const mappedRequest = path.join(targetBaseDir, suffix);
       return originalResolveFilename.call(this, mappedRequest, parent, isMain, options);
     }

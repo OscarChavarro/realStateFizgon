@@ -11,7 +11,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "src/*": ["src/*"]
+      "src/*": ["src/main/*"]
     },
     "incremental": true,
     "strict": true,
@@ -19,6 +19,6 @@
     "moduleResolution": "node",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["src/main/**/*.ts", "src/main/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

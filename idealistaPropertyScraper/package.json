@@ -7,7 +7,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
     "start": "node -r ./scripts/runtime/register-src-dist.cjs dist/main.js",
-    "start:dev": "ts-node -r ./scripts/runtime/register-src-dev.cjs src/main.ts"
+    "start:dev": "ts-node -r ./scripts/runtime/register-src-dev.cjs src/main/main.ts"
   },
   "dependencies": {
     "@nestjs/common": "11.1.14",

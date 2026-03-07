@@ -1,11 +1,54 @@
 import { Injectable } from '@nestjs/common';
 
+type CdpPageDomain = {
+  loadEventFired(cb: () => void): void;
+};
+
+type CdpRuntimeDomain = {
+  evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{
+    exceptionDetails?: { text?: string };
+    result?: { value?: unknown };
+  }>;
+};
+
 @Injectable()
 export class ChromiumPageSyncService {
-  async waitForPageLoad(page: { loadEventFired(cb: () => void): void }): Promise<void> {
-    await new Promise<void>((resolve) => {
-      page.loadEventFired(() => resolve());
+  async waitForPageLoad(
+    page: CdpPageDomain,
+    runtime?: CdpRuntimeDomain,
+    timeoutMs = 30000,
+    pollIntervalMs = 100
+  ): Promise<void> {
+    const safeTimeoutMs = Math.max(1000, timeoutMs);
+    const safePollIntervalMs = Math.max(50, pollIntervalMs);
+    const start = Date.now();
+    let loadEventReceived = false;
+
+    if (runtime && await this.isDocumentReady(runtime)) {
+      return;
+    }
+
+    page.loadEventFired(() => {
+      loadEventReceived = true;
     });
+
+    if (runtime && await this.isDocumentReady(runtime)) {
+      return;
+    }
+
+    while (Date.now() - start < safeTimeoutMs) {
+      if (loadEventReceived) {
+        return;
+      }
+
+      if (runtime && await this.isDocumentReady(runtime)) {
+        return;
+      }
+
+      await this.sleep(safePollIntervalMs);
+    }
+
+    throw new Error(`Timeout waiting for page load after ${safeTimeoutMs}ms.`);
   }
 
   async waitForExpression(
@@ -34,5 +77,22 @@ export class ChromiumPageSyncService {
 
   async sleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async isDocumentReady(runtime: CdpRuntimeDomain): Promise<boolean> {
+    try {
+      const evaluation = await runtime.evaluate({
+        expression: "document.readyState === 'complete'",
+        returnByValue: true
+      });
+
+      if (evaluation.exceptionDetails?.text) {
+        return false;
+      }
+
+      return evaluation.result?.value === true;
+    } catch {
+      return false;
+    }
   }
 }

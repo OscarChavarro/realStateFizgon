@@ -42,7 +42,12 @@ export class SearchResultsPreparationService {
     this.logger.log(`Current page URL before automation: ${currentUrl}`);
     if (!currentUrl.startsWith(this.configuration.scraperHomeUrl)) {
       await page.navigate({ url: this.configuration.scraperHomeUrl });
-      await this.chromiumPageSyncService.waitForPageLoad(page);
+      await this.chromiumPageSyncService.waitForPageLoad(
+        page,
+        runtime,
+        this.configuration.chromeCdpReadyTimeoutMs,
+        this.configuration.chromeCdpPollIntervalMs
+      );
       await this.captchaDetectorService.panicIfCaptchaDetected({
         runtime,
         logger: this.logger,
@@ -118,7 +123,12 @@ export class SearchResultsPreparationService {
         } else {
           await page.navigate({ url: this.configuration.scraperHomeUrl });
         }
-        await this.chromiumPageSyncService.waitForPageLoad(page);
+        await this.chromiumPageSyncService.waitForPageLoad(
+          page,
+          runtime,
+          this.configuration.chromeCdpReadyTimeoutMs,
+          this.configuration.chromeCdpPollIntervalMs
+        );
       }
     }
   }
@@ -135,7 +145,12 @@ export class SearchResultsPreparationService {
       this.logger.warn(`Detected origin error page (attempt ${attempt}/${maxRetries}). Reloading in 1 second.`);
       await this.chromiumPageSyncService.sleep(this.configuration.chromeOriginErrorReloadWaitMs);
       await page.reload({ ignoreCache: true });
-      await this.chromiumPageSyncService.waitForPageLoad(page);
+      await this.chromiumPageSyncService.waitForPageLoad(
+        page,
+        runtime,
+        this.configuration.chromeCdpReadyTimeoutMs,
+        this.configuration.chromeCdpPollIntervalMs
+      );
     }
 
     throw new Error('Origin error page persisted after automatic reload attempts.');

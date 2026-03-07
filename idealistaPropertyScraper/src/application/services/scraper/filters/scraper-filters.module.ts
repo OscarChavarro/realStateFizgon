@@ -7,10 +7,11 @@ import { FilterSelectionReaderService } from 'src/application/services/scraper/f
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
+import { ScraperChromiumModule } from 'src/application/services/scraper/chromium/scraper-chromium.module';
 import { ConfigurationModule } from 'src/infrastructure/config/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule],
+  imports: [ConfigurationModule, ScraperChromiumModule],
   providers: [
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractor,

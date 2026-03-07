@@ -188,7 +188,12 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       if (initialUrlValue !== 'about:blank') {
         this.logger.warn(`Initial target URL is "${initialUrlValue}". Forcing about:blank before first hardened navigation.`);
         await Page.navigate({ url: 'about:blank' });
-        await this.chromiumPageSyncService.waitForPageLoad(Page);
+        await this.chromiumPageSyncService.waitForPageLoad(
+          Page,
+          Runtime,
+          this.configuration.chromeCdpReadyTimeoutMs,
+          this.configuration.chromeCdpPollIntervalMs
+        );
       }
 
       await this.chromiumNetworkHeadersService.applyHeaders(client);
@@ -198,7 +203,12 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Waiting ${Math.floor(this.initialHardeningStabilizationWaitMs / 1000)} seconds after hardening before first target navigation.`);
       await this.chromiumPageSyncService.sleep(this.initialHardeningStabilizationWaitMs);
       await Page.navigate({ url: this.configuration.scraperHomeUrl });
-      await this.chromiumPageSyncService.waitForPageLoad(Page);
+      await this.chromiumPageSyncService.waitForPageLoad(
+        Page,
+        Runtime,
+        this.configuration.chromeCdpReadyTimeoutMs,
+        this.configuration.chromeCdpPollIntervalMs
+      );
       this.logger.log('Initial home page load complete. Scraper will remain idle until requested.');
     } finally {
       await client.close();

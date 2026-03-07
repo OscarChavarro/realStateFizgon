@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 
 @Injectable()
 export class FilterLoaderDetectionService {
   private readonly logger = new Logger(FilterLoaderDetectionService.name);
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly chromiumPageSyncService: ChromiumPageSyncService
+  ) {}
 
   async waitForPostClickStabilityOrReload(client: CdpClient): Promise<boolean> {
     await this.sleep(this.configuration.filterStateClickWaitMs);
@@ -20,7 +24,12 @@ export class FilterLoaderDetectionService {
       `Restarting page because #listing-loading stayed visible for more than ${this.configuration.filterListingLoadingTimeoutMs}ms.`
     );
     await client.Page.reload({ ignoreCache: true });
-    await this.waitForPageLoad(client);
+    await this.chromiumPageSyncService.waitForPageLoad(
+      client.Page,
+      client.Runtime,
+      this.configuration.filterListingLoadingTimeoutMs,
+      this.configuration.filterListingLoadingPollIntervalMs
+    );
     await this.waitForAsideFilters(client);
     return false;
   }
@@ -89,12 +98,6 @@ export class FilterLoaderDetectionService {
     }
 
     throw new Error('Timeout waiting for #aside-filters after reload.');
-  }
-
-  private async waitForPageLoad(client: CdpClient): Promise<void> {
-    await new Promise<void>((resolve) => {
-      client.Page.loadEventFired(() => resolve());
-    });
   }
 
   async scrollToTop(client: CdpClient): Promise<void> {

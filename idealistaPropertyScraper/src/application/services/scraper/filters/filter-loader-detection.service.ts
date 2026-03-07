@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class FilterLoaderDetectionService {
@@ -13,7 +14,7 @@ export class FilterLoaderDetectionService {
   ) {}
 
   async waitForPostClickStabilityOrReload(client: CdpClient): Promise<boolean> {
-    await this.sleep(this.scraperConfig.filterStateClickWaitMs);
+    await sleep(this.scraperConfig.filterStateClickWaitMs);
 
     const disappeared = await this.waitForListingLoadingToDisappear(client);
     if (disappeared) {
@@ -44,7 +45,7 @@ export class FilterLoaderDetectionService {
       if (!isVisible) {
         return true;
       }
-      await this.sleep(pollInterval);
+      await sleep(pollInterval);
     }
 
     const isVisibleAfterTimeout = await this.isListingLoadingVisible(client);
@@ -94,7 +95,7 @@ export class FilterLoaderDetectionService {
         return;
       }
 
-      await this.sleep(pollInterval);
+      await sleep(pollInterval);
     }
 
     throw new Error('Timeout waiting for #aside-filters after reload.');
@@ -111,7 +112,4 @@ export class FilterLoaderDetectionService {
     }
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

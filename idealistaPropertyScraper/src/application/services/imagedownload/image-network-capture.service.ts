@@ -4,6 +4,8 @@ import { NetworkDomain } from 'src/application/services/imagedownload/network-do
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
+import { toErrorMessage } from 'src/infrastructure/error-message';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class ImageNetworkCaptureService {
@@ -67,7 +69,7 @@ export class ImageNetworkCaptureService {
       if (this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0) {
         return;
       }
-      await this.sleep(100);
+      await sleep(100);
     }
 
     if (this.activeDownloadTasks.size > 0) {
@@ -84,12 +86,12 @@ export class ImageNetworkCaptureService {
       await this.waitForPendingImageDownloads(Math.min(quietWindowMs, 1200));
       const noPendingWork = this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0;
       if (!noPendingWork) {
-        await this.sleep(120);
+        await sleep(120);
         continue;
       }
 
       if (!this.imageNetworkActivitySeen) {
-        await this.sleep(200);
+        await sleep(200);
         continue;
       }
 
@@ -97,7 +99,7 @@ export class ImageNetworkCaptureService {
         if (Date.now() - start >= noActivityGraceMs) {
           return;
         }
-        await this.sleep(200);
+        await sleep(200);
         continue;
       }
 
@@ -106,7 +108,7 @@ export class ImageNetworkCaptureService {
         return;
       }
 
-      await this.sleep(120);
+      await sleep(120);
     }
 
     logger.warn(`Image network did not become idle in ${maxWaitMs}ms. Continuing with best-effort capture.`);
@@ -129,7 +131,7 @@ export class ImageNetworkCaptureService {
       await onImageBody({ requestId, url, mimeType, body });
       this.markImageNetworkActivity();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       logger.warn(`Failed to capture image response body for "${url}" (requestId=${requestId}): ${message}`);
     }
   }
@@ -140,7 +142,4 @@ export class ImageNetworkCaptureService {
     this.imageNetworkActivityCounter += 1;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

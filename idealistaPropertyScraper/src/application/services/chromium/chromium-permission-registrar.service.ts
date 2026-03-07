@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 type CdpBrowser = {
   grantPermissions?(params: { origin: string; permissions: string[] }): Promise<void>;
 };
@@ -79,7 +80,7 @@ export class ChromiumPermissionRegistrarService {
       this.allowedOrigins.add(origin);
       this.logger.log(`Granted geolocation permissions for ${origin}.`);
     } catch (error) {
-      this.logger.warn(`Failed to grant geolocation permissions for ${origin}. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to grant geolocation permissions for ${origin}. ${toErrorMessage(error)}`);
     } finally {
       this.pendingOrigins.delete(origin);
     }
@@ -117,11 +118,4 @@ export class ChromiumPermissionRegistrarService {
     }
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

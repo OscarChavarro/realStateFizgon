@@ -10,6 +10,7 @@ import { ChromiumPageTargetService } from 'src/application/services/chromium/chr
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ScraperOrchestratorService {
@@ -38,7 +39,7 @@ export class ScraperOrchestratorService {
       onUpdatingProperties: async () => this.runUpdateExistingPropertiesCycle(params.cdpHost, params.cdpPort),
       onLoopError: async (error: unknown) => {
         await this.chromiumFailureGuardService.holdForDebug(
-          `Scraper state loop failed. ${this.errorToMessage(error)}`,
+          `Scraper state loop failed. ${toErrorMessage(error)}`,
           this.browserFailureHoldMs,
           params.isShuttingDown
         );
@@ -89,11 +90,4 @@ export class ScraperOrchestratorService {
     }
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
 import { UserAgentOverridePayload } from 'src/application/services/chromium/user-agent-override-payload.type';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 export class UserAgentOverrideClient {
   constructor(
@@ -22,15 +23,8 @@ export class UserAgentOverrideClient {
         this.logger.warn('Neither Emulation.setUserAgentOverride nor Network.setUserAgentOverride is available.');
       }
     } catch (error) {
-      this.logger.warn(`Failed to override user agent metadata. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to override user agent metadata. ${toErrorMessage(error)}`);
     }
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

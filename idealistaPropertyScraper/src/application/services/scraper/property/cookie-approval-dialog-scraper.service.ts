@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { sleep } from 'src/infrastructure/sleep';
 
 type RuntimeClient = {
   evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;
@@ -49,9 +50,9 @@ export class CookieApprovalDialogScraperService {
       return;
     }
 
-    await this.sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
+    await sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
     this.logger.log('Accepted Didomi cookie approval dialog.');
-    await this.sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
+    await sleep(this.scraperConfig.cookieApprovalDialogWaitMs);
   }
 
   private async evaluateExpression<T>(runtime: RuntimeClient, expression: string): Promise<T> {
@@ -63,7 +64,4 @@ export class CookieApprovalDialogScraperService {
     return response.result?.value as T;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

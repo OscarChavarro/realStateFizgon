@@ -15,6 +15,8 @@ import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownl
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class ImageDownloader {
@@ -41,13 +43,13 @@ export class ImageDownloader {
         this.imageDownloadPathService.ensureWritableFolders(configuredFolder);
         return;
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         this.logger.error(`Image download folder validation failed: ${message}`);
         this.logger.error(`Check permissions, free disk space, and path configured in environment.json: "${configuredFolder}".`);
         this.logger.error(
           `NFS/shared-folder access is failing. Keeping pod alive for ${waitSeconds} seconds before retrying validation.`
         );
-        await this.sleep(waitMs);
+        await sleep(waitMs);
       }
     }
   }
@@ -201,7 +203,4 @@ export class ImageDownloader {
     }
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

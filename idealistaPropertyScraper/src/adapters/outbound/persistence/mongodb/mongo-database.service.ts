@@ -4,6 +4,7 @@ import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { MongoConfig } from 'src/infrastructure/config/mongo.config';
 import { Property } from 'src/domain/property/property.model';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy {
@@ -205,7 +206,7 @@ export class MongoDatabaseService implements OnModuleDestroy {
         this.logger.error(
           `MongoDB validation failed. Keeping pod alive for ${waitSeconds} seconds before retrying so it can be debugged in Kubernetes.`
         );
-        await this.sleep(waitMs);
+        await sleep(waitMs);
       }
     }
   }
@@ -287,10 +288,6 @@ export class MongoDatabaseService implements OnModuleDestroy {
 
   private isDuplicateKeyError(error: unknown): boolean {
     return error instanceof MongoServerError && error.code === 11000;
-  }
-
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private parseStringPriceToNumber(value: unknown): number | null {

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 export class NetworkHeaderClient {
   constructor(
@@ -15,7 +16,7 @@ export class NetworkHeaderClient {
     try {
       await this.client.Network?.enable?.();
     } catch (error) {
-      this.logger.warn(`Failed to enable Network domain. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to enable Network domain. ${toErrorMessage(error)}`);
     }
   }
 
@@ -25,15 +26,8 @@ export class NetworkHeaderClient {
         await this.client.Network.setExtraHTTPHeaders({ headers });
       }
     } catch (error) {
-      this.logger.warn(`Failed to set extra headers. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to set extra headers. ${toErrorMessage(error)}`);
     }
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

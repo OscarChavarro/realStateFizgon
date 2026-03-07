@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ImagePendingQueuePublisherService {
@@ -15,7 +16,7 @@ export class ImagePendingQueuePublisherService {
         propertyId
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       this.logger.error(`Failed enqueueing pending image URL "${url}" for property "${propertyId}": ${message}`);
     }
   }

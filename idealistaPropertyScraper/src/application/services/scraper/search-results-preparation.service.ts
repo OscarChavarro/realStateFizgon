@@ -8,6 +8,7 @@ import { PropertyListPageService } from 'src/application/services/scraper/proper
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
@@ -108,7 +109,7 @@ export class SearchResultsPreparationService {
         await this.recoverIfOriginError(page, runtime);
         return;
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         const isOriginErrorVisible = await this.hasOriginError(runtime);
 
         if (attempt === maxAttempts) {

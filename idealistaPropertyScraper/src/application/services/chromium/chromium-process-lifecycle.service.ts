@@ -4,6 +4,8 @@ import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {
@@ -56,7 +58,7 @@ export class ChromiumProcessLifecycleService {
           this.logger.error(
             `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
           );
-          await this.sleep(waitMs);
+          await sleep(waitMs);
           continue;
         }
 
@@ -88,7 +90,7 @@ export class ChromiumProcessLifecycleService {
       return true;
     }
 
-    const message = error instanceof Error ? error.message : String(error);
+    const message = toErrorMessage(error);
     return message.includes('ENOENT');
   }
 
@@ -129,7 +131,4 @@ export class ChromiumProcessLifecycleService {
     }
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

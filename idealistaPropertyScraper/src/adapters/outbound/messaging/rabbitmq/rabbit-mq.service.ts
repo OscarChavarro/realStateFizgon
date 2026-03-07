@@ -4,6 +4,7 @@ import { once } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { RabbitConfig } from 'src/infrastructure/config/rabbit.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
@@ -39,7 +40,7 @@ export class RabbitMqService implements OnModuleDestroy {
       }, this.rabbitConfig.rabbitMqQueue);
       this.logger.log(`Published ${urls.length} property URLs to RabbitMQ queue "${this.rabbitConfig.rabbitMqQueue}".`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       this.logger.error(`RabbitMQ publish failed. URLs will be persisted locally for audit/retry. Error: ${message}`);
       await this.resetConnection();
       this.persistUrlsLocally(urls, message);
@@ -139,7 +140,7 @@ export class RabbitMqService implements OnModuleDestroy {
       if (this.connection !== connection) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       this.logger.warn(`RabbitMQ connection error: ${message}`);
     });
 
@@ -170,7 +171,7 @@ export class RabbitMqService implements OnModuleDestroy {
       if (this.channel !== channel) {
         return;
       }
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       this.logger.warn(`RabbitMQ channel error: ${message}`);
     });
 
@@ -214,7 +215,7 @@ export class RabbitMqService implements OnModuleDestroy {
           throw error;
         }
 
-        const message = error instanceof Error ? error.message : String(error);
+        const message = toErrorMessage(error);
         this.logger.warn(
           `RabbitMQ publish attempt ${attempt} failed for queue "${queueName}". Reconnecting and retrying. Error: ${message}`
         );

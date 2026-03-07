@@ -4,6 +4,7 @@ import { PropertyListPageService } from 'src/application/services/scraper/proper
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class PropertyListingPaginationService {
@@ -41,7 +42,7 @@ export class PropertyListingPaginationService {
         return;
       }
 
-      await this.sleep(this.scraperConfig.paginationClickWaitMs);
+      await sleep(this.scraperConfig.paginationClickWaitMs);
       await this.waitForUrlChange(client, currentUrl);
       await this.waitForListingsOrPagination(client);
       await this.captchaDetectorService.panicIfCaptchaDetected({
@@ -115,7 +116,7 @@ export class PropertyListingPaginationService {
       if (currentUrl !== previousUrl) {
         return;
       }
-      await this.sleep(pollInterval);
+      await sleep(pollInterval);
     }
 
     throw new Error(`Timeout waiting for pagination URL change from ${previousUrl}`);
@@ -145,13 +146,10 @@ export class PropertyListingPaginationService {
         return;
       }
 
-      await this.sleep(pollInterval);
+      await sleep(pollInterval);
     }
 
     throw new Error('Timeout waiting for listings/pagination after moving to next page.');
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

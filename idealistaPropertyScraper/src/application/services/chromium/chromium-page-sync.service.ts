@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { sleep } from 'src/infrastructure/sleep';
 
 type CdpPageDomain = {
   loadEventFired(cb: () => void): void;
@@ -45,7 +46,7 @@ export class ChromiumPageSyncService {
         return;
       }
 
-      await this.sleep(safePollIntervalMs);
+      await sleep(safePollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for page load after ${safeTimeoutMs}ms.`);
@@ -69,14 +70,14 @@ export class ChromiumPageSyncService {
         return;
       }
 
-      await this.sleep(pollIntervalMs);
+      await sleep(pollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for expression: ${expression}`);
   }
 
   async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
+    await sleep(ms);
   }
 
   private async isDocumentReady(runtime: CdpRuntimeDomain): Promise<boolean> {

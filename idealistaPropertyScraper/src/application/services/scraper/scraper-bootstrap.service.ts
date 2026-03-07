@@ -7,6 +7,7 @@ import { ChromiumNetworkHeadersService } from 'src/application/services/chromium
 import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
@@ -38,7 +39,7 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
       });
     } catch (error) {
       await this.chromiumFailureGuardService.holdForDebug(
-        `Browser startup flow failed. ${this.errorToMessage(error)}`,
+        `Browser startup flow failed. ${toErrorMessage(error)}`,
         this.browserFailureHoldMs,
         () => this.shuttingDown
       );
@@ -71,11 +72,4 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
     this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

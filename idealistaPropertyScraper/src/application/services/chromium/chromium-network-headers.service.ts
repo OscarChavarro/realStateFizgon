@@ -8,6 +8,7 @@ import { UserAgentOverrideClient } from 'src/application/services/chromium/user-
 import { NetworkHeaderClient } from 'src/application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 type PageTarget = {
   id?: string;
@@ -48,7 +49,7 @@ export class ChromiumNetworkHeadersService {
     this.headersTargetLoopRunning = true;
     void this.runHeadersTargetLoop(cdpHost, cdpPort, isShuttingDown)
       .catch((error) => {
-        this.logger.warn(`Network headers target loop failed. ${this.errorToMessage(error)}`);
+        this.logger.warn(`Network headers target loop failed. ${toErrorMessage(error)}`);
       })
       .finally(() => {
         this.headersTargetLoopRunning = false;
@@ -66,7 +67,7 @@ export class ChromiumNetworkHeadersService {
       try {
         await this.applyOverridesToOpenTargets(cdpHost, cdpPort);
       } catch (error) {
-        this.logger.warn(`Failed to refresh network header targets. ${this.errorToMessage(error)}`);
+        this.logger.warn(`Failed to refresh network header targets. ${toErrorMessage(error)}`);
       }
 
       await this.chromiumPageSyncService.sleep(pollIntervalMs);
@@ -135,7 +136,7 @@ export class ChromiumNetworkHeadersService {
         await client.close();
       }
     } catch (error) {
-      this.logger.warn(`Failed to apply network headers for ${targetKey}. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to apply network headers for ${targetKey}. ${toErrorMessage(error)}`);
       const existing = this.targetClients.get(targetKey);
       if (existing) {
         try {
@@ -319,11 +320,4 @@ export class ChromiumNetworkHeadersService {
     return target.id ?? target.targetId ?? (target.url ? target.url.toString().trim() : undefined);
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

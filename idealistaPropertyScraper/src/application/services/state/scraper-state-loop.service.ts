@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { sleep } from 'src/infrastructure/sleep';
 
 type ScraperStateLoopHandlers = {
   onScrapingForNewProperties: () => Promise<void>;
@@ -57,13 +58,10 @@ export class ScraperStateLoopService {
         continue;
       }
 
-      await this.sleep(this.idlePollIntervalMs);
+      await sleep(this.idlePollIntervalMs);
     }
 
     this.logger.log('Scraper state loop stopped because shutdown was requested.');
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

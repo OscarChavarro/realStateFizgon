@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'src/infrastructure/config/scraper.config';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class PropertyDetailInteractionService {
@@ -31,18 +32,18 @@ export class PropertyDetailInteractionService {
   }
 
   private async extendAllPhotos(runtime: RuntimeClient): Promise<void> {
-    await this.sleep(this.scraperConfig.propertyDetailPagePreMediaExpansionWaitMs);
+    await sleep(this.scraperConfig.propertyDetailPagePreMediaExpansionWaitMs);
     const clickedCount = await this.clickAllMorePhotosIfExists(runtime);
     if (clickedCount === 0) {
       return;
     }
 
-    await this.sleep(this.scraperConfig.propertyDetailPageScrollIntervalMs);
+    await sleep(this.scraperConfig.propertyDetailPageScrollIntervalMs);
     await this.scrollPageToBottomAndBackToTop(runtime);
   }
 
   private async waitForImagesToLoad(runtime: RuntimeClient): Promise<void> {
-    await this.sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
+    await sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
 
     const timeoutMs = Math.max(this.scraperConfig.propertyDetailPageImagesLoadWaitMs * 4, 8000);
     const start = Date.now();
@@ -96,7 +97,7 @@ export class PropertyDetailInteractionService {
 
       previousLoaded = progress.loaded;
       previousTotal = progress.total;
-      await this.sleep(Math.max(150, this.scraperConfig.propertyDetailPageScrollIntervalMs));
+      await sleep(Math.max(150, this.scraperConfig.propertyDetailPageScrollIntervalMs));
     }
 
     this.logger.warn('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
@@ -116,7 +117,7 @@ export class PropertyDetailInteractionService {
         })()`,
         returnByValue: true
       });
-      await this.sleep(interval);
+      await sleep(interval);
     }
 
     await runtime.evaluate({
@@ -159,7 +160,7 @@ export class PropertyDetailInteractionService {
       }
 
       clicks += 1;
-      await this.sleep(this.scraperConfig.propertyDetailPageMorePhotosClickWaitMs);
+      await sleep(this.scraperConfig.propertyDetailPageMorePhotosClickWaitMs);
     }
 
     return clicks;
@@ -174,7 +175,4 @@ export class PropertyDetailInteractionService {
     return response.result?.value as T;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

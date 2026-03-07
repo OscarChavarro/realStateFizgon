@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { FilterDefinition } from 'src/infrastructure/config/filter-definition.type';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 const FilterDefinitionValueSchema = z.object({
   plainOptions: z.array(z.string()).optional(),
@@ -196,14 +197,14 @@ export class ConfigurationSourceService {
     try {
       raw = readFileSync(filePath, 'utf-8');
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       throw new Error(`Failed reading configuration file "${filePath}": ${message}`);
     }
 
     try {
       return JSON.parse(raw) as unknown;
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = toErrorMessage(error);
       throw new Error(`Invalid JSON in "${filePath}": ${message}`);
     }
   }

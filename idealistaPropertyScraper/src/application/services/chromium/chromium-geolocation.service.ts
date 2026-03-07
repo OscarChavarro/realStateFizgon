@@ -3,6 +3,7 @@ import CDP = require('chrome-remote-interface');
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 type CdpEmulationClient = {
   Emulation?: {
@@ -55,7 +56,7 @@ export class ChromiumGeolocationService {
       try {
         await client.Emulation.setGeolocationOverride(geolocationOverride);
       } catch (error) {
-        this.logger.warn(`Failed to set geolocation override. ${this.errorToMessage(error)}`);
+        this.logger.warn(`Failed to set geolocation override. ${toErrorMessage(error)}`);
       }
     }
   }
@@ -81,7 +82,7 @@ export class ChromiumGeolocationService {
       client = browserClient as { close(): Promise<void> };
       await this.chromiumPermissionRegistrarService.grantGeolocationPermissions(browserClient, geolocationAllowlist);
     } catch (error) {
-      this.logger.warn(`Failed to pre-grant geolocation permissions. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to pre-grant geolocation permissions. ${toErrorMessage(error)}`);
     } finally {
       if (client) {
         await client.close();
@@ -101,7 +102,7 @@ export class ChromiumGeolocationService {
     this.geolocationTargetLoopRunning = true;
     void this.runGeolocationTargetLoop(cdpHost, cdpPort, isShuttingDown)
       .catch((error) => {
-        this.logger.warn(`Geolocation target loop failed. ${this.errorToMessage(error)}`);
+        this.logger.warn(`Geolocation target loop failed. ${toErrorMessage(error)}`);
       })
       .finally(() => {
         this.geolocationTargetLoopRunning = false;
@@ -119,7 +120,7 @@ export class ChromiumGeolocationService {
       try {
         await this.applyGeolocationOverrideToOpenTargets(cdpHost, cdpPort);
       } catch (error) {
-        this.logger.warn(`Failed to refresh geolocation targets. ${this.errorToMessage(error)}`);
+        this.logger.warn(`Failed to refresh geolocation targets. ${toErrorMessage(error)}`);
       }
 
       await this.chromiumPageSyncService.sleep(pollIntervalMs);
@@ -184,7 +185,7 @@ export class ChromiumGeolocationService {
       await this.applyGeolocationOverride(client as CdpEmulationClient);
       this.geolocationTargetOrigins.set(targetKey, origin);
     } catch (error) {
-      this.logger.warn(`Failed to apply geolocation override for ${targetKey}. ${this.errorToMessage(error)}`);
+      this.logger.warn(`Failed to apply geolocation override for ${targetKey}. ${toErrorMessage(error)}`);
     } finally {
       if (client) {
         await client.close();
@@ -228,11 +229,4 @@ export class ChromiumGeolocationService {
     }
   }
 
-  private errorToMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    return String(error);
-  }
 }

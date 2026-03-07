@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { ChromeConfig } from 'src/infrastructure/config/chrome.config';
+import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
 export class PropertyDetailNavigationService {
@@ -82,7 +83,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await this.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
+      await sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
@@ -111,7 +112,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await this.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
+      await sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error('Timeout waiting to return to search results after detail processing.');
@@ -126,7 +127,4 @@ export class PropertyDetailNavigationService {
     return response.result?.value as T;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }

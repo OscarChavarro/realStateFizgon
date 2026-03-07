@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
+import { ChromiumCdpReadinessService } from 'src/application/services/scraper/chromium/chromium-cdp-readiness.service';
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/scraper/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
+import { ChromiumPageTargetService } from 'src/application/services/scraper/chromium/chromium-page-target.service';
 import { ChromiumPermissionRegistrarService } from 'src/application/services/scraper/chromium/chromium-permission-registrar.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'src/application/services/scraper/chromium/chromium-user-agent-tls.service';
@@ -12,6 +14,8 @@ import { ConfigurationModule } from 'src/infrastructure/config/configuration.mod
   imports: [ConfigurationModule],
   providers: [
     ChromiumPageSyncService,
+    ChromiumCdpReadinessService,
+    ChromiumPageTargetService,
     ChromiumFailureGuardService,
     ChromiumPermissionRegistrarService,
     ChromiumUserAgentTlsService,
@@ -21,6 +25,8 @@ import { ConfigurationModule } from 'src/infrastructure/config/configuration.mod
   ],
   exports: [
     ChromiumPageSyncService,
+    ChromiumCdpReadinessService,
+    ChromiumPageTargetService,
     ChromiumFailureGuardService,
     ChromiumProcessLifecycleService,
     ChromiumGeolocationService,

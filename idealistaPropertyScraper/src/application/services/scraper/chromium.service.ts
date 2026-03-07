@@ -1,7 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { Configuration } from 'src/infrastructure/config/configuration';
+import { ChromiumCdpReadinessService } from 'src/application/services/scraper/chromium/chromium-cdp-readiness.service';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
+import { ChromiumPageTargetService } from 'src/application/services/scraper/chromium/chromium-page-target.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/scraper/chromium/chromium-process-lifecycle.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
@@ -25,6 +27,8 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly configuration: Configuration,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    private readonly chromiumCdpReadinessService: ChromiumCdpReadinessService,
+    private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
@@ -82,51 +86,19 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       },
       () => this.shuttingDown
     );
-    await this.waitForCdp();
+    await this.chromiumCdpReadinessService.waitForReadyEndpoint(this.cdpHost, this.cdpPort);
     await this.chromiumGeolocationService.grantStartupPermissions(this.cdpHost, this.cdpPort);
     this.chromiumGeolocationService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
     this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
   }
 
-  private async waitForCdp(): Promise<void> {
-    const timeout = this.configuration.chromeCdpReadyTimeoutMs;
-    const start = Date.now();
-    let lastError: unknown;
-
-    while (Date.now() - start < timeout) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), this.configuration.chromeCdpRequestTimeoutMs);
-
-      try {
-        const response = await fetch(`http://${this.cdpHost}:${this.cdpPort}/json/version`, {
-          signal: controller.signal
-        });
-        if (response.ok) {
-          this.logger.log(`CDP endpoint is ready at ${this.cdpHost}:${this.cdpPort}.`);
-          return;
-        }
-      } catch (error) {
-        lastError = error;
-      } finally {
-        clearTimeout(timer);
-      }
-
-      await this.chromiumPageSyncService.sleep(this.configuration.chromeCdpPollIntervalMs);
-    }
-
-    throw new Error(
-      `CDP endpoint did not become available in time at ${this.cdpHost}:${this.cdpPort}${lastError ? ` (${String(lastError)})` : ''}`
-    );
-  }
-
-
   private async loadHomePageOnce(): Promise<void> {
-    const selectedTarget = await this.waitForPageTarget();
+    const selectedTarget = await this.chromiumPageTargetService.waitForPageTarget(this.cdpHost, this.cdpPort);
     if (!selectedTarget) {
       throw new Error('No page target available in Chrome');
     }
 
-    this.logger.log(`Loading initial home page on target ${String((selectedTarget as { id?: string }).id ?? 'unknown')}.`);
+    this.logger.log(`Loading initial home page on target ${String(selectedTarget.id ?? 'unknown')}.`);
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
 
     try {
@@ -184,12 +156,12 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     stateLabel: string,
     operation: (client: ScraperCdpClient) => Promise<void>
   ): Promise<void> {
-    const selectedTarget = await this.waitForPageTarget();
+    const selectedTarget = await this.chromiumPageTargetService.waitForPageTarget(this.cdpHost, this.cdpPort);
     if (!selectedTarget) {
       throw new Error('No page target available in Chrome');
     }
 
-    this.logger.log(`Using page target ${String((selectedTarget as { id?: string }).id ?? 'unknown')} for ${stateLabel} state.`);
+    this.logger.log(`Using page target ${String(selectedTarget.id ?? 'unknown')} for ${stateLabel} state.`);
     const client = await CDP({ host: this.cdpHost, port: this.cdpPort, target: selectedTarget }) as ScraperCdpClient;
 
     try {
@@ -207,36 +179,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       await client.close();
     }
   }
-
-  private async waitForPageTarget(): Promise<{ id?: string; url?: string; type?: string } | undefined> {
-    const timeoutMs = this.configuration.chromeCdpReadyTimeoutMs;
-    const pollIntervalMs = this.configuration.chromeCdpPollIntervalMs;
-    const start = Date.now();
-
-    while (Date.now() - start < timeoutMs) {
-      const targets = await CDP.List({ host: this.cdpHost, port: this.cdpPort });
-      const pageTargets = [...targets]
-        .filter((target: { type?: string }) => target.type === 'page')
-        .filter((target: { url?: string }) => {
-          const url = (target.url ?? '').trim().toLowerCase();
-          return !url.startsWith('devtools://');
-        });
-
-      const preferredTarget = pageTargets.find((target: { url?: string }) => {
-        const url = (target.url ?? '').trim();
-        return url.startsWith(this.configuration.scraperHomeUrl);
-      }) ?? pageTargets[0] ?? [...targets].reverse().find((target: { type?: string }) => target.type === 'page');
-
-      if (preferredTarget) {
-        return preferredTarget as { id?: string; url?: string; type?: string };
-      }
-
-      await this.chromiumPageSyncService.sleep(pollIntervalMs);
-    }
-
-    return undefined;
-  }
-
 
   private errorToMessage(error: unknown): string {
     if (error instanceof Error) {

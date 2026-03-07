@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { MongoClient, Db, Collection, Document, WithId } from 'mongodb';
+import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { Property } from 'src/domain/property/property.model';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
@@ -29,7 +29,6 @@ export class MongoDatabaseService implements OnModuleDestroy {
 
   async saveProperty(property: Property): Promise<void> {
     const collection = await this.ensurePropertiesCollection();
-    const existing = await collection.findOne({ url: property.url });
     const importedBy = new Date();
     const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
     const normalizedProperty: Property = propertyId === property.propertyId
@@ -39,20 +38,38 @@ export class MongoDatabaseService implements OnModuleDestroy {
           propertyId
         };
 
-    if (!existing) {
-      await collection.insertOne({
-        ...normalizedProperty,
-        importedBy
-      } as Property & Document);
-      await this.rabbitMqService.publishIdealistaUpdateNotification(normalizedProperty.url, normalizedProperty.title);
-      return;
-    }
+    try {
+      const result = await collection.updateOne(
+        { url: normalizedProperty.url },
+        {
+          $set: {
+            ...normalizedProperty,
+            importedBy
+          } as Property & Document
+        },
+        { upsert: true }
+      );
 
-    const merged = {
-      ...this.mergeProperty(existing, normalizedProperty),
-      importedBy
-    } as Property & Document;
-    await collection.replaceOne({ _id: existing._id }, merged);
+      if (result.upsertedCount > 0) {
+        await this.rabbitMqService.publishIdealistaUpdateNotification(normalizedProperty.url, normalizedProperty.title);
+      }
+      return;
+    } catch (error) {
+      if (!this.isDuplicateKeyError(error)) {
+        throw error;
+      }
+
+      await collection.updateOne(
+        { url: normalizedProperty.url },
+        {
+          $set: {
+            ...normalizedProperty,
+            importedBy
+          } as Property & Document
+        },
+        { upsert: false }
+      );
+    }
   }
 
   async saveClosedProperty(url: string, closedBy?: Date): Promise<void> {
@@ -229,17 +246,45 @@ export class MongoDatabaseService implements OnModuleDestroy {
     }
 
     const collection = this.database.collection<Property & Document>(collectionName);
-    await collection.createIndex({ url: 1 }, { name: 'url_1' });
+    await this.ensureUniqueUrlIndex(collection);
     this.propertiesCollection = collection;
   }
 
-  private mergeProperty(existing: WithId<Property & Document>, incoming: Property): Property & Document {
-    const existingWithoutId = { ...existing } as Record<string, unknown>;
-    delete existingWithoutId._id;
-    return {
-      ...(existingWithoutId as Property & Document),
-      ...incoming
-    };
+  private async ensureUniqueUrlIndex(collection: Collection<Property & Document>): Promise<void> {
+    const indexes = await collection.indexes();
+    const urlIndexes = indexes.filter((index) => this.isSingleUrlIndex(index.key));
+    const uniqueUrlIndex = urlIndexes.find((index) => index.unique === true);
+    if (uniqueUrlIndex) {
+      return;
+    }
+
+    for (const index of urlIndexes) {
+      if (typeof index.name === 'string' && index.name !== '_id_') {
+        await collection.dropIndex(index.name);
+        this.logger.warn(`Dropped non-unique URL index "${index.name}" to enforce unique URL writes.`);
+      }
+    }
+
+    try {
+      await collection.createIndex({ url: 1 }, { name: 'url_1', unique: true });
+      this.logger.log('Ensured unique MongoDB index on properties.url.');
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        throw new Error(
+          'Cannot create unique index on properties.url because duplicate URLs already exist. Deduplicate collection first.'
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private isSingleUrlIndex(key: Record<string, unknown>): boolean {
+    return Object.keys(key).length === 1 && key.url === 1;
+  }
+
+  private isDuplicateKeyError(error: unknown): boolean {
+    return error instanceof MongoServerError && error.code === 11000;
   }
 
   private async sleep(ms: number): Promise<void> {

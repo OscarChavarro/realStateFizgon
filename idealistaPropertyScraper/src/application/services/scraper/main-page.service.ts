@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
+import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
 
 type RuntimeEvaluateResult = {
   exceptionDetails?: {
@@ -22,7 +23,10 @@ type CdpClient = {
 export class MainPageService {
   private readonly logger = new Logger(MainPageService.name);
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly originErrorDetectorService: OriginErrorDetectorService
+  ) {}
 
   async execute(client: CdpClient, mainSearchArea: string, scraperHomeUrl: string): Promise<void> {
     this.logger.log(`Main page automation started for ${scraperHomeUrl}`);
@@ -137,6 +141,7 @@ export class MainPageService {
     const start = Date.now();
     let lastCurrentUrl = '';
     let lastTitle = '';
+    const originErrorCondition = this.originErrorDetectorService.buildConditionExpression('title', 'text');
 
     while (Date.now() - start < timeout) {
       const evaluation = await client.Runtime.evaluate({
@@ -145,13 +150,7 @@ export class MainPageService {
           const title = (document.title || '').toLowerCase();
           const text = (document.body?.innerText || '').toLowerCase();
           const currentUrl = window.location.href;
-          const hasOriginError = title.includes('425 unknown error')
-            || title.includes('unknown error')
-            || text.includes('error 425 unknown error')
-            || text.includes('error 425')
-            || text.includes('unknown error')
-            || text.includes('error 54113')
-            || text.includes('varnish cache server');
+          const hasOriginError = ${originErrorCondition};
           return { matched, hasOriginError, currentUrl, title };
         })()`,
         returnByValue: true

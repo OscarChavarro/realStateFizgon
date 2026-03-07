@@ -5,6 +5,7 @@ import { FiltersService } from 'src/application/services/scraper/filters/filters
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { ChromiumPageSyncService } from 'src/application/services/scraper/chromium/chromium-page-sync.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
+import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
@@ -38,7 +39,8 @@ export class SearchResultsPreparationService {
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
-    private readonly propertyListPageService: PropertyListPageService
+    private readonly propertyListPageService: PropertyListPageService,
+    private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
   async prepareSearchResultsWithFilters(client: FilterClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
@@ -155,21 +157,6 @@ export class SearchResultsPreparationService {
   }
 
   private async hasOriginError(runtime: RuntimeDomain): Promise<boolean> {
-    const evaluation = await runtime.evaluate({
-      expression: `(() => {
-        const title = (document.title || '').toLowerCase();
-        const text = (document.body?.innerText || '').toLowerCase();
-        return title.includes('425 unknown error')
-          || title.includes('unknown error')
-          || text.includes('error 425 unknown error')
-          || text.includes('error 425')
-          || text.includes('unknown error')
-          || text.includes('error 54113')
-          || text.includes('varnish cache server');
-      })()`,
-      returnByValue: true
-    });
-
-    return evaluation.result?.value === true;
+    return this.originErrorDetectorService.hasOriginError(runtime);
   }
 }

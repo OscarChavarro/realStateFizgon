@@ -19,6 +19,7 @@ import { FilterTextNormalizationService } from 'src/application/services/scraper
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
+import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
 import { CookieAprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-aproval-dialog-scraper.service';
@@ -60,6 +61,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
     ChromiumProcessLiveCicleService,
     SearchResultsPreparationService,
     MainPageService,
+    OriginErrorDetectorService,
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractor,
     FilterSelectedOptionExtractor,

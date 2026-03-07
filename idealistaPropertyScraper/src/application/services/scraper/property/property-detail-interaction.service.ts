@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import { OriginErrorDetectorService } from 'src/application/services/scraper/origin-error-detector.service';
 
 @Injectable()
 export class PropertyDetailInteractionService {
@@ -10,20 +11,13 @@ export class PropertyDetailInteractionService {
   private static readonly IMG_ELEMENT_SELECTOR = 'img';
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
 
-  constructor(private readonly configuration: Configuration) {}
+  constructor(
+    private readonly configuration: Configuration,
+    private readonly originErrorDetectorService: OriginErrorDetectorService
+  ) {}
 
   async throwIfOriginErrorPage(runtime: RuntimeClient): Promise<void> {
-    const hasOriginError = await this.evaluateExpression<boolean>(runtime, `(() => {
-      const title = (document.title || '').toLowerCase();
-      const text = (document.body?.innerText || '').toLowerCase();
-      return title.includes('425 unknown error')
-        || title.includes('unknown error')
-        || text.includes('error 425 unknown error')
-        || text.includes('error 425')
-        || text.includes('unknown error')
-        || text.includes('error 54113')
-        || text.includes('varnish cache server');
-    })()`);
+    const hasOriginError = await this.originErrorDetectorService.hasOriginError(runtime);
 
     if (hasOriginError) {
       throw new Error('Wrong content.');

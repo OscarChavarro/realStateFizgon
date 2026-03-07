@@ -8,8 +8,7 @@ import { PropertyListingPaginationService } from 'src/application/services/scrap
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ChromiumFailureGuardService } from 'src/application/services/scraper/chromium/chromium-failure-guard.service';
 import { ChromiumGeolocationService } from 'src/application/services/scraper/chromium/chromium-geolocation.service';
@@ -25,7 +24,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
   private shuttingDown = false;
-  private scraperLoopRunning = false;
 
   constructor(
     private readonly configuration: Configuration,
@@ -36,7 +34,7 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
     private readonly propertyListingPaginationService: PropertyListingPaginationService,
-    private readonly scraperStateMachineService: ScraperStateMachineService,
+    private readonly scraperStateLoopService: ScraperStateLoopService,
     private readonly mongoDatabaseService: MongoDatabaseService,
     private readonly imageDownloader: ImageDownloader,
     private readonly propertyListPageService: PropertyListPageService
@@ -55,7 +53,18 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       await this.imageDownloader.validateImageDownloadFolder();
       await this.launchChrome();
       await this.loadHomePageOnce();
-      this.startScraperStateLoop();
+      this.scraperStateLoopService.start({
+        onScrapingForNewProperties: async () => this.openHomePage(),
+        onUpdatingProperties: async () => this.updatePropertiesFromDatabase(),
+        onLoopError: async (error: unknown) => {
+          await this.chromiumFailureGuardService.holdForDebug(
+            `Scraper state loop failed. ${this.errorToMessage(error)}`,
+            this.browserFailureHoldMs,
+            () => this.shuttingDown
+          );
+        },
+        isShuttingDown: () => this.shuttingDown
+      });
     } catch (error) {
       await this.chromiumFailureGuardService.holdForDebug(
         `Browser startup flow failed. ${this.errorToMessage(error)}`,
@@ -120,50 +129,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
     throw new Error(
       `CDP endpoint did not become available in time at ${this.cdpHost}:${this.cdpPort}${lastError ? ` (${String(lastError)})` : ''}`
     );
-  }
-
-  private async runScraperStateLoop(): Promise<void> {
-    while (!this.shuttingDown) {
-      const currentState = this.scraperStateMachineService.getCurrentState();
-      if (currentState === ScraperState.SCRAPING_FOR_NEW_PROPERTIES) {
-        await this.openHomePage();
-        continue;
-      }
-
-      if (currentState === ScraperState.UPDATING_PROPERTIES) {
-        await this.updatePropertiesFromDatabase();
-        continue;
-      }
-
-      if (currentState === ScraperState.IDLE && this.scraperStateMachineService.getPendingRequestsCount() > 0) {
-        const nextRequestedState = this.scraperStateMachineService.consumeNextRequestedState();
-        if (nextRequestedState) {
-          this.scraperStateMachineService.setState(nextRequestedState);
-        }
-        continue;
-      }
-
-      await this.chromiumPageSyncService.sleep(500);
-    }
-  }
-
-  private startScraperStateLoop(): void {
-    if (this.scraperLoopRunning) {
-      return;
-    }
-
-    this.scraperLoopRunning = true;
-    void this.runScraperStateLoop()
-      .catch(async (error) => {
-        await this.chromiumFailureGuardService.holdForDebug(
-          `Scraper state loop failed. ${this.errorToMessage(error)}`,
-          this.browserFailureHoldMs,
-          () => this.shuttingDown
-        );
-      })
-      .finally(() => {
-        this.scraperLoopRunning = false;
-      });
   }
 
 
@@ -237,7 +202,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       await this.searchResultsPreparationService.prepareSearchResultsWithFilters(client, Page, Runtime);
       await this.propertyListingPaginationService.execute(client);
       this.logger.log('MainPageService finished.');
-      this.scraperStateMachineService.finishScrapingForNewPropertiesCycle();
     } finally {
       await client.close();
     }
@@ -268,7 +232,6 @@ export class ChromiumService implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);
       this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
       await this.propertyListPageService.processExistingUrls(client, openUrls);
-      this.scraperStateMachineService.finishUpdatingPropertiesCycle();
       this.logger.log('UPDATING_PROPERTIES cycle finished.');
     } finally {
       await client.close();

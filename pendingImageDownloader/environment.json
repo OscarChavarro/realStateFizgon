@@ -11,7 +11,9 @@
       "folderValidationRetryWaitMs": 3600000
     },
     "download": {
-      "requestTimeoutMs": 30000
+      "requestTimeoutMs": 30000,
+      "retryAttempts": 3,
+      "retryWaitMs": 1000
     }
   }
 }

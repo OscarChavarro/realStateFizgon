@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Channel, connect } from 'amqplib';
 import { Configuration } from 'src/config/configuration';
+import { RabbitMessageProcessingError } from 'src/services/rabbitmq/rabbit-message-processing.error';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy {
@@ -26,6 +27,11 @@ export class RabbitMqService implements OnModuleDestroy {
       } catch (error) {
         const messageText = error instanceof Error ? error.message : String(error);
         this.logger.error(`Failed to process pending image message: ${messageText}`);
+        if (error instanceof RabbitMessageProcessingError && !error.shouldRequeue) {
+          channel.ack(message);
+          return;
+        }
+
         channel.nack(message, false, true);
       }
     });

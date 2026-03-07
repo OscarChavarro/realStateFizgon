@@ -16,6 +16,8 @@ type Environment = {
     };
     download?: {
       requestTimeoutMs?: number;
+      retryAttempts?: number;
+      retryWaitMs?: number;
     };
   };
 };
@@ -84,5 +86,13 @@ export class Configuration {
 
   get downloadRequestTimeoutMs(): number {
     return Math.max(1000, this.environment.timeouts?.download?.requestTimeoutMs ?? 30000);
+  }
+
+  get downloadRetryAttempts(): number {
+    return Math.max(1, this.environment.timeouts?.download?.retryAttempts ?? 3);
+  }
+
+  get downloadRetryWaitMs(): number {
+    return Math.max(0, this.environment.timeouts?.download?.retryWaitMs ?? 1000);
   }
 }

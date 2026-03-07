@@ -5,6 +5,7 @@ import { Configuration } from 'src/config/configuration';
 import { RabbitMqService } from 'src/services/rabbitmq/rabbit-mq.service';
 import { ImageDownloadPathService } from 'src/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'src/services/imagedownload/image-file-name.service';
+import { RabbitMessageProcessingError } from 'src/services/rabbitmq/rabbit-message-processing.error';
 
 type PendingImageDownloadMessage = {
   url: string;
@@ -61,7 +62,7 @@ export class PendingImageDownloadService implements OnModuleInit {
 
     const filename = this.imageFileNameService.buildFilenameFromUrl(payload.url);
     const targetFilePath = join(targetFolderPath, filename);
-    const imageData = await this.downloadImage(payload.url);
+    const imageData = await this.downloadImageWithRetry(payload.url);
     try {
       await writeFile(targetFilePath, imageData, { flag: 'wx' });
     } catch (error) {
@@ -79,7 +80,7 @@ export class PendingImageDownloadService implements OnModuleInit {
 
   private assertPendingImageMessage(message: unknown): PendingImageDownloadMessage {
     if (typeof message !== 'object' || message === null) {
-      throw new Error('Invalid pending image message. Expected JSON object.');
+      throw new RabbitMessageProcessingError('Invalid pending image message. Expected JSON object.', false);
     }
 
     const candidate = message as Partial<PendingImageDownloadMessage>;
@@ -87,11 +88,11 @@ export class PendingImageDownloadService implements OnModuleInit {
     const propertyId = typeof candidate.propertyId === 'string' ? candidate.propertyId.trim() : '';
 
     if (!url) {
-      throw new Error('Invalid pending image message: "url" is required.');
+      throw new RabbitMessageProcessingError('Invalid pending image message: "url" is required.', false);
     }
 
     if (!propertyId) {
-      throw new Error('Invalid pending image message: "propertyId" is required.');
+      throw new RabbitMessageProcessingError('Invalid pending image message: "propertyId" is required.', false);
     }
 
     return { url, propertyId };
@@ -125,6 +126,34 @@ export class PendingImageDownloadService implements OnModuleInit {
     } finally {
       clearTimeout(timeout);
     }
+  }
+
+  private async downloadImageWithRetry(url: string): Promise<Buffer> {
+    const maxAttempts = this.configuration.downloadRetryAttempts;
+    const retryWaitMs = this.configuration.downloadRetryWaitMs;
+    let lastError: Error | undefined;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.downloadImage(url);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempt >= maxAttempts) {
+          break;
+        }
+
+        this.logger.warn(
+          `Failed downloading "${url}" (attempt ${attempt}/${maxAttempts}). Retrying in ${retryWaitMs}ms. Error: ${lastError.message}`
+        );
+        await this.sleep(retryWaitMs);
+      }
+    }
+
+    const message = lastError?.message ?? `Failed downloading "${url}"`;
+    throw new RabbitMessageProcessingError(
+      `Retries exhausted for "${url}" after ${maxAttempts} attempts. ${message}`,
+      false
+    );
   }
 
   private async sleep(ms: number): Promise<void> {

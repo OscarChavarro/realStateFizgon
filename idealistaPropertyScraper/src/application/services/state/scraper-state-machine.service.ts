@@ -5,6 +5,7 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 @Injectable()
 export class ScraperStateMachineService {
   private readonly logger = new Logger(ScraperStateMachineService.name);
+  private readonly maxPendingStateRequests = 10;
   private currentState: ScraperState;
   private readonly requestedStateQueue: ScraperState[] = [];
 
@@ -26,6 +27,29 @@ export class ScraperStateMachineService {
   }
 
   private enqueueStateRequest(state: ScraperState): number {
+    const existingIndex = this.requestedStateQueue.indexOf(state);
+    if (existingIndex >= 0) {
+      const isAlreadyLatest = existingIndex === this.requestedStateQueue.length - 1;
+      if (!isAlreadyLatest) {
+        this.requestedStateQueue.splice(existingIndex, 1);
+        this.requestedStateQueue.push(state);
+      }
+
+      this.logger.log(
+        `State transition request coalesced: ${state}. Pending requests: ${this.requestedStateQueue.length}.`
+      );
+      return this.requestedStateQueue.length;
+    }
+
+    if (this.requestedStateQueue.length >= this.maxPendingStateRequests) {
+      const droppedState = this.requestedStateQueue.shift();
+      if (droppedState) {
+        this.logger.warn(
+          `Pending state queue reached limit (${this.maxPendingStateRequests}). Dropping oldest request: ${droppedState}.`
+        );
+      }
+    }
+
     this.requestedStateQueue.push(state);
     this.logger.log(
       `State transition request queued: ${state}. Pending requests: ${this.requestedStateQueue.length}.`

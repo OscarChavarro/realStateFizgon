@@ -53,6 +53,20 @@ describe('FilterSelectedOptionExtractor', () => {
     expect(result).toEqual({ selectedMin: null, selectedMax: '500' });
   });
 
+  it('whenMinMaxValueContainsStringMinAndInvalidMax_extractSelectedMinMax_shouldKeepMinAndNullMax', async () => {
+    // Arrange
+    const service = new FilterSelectedOptionExtractor();
+    const client = createClient();
+    const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
+    evaluateMock.mockResolvedValue({
+      result: { value: { selectedMin: '300', selectedMax: false } }
+    });
+    // Action
+    const result = await service.extractSelectedMinMax(client, '#price');
+    // Assert
+    expect(result).toEqual({ selectedMin: '300', selectedMax: null });
+  });
+
   it('whenRuntimeThrowsException_extractSelectedSingleSelectorDropdownOptions_shouldThrowError', async () => {
     // Arrange
     const service = new FilterSelectedOptionExtractor();

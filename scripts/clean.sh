@@ -13,5 +13,6 @@ find . -type f \( -name '#*' -o -name '*~' \) -delete
 
 echo "Cleaning logs..."
 rm -rf idealistaPropertyScraper/output/logs/chrome_std*
+rm -rf idealistaPropertyScraper/coverage
 
 echo "Clean completed."

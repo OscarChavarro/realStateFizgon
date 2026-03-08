@@ -55,6 +55,11 @@ describe('ImageFileNameService', () => {
       imageUrl: 'https://img4.idealista.com/photo',
       downloadedExtension: '.png',
       expected: 'photo.png'
+    },
+    {
+      imageUrl: 'https://img4.idealista.com/',
+      downloadedExtension: '',
+      expected: 'image.img'
     }
   ])('whenTargetFilenameIsBuilt_buildCompatibleTargetFilename_shouldUseCompatibleNameAndExtension', ({
     imageUrl,

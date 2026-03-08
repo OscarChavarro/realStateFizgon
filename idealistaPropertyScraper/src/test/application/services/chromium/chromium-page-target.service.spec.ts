@@ -80,6 +80,29 @@ describe('ChromiumPageTargetService', () => {
     expect(pageSync.sleep).not.toHaveBeenCalled();
   });
 
+  it('whenPageTargetsContainUndefinedUrls_waitForPageTarget_shouldFallbackToEmptyStringWithoutCrashing', async () => {
+    // Arrange
+    const chrome = new ChromeConfigMock(5000, 100);
+    const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
+    const pageSync = new ChromiumPageSyncServiceMock();
+    pageSync.sleep.mockResolvedValue(undefined);
+    const service = new ChromiumPageTargetService(
+      chrome as unknown as ChromeConfig,
+      scraper as unknown as ScraperConfig,
+      pageSync as unknown as ChromiumPageSyncService
+    );
+    const listMock = CDP.List as unknown as CdpListMock;
+    listMock.mockResolvedValue([
+      { id: 'blank', type: 'page', url: undefined },
+      { id: 'home', type: 'page', url: 'https://www.idealista.com/venta-viviendas/' }
+    ]);
+    // Action
+    const target = await service.waitForPageTarget('127.0.0.1', 9222);
+    // Assert
+    expect(target?.id).toBe('home');
+    expect(pageSync.sleep).not.toHaveBeenCalled();
+  });
+
   it('whenOnlyDevtoolsPageIsAvailable_waitForPageTarget_shouldFallbackToLastPageInRawTargets', async () => {
     // Arrange
     const chrome = new ChromeConfigMock(5000, 100);

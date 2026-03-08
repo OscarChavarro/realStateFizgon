@@ -94,6 +94,25 @@ describe('FilterSelectionReaderService', () => {
     expect(result).toEqual({ selectedMin: null, selectedMax: '500' });
   });
 
+  it('whenMinMaxSelectionContainsStringMinAndInvalidMax_readCurrentMinMaxSelection_shouldKeepMinAndNullMax', async () => {
+    // Arrange
+    const service = new FilterSelectionReaderService();
+    const client = createClient();
+    const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
+    evaluateMock.mockResolvedValue({
+      result: {
+        value: {
+          selectedMin: '100',
+          selectedMax: 900
+        }
+      }
+    });
+    // Action
+    const result = await service.readCurrentMinMaxSelection(client, '#price');
+    // Assert
+    expect(result).toEqual({ selectedMin: '100', selectedMax: null });
+  });
+
   it('whenPlainSelectionEvaluationReturnsException_readCurrentPlainSelection_shouldThrowError', async () => {
     // Arrange
     const service = new FilterSelectionReaderService();

@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
 import { ConfigurationSourceServiceMock } from '../../../support/mocks/configuration-source.mock';
@@ -100,6 +100,18 @@ describe('ChromeConfig', () => {
     expect(result).toBe('/tmp/googleChromeIdealistaScraper');
   });
 
+  it('whenChromePathAndAcceptLanguageAreUndefined_getters_shouldReturnFallbackValues', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: { chrome: {} }
+    });
+    // Action
+    const values = { path: config.chromePath, acceptLanguage: config.chromeAcceptLanguage };
+    // Assert
+    expect(values).toEqual({ path: '/tmp/googleChromeIdealistaScraper', acceptLanguage: '' });
+  });
+
   it('whenExtraHeadersContainInvalidEntries_chromeExtraHeaders_shouldReturnSanitizedHeaders', () => {
     // Arrange
     const config = createChromeConfig({
@@ -150,6 +162,50 @@ describe('ChromeConfig', () => {
     ]);
   });
 
+  it('whenProxyPortIsNumber_proxyPort_shouldReturnNumericValue', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: {
+        proxy: {
+          port: 9090
+        }
+      }
+    });
+    // Action
+    const port = config.proxyPort;
+    // Assert
+    expect(port).toBe(9090);
+  });
+
+  it('whenProxyPortIsNotNumeric_proxyPort_shouldReturnZero', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: {
+        proxy: {
+          port: 'abc'
+        }
+      }
+    });
+    // Action
+    const port = config.proxyPort;
+    // Assert
+    expect(port).toBe(0);
+  });
+
+  it('whenProxySettingsAreMissing_proxyGetters_shouldReturnFallbackDisabledAndZeroPort', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: {}
+    });
+    // Action
+    const values = { enabled: config.proxyEnabled, port: config.proxyPort };
+    // Assert
+    expect(values).toEqual({ enabled: false, port: 0 });
+  });
+
   it.each([
     {
       proxy: { enable: true, host: '', port: 8080 }
@@ -175,6 +231,31 @@ describe('ChromeConfig', () => {
     const options = config.chromiumOptions;
     // Assert
     expect(options).toEqual(['--base']);
+  });
+
+  it('whenChromiumOptionsAndProxySettingsAreMissing_chromiumOptions_shouldReturnEmptyArray', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: {
+        chrome: {},
+        proxy: {
+          enable: true
+        }
+      }
+    });
+    // Action
+    const values = {
+      options: config.chromiumOptions,
+      proxyEnabled: config.proxyEnabled,
+      proxyHost: config.proxyHost
+    };
+    // Assert
+    expect(values).toEqual({
+      options: [],
+      proxyEnabled: true,
+      proxyHost: ''
+    });
   });
 
   it.each([
@@ -219,6 +300,22 @@ describe('ChromeConfig', () => {
       'https://idealista.com',
       'https://browserleaks.com'
     ]);
+  });
+
+  it('whenAllowlistContainsNullEntries_geolocationAllowlist_shouldSkipNullishEntries', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: {
+        geolocation: {
+          allowlist: [null, undefined, ' https://maps.google.com '] as unknown as string[]
+        }
+      }
+    });
+    // Action
+    const allowlist = config.geolocationAllowlist;
+    // Assert
+    expect(allowlist).toEqual(['https://maps.google.com']);
   });
 
   it('whenGeolocationConfigIsMissing_geolocationOverride_shouldReturnUndefined', () => {
@@ -284,5 +381,33 @@ describe('ChromeConfig', () => {
     const value = getter(config);
     // Assert
     expect(value).toBe(expected);
+  });
+
+  it('whenOriginErrorReloadWaitIsMissing_chromeOriginErrorReloadWaitMs_shouldReturnDefault', () => {
+    // Arrange
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' }, timeouts: { chrome: {} } },
+      secrets: {}
+    });
+    // Action
+    const value = config.chromeOriginErrorReloadWaitMs;
+    // Assert
+    expect(value).toBe(1000);
+  });
+
+  it('whenObjectEntriesReturnsNullishTuple_chromeExtraHeaders_shouldSkipNullishHeaderPair', () => {
+    // Arrange
+    const entriesSpy = jest.spyOn(Object, 'entries').mockReturnValue(
+      [[undefined as unknown as string, undefined]] as Array<[string, unknown]>
+    );
+    const config = createChromeConfig({
+      environment: { chrome: { binary: '/usr/bin/chrome' } },
+      secrets: { chrome: { extraHeaders: { Accept: 'application/json' } } }
+    });
+    // Action
+    const headers = config.chromeExtraHeaders;
+    // Assert
+    expect(headers).toEqual({});
+    entriesSpy.mockRestore();
   });
 });

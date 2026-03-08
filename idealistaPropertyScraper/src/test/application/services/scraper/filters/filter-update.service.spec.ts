@@ -149,6 +149,33 @@ describe('FilterUpdateService', () => {
     expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'max', '800');
   });
 
+  it('whenExpectedMaxIsNullAndCurrentMaxIsSelected_applyRequiredActions_shouldUseMaxPlaceholderFallback', async () => {
+    // Arrange
+    const loader = new FilterLoaderDetectionServiceMock();
+    loader.scrollToTop.mockResolvedValue(undefined);
+    loader.waitForPostClickStabilityOrReload.mockResolvedValue(true);
+    const selectionReader = new FilterSelectionReaderServiceMock();
+    selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
+    selectionReader.readCurrentMinMaxSelection
+      .mockResolvedValueOnce({ selectedMin: null, selectedMax: '1200' })
+      .mockResolvedValue({ selectedMin: null, selectedMax: null });
+    const actionExecutor = new FilterActionExecutorServiceMock();
+    actionExecutor.clickMinMaxOption.mockResolvedValue(true);
+    const service = new FilterUpdateService(
+      loader as unknown as FilterLoaderDetectionService,
+      new FilterTextNormalizationService(),
+      selectionReader as unknown as FilterSelectionReaderService,
+      actionExecutor as unknown as FilterActionExecutorService
+    );
+    const expected = new Price();
+    expected.setSelectedMin(null);
+    expected.setSelectedMax(null);
+    // Action
+    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    // Assert
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'max', 'Máx');
+  });
+
   it('whenPostClickReloadHappens_applyRequiredActions_shouldRestartFromBeginningAndReconcileAgain', async () => {
     // Arrange
     const loader = new FilterLoaderDetectionServiceMock();

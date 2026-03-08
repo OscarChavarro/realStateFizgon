@@ -241,4 +241,45 @@ describe('ConfigurationSourceService', () => {
     });
     rmSync(tempDir, { recursive: true, force: true });
   });
+
+  it('whenEnvironmentOmitsFilters_loadFilterDefinitionsByKey_shouldReturnEmptyRecord', () => {
+    // Arrange
+    const tempDir = mkdtempSync(join(tmpdir(), 'cfg-src-'));
+    const environment = buildValidEnvironment();
+    delete (environment as { filters?: unknown }).filters;
+    writeConfigFiles(tempDir, environment, buildValidSecrets());
+    jest.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    const source = new ConfigurationSourceService();
+    // Action
+    const definitions = (source as unknown as {
+      loadFilterDefinitionsByKey: () => Record<string, unknown>;
+    }).loadFilterDefinitionsByKey();
+    // Assert
+    expect(definitions).toEqual({});
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('whenFilterDefinitionOmitsOptionalOptions_getFilterDefinitionByName_shouldDefaultMissingListsToEmpty', () => {
+    // Arrange
+    const tempDir = mkdtempSync(join(tmpdir(), 'cfg-src-'));
+    const environment = buildValidEnvironment();
+    (environment as { filters: { definitions: Array<Record<string, unknown>> } }).filters = {
+      definitions: [{ propertyType: {} }]
+    };
+    writeConfigFiles(tempDir, environment, buildValidSecrets());
+    jest.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    const source = new ConfigurationSourceService();
+    // Action
+    const definition = source.getFilterDefinitionByName('Tipo de inmueble');
+    // Assert
+    expect(definition).toEqual({
+      plainOptions: [],
+      minOptions: [],
+      maxOptions: [],
+      selectedPlainOptions: [],
+      selectedMin: null,
+      selectedMax: null
+    });
+    rmSync(tempDir, { recursive: true, force: true });
+  });
 });

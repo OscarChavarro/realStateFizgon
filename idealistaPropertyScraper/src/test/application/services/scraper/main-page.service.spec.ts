@@ -126,6 +126,29 @@ describe('MainPageService', () => {
     nowSpy.mockRestore();
   });
 
+  it('whenExpressionResultOmitsUrlAndTitle_waitForExpression_shouldFallbackTimeoutMessageToEmptyValues', async () => {
+    // Arrange
+    const originErrorDetector = new OriginErrorDetectorServiceMock();
+    originErrorDetector.buildConditionExpression.mockReturnValue('false');
+    const service = new MainPageService(
+      new ScraperConfigMockForMainPage() as unknown as ScraperConfig,
+      originErrorDetector as unknown as OriginErrorDetectorService
+    );
+    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async () => ({ result: { value: {} } }));
+    const client = createClient(evaluate);
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+      now += 3000;
+      return now;
+    });
+    // Action
+    const action = (service as unknown as { waitForExpression: (clientArg: CdpClient, expression: string) => Promise<void> })
+      .waitForExpression(client, 'false');
+    // Assert
+    await expect(action).rejects.toThrow('Timeout waiting for expression: false. Last URL="", title="".');
+    nowSpy.mockRestore();
+  });
+
   it('whenRuntimeReturnsExceptionDetails_evaluateOrThrow_shouldThrowRuntimeError', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMock();

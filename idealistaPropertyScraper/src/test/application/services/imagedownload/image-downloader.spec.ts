@@ -268,6 +268,16 @@ describe('ImageDownloader', () => {
     expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(4321);
   });
 
+  it('whenPendingDownloadWaitUsesDefault_waitForPendingImageDownloads_shouldDelegateWithDefaultTimeout', async () => {
+    // Arrange
+    const { service, networkCapture } = createService();
+    networkCapture.waitForPendingImageDownloads.mockResolvedValue(undefined);
+    // Action
+    await service.waitForPendingImageDownloads();
+    // Assert
+    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(15000);
+  });
+
   it('whenNetworkSettleWaitIsRequested_waitForImageNetworkSettled_shouldDelegateToNetworkCapture', async () => {
     // Arrange
     const { service, networkCapture, logger } = createService();
@@ -276,6 +286,16 @@ describe('ImageDownloader', () => {
     await service.waitForImageNetworkSettled(6543, 321);
     // Assert
     expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(logger, 6543, 321);
+  });
+
+  it('whenNetworkSettleWaitUsesDefault_waitForImageNetworkSettled_shouldDelegateWithDefaultWindows', async () => {
+    // Arrange
+    const { service, networkCapture, logger } = createService();
+    networkCapture.waitForImageNetworkSettled.mockResolvedValue(undefined);
+    // Action
+    await service.waitForImageNetworkSettled();
+    // Assert
+    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(logger, 12000, 1200);
   });
 
   it('whenPropertyIdCannotBeExtracted_movePropertyImagesFromIncoming_shouldSkipProcessing', async () => {
@@ -450,6 +470,33 @@ describe('ImageDownloader', () => {
     expect(writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured.bin', expect.any(Buffer));
     const cache = (service as unknown as { incomingImagesByKey: Map<string, Array<{ path: string }>> }).incomingImagesByKey;
     expect(cache.get('canonical-a')?.[0]?.path).toBe('/tmp/images/incoming/captured.bin');
+  });
+
+  it('whenPersistCapturedImageReceivesBinaryBody_persistCapturedImage_shouldDecodeUsingBinaryCodec', async () => {
+    // Arrange
+    const { service, urlRules, pathService, fileName } = createService();
+    urlRules.shouldTrackImageUrl.mockReturnValue(true);
+    urlRules.isSvgImage.mockReturnValue(false);
+    urlRules.extractCanonicalImageKey.mockReturnValue('canonical-binary');
+    pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
+    fileName.buildImageFilename.mockReturnValue('captured-binary.bin');
+    fileName.resolveImageExtension.mockReturnValue('jpg');
+    // Action
+    await (service as unknown as {
+      persistCapturedImage: (payload: {
+        requestId: string;
+        url: string;
+        mimeType: string;
+        body: { body: string; base64Encoded: boolean };
+      }) => Promise<void>;
+    }).persistCapturedImage({
+      requestId: 'req-binary',
+      url: 'https://img4.idealista.com/blur/binary.jpg',
+      mimeType: 'image/jpeg',
+      body: { body: 'abc', base64Encoded: false }
+    });
+    // Assert
+    expect(writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured-binary.bin', Buffer.from('abc', 'binary'));
   });
 
   it('whenPersistCapturedImageIsUntrackable_persistCapturedImage_shouldSkipDiskWrite', async () => {

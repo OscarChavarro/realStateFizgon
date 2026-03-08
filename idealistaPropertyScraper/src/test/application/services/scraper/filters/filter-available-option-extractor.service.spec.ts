@@ -82,6 +82,25 @@ describe('FilterAvailableOptionExtractor', () => {
     expect(result).toEqual({ minOptions: ['100'], maxOptions: ['900', '1200'] });
   });
 
+  it('whenMinMaxContainsNonArrayValues_extractMinMaxOptions_shouldFallbackToEmptyArrays', async () => {
+    // Arrange
+    const service = new FilterAvailableOptionExtractor();
+    const client = createClient();
+    const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
+    evaluateMock.mockResolvedValue({
+      result: {
+        value: {
+          minOptions: '100',
+          maxOptions: 200
+        }
+      }
+    });
+    // Action
+    const result = await service.extractMinMaxOptions(client, '#price');
+    // Assert
+    expect(result).toEqual({ minOptions: [], maxOptions: [] });
+  });
+
   it('whenRuntimeArrayEvaluationFails_extractSingleSelectorOptions_shouldThrowError', async () => {
     // Arrange
     const service = new FilterAvailableOptionExtractor();

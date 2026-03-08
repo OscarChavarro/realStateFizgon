@@ -80,6 +80,29 @@ function createPageAndRuntime(url: string): { page: PageDomainMock; runtime: Run
   };
 }
 
+function createPageAndRuntimeWithoutLocationResult(): { page: PageDomainMock; runtime: RuntimeDomainMock } {
+  const navigate = jest.fn(async () => undefined) as unknown as PageDomainMock['navigate'];
+  const reload = jest.fn(async () => undefined) as unknown as PageDomainMock['reload'];
+  const loadEventFired = jest.fn() as unknown as PageDomainMock['loadEventFired'];
+  const evaluate = jest.fn(async (params: { expression: string }) => {
+    if (params.expression === 'window.location.href') {
+      return {};
+    }
+    return { result: { value: true } };
+  }) as unknown as RuntimeDomainMock['evaluate'];
+
+  return {
+    page: {
+      navigate,
+      reload,
+      loadEventFired
+    },
+    runtime: {
+      evaluate
+    }
+  };
+}
+
 describe('SearchResultsPreparationService', () => {
   it('whenCurrentPageIsNotHome_prepareSearchResultsWithFilters_shouldNavigateHomeAndContinueFlow', async () => {
     // Arrange
@@ -141,6 +164,36 @@ describe('SearchResultsPreparationService', () => {
     // Assert
     expect(sync.sleep).toHaveBeenCalledTimes(1);
     expect(propertyList.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(4);
+  });
+
+  it('whenLocationEvaluateReturnsNoValue_prepareSearchResultsWithFilters_shouldFallbackToEmptyCurrentUrlAndNavigateHome', async () => {
+    // Arrange
+    const sync = new ChromiumPageSyncServiceMockForPreparation();
+    sync.waitForPageLoad.mockResolvedValue(undefined);
+    sync.waitForExpression.mockResolvedValue(undefined);
+    sync.sleep.mockResolvedValue(undefined);
+    const mainPage = new MainPageServiceMockForPreparation();
+    mainPage.execute.mockResolvedValue(undefined);
+    const filters = new FiltersServiceMockForPreparation();
+    filters.execute.mockResolvedValue(undefined);
+    const propertyList = new PropertyListPageServiceMockForPreparation();
+    const originError = new OriginErrorDetectorServiceMockForPreparation();
+    originError.hasOriginError.mockResolvedValue(false);
+    const service = new SearchResultsPreparationService(
+      new ChromeConfigMockForPreparation() as unknown as ChromeConfig,
+      new ScraperConfigMockForPreparation() as unknown as ScraperConfig,
+      sync as unknown as ChromiumPageSyncService,
+      mainPage as unknown as MainPageService,
+      filters as unknown as FiltersService,
+      propertyList as unknown as PropertyListPageService,
+      originError as unknown as OriginErrorDetectorService
+    );
+    const cdp = createPageAndRuntimeWithoutLocationResult();
+    // Action
+    await service.prepareSearchResultsWithFilters({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime);
+    // Assert
+    expect(cdp.page.navigate as unknown as jest.Mock).toHaveBeenCalledWith({ url: 'https://www.idealista.com/' });
+    expect(filters.execute).toHaveBeenCalled();
   });
 
   it('whenMainPageFailsAndOriginErrorIsVisible_executeMainPageWithRetry_shouldReloadAndRetry', async () => {

@@ -57,7 +57,7 @@ export class ImageUrlRulesService {
         return null;
       }
 
-      const last = parts[parts.length - 1] ?? '';
+      const last = parts[parts.length - 1];
       const baseNoExt = last.includes('.') ? last.slice(0, last.lastIndexOf('.')) : last;
       if (!baseNoExt) {
         return null;

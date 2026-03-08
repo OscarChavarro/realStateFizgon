@@ -78,6 +78,10 @@ describe('ImageUrlRulesService', () => {
       expected: 'image'
     },
     {
+      url: 'https://img4.idealista.com/image',
+      expected: 'image'
+    },
+    {
       url: 'invalid-url',
       expected: null
     },

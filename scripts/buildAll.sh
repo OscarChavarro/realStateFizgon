@@ -29,6 +29,7 @@ cd idealistaPropertyScraper
 npm install
 npm ci
 npm run build
+npm run test:cov
 cd ..
 
 print_build_msg "propertyBackend"

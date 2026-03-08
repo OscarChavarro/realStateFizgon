@@ -42,6 +42,20 @@ describe('ImageNetworkCaptureService', () => {
     expect(pendingSize).toBe(0);
   });
 
+  it('whenResponseTypeIsMissing_trackResponseReceived_shouldFallbackToEmptyTypeAndIgnoreRequest', () => {
+    // Arrange
+    const service = new ImageNetworkCaptureService();
+    // Action
+    service.trackResponseReceived({
+      requestId: 'r-missing-type',
+      type: undefined,
+      response: { url: 'https://img4.idealista.com/blur/a.jpg', mimeType: 'image/jpeg' }
+    }, () => true);
+    // Assert
+    const pendingSize = (service as unknown as { pendingImageRequests: Map<string, unknown> }).pendingImageRequests.size;
+    expect(pendingSize).toBe(0);
+  });
+
   it('whenResponseDomainIsNotAllowed_trackResponseReceived_shouldIgnoreRequest', () => {
     // Arrange
     const service = new ImageNetworkCaptureService();
@@ -68,6 +82,20 @@ describe('ImageNetworkCaptureService', () => {
     // Assert
     const pending = (service as unknown as { pendingImageRequests: Map<string, { url: string }> }).pendingImageRequests.get('r2');
     expect(pending?.url).toBe('https://img4.idealista.com/blur/a.jpg');
+  });
+
+  it('whenResponseUrlAndMimeTypeAreMissing_trackResponseReceived_shouldFallbackToEmptyStrings', () => {
+    // Arrange
+    const service = new ImageNetworkCaptureService();
+    // Action
+    service.trackResponseReceived({
+      requestId: 'r-empty',
+      type: 'image',
+      response: { url: undefined as unknown as string, mimeType: undefined }
+    }, () => true);
+    // Assert
+    const pending = (service as unknown as { pendingImageRequests: Map<string, { url: string; mimeType: string }> }).pendingImageRequests.get('r-empty');
+    expect(pending).toEqual({ url: '', mimeType: '' });
   });
 
   it('whenLoadingFails_trackLoadingFailed_shouldRemovePendingRequest', () => {
@@ -107,7 +135,7 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForPendingImageDownloads();
     // Assert
     expect(network.getResponseBody).toHaveBeenCalledWith({ requestId: 'r4' });
-    expect(onImageBody).toHaveBeenCalledWith({
+    expect(onImageBody as unknown as jest.Mock).toHaveBeenCalledWith({
       requestId: 'r4',
       url: 'https://img4.idealista.com/blur/a.jpg',
       mimeType: 'image/jpeg',
@@ -212,6 +240,31 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForImageNetworkSettled(logger as unknown as Logger, 3000, 1200);
     // Assert
     expect(logger.warn).not.toHaveBeenCalled();
+    nowSpy.mockRestore();
+  });
+
+  it('whenSettleWaitUsesDefaults_waitForImageNetworkSettled_shouldUseDefaultTimeoutAndQuietWindow', async () => {
+    // Arrange
+    const service = new ImageNetworkCaptureService();
+    (service as unknown as { imageNetworkActivitySeen: boolean }).imageNetworkActivitySeen = true;
+    (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 1;
+    const pendingSpy = jest.spyOn(
+      service as unknown as { waitForPendingImageDownloads: (timeoutMs?: number) => Promise<void> },
+      'waitForPendingImageDownloads'
+    ).mockImplementation(async () => {
+      (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 2;
+      (service as unknown as { lastImageNetworkActivityAt: number }).lastImageNetworkActivityAt = 0;
+    });
+    const logger = new LoggerMock();
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+      now += 1500;
+      return now;
+    });
+    // Action
+    await service.waitForImageNetworkSettled(logger as unknown as Logger);
+    // Assert
+    expect(pendingSpy).toHaveBeenCalledWith(1200);
     nowSpy.mockRestore();
   });
 

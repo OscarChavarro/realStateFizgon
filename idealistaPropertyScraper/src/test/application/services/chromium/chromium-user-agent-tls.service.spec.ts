@@ -149,6 +149,23 @@ describe('ChromiumUserAgentTlsService', () => {
     expect(spawnMock).toHaveBeenCalledTimes(1);
   });
 
+  it('whenBrowserBinaryIsNotProvided_getBrowserVersion_shouldResolveBinaryBeforeReadingVersion', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    const resolveSpy = jest.spyOn(
+      service as unknown as { resolveBrowserBinary: () => string },
+      'resolveBrowserBinary'
+    ).mockReturnValue('/resolved/chromium');
+    const spawnMock = spawnSync as unknown as jest.Mock;
+    spawnMock.mockReturnValue({ stdout: 'Chromium 145.0.7420.0', stderr: '' });
+    // Action
+    const version = service.getBrowserVersion();
+    // Assert
+    expect(version).toBe('145.0.7420.0');
+    expect(resolveSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('whenVersionCommandReturnsEmptyOutput_getBrowserVersion_shouldReturnUndefined', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
@@ -156,6 +173,36 @@ describe('ChromiumUserAgentTlsService', () => {
     const spawnMock = spawnSync as unknown as jest.Mock;
     spawnMock.mockReturnValue({
       stdout: '',
+      stderr: ''
+    });
+    // Action
+    const version = service.getBrowserVersion('/usr/bin/google-chrome');
+    // Assert
+    expect(version).toBeUndefined();
+  });
+
+  it('whenVersionCommandReturnsUndefinedStreams_getBrowserVersion_shouldFallbackToEmptyOutput', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    const spawnMock = spawnSync as unknown as jest.Mock;
+    spawnMock.mockReturnValue({
+      stdout: undefined,
+      stderr: undefined
+    });
+    // Action
+    const version = service.getBrowserVersion('/usr/bin/google-chrome');
+    // Assert
+    expect(version).toBeUndefined();
+  });
+
+  it('whenVersionOutputHasNoSemver_getBrowserVersion_shouldReturnUndefinedFromNoMatchBranch', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    const spawnMock = spawnSync as unknown as jest.Mock;
+    spawnMock.mockReturnValue({
+      stdout: 'Google Chrome development build',
       stderr: ''
     });
     // Action
@@ -178,6 +225,26 @@ describe('ChromiumUserAgentTlsService', () => {
     // Assert
     expect(version).toBeUndefined();
     expect(logger.warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('whenVersionCommandFailsWithoutInjectedLogger_getBrowserVersion_shouldUseInternalLoggerFallback', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    const internalLogger = {
+      log: jest.fn<(message: string) => void>(),
+      warn: jest.fn<(message: string) => void>()
+    };
+    (service as unknown as { logger: typeof internalLogger }).logger = internalLogger;
+    const spawnMock = spawnSync as unknown as jest.Mock;
+    spawnMock.mockImplementation(() => {
+      throw new Error('spawn failed');
+    });
+    // Action
+    const version = service.getBrowserVersion('/usr/bin/google-chrome');
+    // Assert
+    expect(version).toBeUndefined();
+    expect(internalLogger.warn).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -276,6 +343,16 @@ describe('ChromiumUserAgentTlsService', () => {
     expect(result).toBe('Mozilla/5.0 Chrome/145.0.0.0 Safari/537.36');
   });
 
+  it('whenHeaderUserAgentInputIsUndefined_resolveUserAgentForHeaders_shouldReturnUndefined', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    // Action
+    const result = service.resolveUserAgentForHeaders(undefined as unknown as string, '145.0.7420.0');
+    // Assert
+    expect(result).toBeUndefined();
+  });
+
   it('whenDefaultUserAgentIsBuiltOnWindows_resolveUserAgentForLaunch_shouldUseWindowsToken', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
@@ -302,5 +379,19 @@ describe('ChromiumUserAgentTlsService', () => {
     });
     // Assert
     expect(result).toContain('X11; Linux x86_64');
+  });
+
+  it('whenDefaultUserAgentIsBuiltOnLinuxArm64_resolveUserAgentForLaunch_shouldUseLinuxArm64Token', () => {
+    // Arrange
+    const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig);
+    const logger = new LoggerLikeMock();
+    // Action
+    let result = '';
+    withProcessPlatformAndArch('linux', 'arm64', () => {
+      result = service.resolveUserAgentForLaunch('', '145.0.7420.0', logger) ?? '';
+    });
+    // Assert
+    expect(result).toContain('X11; Linux aarch64');
   });
 });

@@ -37,6 +37,25 @@ describe('MongoConfig', () => {
     });
   });
 
+  it('whenMongoCredentialsAreMissing_mongoUserAndPassword_shouldReturnEmptyStrings', () => {
+    // Arrange
+    const source: ConfigurationSourceMockShape = {
+      environment: {},
+      secrets: {
+        mongodb: {
+          host: 'mongo.internal',
+          port: 27017,
+          database: 'properties'
+        }
+      }
+    };
+    const config = new MongoConfig(source as unknown as ConfigurationSourceService);
+    // Action
+    const credentials = { user: config.mongoUser, password: config.mongoPassword };
+    // Assert
+    expect(credentials).toEqual({ user: '', password: '' });
+  });
+
   it.each([
     {
       user: 'user@name',

@@ -311,6 +311,16 @@ describe('FiltersService', () => {
     expect(payload).toEqual({ found: false, sections: [] });
   });
 
+  it('whenSupportedNameContainsSectionName_matches_shouldReturnTrueOnReverseIncludeBranch', () => {
+    // Arrange
+    const { service } = createService();
+    // Action
+    const result = (service as unknown as { matches: (sectionName: string, supportedName: string) => boolean })
+      .matches('tipo', 'tipo de inmueble');
+    // Assert
+    expect(result).toBe(true);
+  });
+
   it('whenFilterDefinitionsExist_applyConfiguredFilterDefinitions_shouldPopulatePreloadedSelections', () => {
     // Arrange
     const filterUpdate = new FilterUpdateServiceMockForFiltersService();

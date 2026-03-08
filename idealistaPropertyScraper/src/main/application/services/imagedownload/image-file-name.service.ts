@@ -16,8 +16,8 @@ export class ImageFileNameService {
 
   resolveImageExtension(url: string, mimeType: string): string {
     const pathname = this.imageUrlRulesService.safeUrlPathname(url);
-    const lastSegment = pathname.split('/').pop() ?? '';
-    const extensionFromUrl = this.normalizeExtension(lastSegment.includes('.') ? lastSegment.split('.').pop() ?? '' : '');
+    const lastSegment = pathname.slice(pathname.lastIndexOf('/') + 1);
+    const extensionFromUrl = this.normalizeExtension(lastSegment.includes('.') ? lastSegment.slice(lastSegment.lastIndexOf('.') + 1) : '');
     if (extensionFromUrl) {
       return extensionFromUrl;
     }
@@ -46,7 +46,7 @@ export class ImageFileNameService {
     const baseName = this.buildCompatibleBaseName(imageUrl);
     const expectedExtension = this.resolveImageExtension(imageUrl, '');
     const preferredExtension = expectedExtension === '.img' ? downloadedExtension : expectedExtension;
-    const extension = preferredExtension || downloadedExtension || '.img';
+    const extension = preferredExtension || '.img';
 
     return `${baseName}${extension}`;
   }
@@ -70,9 +70,9 @@ export class ImageFileNameService {
       const nameNoExt = last.includes('.') ? last.slice(0, last.lastIndexOf('.')) : last;
 
       if (parts.length >= 4) {
-        const p1 = this.sanitizeFileSegment(parts[parts.length - 4] ?? '');
-        const p2 = this.sanitizeFileSegment(parts[parts.length - 3] ?? '');
-        const p3 = this.sanitizeFileSegment(parts[parts.length - 2] ?? '');
+        const p1 = this.sanitizeFileSegment(parts[parts.length - 4]);
+        const p2 = this.sanitizeFileSegment(parts[parts.length - 3]);
+        const p3 = this.sanitizeFileSegment(parts[parts.length - 2]);
         const p4 = this.sanitizeFileSegment(nameNoExt);
         return `${p1}_${p2}_${p3}_${p4}`;
       }

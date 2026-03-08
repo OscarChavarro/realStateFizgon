@@ -133,6 +133,17 @@ describe('ScraperConfig', () => {
     expect(apiPort).toBe(expected);
   });
 
+  it('whenApiPortIsMissing_apiHttpPort_shouldReturnDefaultPort', () => {
+    // Arrange
+    const config = createScraperConfig({
+      environment: {}
+    });
+    // Action
+    const apiPort = config.apiHttpPort;
+    // Assert
+    expect(apiPort).toBe(3000);
+  });
+
   it('whenFilterDefinitionIsRequested_getFilterDefinitionByName_shouldDelegateToSource', () => {
     // Arrange
     const definition: FilterDefinition = {

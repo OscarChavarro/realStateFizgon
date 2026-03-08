@@ -138,6 +138,30 @@ describe('MongoDatabaseService', () => {
     );
   });
 
+  it('whenClosedByIsNotProvided_saveClosedProperty_shouldUseCurrentDateAsFallback', async () => {
+    // Arrange
+    jest.useFakeTimers();
+    const now = new Date('2026-03-08T20:00:00.000Z');
+    jest.setSystemTime(now);
+    const collection: MockCollection = {
+      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
+      findOne: jest.fn(async () => null),
+      find: jest.fn(() => ({ toArray: async () => [] }))
+    };
+    const service = createService(collection, new RabbitMqServiceMock());
+    // Action
+    await service.saveClosedProperty('https://www.idealista.com/inmueble/999999999/');
+    // Assert
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { url: 'https://www.idealista.com/inmueble/999999999/' },
+      expect.objectContaining({
+        $set: { closedBy: now }
+      }),
+      { upsert: true }
+    );
+    jest.useRealTimers();
+  });
+
   it.each([
     {
       method: 'propertyExistsByUrl',
@@ -328,8 +352,8 @@ describe('MongoDatabaseService', () => {
     // Action
     await (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
     // Assert
-    expect(collection.dropIndex).toHaveBeenCalledWith('url_old');
-    expect(collection.createIndex).toHaveBeenCalledWith({ url: 1 }, { name: 'url_1', unique: true });
+    expect(collection.dropIndex as unknown as jest.Mock).toHaveBeenCalledWith('url_old');
+    expect(collection.createIndex as unknown as jest.Mock).toHaveBeenCalledWith({ url: 1 }, { name: 'url_1', unique: true });
   });
 
   it('whenUniqueIndexCreationFailsByDuplicates_ensureUniqueUrlIndex_shouldThrowDeduplicationError', async () => {
@@ -392,7 +416,8 @@ describe('MongoDatabaseService', () => {
   it.each([
     { input: null, expected: null },
     { input: 'abc', expected: null },
-    { input: '1.200 EUR', expected: 1200 }
+    { input: '1.200 EUR', expected: 1200 },
+    { input: '9'.repeat(5000), expected: null }
   ])('whenParsingStringPrice_parseStringPriceToNumber_shouldReturnExpectedNumber', ({ input, expected }) => {
     // Arrange
     const service = createService({
@@ -550,7 +575,7 @@ describe('MongoDatabaseService', () => {
     // Action
     await (service as unknown as { ensurePropertiesCollectionAndUrlIndex: () => Promise<void> }).ensurePropertiesCollectionAndUrlIndex();
     // Assert
-    expect(database.createCollection).toHaveBeenCalledWith('properties');
+    expect(database.createCollection as unknown as jest.Mock).toHaveBeenCalledWith('properties');
     expect(ensureUniqueSpy).toHaveBeenCalledWith(collection);
     expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBe(collection);
   });
@@ -623,10 +648,10 @@ describe('MongoDatabaseService', () => {
     // Action
     await (service as unknown as { connect: () => Promise<void> }).connect();
     // Assert
-    expect(mongoClientMock).toHaveBeenCalledWith((new MongoConfigMock()).mongoConnectionUri);
+    expect(mongoClientMock as unknown as jest.Mock).toHaveBeenCalledWith((new MongoConfigMock()).mongoConnectionUri);
     expect(fakeClient.connect).toHaveBeenCalledTimes(1);
-    expect(fakeClient.db).toHaveBeenCalledWith((new MongoConfigMock()).mongoDatabase);
-    expect(database.collection).toHaveBeenCalledWith('properties');
+    expect(fakeClient.db as unknown as jest.Mock).toHaveBeenCalledWith((new MongoConfigMock()).mongoDatabase);
+    expect(database.collection as unknown as jest.Mock).toHaveBeenCalledWith('properties');
     expect((service as unknown as { database?: unknown }).database).toBe(database);
     expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBe(collection);
     mongoClientGetterSpy.mockRestore();

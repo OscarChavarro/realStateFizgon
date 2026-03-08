@@ -15,6 +15,12 @@ type ExtractedPropertyPayloadMock = {
   images: Array<{ url: string; title: string | null }>;
 };
 
+type PropertyDetailDomExtractorServicePrivate = {
+  extractPropertyIdFromUrl(url: string): string | null;
+  findAndRemoveFirst(values: string[], predicate: (value: string) => boolean): string | null;
+  parsePriceToNumber(rawPrice: string | null): number | null;
+};
+
 function createRuntime(value: ExtractedPropertyPayloadMock | null): RuntimeClient {
   return {
     evaluate: jest.fn(async () => ({ result: { value } }))
@@ -150,5 +156,44 @@ describe('PropertyDetailDomExtractorService', () => {
     // Assert
     expect(filtered.images).toHaveLength(1);
     expect(filtered.images[0]?.url).toBe('https://img4.idealista.com/blur/WEB_DETAIL/0/id.pro.es.image.master/a.jpg');
+  });
+
+  it('whenRegexMatchGroupIsUndefined_extractPropertyIdFromUrl_shouldReturnNull', () => {
+    // Arrange
+    const service = new PropertyDetailDomExtractorService();
+    const privateService = service as unknown as PropertyDetailDomExtractorServicePrivate;
+    const craftedUrl = {
+      trim: () => ({
+        match: () => ['matched-url-segment', undefined]
+      })
+    } as unknown as string;
+    // Action
+    const propertyId = privateService.extractPropertyIdFromUrl(craftedUrl);
+    // Assert
+    expect(propertyId).toBeNull();
+  });
+
+  it('whenFirstMatchedEntryIsSparse_findAndRemoveFirst_shouldReturnNullAndRemoveEntry', () => {
+    // Arrange
+    const service = new PropertyDetailDomExtractorService();
+    const privateService = service as unknown as PropertyDetailDomExtractorServicePrivate;
+    const sparseValues: string[] = [];
+    (sparseValues as unknown[]).length = 1;
+    // Action
+    const value = privateService.findAndRemoveFirst(sparseValues, () => true);
+    // Assert
+    expect(value).toBeNull();
+    expect(sparseValues).toHaveLength(0);
+  });
+
+  it('whenPriceParsingOverflows_parsePriceToNumber_shouldReturnNull', () => {
+    // Arrange
+    const service = new PropertyDetailDomExtractorService();
+    const privateService = service as unknown as PropertyDetailDomExtractorServicePrivate;
+    const rawPrice = `EUR ${'9'.repeat(10000)}`;
+    // Action
+    const parsed = privateService.parsePriceToNumber(rawPrice);
+    // Assert
+    expect(parsed).toBeNull();
   });
 });

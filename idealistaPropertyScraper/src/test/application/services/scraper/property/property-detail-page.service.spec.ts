@@ -120,6 +120,24 @@ describe('PropertyDetailPageService', () => {
     expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
   });
 
+  it('whenLoadedDetailIsDeactivatedWithoutClosedDate_loadPropertyUrl_shouldMarkClosedWithUndefinedDate', async () => {
+    // Arrange
+    const { service, navigation, interaction, cookie, deactivated, storage } = createService();
+    const client = createClient();
+    navigation.clickPropertyLinkFromResults.mockResolvedValue(true);
+    navigation.waitForDetailUrlAndDomComplete.mockResolvedValue(undefined);
+    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
+    cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
+    deactivated.detect.mockResolvedValue({ isDeactivated: true, closedBy: null });
+    storage.markPropertyClosed.mockResolvedValue(undefined);
+    // Action
+    await service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/2b/');
+    // Assert
+    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/2b/', undefined);
+    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+  });
+
   it('whenDetailIsActiveAndExtracted_loadPropertyUrl_shouldFilterAndPersistProperty', async () => {
     // Arrange
     const { service, navigation, interaction, cookie, deactivated, extractor, storage } = createService();
@@ -183,6 +201,27 @@ describe('PropertyDetailPageService', () => {
     await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/5/');
     // Assert
     expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5/', closedBy);
+    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+  });
+
+  it('whenExtractionFailsAndThenDeactivatedWithoutClosedDate_loadPropertyUrlFromDatabase_shouldMarkClosedWithUndefinedDate', async () => {
+    // Arrange
+    const { service, navigation, interaction, cookie, deactivated, extractor, storage } = createService();
+    const client = createClient();
+    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
+    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
+    interaction.revealDetailMedia.mockResolvedValue(undefined);
+    cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
+    deactivated.detect
+      .mockResolvedValueOnce({ isDeactivated: false, closedBy: null })
+      .mockResolvedValueOnce({ isDeactivated: true, closedBy: null });
+    extractor.extractProperty.mockResolvedValue(null);
+    storage.markPropertyClosed.mockResolvedValue(undefined);
+    // Action
+    await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/5b/');
+    // Assert
+    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5b/', undefined);
     expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
   });
 

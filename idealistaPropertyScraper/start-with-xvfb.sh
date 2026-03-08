@@ -69,6 +69,6 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 # Start the NestJS service as the main process for this session.
-node -r /app/scripts/runtime/register-src-dist.cjs dist/main.js &
+node dist/main.js &
 NODE_PID=$!
 wait "${NODE_PID}"

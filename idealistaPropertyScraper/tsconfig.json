@@ -9,9 +9,13 @@
     "target": "es2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": "./src/main",
     "paths": {
-      "src/*": ["src/main/*"]
+      "src/*": [
+        "*",
+        "../../../modules/proxy/dist/*",
+        "../../../modules/captchaSolvers/dist/*"
+      ]
     },
     "incremental": true,
     "strict": true,

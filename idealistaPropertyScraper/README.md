@@ -27,21 +27,21 @@ Then edit `secrets.json` with valid credentials for your environment.
 
 The codebase is intentionally split between **business scraping logic** and **technical/runtime concerns**:
 
-- `src/application/services/scraper/`: business use cases for the Idealista scraper.
-- `src/application/services/scraper/filters/`: business filtering behavior.
-- `src/application/services/scraper/pagination/`: business pagination behavior.
-- `src/application/services/scraper/property/`: property listing/detail business logic.
-- `src/application/services/scraper/flows/`: high-level scrape/update business flows.
+- `src/main/application/services/scraper/`: business use cases for the Idealista scraper.
+- `src/main/application/services/scraper/filters/`: business filtering behavior.
+- `src/main/application/services/scraper/pagination/`: business pagination behavior.
+- `src/main/application/services/scraper/property/`: property listing/detail business logic.
+- `src/main/application/services/scraper/flows/`: high-level scrape/update business flows.
 
-- `src/application/services/chromium/`: Chromium/CDP technical services.
-- `src/application/services/bootstrap/`: technical startup preparation flows.
-- `src/application/services/prechecks/`: technical infrastructure checks before startup.
-- `src/application/services/resilience/`: technical resilience helpers (error detection/recovery support).
+- `src/main/application/services/chromium/`: Chromium/CDP technical services.
+- `src/main/application/services/bootstrap/`: technical startup preparation flows.
+- `src/main/application/services/prechecks/`: technical infrastructure checks before startup.
+- `src/main/application/services/resilience/`: technical resilience helpers (error detection/recovery support).
 
 Facade/entry-point services are kept at the parent scraper package:
 
-- `src/application/services/scraper/scraper-bootstrap.service.ts`: startup + bootstrap sequence.
-- `src/application/services/scraper/scraper-orchestrator.service.ts`: runtime orchestration of scrape/update cycles.
+- `src/main/application/services/scraper/scraper-bootstrap.service.ts`: startup + bootstrap sequence.
+- `src/main/application/services/scraper/scraper-orchestrator.service.ts`: runtime orchestration of scrape/update cycles.
 
 ## Build and Run
 
@@ -87,7 +87,7 @@ npm run lint:fix
 
 Notes:
 
-- Lint targets `src/**/*.ts`.
+- Lint targets `src/main/**/*.ts`.
 - Current setup fails on lint errors and allows warnings.
 
 ## Trigger Scraper Flows

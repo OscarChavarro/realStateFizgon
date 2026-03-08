@@ -116,6 +116,40 @@ export class MongoDatabaseService implements OnModuleDestroy {
     return existing !== null;
   }
 
+  async touchPropertyLastTimeVisited(url: string, visitedAt: Date = new Date()): Promise<void> {
+    const normalizedUrl = url.trim();
+    if (!normalizedUrl) {
+      return;
+    }
+
+    const collection = await this.ensurePropertiesCollection();
+    await collection.updateOne(
+      { url: normalizedUrl },
+      { $set: { lastTimeVisited: visitedAt } }
+    );
+  }
+
+  async getOpenPropertyUrlsWithoutLastTimeVisited(): Promise<string[]> {
+    const collection = await this.ensurePropertiesCollection();
+    const documents = await collection.find(
+      {
+        closedBy: { $exists: false },
+        url: { $type: 'string' },
+        $or: [
+          { lastTimeVisited: { $exists: false } },
+          { lastTimeVisited: null }
+        ]
+      },
+      {
+        projection: { _id: 0, url: 1 }
+      }
+    ).toArray();
+
+    return documents
+      .map((document) => (typeof document.url === 'string' ? document.url.trim() : ''))
+      .filter((candidateUrl) => candidateUrl.length > 0);
+  }
+
   async getOpenPropertyUrls(): Promise<string[]> {
     const collection = await this.ensurePropertiesCollection();
     const documents = await collection.find(

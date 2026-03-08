@@ -76,6 +76,7 @@ export class PropertyListPageService {
       const isOpen = await this.mongoDatabaseService.isOpenPropertyByUrl(url);
       if (isOpen) {
         this.logger.log(`Skipping existing open property: ${url}`);
+        await this.mongoDatabaseService.touchPropertyLastTimeVisited(url);
         continue;
       }
 
@@ -94,6 +95,7 @@ export class PropertyListPageService {
 
       this.logger.log(`Revalidating existing property: ${url}`);
       await this.propertyDetailPageService.loadPropertyUrlFromDatabase(client, url);
+      await this.mongoDatabaseService.touchPropertyLastTimeVisited(url);
       this.processedUrlsSinceLastSearch.add(url);
     }
   }

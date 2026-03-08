@@ -21,9 +21,17 @@ export class UpdateExistingPropertiesFlowService {
       client.Runtime
     );
 
+    this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
+    const openUrlsWithoutLastTimeVisited = await this.mongoDatabaseService.getOpenPropertyUrlsWithoutLastTimeVisited();
+    if (openUrlsWithoutLastTimeVisited.length > 0) {
+      this.logger.log(
+        `UPDATING_PROPERTIES: pre-pass for ${openUrlsWithoutLastTimeVisited.length} open properties without lastTimeVisited.`
+      );
+      await this.propertyListPageService.processExistingUrls(client, openUrlsWithoutLastTimeVisited);
+    }
+
     const openUrls = await this.mongoDatabaseService.getOpenPropertyUrls();
     this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);
-    this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
     await this.propertyListPageService.processExistingUrls(client, openUrls);
     this.logger.log('UPDATING_PROPERTIES cycle finished.');
   }

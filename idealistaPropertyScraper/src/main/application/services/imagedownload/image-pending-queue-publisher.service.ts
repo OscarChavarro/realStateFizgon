@@ -1,17 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { toErrorMessage } from 'src/infrastructure/error-message';
+import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
+import { QUEUE_PUBLISHER_PORT } from 'src/ports/outbound/messaging/queue-publisher.port.token';
 
 @Injectable()
 export class ImagePendingQueuePublisherService {
   private readonly logger = new Logger(ImagePendingQueuePublisherService.name);
   private static readonly PENDING_IMAGE_URLS_QUEUE = 'pending-image-urls-to-download';
 
-  constructor(private readonly rabbitMqService: RabbitMqService) {}
+  constructor(
+    @Inject(QUEUE_PUBLISHER_PORT)
+    private readonly queuePublisherPort: QueuePublisherPort
+  ) {}
 
   async publishPendingImageUrl(url: string, propertyId: string): Promise<void> {
     try {
-      await this.rabbitMqService.publishJsonToQueue(ImagePendingQueuePublisherService.PENDING_IMAGE_URLS_QUEUE, {
+      await this.queuePublisherPort.publishJsonToQueue(ImagePendingQueuePublisherService.PENDING_IMAGE_URLS_QUEUE, {
         url,
         propertyId
       });

@@ -1,0 +1,1 @@
+export const QUEUE_PUBLISHER_PORT = Symbol('QUEUE_PUBLISHER_PORT');

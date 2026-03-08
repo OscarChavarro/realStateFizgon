@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { MongoDatabaseServiceMock } from '../../../../support/mocks/mongo-database-service.mock';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
 class PropertyDetailPageServiceMock {
   readonly loadPropertyUrl = jest.fn<(client: CdpClient, url: string) => Promise<void>>();
@@ -24,10 +24,10 @@ function createClient(): CdpClient {
 describe('PropertyListPageService', () => {
   it('whenRuntimeReturnsStringArray_getPropertyUrls_shouldReturnOnlyStringUrls', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client: CdpClient = {
@@ -57,10 +57,10 @@ describe('PropertyListPageService', () => {
 
   it('whenRuntimeReturnsException_getPropertyUrls_shouldThrowError', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client: CdpClient = {
@@ -81,10 +81,10 @@ describe('PropertyListPageService', () => {
 
   it('whenRuntimeReturnsNonArray_getPropertyUrls_shouldReturnEmptyArray', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client: CdpClient = {
@@ -109,10 +109,10 @@ describe('PropertyListPageService', () => {
 
   it('whenProcessedCacheIsReset_resetProcessedUrlsForCurrentSearch_shouldAllowUrlToBeProcessedAgain', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client = createClient();
@@ -127,10 +127,10 @@ describe('PropertyListPageService', () => {
 
   it('whenUrlAppearsTwiceInCurrentCycle_processUrls_shouldProcessItOnlyOnce', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client = createClient();
@@ -145,10 +145,10 @@ describe('PropertyListPageService', () => {
 
   it('whenUrlAlreadyExistsAsOpen_processUrls_shouldTouchLastTimeVisitedAndSkipDetailNavigation', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client = createClient();
@@ -162,10 +162,10 @@ describe('PropertyListPageService', () => {
 
   it('whenUrlIsNew_processUrls_shouldLoadDetailAndKeepProcessedCacheForLaterCalls', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client = createClient();
@@ -181,10 +181,10 @@ describe('PropertyListPageService', () => {
 
   it('whenRevalidatingExistingUrls_processExistingUrls_shouldTouchLastTimeVisitedForEachProcessedUrl', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const detail = new PropertyDetailPageServiceMock();
     const service = new PropertyListPageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       detail as unknown as PropertyDetailPageService
     );
     const client = createClient();

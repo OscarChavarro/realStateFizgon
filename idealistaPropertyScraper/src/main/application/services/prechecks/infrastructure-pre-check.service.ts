@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ProxyService } from '@real-state-fizgon/proxy';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
 @Injectable()
 export class InfrastructurePreCheckService {
@@ -11,7 +12,8 @@ export class InfrastructurePreCheckService {
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
-    private readonly mongoDatabaseService: MongoDatabaseService,
+    @Inject(PROPERTY_PERSISTENCE_PORT)
+    private readonly propertyPersistencePort: PropertyPersistencePort,
     private readonly imageDownloader: ImageDownloader
   ) {}
 
@@ -24,7 +26,7 @@ export class InfrastructurePreCheckService {
       logger: this.logger
     });
 
-    await this.mongoDatabaseService.validateConnectionOrExit();
+    await this.propertyPersistencePort.validateConnectionOrExit();
     await this.imageDownloader.validateImageDownloadFolder();
   }
 }

@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { MongoDatabaseServiceMock } from '../../../../support/mocks/mongo-database-service.mock';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
 class SearchResultsPreparationServiceMock {
   readonly prepareSearchResultsWithFilters = jest.fn<(
@@ -53,11 +53,11 @@ describe('UpdateExistingPropertiesFlowService', () => {
   }) => {
     // Arrange
     const search = new SearchResultsPreparationServiceMock();
-    const mongo = new MongoDatabaseServiceMock();
+    const mongo = new PropertyPersistencePortMock();
     const list = new PropertyListPageServiceMock();
     const service = new UpdateExistingPropertiesFlowService(
       search as unknown as SearchResultsPreparationService,
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       list as unknown as PropertyListPageService
     );
     const client = createClient();

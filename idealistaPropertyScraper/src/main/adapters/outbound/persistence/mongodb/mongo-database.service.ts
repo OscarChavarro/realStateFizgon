@@ -5,9 +5,10 @@ import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
 import { Property } from 'src/domain/property/property.model';
 import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
 import { sleep } from 'src/infrastructure/sleep';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 
 @Injectable()
-export class MongoDatabaseService implements OnModuleDestroy {
+export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistencePort {
   private static readonly PROPERTIES_COLLECTION = 'properties';
 
   private readonly logger = new Logger(MongoDatabaseService.name);

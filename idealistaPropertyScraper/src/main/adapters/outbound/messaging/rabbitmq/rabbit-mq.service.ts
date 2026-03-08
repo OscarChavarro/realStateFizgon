@@ -5,9 +5,10 @@ import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
+import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
 
 @Injectable()
-export class RabbitMqService implements OnModuleDestroy {
+export class RabbitMqService implements OnModuleDestroy, QueuePublisherPort {
   private readonly logger = new Logger(RabbitMqService.name);
   private static readonly OUTGOING_NOTIFICATION_MESSAGES_QUEUE = 'outgoing-notification-messages';
   private readonly fallbackFilePath = join(process.cwd(), 'output', 'audit', 'pending-property-urls.ndjson');

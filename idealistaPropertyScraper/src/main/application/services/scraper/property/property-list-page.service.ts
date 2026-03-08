@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
 @Injectable()
 export class PropertyListPageService {
@@ -9,7 +10,8 @@ export class PropertyListPageService {
   private readonly processedUrlsSinceLastSearch = new Set<string>();
 
   constructor(
-    private readonly mongoDatabaseService: MongoDatabaseService,
+    @Inject(PROPERTY_PERSISTENCE_PORT)
+    private readonly propertyPersistencePort: PropertyPersistencePort,
     private readonly propertyDetailPageService: PropertyDetailPageService
   ) {}
 
@@ -73,10 +75,10 @@ export class PropertyListPageService {
         continue;
       }
 
-      const isOpen = await this.mongoDatabaseService.isOpenPropertyByUrl(url);
+      const isOpen = await this.propertyPersistencePort.isOpenPropertyByUrl(url);
       if (isOpen) {
         this.logger.log(`Skipping existing open property: ${url}`);
-        await this.mongoDatabaseService.touchPropertyLastTimeVisited(url);
+        await this.propertyPersistencePort.touchPropertyLastTimeVisited(url);
         continue;
       }
 
@@ -95,7 +97,7 @@ export class PropertyListPageService {
 
       this.logger.log(`Revalidating existing property: ${url}`);
       await this.propertyDetailPageService.loadPropertyUrlFromDatabase(client, url);
-      await this.mongoDatabaseService.touchPropertyLastTimeVisited(url);
+      await this.propertyPersistencePort.touchPropertyLastTimeVisited(url);
       this.processedUrlsSinceLastSearch.add(url);
     }
   }

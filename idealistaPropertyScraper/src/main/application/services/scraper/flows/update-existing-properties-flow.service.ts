@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
 @Injectable()
 export class UpdateExistingPropertiesFlowService {
@@ -10,7 +11,8 @@ export class UpdateExistingPropertiesFlowService {
 
   constructor(
     private readonly searchResultsPreparationService: SearchResultsPreparationService,
-    private readonly mongoDatabaseService: MongoDatabaseService,
+    @Inject(PROPERTY_PERSISTENCE_PORT)
+    private readonly propertyPersistencePort: PropertyPersistencePort,
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
@@ -22,7 +24,7 @@ export class UpdateExistingPropertiesFlowService {
     );
 
     this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-    const openUrlsWithoutLastTimeVisited = await this.mongoDatabaseService.getOpenPropertyUrlsWithoutLastTimeVisited();
+    const openUrlsWithoutLastTimeVisited = await this.propertyPersistencePort.getOpenPropertyUrlsWithoutLastTimeVisited();
     if (openUrlsWithoutLastTimeVisited.length > 0) {
       this.logger.log(
         `UPDATING_PROPERTIES: pre-pass for ${openUrlsWithoutLastTimeVisited.length} open properties without lastTimeVisited.`
@@ -30,7 +32,7 @@ export class UpdateExistingPropertiesFlowService {
       await this.propertyListPageService.processExistingUrls(client, openUrlsWithoutLastTimeVisited);
     }
 
-    const openUrls = await this.mongoDatabaseService.getOpenPropertyUrls();
+    const openUrls = await this.propertyPersistencePort.getOpenPropertyUrls();
     this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);
     await this.propertyListPageService.processExistingUrls(client, openUrls);
     this.logger.log('UPDATING_PROPERTIES cycle finished.');

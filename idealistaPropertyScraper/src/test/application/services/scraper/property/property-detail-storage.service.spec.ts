@@ -1,16 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
-
-class MongoDatabaseServiceMockForDetailStorage {
-  readonly saveClosedProperty = jest.fn<(url: string, closedBy?: Date) => Promise<void>>();
-  readonly saveProperty = jest.fn<(property: Property) => Promise<void>>();
-}
+import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
 class ImageDownloaderMockForDetailStorage {
   readonly waitForImageNetworkSettled = jest.fn<() => Promise<void>>();
@@ -36,11 +32,11 @@ function createProperty(): Property {
 describe('PropertyDetailStorageService', () => {
   it('whenDetailIsDeactivated_markPropertyClosed_shouldPersistClosedStatus', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMockForDetailStorage();
+    const mongo = new PropertyPersistencePortMock();
     mongo.saveClosedProperty.mockResolvedValue(undefined);
     const imageDownloader = new ImageDownloaderMockForDetailStorage();
     const service = new PropertyDetailStorageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       imageDownloader as unknown as ImageDownloader
     );
     const closedBy = new Date('2026-01-15T00:00:00.000Z');
@@ -53,14 +49,14 @@ describe('PropertyDetailStorageService', () => {
 
   it('whenPropertyHasImages_savePropertyWithImages_shouldExecutePersistencePipelineInOrder', async () => {
     // Arrange
-    const mongo = new MongoDatabaseServiceMockForDetailStorage();
+    const mongo = new PropertyPersistencePortMock();
     mongo.saveProperty.mockResolvedValue(undefined);
     const imageDownloader = new ImageDownloaderMockForDetailStorage();
     imageDownloader.waitForImageNetworkSettled.mockResolvedValue(undefined);
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const service = new PropertyDetailStorageService(
-      mongo as unknown as MongoDatabaseService,
+      mongo as unknown as PropertyPersistencePort,
       imageDownloader as unknown as ImageDownloader
     );
     const property = createProperty();

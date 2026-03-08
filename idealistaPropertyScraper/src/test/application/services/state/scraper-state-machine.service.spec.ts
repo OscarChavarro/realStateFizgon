@@ -1,0 +1,75 @@
+import { describe, expect, it } from '@jest/globals';
+import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
+
+describe('ScraperStateMachineService', () => {
+  it('whenServiceIsCreated_getCurrentState_shouldReturnInitialStateFromConfig', () => {
+    // Arrange
+    const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    const result = service.getCurrentState();
+    // Assert
+    expect(result).toBe(ScraperState.UPDATING_PROPERTIES);
+  });
+
+  it('whenSameStateIsRequestedAgain_enqueueStateRequest_shouldCoalesceWithoutDuplicatingQueue', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    service.enqueueUpdatePropertiesRequest();
+    service.enqueueScrapePropertiesRequest();
+    // Action
+    const pending = service.enqueueUpdatePropertiesRequest();
+    // Assert
+    expect(pending).toBe(2);
+    expect(service.consumeNextRequestedState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+    expect(service.consumeNextRequestedState()).toBe(ScraperState.UPDATING_PROPERTIES);
+  });
+
+  it('whenQueueExceedsLimit_enqueueStateRequest_shouldDropOldestPendingState', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const enqueue = (service as unknown as { enqueueStateRequest: (state: ScraperState) => number }).enqueueStateRequest;
+    for (let index = 0; index < 12; index += 1) {
+      enqueue.call(service, `STATE_${index}` as unknown as ScraperState);
+    }
+    // Action
+    const firstConsumed = service.consumeNextRequestedState();
+    // Assert
+    expect(service.getPendingRequestsCount()).toBe(9);
+    expect(firstConsumed).toBe('STATE_2');
+  });
+
+  it.each([
+    {
+      operation: (service: ScraperStateMachineService) => service.finishScrapingForNewPropertiesCycle()
+    },
+    {
+      operation: (service: ScraperStateMachineService) => service.finishUpdatingPropertiesCycle()
+    }
+  ])('whenPendingStateExists_finishCycle_shouldTransitionToNextRequestedState', ({ operation }) => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    service.enqueueUpdatePropertiesRequest();
+    // Action
+    const result = operation(service);
+    // Assert
+    expect(result).toBe(ScraperState.UPDATING_PROPERTIES);
+    expect(service.getPendingRequestsCount()).toBe(0);
+  });
+
+  it('whenStateIsSet_setState_shouldReplaceCurrentState', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    service.setState(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+    // Assert
+    expect(service.getCurrentState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+  });
+});

@@ -6,6 +6,9 @@
     "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.build.json",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --config jest.config.ts --watch",
+    "test:cov": "jest --config jest.config.ts --coverage",
     "start": "node -r ./scripts/runtime/register-src-dist.cjs dist/main.js",
     "start:dev": "ts-node -r ./scripts/runtime/register-src-dev.cjs src/main/main.ts"
   },
@@ -26,9 +29,13 @@
     "@eslint/js": "^10.0.1",
     "@mermaid-js/mermaid-cli": "^11.12.0",
     "@types/amqplib": "^0.10.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.10.2",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
+    "jest": "^29.7.0",
+    "jest-util": "^29.7.0",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.56.1"

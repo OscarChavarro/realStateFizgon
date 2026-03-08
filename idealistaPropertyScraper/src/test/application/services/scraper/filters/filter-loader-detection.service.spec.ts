@@ -95,6 +95,20 @@ describe('FilterLoaderDetectionService', () => {
     expect(sleep).not.toHaveBeenCalled();
   });
 
+  it('whenScrollToTopSucceeds_scrollToTop_shouldResolveWithoutError', async () => {
+    // Arrange
+    const service = new FilterLoaderDetectionService(
+      new ScraperConfigMockForLoader() as unknown as ScraperConfig,
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+    );
+    const evaluate = jest.fn(async () => ({ result: { value: true } }));
+    const client = createClient(evaluate);
+    // Action
+    const action = service.scrollToTop(client);
+    // Assert
+    await expect(action).resolves.toBeUndefined();
+  });
+
   it('whenListingVisibilityEvaluationFails_waitForPostClickStabilityOrReload_shouldPropagateError', async () => {
     // Arrange
     const service = new FilterLoaderDetectionService(
@@ -156,5 +170,18 @@ describe('FilterLoaderDetectionService', () => {
     // Assert
     await expect(action).rejects.toThrow('aside-probe-error');
     nowSpy.mockRestore();
+  });
+
+  it('whenAsideFilterProbeHasEmptyExceptionText_waitForAsideFilters_shouldIgnoreExceptionObjectAndReturn', async () => {
+    // Arrange
+    const service = new FilterLoaderDetectionService(
+      new ScraperConfigMockForLoader() as unknown as ScraperConfig,
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+    );
+    const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: '' }, result: { value: true } })));
+    // Action
+    const action = (service as unknown as { waitForAsideFilters: (value: CdpClient) => Promise<void> }).waitForAsideFilters(client);
+    // Assert
+    await expect(action).resolves.toBeUndefined();
   });
 });

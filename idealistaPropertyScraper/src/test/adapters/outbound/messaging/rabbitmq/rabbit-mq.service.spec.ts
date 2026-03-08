@@ -353,6 +353,75 @@ describe('RabbitMqService', () => {
     expect(logger.warn).not.toHaveBeenCalledWith('RabbitMQ connection closed. Next publish will reconnect automatically.');
   });
 
+  it('whenConnectionCloseEventOccursDuringShutdown_attachConnectionLifecycleHandlers_shouldSkipCloseWarning', () => {
+    // Arrange
+    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const logger = muteServiceLogger(service);
+    const connection = createFakeConnection(createFakeChannel());
+    (service as unknown as { shuttingDown: boolean }).shuttingDown = true;
+    (service as unknown as { connection: FakeConnection | null }).connection = connection;
+    (service as unknown as { attachConnectionLifecycleHandlers: (conn: FakeConnection) => void }).attachConnectionLifecycleHandlers(connection);
+    // Action
+    connection.emit('close');
+    // Assert
+    expect((service as unknown as { connection: FakeConnection | null }).connection).toBeNull();
+    expect(logger.warn).not.toHaveBeenCalledWith('RabbitMQ connection closed. Next publish will reconnect automatically.');
+  });
+
+  it('whenChannelCloseEventOccursDuringShutdown_attachChannelLifecycleHandlers_shouldSkipCloseWarning', () => {
+    // Arrange
+    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const logger = muteServiceLogger(service);
+    const channel = createFakeChannel();
+    (service as unknown as { shuttingDown: boolean }).shuttingDown = true;
+    (service as unknown as { channel: FakeConfirmChannel | null }).channel = channel;
+    (service as unknown as { attachChannelLifecycleHandlers: (ch: FakeConfirmChannel) => void }).attachChannelLifecycleHandlers(channel);
+    // Action
+    channel.emit('close');
+    // Assert
+    expect((service as unknown as { channel: FakeConfirmChannel | null }).channel).toBeNull();
+    expect(logger.warn).not.toHaveBeenCalledWith('RabbitMQ channel closed. Next publish will recreate it.');
+  });
+
+  it('whenChannelPromiseChangesBeforeResolution_getChannel_shouldKeepCurrentPromiseReference', async () => {
+    // Arrange
+    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const channel = createFakeChannel();
+    const delayedChannel = new Promise<FakeConfirmChannel>((resolve) => {
+      setTimeout(() => resolve(channel), 0);
+    });
+    const connection = createFakeConnection(channel);
+    connection.createConfirmChannel = jest.fn(() => delayedChannel);
+    jest.spyOn(service as unknown as { getConnection: () => Promise<FakeConnection> }, 'getConnection')
+      .mockResolvedValue(connection);
+    const replacementPromise = Promise.resolve(createFakeChannel());
+    // Action
+    const pending = (service as unknown as { getChannel: () => Promise<FakeConfirmChannel> }).getChannel();
+    (service as unknown as { channelPromise: Promise<FakeConfirmChannel> | null }).channelPromise = replacementPromise;
+    await pending;
+    // Assert
+    expect((service as unknown as { channelPromise: Promise<FakeConfirmChannel> | null }).channelPromise).toBe(replacementPromise);
+  });
+
+  it('whenConnectionPromiseChangesBeforeResolution_getConnection_shouldKeepCurrentPromiseReference', async () => {
+    // Arrange
+    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const channel = createFakeChannel();
+    const connection = createFakeConnection(channel);
+    const connectMock = connect as unknown as jest.MockedFunction<typeof connect>;
+    const delayedConnection = new Promise<FakeConnection>((resolve) => {
+      setTimeout(() => resolve(connection), 0);
+    });
+    connectMock.mockResolvedValue(delayedConnection as never);
+    const replacementPromise = Promise.resolve(createFakeConnection(createFakeChannel()));
+    // Action
+    const pending = (service as unknown as { getConnection: () => Promise<FakeConnection> }).getConnection();
+    (service as unknown as { connectionPromise: Promise<FakeConnection> | null }).connectionPromise = replacementPromise;
+    await pending;
+    // Assert
+    expect((service as unknown as { connectionPromise: Promise<FakeConnection> | null }).connectionPromise).toBe(replacementPromise);
+  });
+
   it('whenConnectionBlockedAndUnblocked_attachConnectionLifecycleHandlers_shouldLogBrokerState', () => {
     // Arrange
     const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);

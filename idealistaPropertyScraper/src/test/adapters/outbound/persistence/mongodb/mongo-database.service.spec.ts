@@ -91,6 +91,22 @@ describe('MongoDatabaseService', () => {
     );
   });
 
+  it('whenPropertyAlreadyExists_saveProperty_shouldSkipNotificationForNonUpsert', async () => {
+    // Arrange
+    const collection: MockCollection = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 0 })),
+      findOne: jest.fn(async () => null),
+      find: jest.fn(() => ({ toArray: async () => [] }))
+    };
+    const rabbit = new RabbitMqServiceMock();
+    const service = createService(collection, rabbit);
+    // Action
+    await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
+    // Assert
+    expect(collection.updateOne).toHaveBeenCalledTimes(1);
+    expect(rabbit.publishIdealistaUpdateNotification).not.toHaveBeenCalled();
+  });
+
   it('whenDuplicateKeyErrorOccurs_saveProperty_shouldRetryWithUpsertDisabled', async () => {
     // Arrange
     const duplicateError = new Error('E11000 duplicate key');
@@ -310,6 +326,17 @@ describe('MongoDatabaseService', () => {
     await service.onModuleDestroy();
     // Assert
     expect(close).toHaveBeenCalledTimes(1);
+    expect((service as unknown as { mongoClient?: unknown }).mongoClient).toBeUndefined();
+    expect((service as unknown as { database?: unknown }).database).toBeUndefined();
+    expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBeUndefined();
+  });
+
+  it('whenMongoClientIsMissing_onModuleDestroy_shouldReturnWithoutClosing', async () => {
+    // Arrange
+    const service = createRawService();
+    // Action
+    await service.onModuleDestroy();
+    // Assert
     expect((service as unknown as { mongoClient?: unknown }).mongoClient).toBeUndefined();
     expect((service as unknown as { database?: unknown }).database).toBeUndefined();
     expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBeUndefined();
@@ -536,6 +563,22 @@ describe('MongoDatabaseService', () => {
     expect(result).toBe(collection);
   });
 
+  it('whenCollectionIsAlreadyInitialized_ensurePropertiesCollection_shouldReturnCollectionWithoutConnect', async () => {
+    // Arrange
+    const service = createRawService();
+    const collection = { marker: 'existing-collection' };
+    (service as unknown as { propertiesCollection?: unknown }).propertiesCollection = collection;
+    const connectSpy = jest.spyOn(
+      service as unknown as { connect: () => Promise<void> },
+      'connect'
+    );
+    // Action
+    const result = await (service as unknown as { ensurePropertiesCollection: () => Promise<unknown> }).ensurePropertiesCollection();
+    // Assert
+    expect(result).toBe(collection);
+    expect(connectSpy).not.toHaveBeenCalled();
+  });
+
   it('whenCollectionStillMissingAfterConnect_ensurePropertiesCollection_shouldThrowInitializationError', async () => {
     // Arrange
     const service = createRawService();
@@ -580,6 +623,28 @@ describe('MongoDatabaseService', () => {
     expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBe(collection);
   });
 
+  it('whenPropertiesCollectionAlreadyExists_ensurePropertiesCollectionAndUrlIndex_shouldSkipCollectionCreation', async () => {
+    // Arrange
+    const service = createRawService();
+    const collection = { name: 'properties' };
+    const database = {
+      listCollections: jest.fn(() => ({ hasNext: async () => true })),
+      createCollection: jest.fn(async () => undefined),
+      collection: jest.fn(() => collection)
+    };
+    (service as unknown as { database?: unknown }).database = database;
+    const ensureUniqueSpy = jest.spyOn(
+      service as unknown as { ensureUniqueUrlIndex: (value: unknown) => Promise<void> },
+      'ensureUniqueUrlIndex'
+    ).mockResolvedValue(undefined);
+    // Action
+    await (service as unknown as { ensurePropertiesCollectionAndUrlIndex: () => Promise<void> }).ensurePropertiesCollectionAndUrlIndex();
+    // Assert
+    expect(database.createCollection as unknown as jest.Mock).not.toHaveBeenCalled();
+    expect(ensureUniqueSpy).toHaveBeenCalledWith(collection);
+    expect((service as unknown as { propertiesCollection?: unknown }).propertiesCollection).toBe(collection);
+  });
+
   it('whenCreateUniqueIndexFailsWithUnexpectedError_ensureUniqueUrlIndex_shouldRethrowOriginalError', async () => {
     // Arrange
     const unexpectedError = new Error('network issue');
@@ -596,6 +661,27 @@ describe('MongoDatabaseService', () => {
     const action = (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
     // Assert
     await expect(action).rejects.toBe(unexpectedError);
+  });
+
+  it('whenUrlIndexNameIsInternalId_ensureUniqueUrlIndex_shouldSkipDropForInternalName', async () => {
+    // Arrange
+    const collection = {
+      indexes: jest.fn(async () => [
+        { name: '_id_', key: { _id: 1 }, unique: true },
+        { name: '_id_', key: { url: 1 }, unique: false }
+      ]),
+      dropIndex: jest.fn(async () => undefined),
+      createIndex: jest.fn(async () => 'url_1')
+    };
+    const service = createRawService();
+    // Action
+    await (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
+    // Assert
+    expect(collection.dropIndex).not.toHaveBeenCalled();
+    expect(collection.createIndex as unknown as jest.Mock).toHaveBeenCalledWith(
+      { url: 1 },
+      { name: 'url_1', unique: true }
+    );
   });
 
   it('whenErrorIsMongoServerDuplicateKey_isDuplicateKeyError_shouldReturnExpectedBoolean', () => {

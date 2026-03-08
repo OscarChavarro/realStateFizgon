@@ -29,6 +29,18 @@ describe('ScraperStateMachineService', () => {
     expect(service.consumeNextRequestedState()).toBe(ScraperState.UPDATING_PROPERTIES);
   });
 
+  it('whenRequestedStateIsAlreadyLatest_enqueueStateRequest_shouldKeepQueueOrder', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    service.enqueueUpdatePropertiesRequest();
+    // Action
+    const pending = service.enqueueUpdatePropertiesRequest();
+    // Assert
+    expect(pending).toBe(1);
+    expect(service.consumeNextRequestedState()).toBe(ScraperState.UPDATING_PROPERTIES);
+  });
+
   it('whenQueueExceedsLimit_enqueueStateRequest_shouldDropOldestPendingState', () => {
     // Arrange
     const config = new ScraperConfigMock();
@@ -42,6 +54,23 @@ describe('ScraperStateMachineService', () => {
     // Assert
     expect(service.getPendingRequestsCount()).toBe(9);
     expect(firstConsumed).toBe('STATE_2');
+  });
+
+  it('whenDroppedStateIsUndefined_enqueueStateRequest_shouldStillKeepQueueWithinLimit', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const queue = (service as unknown as { requestedStateQueue: Array<ScraperState> }).requestedStateQueue;
+    queue.push(undefined as unknown as ScraperState);
+    for (let index = 1; index < 10; index += 1) {
+      queue.push(`STATE_${index}` as unknown as ScraperState);
+    }
+    // Action
+    const pending = (service as unknown as { enqueueStateRequest: (state: ScraperState) => number })
+      .enqueueStateRequest(ScraperState.UPDATING_PROPERTIES);
+    // Assert
+    expect(pending).toBe(10);
+    expect(service.getPendingRequestsCount()).toBe(10);
   });
 
   it.each([
@@ -60,6 +89,28 @@ describe('ScraperStateMachineService', () => {
     const result = operation(service);
     // Assert
     expect(result).toBe(ScraperState.UPDATING_PROPERTIES);
+    expect(service.getPendingRequestsCount()).toBe(0);
+  });
+
+  it('whenNoPendingStateExists_finishScrapingForNewPropertiesCycle_shouldReturnIdle', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    const result = service.finishScrapingForNewPropertiesCycle();
+    // Assert
+    expect(result).toBe(ScraperState.IDLE);
+    expect(service.getPendingRequestsCount()).toBe(0);
+  });
+
+  it('whenNoPendingStateExists_finishUpdatingPropertiesCycle_shouldReturnIdle', () => {
+    // Arrange
+    const config = new ScraperConfigMock();
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    const result = service.finishUpdatingPropertiesCycle();
+    // Assert
+    expect(result).toBe(ScraperState.IDLE);
     expect(service.getPendingRequestsCount()).toBe(0);
   });
 

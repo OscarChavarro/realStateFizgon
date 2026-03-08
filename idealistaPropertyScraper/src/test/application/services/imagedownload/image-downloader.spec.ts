@@ -589,4 +589,20 @@ describe('ImageDownloader', () => {
     expect(rename).toHaveBeenCalledWith('/tmp/images/incoming/a.jpg', '/tmp/images/leftovers/a.jpg');
     expect(rm).toHaveBeenCalledWith('/tmp/images/incoming/folder-a', { recursive: true, force: true });
   });
+
+  it('whenIncomingEntryIsNeitherFileNorDirectory_moveRemainingIncomingToLeftovers_shouldIgnoreUnknownEntryType', async () => {
+    // Arrange
+    const { service, pathService } = createService();
+    pathService.getLeftoversFolderPath.mockReturnValue('/tmp/images/leftovers');
+    (readdir as unknown as jest.Mock).mockImplementationOnce(async () => [
+      { name: 'socket-a', isFile: () => false, isDirectory: () => false }
+    ]);
+    // Action
+    await (service as unknown as { moveRemainingIncomingToLeftovers: (incomingFolderPath: string) => Promise<void> })
+      .moveRemainingIncomingToLeftovers('/tmp/images/incoming');
+    // Assert
+    expect(mkdir).toHaveBeenCalledWith('/tmp/images/leftovers', { recursive: true });
+    expect(rename).not.toHaveBeenCalled();
+    expect(rm).not.toHaveBeenCalledWith('/tmp/images/incoming/socket-a', { recursive: true, force: true });
+  });
 });

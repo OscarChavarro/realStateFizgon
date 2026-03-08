@@ -273,6 +273,12 @@ describe('ChromiumUserAgentTlsService', () => {
       expectedWarnCalls: 1
     },
     {
+      requestedUserAgent: 'Mozilla/5.0 Chrome/145.0.7420.0 Safari/537.36',
+      browserVersion: '145.0.7420.0',
+      expected: 'Chrome/145.0.7420.0',
+      expectedWarnCalls: 0
+    },
+    {
       requestedUserAgent: 'Mozilla/5.0 Chrome/144.0.0.0 Safari/537.36',
       browserVersion: '145.0.7420.0',
       expected: 'Chrome/145.0.7420.0',

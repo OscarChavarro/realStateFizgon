@@ -206,6 +206,27 @@ describe('ImageNetworkCaptureService', () => {
     nowSpy.mockRestore();
   });
 
+  it('whenTimeoutHappensWithoutActiveTasks_waitForPendingImageDownloads_shouldSkipSettledWait', async () => {
+    // Arrange
+    const service = new ImageNetworkCaptureService();
+    (service as unknown as { pendingImageRequests: Map<string, unknown> }).pendingImageRequests.set('req-1', {
+      url: 'https://img4.idealista.com/a.jpg',
+      mimeType: 'image/jpeg'
+    });
+    const allSettledSpy = jest.spyOn(Promise, 'allSettled');
+    let now = 0;
+    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+      now += 600;
+      return now;
+    });
+    // Action
+    await service.waitForPendingImageDownloads(1000);
+    // Assert
+    expect(allSettledSpy).not.toHaveBeenCalled();
+    nowSpy.mockRestore();
+    allSettledSpy.mockRestore();
+  });
+
   it('whenPendingRequestsAreReset_resetPendingRequests_shouldClearPendingMap', () => {
     // Arrange
     const service = new ImageNetworkCaptureService();

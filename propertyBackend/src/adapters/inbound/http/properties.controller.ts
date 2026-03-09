@@ -166,6 +166,7 @@ export class PropertiesController {
     }
 
     const payload = { ...(item as Record<string, unknown>) };
+    const closedByExists = Object.prototype.hasOwnProperty.call(payload, 'closedBy');
 
     const title = typeof payload.title === 'string' ? payload.title : null;
     if (title) {
@@ -176,6 +177,10 @@ export class PropertiesController {
     }
 
     payload.images = this.normalizeImagesWithLocalUrl(payload.images);
+    const normalizedClosedBy = this.normalizeClosedBy(payload.closedBy);
+    payload.closedBy = normalizedClosedBy;
+    payload.closedByExists = closedByExists;
+    payload.isClosed = closedByExists && normalizedClosedBy !== null;
 
     return payload;
   }
@@ -223,5 +228,40 @@ export class PropertiesController {
     } catch {
       return null;
     }
+  }
+
+  private normalizeClosedBy(value: unknown): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toISOString();
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const parsed = new Date(trimmed);
+      return Number.isNaN(parsed.getTime()) ? trimmed : parsed.toISOString();
+    }
+
+    if (typeof value === 'object') {
+      const dateField = (value as { $date?: unknown }).$date;
+      if (typeof dateField === 'string') {
+        const trimmed = dateField.trim();
+        if (!trimmed) {
+          return null;
+        }
+
+        const parsed = new Date(trimmed);
+        return Number.isNaN(parsed.getTime()) ? trimmed : parsed.toISOString();
+      }
+    }
+
+    return String(value);
   }
 }

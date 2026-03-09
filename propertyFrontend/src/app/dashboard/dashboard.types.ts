@@ -9,6 +9,7 @@ export type DashboardPropertyRow = {
   location: string;
   advertiserComment: string;
   localImageUrls: string[];
+  unavailable: boolean;
 };
 
 export type SortDirection = 'asc' | 'desc';

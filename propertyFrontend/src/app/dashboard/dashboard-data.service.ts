@@ -18,6 +18,11 @@ type PropertiesResponse = {
   error: string | null;
   data: Array<{
     createdAt?: string | Date;
+    closedBy?: string | Date | null;
+    closedby?: string | Date | null;
+    closed_by?: string | Date | null;
+    isClosed?: boolean | string | number | null;
+    closedByExists?: boolean | string | number | null;
     propertyId?: string | number;
     createdBy?: string;
     importedBy?: string;
@@ -132,6 +137,14 @@ export class DashboardDataService {
 
   private mapPropertiesForDashboard(rawRows: PropertiesResponse['data']): DashboardPropertyRow[] {
     return rawRows.map((row) => {
+      const closedByValue = row.closedBy ?? row.closedby ?? row.closed_by;
+      const closedByExistsFromPayload = (
+        Object.prototype.hasOwnProperty.call(row, 'closedBy')
+        || Object.prototype.hasOwnProperty.call(row, 'closedby')
+        || Object.prototype.hasOwnProperty.call(row, 'closed_by')
+        || Object.prototype.hasOwnProperty.call(row, 'closedByExists')
+      );
+
       const createdAt = this.toDateOnlyString(
         row.createdAt
         ?? row.createdBy
@@ -163,7 +176,12 @@ export class DashboardDataService {
         price,
         location,
         advertiserComment,
-        localImageUrls: this.extractLocalImageUrls(row.images)
+        localImageUrls: this.extractLocalImageUrls(row.images),
+        unavailable: this.isUnavailable(
+          closedByValue,
+          row.isClosed,
+          row.closedByExists ?? closedByExistsFromPayload
+        )
       };
     });
   }
@@ -220,5 +238,56 @@ export class DashboardDataService {
     }
 
     return localUrls;
+  }
+
+  private hasClosedByValue(value: unknown): boolean {
+    if (value === null || value === undefined) {
+      return false;
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+
+    if (value instanceof Date) {
+      return !Number.isNaN(value.getTime());
+    }
+
+    return true;
+  }
+
+  private isUnavailable(closedBy: unknown, isClosed: unknown, closedByExists: unknown): boolean {
+    if (typeof closedByExists === 'boolean') {
+      if (closedByExists) {
+        return true;
+      }
+    } else if (typeof closedByExists === 'string') {
+      const normalized = closedByExists.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+        return true;
+      }
+    } else if (typeof closedByExists === 'number' && closedByExists !== 0) {
+      return true;
+    }
+
+    if (typeof isClosed === 'boolean') {
+      return isClosed;
+    }
+
+    if (typeof isClosed === 'string') {
+      const normalized = isClosed.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+        return true;
+      }
+      if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === '') {
+        return false;
+      }
+    }
+
+    if (typeof isClosed === 'number') {
+      return isClosed !== 0;
+    }
+
+    return this.hasClosedByValue(closedBy);
   }
 }

@@ -135,6 +135,19 @@
   background: #dbe9ff;
 }
 
+.spreadsheet-table tbody tr.property-row.unavailable td {
+  background: #f9d7dc;
+  color: #7f1d1d;
+}
+
+.spreadsheet-table tbody tr.property-row.unavailable:hover td {
+  background: #f4c4cc;
+}
+
+.spreadsheet-table tbody tr.property-row.unavailable.locked td {
+  background: #efb0bb;
+}
+
 .spreadsheet-table tbody td:nth-child(1) {
   width: 46px;
   padding: 0;
@@ -147,7 +160,8 @@
 }
 
 .spreadsheet-table tbody tr.property-row:hover td:nth-child(1),
-.spreadsheet-table tbody tr.property-row.locked td:nth-child(1) {
+.spreadsheet-table tbody tr.property-row.locked td:nth-child(1),
+.spreadsheet-table tbody tr.property-row.unavailable td:nth-child(1) {
   background: #f1f3f4 !important;
 }
 
@@ -164,6 +178,25 @@
 .title-text {
   color: #1f2937;
   font-weight: 500;
+}
+
+.spreadsheet-table tbody tr.property-row.unavailable .title-text {
+  color: #7f1d1d;
+}
+
+.unavailable-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .spreadsheet-table .empty-row {

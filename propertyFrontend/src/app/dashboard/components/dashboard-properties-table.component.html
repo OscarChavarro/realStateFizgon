@@ -100,11 +100,17 @@
           <tr
             class="property-row"
             [class.locked]="isPropertyRowLocked(property)"
+            [class.unavailable]="property.unavailable"
             (mouseenter)="onPropertyHover(property)"
             (click)="onPropertyClick(property)"
           >
             <td class="row-index-cell">{{ rowIndex + 1 }}</td>
-            <td><span class="title-text">{{ property.title }}</span></td>
+            <td>
+              @if (property.unavailable) {
+                <span class="unavailable-mark">X</span>
+              }
+              <span class="title-text">{{ property.title }}</span>
+            </td>
             <td>{{ property.createdAt || '-' }}</td>
             <td>{{ property.price }}</td>
           </tr>

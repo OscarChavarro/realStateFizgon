@@ -10,7 +10,6 @@ import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
 import { DashboardPropertiesTableComponent } from 'src/app/dashboard/components/dashboard-properties-table.component';
 import { DashboardTopBarComponent } from 'src/app/dashboard/components/dashboard-top-bar.component';
-import { applyDashboardFilters } from 'src/app/dashboard/filters/dashboard-filters.engine';
 import {
   DashboardFiltersState,
   createDefaultDashboardFilters
@@ -60,9 +59,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly loading = signal<boolean>(true);
   readonly allProperties = signal<DashboardPropertyRow[]>([]);
   readonly filters = signal<DashboardFiltersState>(createDefaultDashboardFilters());
-  readonly properties = computed<DashboardPropertyRow[]>(() =>
-    applyDashboardFilters(this.allProperties(), this.filters())
-  );
+  readonly properties = computed<DashboardPropertyRow[]>(() => this.allProperties());
   readonly visibleCount = computed<number>(() => this.properties().length);
   readonly selectedProperty = signal<DashboardPropertyRow | null>(null);
   readonly lockedSelectedPropertyKey = signal<string | null>(null);
@@ -130,8 +127,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onFiltersChange(filters: DashboardFiltersState): void {
+    const current = this.filters();
     this.filters.set(filters);
-    this.syncSelectedPropertyAfterRefresh(this.properties());
+    if (current.showClosedProperties !== filters.showClosedProperties) {
+      void this.refreshDashboardData();
+    }
   }
 
   onSortToggle(request: SortToggleRequest): void {
@@ -435,7 +435,8 @@ export class AppComponent implements OnInit, OnDestroy {
     const dashboardData = await this.dashboardDataService.loadDashboardData(
       this.http,
       this.backendBaseUrl,
-      this.sortCriteria()
+      this.sortCriteria(),
+      this.filters().showClosedProperties
     );
 
     this.count.set(dashboardData.count);

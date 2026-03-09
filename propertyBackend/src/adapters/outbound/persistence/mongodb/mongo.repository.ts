@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Document, WithId } from 'mongodb';
+import { Document, Filter, WithId } from 'mongodb';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 
 export type PropertyLookupResult = {
@@ -86,11 +86,13 @@ export class MongoRepository {
   async findAllPropertiesPaginated(
     page: number,
     pageSize: number,
-    sortCriteria: PropertySortCriterion[]
+    sortCriteria: PropertySortCriterion[],
+    showClosed: boolean
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
     const skip = (page - 1) * pageSize;
     const mongoSort: Record<string, 1 | -1> = {};
+    const query = this.buildPropertiesQuery(showClosed);
 
     for (const criterion of sortCriteria) {
       mongoSort[criterion.sortBy] = criterion.order === 'asc' ? 1 : -1;
@@ -101,7 +103,7 @@ export class MongoRepository {
     }
 
     const documents = await collection
-      .find({})
+      .find(query)
       .sort(mongoSort)
       .skip(skip)
       .limit(pageSize)
@@ -112,5 +114,19 @@ export class MongoRepository {
 
   private escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private buildPropertiesQuery(showClosed: boolean): Filter<Document> {
+    if (showClosed) {
+      return {};
+    }
+
+    return {
+      $and: [
+        { closedBy: { $exists: false } },
+        { closedby: { $exists: false } },
+        { closed_by: { $exists: false } }
+      ]
+    };
   }
 }

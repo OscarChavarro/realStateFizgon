@@ -24,7 +24,8 @@ export class PropertiesController {
   async getProperties(
     @Req() request: HttpRequestLike,
     @Query('page') pageQuery?: string,
-    @Query('pageSize') pageSizeQuery?: string
+    @Query('pageSize') pageSizeQuery?: string,
+    @Query('showClosed') showClosedQuery?: string
   ): Promise<{
     error: string | null;
     data: unknown[];
@@ -40,6 +41,7 @@ export class PropertiesController {
 
     const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
     const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
+    const showClosed = this.parseBooleanOrDefault(showClosedQuery, true, 'showClosed');
     const sortCriteria = this.parseSortCriteriaFromRawQuery(this.readRawQueryString(request));
 
     if (pageSize > totalElements) {
@@ -50,7 +52,7 @@ export class PropertiesController {
 
     const data = pageSize === 0
       ? []
-      : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria);
+      : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria, showClosed);
     const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
 
     return {
@@ -87,7 +89,7 @@ export class PropertiesController {
       'price',
       'propertyId'
     ]);
-    const allowedQueryParams = new Set(['page', 'pageSize', 'sortBy', 'sortOrder']);
+    const allowedQueryParams = new Set(['page', 'pageSize', 'showClosed', 'sortBy', 'sortOrder']);
     const params = new URLSearchParams(rawQuery);
     const criteria: PropertySortCriterion[] = [];
     const seenSortBy = new Set<PropertySortField>();
@@ -95,7 +97,9 @@ export class PropertiesController {
 
     for (const [key, rawValue] of params.entries()) {
       if (!allowedQueryParams.has(key)) {
-        this.throwSortBadRequest(`Unknown query parameter "${key}". Allowed parameters: page, pageSize, sortBy, sortOrder.`);
+        this.throwSortBadRequest(
+          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, sortBy, sortOrder.`
+        );
       }
 
       const value = rawValue.trim();
@@ -128,6 +132,22 @@ export class PropertiesController {
     }
 
     return criteria;
+  }
+
+  private parseBooleanOrDefault(value: string | undefined, fallback: boolean, fieldName: string): boolean {
+    if (value === undefined || value.trim().length === 0) {
+      return fallback;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+      return true;
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+      return false;
+    }
+
+    this.throwPaginationBadRequest(`Invalid ${fieldName}="${value}". Expected boolean true/false.`);
   }
 
   private readRawQueryString(request?: HttpRequestLike): string {

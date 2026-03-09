@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { AuthenticationType } from 'src/domain/auth/authentication-type.enum';
+import { UserRole } from 'src/domain/auth/user-role.enum';
 
 type Environment = {
   api?: {
@@ -34,7 +36,24 @@ type Secrets = {
       ttlSeconds?: number;
       secureCookie?: boolean;
     };
+    defaultRoles?: Array<{
+      user?: {
+        email?: string;
+        type?: string;
+      } | string;
+      roles?: string[];
+    }>;
   };
+};
+
+export type DefaultRoleUser = {
+  email: string;
+  type: AuthenticationType;
+};
+
+export type DefaultRoleAssignment = {
+  user: DefaultRoleUser;
+  roles: UserRole[];
 };
 
 @Injectable()
@@ -137,5 +156,78 @@ export class Configuration {
 
   get authSessionSecureCookie(): boolean {
     return this.secrets.auth?.session?.secureCookie ?? false;
+  }
+
+  get authDefaultRoles(): DefaultRoleAssignment[] {
+    const entries = this.secrets.auth?.defaultRoles;
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+
+    return entries
+      .map((entry) => {
+        const user = this.normalizeDefaultRoleUser(entry?.user);
+        const roles = this.normalizeRoles(entry?.roles ?? []);
+        if (!user || roles.length === 0) {
+          return null;
+        }
+        return { user, roles };
+      })
+      .filter((entry): entry is DefaultRoleAssignment => entry !== null);
+  }
+
+  private normalizeRoles(rawRoles: string[]): UserRole[] {
+    const roles: UserRole[] = [];
+    for (const rawRole of rawRoles) {
+      const role = (rawRole ?? '').trim().toUpperCase();
+      if (role === UserRole.ADMIN || role === UserRole.STANDARD_USER) {
+        if (!roles.includes(role)) {
+          roles.push(role);
+        }
+      }
+    }
+    return roles;
+  }
+
+  private normalizeDefaultRoleUser(
+    userRaw: {
+      email?: string;
+      type?: string;
+    } | string | undefined
+  ): DefaultRoleUser | null {
+    // Backward-compatible fallback: if a plain string is provided, interpret it as GOOGLE email.
+    if (typeof userRaw === 'string') {
+      const email = userRaw.trim().toLowerCase();
+      if (!email) {
+        return null;
+      }
+      return { email, type: AuthenticationType.GOOGLE };
+    }
+
+    const email = (userRaw?.email ?? '').trim().toLowerCase();
+    if (!email) {
+      return null;
+    }
+
+    const type = this.normalizeAuthenticationType(userRaw?.type);
+    if (!type) {
+      return null;
+    }
+
+    return { email, type };
+  }
+
+  private normalizeAuthenticationType(rawType: string | undefined): AuthenticationType | null {
+    const normalized = (rawType ?? '').trim().toUpperCase();
+    if (
+      normalized === AuthenticationType.GOOGLE
+      || normalized === AuthenticationType.FACEBOOK
+      || normalized === AuthenticationType.INSTAGRAM
+      || normalized === AuthenticationType.X
+    ) {
+      return normalized;
+    }
+
+    return null;
   }
 }

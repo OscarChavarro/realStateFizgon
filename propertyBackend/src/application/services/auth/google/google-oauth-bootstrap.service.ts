@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { GoogleIdentityProfile } from 'src/adapters/outbound/persistence/mongodb/auth-user.repository';
 import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
-import { AuthenticatedUser } from 'src/application/services/auth/authenticated-user.type';
+import { AuthUserIdentityService } from 'src/application/services/auth/auth-user-identity.service';
 import { GoogleOAuthCallbackCompletion } from 'src/application/services/auth/google/google-oauth-callback-completion.type';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { GoogleOAuthBootstrapResult } from 'src/application/services/auth/google/google-oauth-bootstrap-result.type';
@@ -33,7 +34,8 @@ type GoogleUserInfoResponse = {
 export class GoogleOAuthBootstrapService {
   constructor(
     private readonly configuration: Configuration,
-    private readonly authSessionService: AuthSessionService
+    private readonly authSessionService: AuthSessionService,
+    private readonly authUserIdentityService: AuthUserIdentityService
   ) {}
 
   buildLoginBootstrap(returnTo?: string): GoogleOAuthBootstrapResult {
@@ -101,8 +103,8 @@ export class GoogleOAuthBootstrapService {
       };
     }
 
-    const user = await this.loadGoogleUserProfile(tokenExchange.accessToken);
-    if (!user) {
+    const profile = await this.loadGoogleUserProfile(tokenExchange.accessToken);
+    if (!profile) {
       return {
         success: false,
         redirectTo,
@@ -110,6 +112,7 @@ export class GoogleOAuthBootstrapService {
       };
     }
 
+    const user = await this.authUserIdentityService.registerGoogleIdentityLogin(profile);
     const session = this.authSessionService.createSession(user);
     return {
       success: true,
@@ -240,7 +243,7 @@ export class GoogleOAuthBootstrapService {
     }
   }
 
-  private async loadGoogleUserProfile(accessToken: string): Promise<AuthenticatedUser | null> {
+  private async loadGoogleUserProfile(accessToken: string): Promise<GoogleIdentityProfile | null> {
     try {
       const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: {
@@ -263,7 +266,7 @@ export class GoogleOAuthBootstrapService {
       const picture = (payload.picture ?? '').trim();
 
       return {
-        id: userId,
+        providerUserId: userId,
         email: email || null,
         name: name || null,
         picture: picture || null

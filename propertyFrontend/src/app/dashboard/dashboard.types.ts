@@ -1,4 +1,4 @@
-export type DashboardTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB';
+export type DashboardTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB';
 
 export type DashboardPropertyRow = {
   propertyId: string;

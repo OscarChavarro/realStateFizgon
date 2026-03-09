@@ -86,3 +86,9 @@
     transparent 4px 8px
   );
 }
+
+app-dashboard-maintenance-panel,
+app-dashboard-users-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}

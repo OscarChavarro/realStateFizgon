@@ -1,0 +1,48 @@
+<section class="users-panel">
+  <header class="users-panel-header">
+    <h2>{{ t('USERS_TAB') }}</h2>
+  </header>
+
+  @if (loading) {
+    <p class="users-empty">{{ t('LOADING_USERS') }}</p>
+  } @else if (users.length === 0) {
+    <p class="users-empty">{{ t('NO_USERS_FOUND') }}</p>
+  } @else {
+    <div class="users-table-wrapper">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>{{ t('USER_NAME') }}</th>
+            <th>{{ t('USER_EMAIL') }}</th>
+            <th>{{ t('USER_ROLE') }}</th>
+            <th>{{ t('USER_PERMISSIONS') }}</th>
+            <th>{{ t('USER_LAST_LOGIN') }}</th>
+            <th>{{ t('ACTIONS') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+            <tr>
+              <td>{{ getDisplayName(user) }}</td>
+              <td>{{ user.email ?? '-' }}</td>
+              <td>{{ getDisplayRoles(user) }}</td>
+              <td>{{ getDisplayPermissions(user) }}</td>
+              <td>{{ user.lastLoginAt }}</td>
+              <td class="actions-cell">
+                <button
+                  type="button"
+                  class="delete-user-button"
+                  [disabled]="isCurrentUser(user)"
+                  [title]="isCurrentUser(user) ? t('DELETE_USER_CURRENT_DISABLED') : t('DELETE_USER')"
+                  (click)="onDeleteUser(user.id)"
+                >
+                  {{ t('DELETE_USER') }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

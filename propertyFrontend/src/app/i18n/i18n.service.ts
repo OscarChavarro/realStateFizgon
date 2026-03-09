@@ -15,13 +15,18 @@ export class I18nService {
   private readonly translations: TranslationEntry[] = [
     {
       id: 'DASHBOARD',
-      en: 'Dashboard',
-      sp: 'Tablero'
+      en: 'Property list',
+      sp: 'Listado de propiedades'
     },
     {
       id: 'DATABASE_MAINTENANCE_TAB',
       en: 'Database',
       sp: 'Base de datos'
+    },
+    {
+      id: 'USERS_TAB',
+      en: 'Users',
+      sp: 'Usuarios'
     },
     {
       id: 'LANGUAGE_EN',
@@ -82,6 +87,56 @@ export class I18nService {
       id: 'LOGOUT',
       en: 'Logout',
       sp: 'Cerrar sesión'
+    },
+    {
+      id: 'USER_ROLE',
+      en: 'Role',
+      sp: 'Rol'
+    },
+    {
+      id: 'USER_NAME',
+      en: 'Name',
+      sp: 'Nombre'
+    },
+    {
+      id: 'USER_EMAIL',
+      en: 'Email',
+      sp: 'Correo'
+    },
+    {
+      id: 'USER_PERMISSIONS',
+      en: 'Permissions',
+      sp: 'Permisos'
+    },
+    {
+      id: 'USER_LAST_LOGIN',
+      en: 'Last login',
+      sp: 'Último acceso'
+    },
+    {
+      id: 'ACTIONS',
+      en: 'Actions',
+      sp: 'Acciones'
+    },
+    {
+      id: 'DELETE_USER',
+      en: 'Delete user',
+      sp: 'Eliminar usuario'
+    },
+    {
+      id: 'DELETE_USER_CURRENT_DISABLED',
+      en: 'You cannot delete your own active session user.',
+      sp: 'No puedes eliminar al usuario de tu sesión activa.'
+    },
+    {
+      id: 'LOADING_USERS',
+      en: 'Loading users...',
+      sp: 'Cargando usuarios...'
+    },
+    {
+      id: 'NO_USERS_FOUND',
+      en: 'No users found.',
+      sp: 'No se encontraron usuarios.'
     },
     {
       id: 'CREATED_AT',

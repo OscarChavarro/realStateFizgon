@@ -5,12 +5,18 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
   private static readonly PROPERTIES_COLLECTION = 'properties';
+  private static readonly USERS_COLLECTION = 'user';
+  private static readonly USER_PREFERENCES_COLLECTION = 'userPreferences';
+  private static readonly USER_ROLES_COLLECTION = 'userRole';
   private static readonly MONGO_VALIDATION_RETRY_WAIT_MS = 3600 * 1000;
   private readonly logger = new Logger(MongoDatabaseService.name);
 
   private mongoClient?: MongoClient;
   private database?: Db;
   private propertiesCollection?: Collection<Document>;
+  private usersCollection?: Collection<Document>;
+  private userPreferencesCollection?: Collection<Document>;
+  private userRolesCollection?: Collection<Document>;
 
   constructor(private readonly configuration: Configuration) {}
 
@@ -24,6 +30,9 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
       this.mongoClient = undefined;
       this.database = undefined;
       this.propertiesCollection = undefined;
+      this.usersCollection = undefined;
+      this.userPreferencesCollection = undefined;
+      this.userRolesCollection = undefined;
     }
   }
 
@@ -104,8 +113,20 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
     return { scanned, updated, skipped, failed };
   }
 
-  async getPropertiesCollection(): Promise<Collection<Document>> {
-    return this.ensurePropertiesCollection();
+  async getPropertiesCollection<TSchema extends Document = Document>(): Promise<Collection<TSchema>> {
+    return this.ensurePropertiesCollection() as unknown as Collection<TSchema>;
+  }
+
+  async getUsersCollection<TSchema extends Document = Document>(): Promise<Collection<TSchema>> {
+    return this.ensureUsersCollection() as unknown as Collection<TSchema>;
+  }
+
+  async getUserPreferencesCollection<TSchema extends Document = Document>(): Promise<Collection<TSchema>> {
+    return this.ensureUserPreferencesCollection() as unknown as Collection<TSchema>;
+  }
+
+  async getUserRolesCollection<TSchema extends Document = Document>(): Promise<Collection<TSchema>> {
+    return this.ensureUserRolesCollection() as unknown as Collection<TSchema>;
   }
 
   private async ensurePropertiesCollection(): Promise<Collection<Document>> {
@@ -120,6 +141,42 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
     return this.propertiesCollection;
   }
 
+  private async ensureUsersCollection(): Promise<Collection<Document>> {
+    if (!this.usersCollection) {
+      await this.connect();
+    }
+
+    if (!this.usersCollection) {
+      throw new Error('MongoDB users collection is not initialized.');
+    }
+
+    return this.usersCollection;
+  }
+
+  private async ensureUserPreferencesCollection(): Promise<Collection<Document>> {
+    if (!this.userPreferencesCollection) {
+      await this.connect();
+    }
+
+    if (!this.userPreferencesCollection) {
+      throw new Error('MongoDB userPreferences collection is not initialized.');
+    }
+
+    return this.userPreferencesCollection;
+  }
+
+  private async ensureUserRolesCollection(): Promise<Collection<Document>> {
+    if (!this.userRolesCollection) {
+      await this.connect();
+    }
+
+    if (!this.userRolesCollection) {
+      throw new Error('MongoDB userRole collection is not initialized.');
+    }
+
+    return this.userRolesCollection;
+  }
+
   private async connect(): Promise<void> {
     if (this.mongoClient && this.database && this.propertiesCollection) {
       return;
@@ -129,6 +186,10 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
     await this.mongoClient.connect();
     this.database = this.mongoClient.db(this.configuration.mongoDatabase);
     this.propertiesCollection = this.database.collection<Document>(MongoDatabaseService.PROPERTIES_COLLECTION);
+    this.usersCollection = this.database.collection<Document>(MongoDatabaseService.USERS_COLLECTION);
+    this.userPreferencesCollection = this.database.collection<Document>(MongoDatabaseService.USER_PREFERENCES_COLLECTION);
+    this.userRolesCollection = this.database.collection<Document>(MongoDatabaseService.USER_ROLES_COLLECTION);
+    await this.ensureIndexes();
 
     this.logger.log(`Connected to MongoDB database "${this.configuration.mongoDatabase}".`);
   }
@@ -145,6 +206,9 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
     this.mongoClient = undefined;
     this.database = undefined;
     this.propertiesCollection = undefined;
+    this.usersCollection = undefined;
+    this.userPreferencesCollection = undefined;
+    this.userRolesCollection = undefined;
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -163,5 +227,28 @@ export class MongoDatabaseService implements OnModuleDestroy, OnModuleInit {
 
     const parsed = Number.parseInt(digitsOnly, 10);
     return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private async ensureIndexes(): Promise<void> {
+    if (!this.usersCollection || !this.userPreferencesCollection || !this.userRolesCollection) {
+      return;
+    }
+
+    await this.usersCollection.createIndex(
+      { 'identities.type': 1, 'identities.providerUserId': 1 },
+      { name: 'idx_user_identity_type_provider' }
+    );
+    await this.usersCollection.createIndex(
+      { 'identities.type': 1, 'identities.email': 1 },
+      { name: 'idx_user_identity_type_email' }
+    );
+    await this.userPreferencesCollection.createIndex(
+      { userId: 1 },
+      { unique: true, name: 'idx_user_preferences_user_id' }
+    );
+    await this.userRolesCollection.createIndex(
+      { userId: 1 },
+      { unique: true, name: 'idx_user_role_user_id' }
+    );
   }
 }

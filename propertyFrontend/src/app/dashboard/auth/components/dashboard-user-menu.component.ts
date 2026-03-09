@@ -88,6 +88,15 @@ export class DashboardUserMenuComponent {
     return this.t('SIGNED_IN_USER');
   }
 
+  get displayRole(): string {
+    const user = this.authenticatedUser;
+    if (!user || !Array.isArray(user.roles) || user.roles.length === 0) {
+      return 'STANDARD_USER';
+    }
+
+    return user.roles.join(', ');
+  }
+
   get showAvatarImage(): boolean {
     return !!(this.avatarUrl && !this.avatarLoadFailed());
   }

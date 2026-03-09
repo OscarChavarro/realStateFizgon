@@ -2,7 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { firstValueFrom } from 'rxjs';
+import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
+import { AuthUsersService } from 'src/app/dashboard/auth/auth-users.service';
+import { DashboardUsersPanelComponent } from 'src/app/dashboard/auth/components/dashboard-users-panel.component';
 import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
 import { DashboardPropertiesTableComponent } from 'src/app/dashboard/components/dashboard-properties-table.component';
@@ -32,6 +35,7 @@ import { PropertyDetailPanelComponent } from 'src/app/propertydetail/property-de
     DashboardTopBarComponent,
     DashboardPropertiesTableComponent,
     DashboardMaintenancePanelComponent,
+    DashboardUsersPanelComponent,
     PropertyDetailPanelComponent
   ],
   templateUrl: './app.component.html',
@@ -43,6 +47,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private readonly http = inject(HttpClient);
   private readonly dashboardDataService = inject(DashboardDataService);
+  private readonly authUsersService = inject(AuthUsersService);
 
   private socket: Socket | null = null;
   private backendBaseUrl = DashboardDataService.DEFAULT_BACKEND_BASE_URL;
@@ -65,12 +70,20 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly activeTab = signal<DashboardTab>('DASHBOARD');
   readonly googleLoginEnabled = signal<boolean>(true);
   readonly authenticatedUser = signal<AuthenticatedUser | null>(null);
+  readonly canEditUsers = computed<boolean>(() =>
+    this.authenticatedUser()?.permissions?.includes('canEditUsers') === true
+  );
+  readonly canMaintainDatabase = computed<boolean>(() =>
+    this.authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
+  );
   readonly authenticatedUserAvatarUrl = computed<string | null>(() => {
     if (!this.authenticatedUser()) {
       return null;
     }
     return `${this.backendBaseUrl}/auth/google/avatar`;
   });
+  readonly users = signal<AuthUserListItem[]>([]);
+  readonly usersLoading = signal<boolean>(false);
   readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
     new RemoveDanglingImagesOperation()
   ];
@@ -96,7 +109,19 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: DashboardTab): void {
+    if (tabId === 'USERS_TAB' && !this.canEditUsers()) {
+      this.activeTab.set('DASHBOARD');
+      return;
+    }
+    if (tabId === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
+      this.activeTab.set('DASHBOARD');
+      return;
+    }
+
     this.activeTab.set(tabId);
+    if (tabId === 'USERS_TAB') {
+      void this.loadUsers();
+    }
   }
 
   onLanguageChange(language: SupportedLanguage): void {
@@ -212,6 +237,10 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.logoutCurrentUser();
   }
 
+  onDeleteUserRequested(userId: string): void {
+    void this.deleteUserAndRefresh(userId);
+  }
+
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(event: MouseEvent): void {
     if (!this.isResizingWorkspace || !this.workspaceContainer) {
@@ -321,11 +350,31 @@ export class AppComponent implements OnInit, OnDestroy {
 
       if (response.authenticated && response.user) {
         this.authenticatedUser.set(response.user);
+        if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
+          this.activeTab.set('DASHBOARD');
+        }
+        if (this.activeTab() === 'USERS_TAB' && this.canEditUsers()) {
+          await this.loadUsers();
+        }
       } else {
         this.authenticatedUser.set(null);
+        this.users.set([]);
+        if (this.activeTab() === 'USERS_TAB') {
+          this.activeTab.set('DASHBOARD');
+        }
+        if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+          this.activeTab.set('DASHBOARD');
+        }
       }
     } catch {
       this.authenticatedUser.set(null);
+      this.users.set([]);
+      if (this.activeTab() === 'USERS_TAB') {
+        this.activeTab.set('DASHBOARD');
+      }
+      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+        this.activeTab.set('DASHBOARD');
+      }
     }
   }
 
@@ -340,6 +389,44 @@ export class AppComponent implements OnInit, OnDestroy {
       );
     } finally {
       this.authenticatedUser.set(null);
+      this.users.set([]);
+      if (this.activeTab() === 'USERS_TAB') {
+        this.activeTab.set('DASHBOARD');
+      }
+      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+        this.activeTab.set('DASHBOARD');
+      }
+    }
+  }
+
+  private async loadUsers(): Promise<void> {
+    if (!this.canEditUsers()) {
+      this.users.set([]);
+      return;
+    }
+
+    this.usersLoading.set(true);
+    const users = await this.authUsersService.loadUsers(this.http, this.backendBaseUrl);
+    this.users.set(users);
+    this.usersLoading.set(false);
+  }
+
+  private async deleteUserAndRefresh(userId: string): Promise<void> {
+    if (!this.canEditUsers() || !userId) {
+      return;
+    }
+
+    const currentUser = this.authenticatedUser();
+    if (currentUser && currentUser.id === userId) {
+      return;
+    }
+
+    this.usersLoading.set(true);
+    const deleted = await this.authUsersService.deleteUser(this.http, this.backendBaseUrl, userId);
+    if (deleted) {
+      await this.loadUsers();
+    } else {
+      this.usersLoading.set(false);
     }
   }
 

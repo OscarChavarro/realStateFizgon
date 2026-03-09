@@ -8,14 +8,26 @@
     >
       {{ t('DASHBOARD') }}
     </button>
-    <button
-      type="button"
-      class="tab"
-      [class.active]="activeTab === 'DATABASE_MAINTENANCE_TAB'"
-      (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
-    >
-      {{ t('DATABASE_MAINTENANCE_TAB') }}
-    </button>
+    @if (canMaintainDatabase) {
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab === 'DATABASE_MAINTENANCE_TAB'"
+        (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
+      >
+        {{ t('DATABASE_MAINTENANCE_TAB') }}
+      </button>
+    }
+    @if (canEditUsers) {
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab === 'USERS_TAB'"
+        (click)="selectTab('USERS_TAB')"
+      >
+        {{ t('USERS_TAB') }}
+      </button>
+    }
   </nav>
 
   <div class="top-bar-actions">

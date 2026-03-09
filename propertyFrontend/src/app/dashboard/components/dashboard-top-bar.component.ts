@@ -29,6 +29,8 @@ export class DashboardTopBarComponent {
   @Input() googleLoginEnabled = true;
   @Input() authenticatedUser: AuthenticatedUser | null = null;
   @Input() authenticatedUserAvatarUrl: string | null = null;
+  @Input() canEditUsers = false;
+  @Input() canMaintainDatabase = false;
 
   @Output() readonly tabChange = new EventEmitter<DashboardTab>();
   @Output() readonly languageChange = new EventEmitter<SupportedLanguage>();

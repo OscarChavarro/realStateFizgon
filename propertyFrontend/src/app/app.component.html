@@ -10,6 +10,8 @@
     [googleLoginEnabled]="googleLoginEnabled()"
     [authenticatedUser]="authenticatedUser()"
     [authenticatedUserAvatarUrl]="authenticatedUserAvatarUrl()"
+    [canEditUsers]="canEditUsers()"
+    [canMaintainDatabase]="canMaintainDatabase()"
     (tabChange)="onTabChange($event)"
     (languageChange)="onLanguageChange($event)"
     (filtersChange)="onFiltersChange($event)"
@@ -47,7 +49,7 @@
     </section>
   }
 
-  @if (activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+  @if (activeTab() === 'DATABASE_MAINTENANCE_TAB' && canMaintainDatabase()) {
     <app-dashboard-maintenance-panel
       [maintenanceOperations]="maintenanceOperations"
       [maintenanceRunning]="maintenanceRunning()"
@@ -55,5 +57,15 @@
       [selectedLanguage]="selectedLanguage()"
       (operationRequested)="onMaintenanceOperationRequested($event)"
     ></app-dashboard-maintenance-panel>
+  }
+
+  @if (activeTab() === 'USERS_TAB' && canEditUsers()) {
+    <app-dashboard-users-panel
+      [users]="users()"
+      [loading]="usersLoading()"
+      [selectedLanguage]="selectedLanguage()"
+      [currentUserId]="authenticatedUser()?.id ?? null"
+      (deleteUserRequest)="onDeleteUserRequested($event)"
+    ></app-dashboard-users-panel>
   }
 </main>

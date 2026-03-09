@@ -1,0 +1,26 @@
+<div class="filter-menu">
+  <button
+    type="button"
+    class="filter-trigger"
+    [class.open]="menuOpen()"
+    [attr.aria-expanded]="menuOpen()"
+    aria-haspopup="true"
+    (click)="onToggleMenu()"
+  >
+    <span class="material-symbols-outlined">filter_alt</span>
+    <span class="filter-label">{{ t('FILTERS') }}</span>
+  </button>
+
+  @if (menuOpen()) {
+    <div class="filter-dropdown" role="menu">
+      <label class="filter-option">
+        <input
+          type="checkbox"
+          [checked]="filters.showClosedProperties"
+          (change)="onShowClosedPropertiesChange($any($event.target).checked)"
+        />
+        <span>{{ t('SHOW_CLOSED_PROPERTIES') }}</span>
+      </label>
+    </div>
+  }
+</div>

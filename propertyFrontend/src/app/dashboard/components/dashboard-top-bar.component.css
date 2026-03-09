@@ -69,6 +69,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .property-count-chip {
@@ -106,6 +107,10 @@
   justify-content: flex-end;
 }
 
+app-dashboard-filter-menu {
+  flex: 0 0 auto;
+}
+
 .language-selector select {
   width: min(150px, 100%);
   border: 1px solid #c7d6ec;
@@ -129,6 +134,7 @@
   .top-bar-actions {
     width: auto;
     justify-content: flex-end;
+    flex-wrap: nowrap;
   }
 
   .tab {

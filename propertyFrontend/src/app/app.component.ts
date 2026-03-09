@@ -1,10 +1,15 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
 import { DashboardPropertiesTableComponent } from 'src/app/dashboard/components/dashboard-properties-table.component';
 import { DashboardTopBarComponent } from 'src/app/dashboard/components/dashboard-top-bar.component';
+import { applyDashboardFilters } from 'src/app/dashboard/filters/dashboard-filters.engine';
+import {
+  DashboardFiltersState,
+  createDefaultDashboardFilters
+} from 'src/app/dashboard/filters/dashboard-filters.model';
 import {
   DashboardPropertyRow,
   DashboardTab,
@@ -46,7 +51,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   readonly count = signal<number>(0);
   readonly loading = signal<boolean>(true);
-  readonly properties = signal<DashboardPropertyRow[]>([]);
+  readonly allProperties = signal<DashboardPropertyRow[]>([]);
+  readonly filters = signal<DashboardFiltersState>(createDefaultDashboardFilters());
+  readonly properties = computed<DashboardPropertyRow[]>(() =>
+    applyDashboardFilters(this.allProperties(), this.filters())
+  );
+  readonly visibleCount = computed<number>(() => this.properties().length);
   readonly selectedProperty = signal<DashboardPropertyRow | null>(null);
   readonly lockedSelectedPropertyKey = signal<string | null>(null);
   readonly selectedLanguage = signal<SupportedLanguage>('en');
@@ -80,6 +90,11 @@ export class AppComponent implements OnInit, OnDestroy {
   onLanguageChange(language: SupportedLanguage): void {
     this.selectedLanguage.set(language);
     sessionStorage.setItem(AppComponent.SELECTED_LANGUAGE_KEY, language);
+  }
+
+  onFiltersChange(filters: DashboardFiltersState): void {
+    this.filters.set(filters);
+    this.syncSelectedPropertyAfterRefresh(this.properties());
   }
 
   onSortToggle(request: SortToggleRequest): void {
@@ -254,8 +269,8 @@ export class AppComponent implements OnInit, OnDestroy {
     );
 
     this.count.set(dashboardData.count);
-    this.properties.set(dashboardData.properties);
-    this.syncSelectedPropertyAfterRefresh(dashboardData.properties);
+    this.allProperties.set(dashboardData.properties);
+    this.syncSelectedPropertyAfterRefresh(this.properties());
     this.loading.set(false);
   }
 

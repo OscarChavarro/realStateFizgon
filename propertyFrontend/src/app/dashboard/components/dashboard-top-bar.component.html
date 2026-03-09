@@ -20,9 +20,15 @@
 
   <div class="top-bar-actions">
     <div class="property-count-chip">
-      <span class="count-label">{{ t('TOTAL_PROPERTIES') }}</span>
-      <span class="count-value" [class.loading]="loading">{{ count }}</span>
+      <span class="count-label">{{ t('SHOWING_PROPERTIES') }}:</span>
+      <span class="count-value" [class.loading]="loading">{{ visibleCount }} / {{ totalCount }}</span>
     </div>
+
+    <app-dashboard-filter-menu
+      [filters]="filters"
+      [selectedLanguage]="selectedLanguage"
+      (filtersChange)="onFiltersUpdate($event)"
+    ></app-dashboard-filter-menu>
 
     <div class="language-selector">
       <select

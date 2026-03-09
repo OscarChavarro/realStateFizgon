@@ -34,9 +34,19 @@ export class I18nService {
       sp: 'Español 🇪🇸'
     },
     {
-      id: 'TOTAL_PROPERTIES',
-      en: 'Total properties',
-      sp: 'Total de propiedades'
+      id: 'FILTERS',
+      en: 'Filters',
+      sp: 'Filtros'
+    },
+    {
+      id: 'SHOW_CLOSED_PROPERTIES',
+      en: 'Show closed properties',
+      sp: 'Mostrar propiedades cerradas'
+    },
+    {
+      id: 'SHOWING_PROPERTIES',
+      en: 'Showing',
+      sp: 'Mostrando'
     },
     {
       id: 'CREATED_AT',

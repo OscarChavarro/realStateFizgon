@@ -1,11 +1,14 @@
 <main class="dashboard-page">
   <app-dashboard-top-bar
     [activeTab]="activeTab()"
-    [count]="count()"
+    [visibleCount]="visibleCount()"
+    [totalCount]="count()"
     [loading]="loading()"
     [selectedLanguage]="selectedLanguage()"
+    [filters]="filters()"
     (tabChange)="onTabChange($event)"
     (languageChange)="onLanguageChange($event)"
+    (filtersChange)="onFiltersChange($event)"
     (fullscreenRequest)="onFullscreenRequested()"
   ></app-dashboard-top-bar>
 

@@ -26,8 +26,12 @@
       </div>
 
       <div class="language-selector">
-        <label for="languageSelect">{{ t('LANGUAGE_LABEL') }}</label>
-        <select id="languageSelect" [value]="selectedLanguage()" (change)="onLanguageChange($any($event.target).value)">
+        <select
+          id="languageSelect"
+          aria-label="Language selector"
+          [value]="selectedLanguage()"
+          (change)="onLanguageChange($any($event.target).value)"
+        >
           <option value="en">{{ t('LANGUAGE_EN') }}</option>
           <option value="sp">{{ t('LANGUAGE_SP') }}</option>
         </select>

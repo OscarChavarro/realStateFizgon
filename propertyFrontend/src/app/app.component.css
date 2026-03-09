@@ -133,14 +133,10 @@
   width: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.35rem;
   color: #1e3d69;
   font-size: 0.82rem;
-}
-
-.language-selector label {
-  flex: 0 0 auto;
 }
 
 .language-selector select {

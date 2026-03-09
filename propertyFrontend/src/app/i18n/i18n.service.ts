@@ -89,11 +89,6 @@ export class I18nService {
       sp: 'No se encontraron propiedades'
     },
     {
-      id: 'LANGUAGE_LABEL',
-      en: 'Language',
-      sp: 'Idioma'
-    },
-    {
       id: 'REMOVE_DANGLING_IMAGES',
       en: 'Remove dangling images',
       sp: 'Eliminar imágenes huérfanas'

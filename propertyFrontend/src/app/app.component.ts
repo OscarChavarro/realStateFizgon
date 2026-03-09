@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
-import { firstValueFrom } from 'rxjs';
+import { AuthSessionApiService } from 'src/app/dashboard/auth/auth-session-api.service';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 import { AuthUsersService } from 'src/app/dashboard/auth/auth-users.service';
@@ -18,10 +18,13 @@ import {
   DashboardPropertyRow,
   DashboardTab,
   SortCriterion,
-  SortDirection,
-  SortField,
   SortToggleRequest
 } from 'src/app/dashboard/dashboard.types';
+import { BrowserFullscreenService } from 'src/app/dashboard/services/browser-fullscreen.service';
+import { MaintenanceOperationRunnerService } from 'src/app/dashboard/services/maintenance-operation-runner.service';
+import { PropertySelectionService } from 'src/app/dashboard/services/property-selection.service';
+import { SortCriteriaService } from 'src/app/dashboard/services/sort-criteria.service';
+import { WorkspaceLayoutService } from 'src/app/dashboard/services/workspace-layout.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
 import { RemoveDanglingImagesOperation } from 'src/app/databasemaintenance/remove-dangling-images.operation';
 import { SupportedLanguage } from 'src/app/i18n/i18n.service';
@@ -42,16 +45,20 @@ import { PropertyDetailPanelComponent } from 'src/app/propertydetail/property-de
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
-  private static readonly WORKSPACE_SPLITTER_WIDTH_PX = 8;
 
   private readonly http = inject(HttpClient);
   private readonly dashboardDataService = inject(DashboardDataService);
+  private readonly authSessionApiService = inject(AuthSessionApiService);
   private readonly authUsersService = inject(AuthUsersService);
+  private readonly workspaceLayoutService = inject(WorkspaceLayoutService);
+  private readonly propertySelectionService = inject(PropertySelectionService);
+  private readonly sortCriteriaService = inject(SortCriteriaService);
+  private readonly maintenanceOperationRunnerService = inject(MaintenanceOperationRunnerService);
+  private readonly browserFullscreenService = inject(BrowserFullscreenService);
 
   private socket: Socket | null = null;
   private backendBaseUrl = DashboardDataService.DEFAULT_BACKEND_BASE_URL;
   private staticMediaBaseUrl = DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL;
-  private isResizingWorkspace = false;
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
 
@@ -61,8 +68,8 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly filters = signal<DashboardFiltersState>(createDefaultDashboardFilters());
   readonly properties = computed<DashboardPropertyRow[]>(() => this.allProperties());
   readonly visibleCount = computed<number>(() => this.properties().length);
-  readonly selectedProperty = signal<DashboardPropertyRow | null>(null);
-  readonly lockedSelectedPropertyKey = signal<string | null>(null);
+  readonly selectedProperty = this.propertySelectionService.selectedProperty;
+  readonly lockedSelectedPropertyKey = this.propertySelectionService.lockedSelectedPropertyKey;
   readonly selectedLanguage = signal<SupportedLanguage>('en');
   readonly activeTab = signal<DashboardTab>('DASHBOARD');
   readonly googleLoginEnabled = signal<boolean>(true);
@@ -73,12 +80,9 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly canMaintainDatabase = computed<boolean>(() =>
     this.authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
   );
-  readonly authenticatedUserAvatarUrl = computed<string | null>(() => {
-    if (!this.authenticatedUser()) {
-      return null;
-    }
-    return `${this.backendBaseUrl}/auth/google/avatar`;
-  });
+  readonly authenticatedUserAvatarUrl = computed<string | null>(() =>
+    this.authenticatedUser() ? `${this.backendBaseUrl}/auth/google/avatar` : null
+  );
   readonly users = signal<AuthUserListItem[]>([]);
   readonly usersLoading = signal<boolean>(false);
   readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
@@ -87,9 +91,9 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly maintenanceRunning = signal<boolean>(false);
   readonly maintenanceResultText = signal<string>('');
   readonly sortCriteria = signal<SortCriterion[]>([]);
-  readonly leftPanelWidthPercent = signal<number>(50);
-  readonly leftPanelHidden = signal<boolean>(false);
-  readonly rightPanelHidden = signal<boolean>(false);
+  readonly leftPanelWidthPercent = this.workspaceLayoutService.leftPanelWidthPercent;
+  readonly leftPanelHidden = this.workspaceLayoutService.leftPanelHidden;
+  readonly rightPanelHidden = this.workspaceLayoutService.rightPanelHidden;
 
   async ngOnInit(): Promise<void> {
     this.loadSelectedLanguageFromSession();
@@ -139,80 +143,27 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onPropertyRowHover(property: DashboardPropertyRow): void {
-    if (this.lockedSelectedPropertyKey()) {
-      return;
-    }
-
-    this.selectedProperty.set(property);
+    this.propertySelectionService.onRowHover(property);
   }
 
   onPropertyRowClick(property: DashboardPropertyRow): void {
-    const rowKey = this.getPropertyRowKey(property);
-    const currentLockedKey = this.lockedSelectedPropertyKey();
-
-    if (currentLockedKey === rowKey) {
-      this.lockedSelectedPropertyKey.set(null);
-      return;
-    }
-
-    this.lockedSelectedPropertyKey.set(rowKey);
-    this.selectedProperty.set(property);
+    this.propertySelectionService.onRowClick(property);
   }
 
   onSplitterMouseDown(event: MouseEvent): void {
-    if (this.leftPanelHidden() || this.rightPanelHidden()) {
-      return;
-    }
-
-    this.isResizingWorkspace = true;
-    event.preventDefault();
+    this.workspaceLayoutService.startResize(event);
   }
 
   cycleWorkspaceLayout(): void {
-    const leftHidden = this.leftPanelHidden();
-    const rightHidden = this.rightPanelHidden();
-
-    if (!leftHidden && !rightHidden) {
-      this.rightPanelHidden.set(true);
-      this.leftPanelHidden.set(false);
-      return;
-    }
-
-    if (!leftHidden && rightHidden) {
-      this.leftPanelHidden.set(true);
-      this.rightPanelHidden.set(false);
-      return;
-    }
-
-    this.leftPanelHidden.set(false);
-    this.rightPanelHidden.set(false);
+    this.workspaceLayoutService.cycleLayout();
   }
 
   getWorkspaceColumns(): string {
-    const splitterWidth = AppComponent.WORKSPACE_SPLITTER_WIDTH_PX;
-    if (this.leftPanelHidden() && !this.rightPanelHidden()) {
-      return `0 ${splitterWidth}px minmax(0, 1fr)`;
-    }
-
-    if (this.rightPanelHidden() && !this.leftPanelHidden()) {
-      return `minmax(0, 1fr) ${splitterWidth}px 0`;
-    }
-
-    const left = this.leftPanelWidthPercent();
-    const right = 100 - left;
-    return `minmax(280px, ${left}%) ${splitterWidth}px minmax(280px, ${right}%)`;
+    return this.workspaceLayoutService.getWorkspaceColumns();
   }
 
   getWorkspaceCycleIcon(): string {
-    if (!this.leftPanelHidden() && !this.rightPanelHidden()) {
-      return 'vertical_split';
-    }
-
-    if (!this.leftPanelHidden() && this.rightPanelHidden()) {
-      return 'left_panel_open';
-    }
-
-    return 'right_panel_open';
+    return this.workspaceLayoutService.getCycleIcon();
   }
 
   onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
@@ -224,13 +175,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onFullscreenRequested(): void {
-    void this.toggleFullscreen();
+    void this.browserFullscreenService.toggleFullscreen();
   }
 
   onGoogleLoginRequested(): void {
-    const loginUrl = new URL('/auth/google/login', `${this.backendBaseUrl}/`);
-    loginUrl.searchParams.set('returnTo', window.location.href);
-    window.location.assign(loginUrl.toString());
+    const loginUrl = this.authSessionApiService.buildGoogleLoginUrl(this.backendBaseUrl, window.location.href);
+    window.location.assign(loginUrl);
   }
 
   onLogoutRequested(): void {
@@ -243,24 +193,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(event: MouseEvent): void {
-    if (!this.isResizingWorkspace || !this.workspaceContainer) {
-      return;
-    }
-
-    const rect = this.workspaceContainer.nativeElement.getBoundingClientRect();
-    if (rect.width <= 0) {
-      return;
-    }
-
-    const cursorX = event.clientX - rect.left;
-    const rawPercent = (cursorX / rect.width) * 100;
-    const clamped = Math.min(85, Math.max(15, rawPercent));
-    this.leftPanelWidthPercent.set(clamped);
+    this.workspaceLayoutService.updateResizeFromMouse(
+      event,
+      this.workspaceContainer?.nativeElement ?? null
+    );
   }
 
   @HostListener('window:mouseup')
   onWindowMouseUp(): void {
-    this.isResizingWorkspace = false;
+    this.workspaceLayoutService.stopResize();
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -279,7 +220,7 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       event.preventDefault();
-      this.selectPropertyByKeyboard(-1);
+      this.propertySelectionService.selectByKeyboard(this.properties(), -1);
       return;
     }
 
@@ -288,13 +229,13 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       event.preventDefault();
-      this.selectPropertyByKeyboard(1);
+      this.propertySelectionService.selectByKeyboard(this.properties(), 1);
       return;
     }
 
     if (event.key.toLowerCase() === 'f') {
       event.preventDefault();
-      void this.toggleFullscreen();
+      void this.browserFullscreenService.toggleFullscreen();
     }
   }
 
@@ -313,14 +254,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async loadGoogleLoginAvailability(): Promise<void> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ enabled?: boolean }>(`${this.backendBaseUrl}/auth/google/login-url`)
-      );
-      this.googleLoginEnabled.set(response.enabled === true);
-    } catch {
-      this.googleLoginEnabled.set(false);
-    }
+    const enabled = await this.authSessionApiService.loadGoogleLoginAvailability(this.http, this.backendBaseUrl);
+    this.googleLoginEnabled.set(enabled);
   }
 
   private warnIfAuthHostMismatch(): void {
@@ -328,7 +263,6 @@ export class AppComponent implements OnInit, OnDestroy {
       const backendHost = new URL(this.backendBaseUrl).hostname;
       const frontendHost = window.location.hostname;
       if (backendHost !== frontendHost) {
-        // Cross-site hosts can prevent auth cookies from being sent back on /auth/google/me.
         console.warn(
           `Auth host mismatch detected (frontend=${frontendHost}, backend=${backendHost}). ` +
           'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
@@ -340,62 +274,31 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async loadCurrentUser(): Promise<void> {
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ authenticated?: boolean; user?: AuthenticatedUser | null }>(
-          `${this.backendBaseUrl}/auth/google/me`,
-          { withCredentials: true }
-        )
-      );
+    const user = await this.authSessionApiService.loadCurrentUser(this.http, this.backendBaseUrl);
+    this.authenticatedUser.set(user);
 
-      if (response.authenticated && response.user) {
-        this.authenticatedUser.set(response.user);
-        if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
-          this.activeTab.set('DASHBOARD');
-        }
-        if (this.activeTab() === 'USERS_TAB' && this.canEditUsers()) {
-          await this.loadUsers();
-        }
-      } else {
-        this.authenticatedUser.set(null);
-        this.users.set([]);
-        if (this.activeTab() === 'USERS_TAB') {
-          this.activeTab.set('DASHBOARD');
-        }
-        if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-          this.activeTab.set('DASHBOARD');
-        }
-      }
-    } catch {
-      this.authenticatedUser.set(null);
-      this.users.set([]);
-      if (this.activeTab() === 'USERS_TAB') {
+    if (user) {
+      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
         this.activeTab.set('DASHBOARD');
       }
-      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-        this.activeTab.set('DASHBOARD');
+      if (this.activeTab() === 'USERS_TAB' && this.canEditUsers()) {
+        await this.loadUsers();
       }
+      return;
+    }
+
+    this.users.set([]);
+    if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+      this.activeTab.set('DASHBOARD');
     }
   }
 
   private async logoutCurrentUser(): Promise<void> {
-    try {
-      await firstValueFrom(
-        this.http.post(
-          `${this.backendBaseUrl}/auth/google/logout`,
-          {},
-          { withCredentials: true }
-        )
-      );
-    } finally {
-      this.authenticatedUser.set(null);
-      this.users.set([]);
-      if (this.activeTab() === 'USERS_TAB') {
-        this.activeTab.set('DASHBOARD');
-      }
-      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-        this.activeTab.set('DASHBOARD');
-      }
+    await this.authSessionApiService.logout(this.http, this.backendBaseUrl);
+    this.authenticatedUser.set(null);
+    this.users.set([]);
+    if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+      this.activeTab.set('DASHBOARD');
     }
   }
 
@@ -441,25 +344,16 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.count.set(dashboardData.count);
     this.allProperties.set(dashboardData.properties);
-    this.syncSelectedPropertyAfterRefresh(this.properties());
+    this.propertySelectionService.syncAfterRefresh(this.properties());
     this.loading.set(false);
   }
 
-  private async toggleSort(sortBy: SortField, sortOrder: SortDirection): Promise<void> {
-    const updated = [...this.sortCriteria()];
-    const existingIndex = updated.findIndex((criterion) => criterion.sortBy === sortBy);
-
-    if (existingIndex < 0) {
-      updated.push({ sortBy, sortOrder });
-    } else {
-      const existing = updated[existingIndex];
-      if (existing.sortOrder === sortOrder) {
-        updated.splice(existingIndex, 1);
-      } else {
-        updated[existingIndex] = { sortBy, sortOrder };
-      }
-    }
-
+  private async toggleSort(sortBy: SortToggleRequest['sortBy'], sortOrder: SortToggleRequest['sortOrder']): Promise<void> {
+    const updated = this.sortCriteriaService.toggleSortCriteria(
+      this.sortCriteria(),
+      sortBy,
+      sortOrder
+    );
     this.sortCriteria.set(updated);
     await this.refreshDashboardData();
   }
@@ -468,33 +362,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.maintenanceRunning.set(true);
     this.maintenanceResultText.set('');
 
-    try {
-      const result = await operation.execute(this.http, this.backendBaseUrl);
-      this.maintenanceResultText.set(
-        JSON.stringify(
-          {
-            status: result.status,
-            body: result.body
-          },
-          null,
-          2
-        )
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.maintenanceResultText.set(
-        JSON.stringify(
-          {
-            status: 'request-failed',
-            error: message
-          },
-          null,
-          2
-        )
-      );
-    } finally {
-      this.maintenanceRunning.set(false);
-    }
+    const resultText = await this.maintenanceOperationRunnerService.runOperation(
+      operation,
+      this.http,
+      this.backendBaseUrl
+    );
+    this.maintenanceResultText.set(resultText);
+    this.maintenanceRunning.set(false);
   }
 
   private loadSelectedLanguageFromSession(): void {
@@ -508,35 +382,6 @@ export class AppComponent implements OnInit, OnDestroy {
     sessionStorage.setItem(AppComponent.SELECTED_LANGUAGE_KEY, 'en');
   }
 
-  private syncSelectedPropertyAfterRefresh(rows: DashboardPropertyRow[]): void {
-    const lockedKey = this.lockedSelectedPropertyKey();
-    if (lockedKey) {
-      const lockedRow = rows.find((row) => this.getPropertyRowKey(row) === lockedKey);
-      if (lockedRow) {
-        this.selectedProperty.set(lockedRow);
-      } else {
-        this.lockedSelectedPropertyKey.set(null);
-      }
-      return;
-    }
-
-    const selected = this.selectedProperty();
-    if (selected) {
-      const selectedKey = this.getPropertyRowKey(selected);
-      const matchingRow = rows.find((row) => this.getPropertyRowKey(row) === selectedKey);
-      if (matchingRow) {
-        this.selectedProperty.set(matchingRow);
-        return;
-      }
-    }
-
-    this.selectedProperty.set(rows.length > 0 ? rows[0] : null);
-  }
-
-  private getPropertyRowKey(property: DashboardPropertyRow): string {
-    return `${property.propertyId}|${property.url}|${property.createdAt}|${property.title}`;
-  }
-
   private isTypingTarget(target: HTMLElement | null): boolean {
     if (!target) {
       return false;
@@ -547,46 +392,5 @@ export class AppComponent implements OnInit, OnDestroy {
       || tagName === 'textarea'
       || tagName === 'select'
       || target.isContentEditable;
-  }
-
-  private async toggleFullscreen(): Promise<void> {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      return;
-    }
-
-    const rootElement = document.documentElement;
-    if (rootElement.requestFullscreen) {
-      await rootElement.requestFullscreen();
-    }
-  }
-
-  private selectPropertyByKeyboard(delta: -1 | 1): void {
-    const rows = this.properties();
-    if (rows.length === 0) {
-      return;
-    }
-
-    const lockedKey = this.lockedSelectedPropertyKey();
-    const selected = this.selectedProperty();
-    let currentIndex = -1;
-
-    if (lockedKey) {
-      currentIndex = rows.findIndex((row) => this.getPropertyRowKey(row) === lockedKey);
-    } else if (selected) {
-      const selectedKey = this.getPropertyRowKey(selected);
-      currentIndex = rows.findIndex((row) => this.getPropertyRowKey(row) === selectedKey);
-    }
-
-    if (currentIndex < 0) {
-      currentIndex = 0;
-    }
-
-    const nextIndex = Math.min(rows.length - 1, Math.max(0, currentIndex + delta));
-    const nextRow = rows[nextIndex];
-    const nextKey = this.getPropertyRowKey(nextRow);
-
-    this.selectedProperty.set(nextRow);
-    this.lockedSelectedPropertyKey.set(nextKey);
   }
 }

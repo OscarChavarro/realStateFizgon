@@ -1,173 +1,33 @@
 <main class="dashboard-page">
-  <header class="top-bar" (dblclick)="onTopBarDoubleClick()" (pointerup)="onTopBarPointerUp($event)">
-    <nav class="tabs">
-      <button
-        type="button"
-        class="tab"
-        [class.active]="activeTab() === 'DASHBOARD'"
-        (click)="selectTab('DASHBOARD')"
-      >
-        {{ t('DASHBOARD') }}
-      </button>
-      <button
-        type="button"
-        class="tab"
-        [class.active]="activeTab() === 'DATABASE_MAINTENANCE_TAB'"
-        (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
-      >
-        {{ t('DATABASE_MAINTENANCE_TAB') }}
-      </button>
-    </nav>
-
-    <div class="top-bar-actions">
-      <div class="property-count-chip">
-        <span class="count-label">{{ t('TOTAL_PROPERTIES') }}</span>
-        <span class="count-value" [class.loading]="loading()">{{ count() }}</span>
-      </div>
-
-      <div class="language-selector">
-        <select
-          id="languageSelect"
-          aria-label="Language selector"
-          [value]="selectedLanguage()"
-          (change)="onLanguageChange($any($event.target).value)"
-        >
-          <option value="en">{{ t('LANGUAGE_EN') }}</option>
-          <option value="sp">{{ t('LANGUAGE_SP') }}</option>
-        </select>
-      </div>
-    </div>
-  </header>
+  <app-dashboard-top-bar
+    [activeTab]="activeTab()"
+    [count]="count()"
+    [loading]="loading()"
+    [selectedLanguage]="selectedLanguage()"
+    (tabChange)="onTabChange($event)"
+    (languageChange)="onLanguageChange($event)"
+    (fullscreenRequest)="onFullscreenRequested()"
+  ></app-dashboard-top-bar>
 
   @if (activeTab() === 'DASHBOARD') {
     <section class="dashboard-workspace">
       <div #workspaceContainer class="workspace-panels" [style.grid-template-columns]="getWorkspaceColumns()">
         <section class="workspace-panel left" [class.hidden]="leftPanelHidden()">
-          <div class="spreadsheet-table-wrapper">
-            <table class="spreadsheet-table">
-              <thead>
-                <tr>
-                  <th class="row-index-header"></th>
-                  <th>
-                    <div class="th-content">
-                      <span>{{ t('TITLE') }}</span>
-                      <div class="sort-controls">
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('title') === 'asc'"
-                          (click)="toggleSort('title', 'asc')"
-                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('TITLE')"
-                        >
-                          <span class="material-symbols-outlined">arrow_upward</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('title') === 'desc'"
-                          (click)="toggleSort('title', 'desc')"
-                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('TITLE')"
-                        >
-                          <span class="material-symbols-outlined">arrow_downward</span>
-                        </button>
-                        @if (shouldShowSortPriority('title')) {
-                          <span class="sort-priority">{{ getSortPriority('title') }}</span>
-                        }
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div class="th-content">
-                      <span>{{ t('CREATED_AT') }}</span>
-                      <div class="sort-controls">
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('importedBy') === 'asc'"
-                          (click)="toggleSort('importedBy', 'asc')"
-                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
-                        >
-                          <span class="material-symbols-outlined">arrow_upward</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('importedBy') === 'desc'"
-                          (click)="toggleSort('importedBy', 'desc')"
-                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
-                        >
-                          <span class="material-symbols-outlined">arrow_downward</span>
-                        </button>
-                        @if (shouldShowSortPriority('importedBy')) {
-                          <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
-                        }
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div class="th-content">
-                      <span>{{ t('PRICE') }}</span>
-                      <div class="sort-controls">
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('price') === 'asc'"
-                          (click)="toggleSort('price', 'asc')"
-                          [attr.aria-label]="t('SORT_ASC') + ' ' + t('PRICE')"
-                        >
-                          <span class="material-symbols-outlined">arrow_upward</span>
-                        </button>
-                        <button
-                          type="button"
-                          class="sort-button"
-                          [class.active]="getSortDirection('price') === 'desc'"
-                          (click)="toggleSort('price', 'desc')"
-                          [attr.aria-label]="t('SORT_DESC') + ' ' + t('PRICE')"
-                        >
-                          <span class="material-symbols-outlined">arrow_downward</span>
-                        </button>
-                        @if (shouldShowSortPriority('price')) {
-                          <span class="sort-priority">{{ getSortPriority('price') }}</span>
-                        }
-                      </div>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @if (properties().length === 0) {
-                  <tr>
-                    <td class="row-index-cell">1</td>
-                    <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
-                  </tr>
-                } @else {
-                  @for (property of properties(); track property.url + property.createdAt; let rowIndex = $index) {
-                    <tr
-                      class="property-row"
-                      [class.locked]="isPropertyRowLocked(property)"
-                      (mouseenter)="onPropertyRowHover(property)"
-                      (click)="onPropertyRowClick(property)"
-                    >
-                      <td class="row-index-cell">{{ rowIndex + 1 }}</td>
-                      <td>
-                        <span class="title-text">{{ property.title }}</span>
-                      </td>
-                      <td>{{ property.createdAt || '-' }}</td>
-                      <td>{{ property.price }}</td>
-                    </tr>
-                  }
-                }
-              </tbody>
-            </table>
-          </div>
+          <app-dashboard-properties-table
+            [properties]="properties()"
+            [sortCriteria]="sortCriteria()"
+            [selectedLanguage]="selectedLanguage()"
+            [lockedRowKey]="lockedSelectedPropertyKey()"
+            (sortToggle)="onSortToggle($event)"
+            (propertyHover)="onPropertyRowHover($event)"
+            (propertySelect)="onPropertyRowClick($event)"
+          ></app-dashboard-properties-table>
         </section>
 
         <div class="workspace-splitter" (mousedown)="onSplitterMouseDown($event)">
           <div class="splitter-controls">
             <button type="button" class="splitter-button" (click)="cycleWorkspaceLayout()">
-              <span class="material-symbols-outlined">
-                {{ getWorkspaceCycleIcon() }}
-              </span>
+              <span class="material-symbols-outlined">{{ getWorkspaceCycleIcon() }}</span>
             </button>
           </div>
         </div>
@@ -184,25 +44,12 @@
   }
 
   @if (activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-    <section class="dashboard-card">
-      <h1>{{ t('DATABASE_MAINTENANCE_TAB') }}</h1>
-      <div class="maintenance-actions">
-        @for (operation of maintenanceOperations; track operation.i18nId) {
-          <button
-            type="button"
-            class="maintenance-button"
-            [disabled]="maintenanceRunning()"
-            (click)="runDatabaseMaintenanceOperation(operation)"
-          >
-            {{ t(operation.i18nId) }}
-          </button>
-        }
-      </div>
-
-      <div class="maintenance-result">
-        <label for="maintenanceResult">{{ t('OPERATION_RESULT') }}</label>
-        <textarea id="maintenanceResult" [value]="maintenanceResultText()" readonly></textarea>
-      </div>
-    </section>
+    <app-dashboard-maintenance-panel
+      [maintenanceOperations]="maintenanceOperations"
+      [maintenanceRunning]="maintenanceRunning()"
+      [maintenanceResultText]="maintenanceResultText()"
+      [selectedLanguage]="selectedLanguage()"
+      (operationRequested)="onMaintenanceOperationRequested($event)"
+    ></app-dashboard-maintenance-panel>
   }
 </main>

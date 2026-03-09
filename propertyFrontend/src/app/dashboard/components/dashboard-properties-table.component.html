@@ -1,0 +1,115 @@
+<div class="spreadsheet-table-wrapper">
+  <table class="spreadsheet-table">
+    <thead>
+      <tr>
+        <th class="row-index-header"></th>
+        <th>
+          <div class="th-content">
+            <span>{{ t('TITLE') }}</span>
+            <div class="sort-controls">
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('title') === 'asc'"
+                (click)="onSortToggle('title', 'asc')"
+                [attr.aria-label]="t('SORT_ASC') + ' ' + t('TITLE')"
+              >
+                <span class="material-symbols-outlined">arrow_upward</span>
+              </button>
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('title') === 'desc'"
+                (click)="onSortToggle('title', 'desc')"
+                [attr.aria-label]="t('SORT_DESC') + ' ' + t('TITLE')"
+              >
+                <span class="material-symbols-outlined">arrow_downward</span>
+              </button>
+              @if (shouldShowSortPriority('title')) {
+                <span class="sort-priority">{{ getSortPriority('title') }}</span>
+              }
+            </div>
+          </div>
+        </th>
+        <th>
+          <div class="th-content">
+            <span>{{ t('CREATED_AT') }}</span>
+            <div class="sort-controls">
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('importedBy') === 'asc'"
+                (click)="onSortToggle('importedBy', 'asc')"
+                [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
+              >
+                <span class="material-symbols-outlined">arrow_upward</span>
+              </button>
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('importedBy') === 'desc'"
+                (click)="onSortToggle('importedBy', 'desc')"
+                [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
+              >
+                <span class="material-symbols-outlined">arrow_downward</span>
+              </button>
+              @if (shouldShowSortPriority('importedBy')) {
+                <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
+              }
+            </div>
+          </div>
+        </th>
+        <th>
+          <div class="th-content">
+            <span>{{ t('PRICE') }}</span>
+            <div class="sort-controls">
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('price') === 'asc'"
+                (click)="onSortToggle('price', 'asc')"
+                [attr.aria-label]="t('SORT_ASC') + ' ' + t('PRICE')"
+              >
+                <span class="material-symbols-outlined">arrow_upward</span>
+              </button>
+              <button
+                type="button"
+                class="sort-button"
+                [class.active]="getSortDirection('price') === 'desc'"
+                (click)="onSortToggle('price', 'desc')"
+                [attr.aria-label]="t('SORT_DESC') + ' ' + t('PRICE')"
+              >
+                <span class="material-symbols-outlined">arrow_downward</span>
+              </button>
+              @if (shouldShowSortPriority('price')) {
+                <span class="sort-priority">{{ getSortPriority('price') }}</span>
+              }
+            </div>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (properties.length === 0) {
+        <tr>
+          <td class="row-index-cell">1</td>
+          <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+        </tr>
+      } @else {
+        @for (property of properties; track trackProperty($index, property); let rowIndex = $index) {
+          <tr
+            class="property-row"
+            [class.locked]="isPropertyRowLocked(property)"
+            (mouseenter)="onPropertyHover(property)"
+            (click)="onPropertyClick(property)"
+          >
+            <td class="row-index-cell">{{ rowIndex + 1 }}</td>
+            <td><span class="title-text">{{ property.title }}</span></td>
+            <td>{{ property.createdAt || '-' }}</td>
+            <td>{{ property.price }}</td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

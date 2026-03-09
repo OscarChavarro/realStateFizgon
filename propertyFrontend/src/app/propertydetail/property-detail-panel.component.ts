@@ -1,17 +1,7 @@
 import { Component, Input, inject } from '@angular/core';
+import { DashboardPropertyRow } from 'src/app/dashboard/dashboard.types';
 import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
 import { PropertyImageCarouselComponent } from 'src/app/propertydetail/property-image-carousel.component';
-
-export type PropertyDetailViewModel = {
-  createdAt: string;
-  title: string;
-  url: string;
-  price: string;
-  location: string;
-  advertiserComment: string;
-  propertyId: string;
-  localImageUrls: string[];
-};
 
 @Component({
   selector: 'app-property-detail-panel',
@@ -23,7 +13,7 @@ export type PropertyDetailViewModel = {
 export class PropertyDetailPanelComponent {
   private readonly i18nService = inject(I18nService);
 
-  @Input() property: PropertyDetailViewModel | null = null;
+  @Input() property: DashboardPropertyRow | null = null;
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Input() staticMediaBaseUrl = 'http://localhost:666/';
 

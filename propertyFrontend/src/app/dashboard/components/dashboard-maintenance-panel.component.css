@@ -1,0 +1,80 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.dashboard-card {
+  border: 0;
+  border-top: 1px solid #dbe5f3;
+  background: #ffffff;
+  padding: 0.6rem;
+  height: 100%;
+  overflow: auto;
+}
+
+.dashboard-card h1 {
+  margin: 0;
+  color: #0f2e55;
+  font-size: 1.9rem;
+  line-height: 1.15;
+}
+
+.maintenance-actions {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+}
+
+.maintenance-button {
+  min-height: 72px;
+  border: 1px solid #9ec5f4;
+  background: linear-gradient(180deg, #e9f3ff 0%, #dbeafc 100%);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f2e55;
+  cursor: pointer;
+}
+
+.maintenance-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.maintenance-result {
+  margin-top: 0.9rem;
+}
+
+.maintenance-result label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #2b4f7f;
+  font-weight: 600;
+}
+
+.maintenance-result textarea {
+  width: 100%;
+  min-height: 180px;
+  border: 1px solid #c7d6ec;
+  border-radius: 10px;
+  padding: 0.75rem;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #1a3357;
+  background: #f8fbff;
+}
+
+@media (min-width: 900px) {
+  .dashboard-card {
+    padding: 0.75rem;
+  }
+
+  .maintenance-actions {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.8rem;
+  }
+}

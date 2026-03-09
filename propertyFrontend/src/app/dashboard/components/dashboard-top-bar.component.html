@@ -1,0 +1,39 @@
+<header class="top-bar" (dblclick)="onTopBarDoubleClick()" (pointerup)="onTopBarPointerUp($event)">
+  <nav class="tabs">
+    <button
+      type="button"
+      class="tab"
+      [class.active]="activeTab === 'DASHBOARD'"
+      (click)="selectTab('DASHBOARD')"
+    >
+      {{ t('DASHBOARD') }}
+    </button>
+    <button
+      type="button"
+      class="tab"
+      [class.active]="activeTab === 'DATABASE_MAINTENANCE_TAB'"
+      (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
+    >
+      {{ t('DATABASE_MAINTENANCE_TAB') }}
+    </button>
+  </nav>
+
+  <div class="top-bar-actions">
+    <div class="property-count-chip">
+      <span class="count-label">{{ t('TOTAL_PROPERTIES') }}</span>
+      <span class="count-value" [class.loading]="loading">{{ count }}</span>
+    </div>
+
+    <div class="language-selector">
+      <select
+        id="languageSelect"
+        aria-label="Language selector"
+        [value]="selectedLanguage"
+        (change)="onLanguageSelect($any($event.target).value)"
+      >
+        <option value="en">{{ t('LANGUAGE_EN') }}</option>
+        <option value="sp">{{ t('LANGUAGE_SP') }}</option>
+      </select>
+    </div>
+  </div>
+</header>

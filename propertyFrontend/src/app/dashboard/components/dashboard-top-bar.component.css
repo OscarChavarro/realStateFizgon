@@ -1,0 +1,139 @@
+:host {
+  display: block;
+}
+
+.top-bar {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  background: #ffffff;
+  border: 1px solid #dbe5f3;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  padding: 0.2rem 0.35rem;
+  flex: 0 0 auto;
+}
+
+.tabs {
+  width: 100%;
+  display: flex;
+  gap: 0;
+  background: #f1f3f4;
+  border: 1px solid #dde1e6;
+  overflow: hidden;
+}
+
+.tab {
+  border: 0;
+  border-right: 1px solid #dde1e6;
+  background: #f1f3f4;
+  color: #3c4043;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-height: 32px;
+  flex: 1 1 0;
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.tab:last-child {
+  border-right: 0;
+}
+
+.tab.active {
+  background: #e8f0fe;
+  color: #1967d2;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: #1967d2;
+}
+
+.top-bar-actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.property-count-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  border: 1px solid #d8e3ff;
+  border-radius: 6px;
+  background: #f4f7ff;
+  padding: 0.22rem 0.4rem;
+}
+
+.count-label {
+  color: #2b4f7f;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.count-value {
+  color: #0f2e55;
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+.count-value.loading {
+  opacity: 0.55;
+}
+
+.language-selector {
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.language-selector select {
+  width: min(150px, 100%);
+  border: 1px solid #c7d6ec;
+  border-radius: 6px;
+  padding: 0.24rem 0.35rem;
+  background: #ffffff;
+  color: #1e3d69;
+}
+
+@media (min-width: 900px) {
+  .top-bar {
+    flex-wrap: nowrap;
+    gap: 0.65rem;
+    padding: 0.25rem 0.45rem;
+  }
+
+  .tabs {
+    width: auto;
+  }
+
+  .top-bar-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .tab {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.82rem;
+    flex: 0 0 auto;
+  }
+}

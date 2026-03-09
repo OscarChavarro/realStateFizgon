@@ -16,7 +16,6 @@ import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
 })
 export class DashboardTopBarComponent {
   private readonly i18nService = inject(I18nService);
-  private lastTouchPointerUpAtMs = 0;
 
   @Input({ required: true }) activeTab: DashboardTab = 'DASHBOARD';
   @Input({ required: true }) visibleCount = 0;
@@ -24,10 +23,12 @@ export class DashboardTopBarComponent {
   @Input({ required: true }) loading = false;
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
   @Input({ required: true }) filters: DashboardFiltersState = createDefaultDashboardFilters();
+  @Input({ required: true }) layoutCycleIcon = 'vertical_split';
 
   @Output() readonly tabChange = new EventEmitter<DashboardTab>();
   @Output() readonly languageChange = new EventEmitter<SupportedLanguage>();
   @Output() readonly filtersChange = new EventEmitter<DashboardFiltersState>();
+  @Output() readonly layoutCycleRequest = new EventEmitter<void>();
   @Output() readonly fullscreenRequest = new EventEmitter<void>();
 
   selectTab(tab: DashboardTab): void {
@@ -38,44 +39,16 @@ export class DashboardTopBarComponent {
     this.languageChange.emit(value === 'sp' ? 'sp' : 'en');
   }
 
-  onTopBarDoubleClick(): void {
+  onFullscreenButtonClick(): void {
     this.fullscreenRequest.emit();
   }
 
-  onTopBarPointerUp(event: PointerEvent): void {
-    if (event.pointerType !== 'touch') {
-      return;
-    }
-
-    const target = event.target as HTMLElement | null;
-    if (this.isInteractiveElement(target)) {
-      return;
-    }
-
-    const now = Date.now();
-    const delta = now - this.lastTouchPointerUpAtMs;
-    this.lastTouchPointerUpAtMs = now;
-
-    if (delta <= 350) {
-      this.lastTouchPointerUpAtMs = 0;
-      this.fullscreenRequest.emit();
-    }
+  onLayoutCycleButtonClick(): void {
+    this.layoutCycleRequest.emit();
   }
 
   onFiltersUpdate(filters: DashboardFiltersState): void {
     this.filtersChange.emit(filters);
-  }
-
-  private isInteractiveElement(target: HTMLElement | null): boolean {
-    if (!target) {
-      return false;
-    }
-
-    const tagName = target.tagName.toLowerCase();
-    return tagName === 'button'
-      || tagName === 'input'
-      || tagName === 'select'
-      || tagName === 'label';
   }
 
   t(id: string): string {

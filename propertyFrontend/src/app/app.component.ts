@@ -37,7 +37,7 @@ import { PropertyDetailPanelComponent } from 'src/app/propertydetail/property-de
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
-  private static readonly WORKSPACE_SPLITTER_WIDTH_PX = 16;
+  private static readonly WORKSPACE_SPLITTER_WIDTH_PX = 8;
 
   private readonly http = inject(HttpClient);
   private readonly dashboardDataService = inject(DashboardDataService);

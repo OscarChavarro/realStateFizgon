@@ -49,12 +49,12 @@
 }
 
 .workspace-splitter {
-  width: 16px;
+  width: 8px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  background: #ecf1f9;
+  background: linear-gradient(90deg, #f8fafd 0%, #edf2f9 50%, #f8fafd 100%);
   border-left: 1px solid #d6deea;
   border-right: 1px solid #d6deea;
   cursor: col-resize;
@@ -62,28 +62,27 @@
   position: relative;
 }
 
-.splitter-controls {
-  position: absolute;
-  top: 0.35rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
+.workspace-splitter::before {
+  content: '';
+  width: 2px;
+  height: 48px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #8fa3bf 0 4px,
+    transparent 4px 8px
+  );
+  opacity: 0.9;
 }
 
-.splitter-button {
-  width: 0.95rem;
-  height: 0.95rem;
-  border: 1px solid #c8d6ec;
-  border-radius: 3px;
-  background: #ffffff;
-  color: #2f5f9d;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
+.workspace-splitter:hover {
+  background: linear-gradient(90deg, #eef4fd 0%, #dfe9f7 50%, #eef4fd 100%);
 }
 
-.splitter-button .material-symbols-outlined {
-  font-size: 0.62rem;
+.workspace-splitter:hover::before {
+  background: repeating-linear-gradient(
+    to bottom,
+    #5f7fa7 0 4px,
+    transparent 4px 8px
+  );
 }

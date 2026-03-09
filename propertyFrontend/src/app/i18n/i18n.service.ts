@@ -49,6 +49,16 @@ export class I18nService {
       sp: 'Mostrando'
     },
     {
+      id: 'FULLSCREEN',
+      en: 'Fullscreen',
+      sp: 'Pantalla completa'
+    },
+    {
+      id: 'CYCLE_LAYOUT',
+      en: 'Cycle layout',
+      sp: 'Cambiar distribución'
+    },
+    {
       id: 'CREATED_AT',
       en: 'Created at',
       sp: 'Creado en'

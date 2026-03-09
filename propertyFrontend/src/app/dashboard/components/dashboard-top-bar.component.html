@@ -1,4 +1,4 @@
-<header class="top-bar" (dblclick)="onTopBarDoubleClick()" (pointerup)="onTopBarPointerUp($event)">
+<header class="top-bar">
   <nav class="tabs">
     <button
       type="button"
@@ -29,6 +29,28 @@
       [selectedLanguage]="selectedLanguage"
       (filtersChange)="onFiltersUpdate($event)"
     ></app-dashboard-filter-menu>
+
+    @if (activeTab === 'DASHBOARD') {
+      <button
+        type="button"
+        class="layout-cycle-trigger"
+        [attr.aria-label]="t('CYCLE_LAYOUT')"
+        [attr.title]="t('CYCLE_LAYOUT')"
+        (click)="onLayoutCycleButtonClick()"
+      >
+        <span class="material-symbols-outlined">{{ layoutCycleIcon }}</span>
+      </button>
+    }
+
+    <button
+      type="button"
+      class="fullscreen-trigger"
+      [attr.aria-label]="t('FULLSCREEN')"
+      [attr.title]="t('FULLSCREEN')"
+      (click)="onFullscreenButtonClick()"
+    >
+      <span class="material-symbols-outlined">fullscreen</span>
+    </button>
 
     <div class="language-selector">
       <select

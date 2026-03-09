@@ -6,9 +6,11 @@
     [loading]="loading()"
     [selectedLanguage]="selectedLanguage()"
     [filters]="filters()"
+    [layoutCycleIcon]="getWorkspaceCycleIcon()"
     (tabChange)="onTabChange($event)"
     (languageChange)="onLanguageChange($event)"
     (filtersChange)="onFiltersChange($event)"
+    (layoutCycleRequest)="cycleWorkspaceLayout()"
     (fullscreenRequest)="onFullscreenRequested()"
   ></app-dashboard-top-bar>
 
@@ -27,13 +29,7 @@
           ></app-dashboard-properties-table>
         </section>
 
-        <div class="workspace-splitter" (mousedown)="onSplitterMouseDown($event)">
-          <div class="splitter-controls">
-            <button type="button" class="splitter-button" (click)="cycleWorkspaceLayout()">
-              <span class="material-symbols-outlined">{{ getWorkspaceCycleIcon() }}</span>
-            </button>
-          </div>
-        </div>
+        <div class="workspace-splitter" (mousedown)="onSplitterMouseDown($event)"></div>
 
         <section class="workspace-panel right" [class.hidden]="rightPanelHidden()">
           <app-property-detail-panel

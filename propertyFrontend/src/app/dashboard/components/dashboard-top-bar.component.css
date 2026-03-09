@@ -74,18 +74,21 @@
 
 .property-count-chip {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.3rem;
   border: 1px solid #d8e3ff;
   border-radius: 6px;
   background: #f4f7ff;
-  padding: 0.22rem 0.4rem;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 0.6rem;
 }
 
 .count-label {
   color: #2b4f7f;
   font-weight: 600;
   font-size: 0.8rem;
+  line-height: 1;
 }
 
 .count-value {
@@ -94,6 +97,7 @@
   font-size: 0.95rem;
   min-width: 1.5rem;
   text-align: right;
+  line-height: 1;
 }
 
 .count-value.loading {
@@ -111,11 +115,42 @@ app-dashboard-filter-menu {
   flex: 0 0 auto;
 }
 
-.language-selector select {
-  width: min(150px, 100%);
+.layout-cycle-trigger,
+.fullscreen-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 36px;
   border: 1px solid #c7d6ec;
   border-radius: 6px;
-  padding: 0.24rem 0.35rem;
+  background: #ffffff;
+  color: #1e3d69;
+  cursor: pointer;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+}
+
+.layout-cycle-trigger .material-symbols-outlined,
+.fullscreen-trigger .material-symbols-outlined {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.layout-cycle-trigger:hover,
+.fullscreen-trigger:hover {
+  background: #e8f0fe;
+  border-color: #a9c5ec;
+  color: #1b4d9b;
+}
+
+.language-selector select {
+  width: min(150px, 100%);
+  height: 36px;
+  border: 1px solid #c7d6ec;
+  border-radius: 6px;
+  box-sizing: border-box;
+  padding: 0 0.35rem;
   background: #ffffff;
   color: #1e3d69;
 }

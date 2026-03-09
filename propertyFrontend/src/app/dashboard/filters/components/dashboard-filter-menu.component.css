@@ -10,12 +10,15 @@
 .filter-trigger {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   border: 1px solid #c7d6ec;
   border-radius: 6px;
   background: #ffffff;
   color: #1e3d69;
-  padding: 0.24rem 0.45rem;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 0.55rem;
   font-size: 0.82rem;
   cursor: pointer;
 }

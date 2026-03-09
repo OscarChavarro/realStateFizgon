@@ -1,5 +1,7 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 import { DashboardTab } from 'src/app/dashboard/dashboard.types';
+import { DashboardUserMenuComponent } from 'src/app/dashboard/auth/components/dashboard-user-menu.component';
 import {
   DashboardFiltersState,
   createDefaultDashboardFilters
@@ -10,7 +12,7 @@ import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
 @Component({
   selector: 'app-dashboard-top-bar',
   standalone: true,
-  imports: [DashboardFilterMenuComponent],
+  imports: [DashboardFilterMenuComponent, DashboardUserMenuComponent],
   templateUrl: './dashboard-top-bar.component.html',
   styleUrl: './dashboard-top-bar.component.css'
 })
@@ -24,12 +26,17 @@ export class DashboardTopBarComponent {
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
   @Input({ required: true }) filters: DashboardFiltersState = createDefaultDashboardFilters();
   @Input({ required: true }) layoutCycleIcon = 'vertical_split';
+  @Input() googleLoginEnabled = true;
+  @Input() authenticatedUser: AuthenticatedUser | null = null;
+  @Input() authenticatedUserAvatarUrl: string | null = null;
 
   @Output() readonly tabChange = new EventEmitter<DashboardTab>();
   @Output() readonly languageChange = new EventEmitter<SupportedLanguage>();
   @Output() readonly filtersChange = new EventEmitter<DashboardFiltersState>();
   @Output() readonly layoutCycleRequest = new EventEmitter<void>();
   @Output() readonly fullscreenRequest = new EventEmitter<void>();
+  @Output() readonly googleLoginRequest = new EventEmitter<void>();
+  @Output() readonly logoutRequest = new EventEmitter<void>();
 
   selectTab(tab: DashboardTab): void {
     this.tabChange.emit(tab);
@@ -49,6 +56,14 @@ export class DashboardTopBarComponent {
 
   onFiltersUpdate(filters: DashboardFiltersState): void {
     this.filtersChange.emit(filters);
+  }
+
+  onGoogleLoginClicked(): void {
+    this.googleLoginRequest.emit();
+  }
+
+  onLogoutClicked(): void {
+    this.logoutRequest.emit();
   }
 
   t(id: string): string {

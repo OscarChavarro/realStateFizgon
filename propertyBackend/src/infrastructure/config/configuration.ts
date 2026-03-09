@@ -20,6 +20,21 @@ type Secrets = {
     user?: string;
     password?: string;
   };
+  auth?: {
+    google?: {
+      clientId?: string;
+      clientSecret?: string;
+      redirectUri?: string;
+      scope?: string;
+      prompt?: string;
+    };
+    frontendBaseUrl?: string;
+    session?: {
+      cookieName?: string;
+      ttlSeconds?: number;
+      secureCookie?: boolean;
+    };
+  };
 };
 
 @Injectable()
@@ -78,5 +93,49 @@ export class Configuration {
     const encodedPassword = encodeURIComponent(this.mongoPassword);
     const encodedAuthSource = encodeURIComponent(this.mongoAuthSource);
     return `mongodb://${encodedUser}:${encodedPassword}@${this.mongoHost}:${this.mongoPort}/${this.mongoDatabase}?authSource=${encodedAuthSource}`;
+  }
+
+  get googleClientId(): string {
+    return (this.secrets.auth?.google?.clientId ?? '').trim();
+  }
+
+  get googleClientSecret(): string {
+    return (this.secrets.auth?.google?.clientSecret ?? '').trim();
+  }
+
+  get googleRedirectUri(): string {
+    return (this.secrets.auth?.google?.redirectUri ?? '').trim();
+  }
+
+  get googleScope(): string {
+    const scope = (this.secrets.auth?.google?.scope ?? '').trim();
+    return scope || 'openid email profile';
+  }
+
+  get googlePrompt(): string {
+    const prompt = (this.secrets.auth?.google?.prompt ?? '').trim();
+    return prompt || 'select_account';
+  }
+
+  get authFrontendBaseUrl(): string {
+    const configured = (this.secrets.auth?.frontendBaseUrl ?? '').trim();
+    return configured || 'http://localhost:4200';
+  }
+
+  get authSessionCookieName(): string {
+    const configured = (this.secrets.auth?.session?.cookieName ?? '').trim();
+    return configured || 'pf_session';
+  }
+
+  get authSessionTtlSeconds(): number {
+    const configured = this.secrets.auth?.session?.ttlSeconds;
+    if (typeof configured !== 'number' || !Number.isFinite(configured) || configured <= 0) {
+      return 60 * 60 * 24 * 7;
+    }
+    return Math.floor(configured);
+  }
+
+  get authSessionSecureCookie(): boolean {
+    return this.secrets.auth?.session?.secureCookie ?? false;
   }
 }

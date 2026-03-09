@@ -1,0 +1,10 @@
+meta {
+  name: googleOAuthLoginRedirect
+  type: http
+  seq: 6
+}
+
+get {
+  url: http://localhost:8081/auth/google/login?returnTo=http%3A%2F%2Flocalhost%3A4200
+  body: none
+}

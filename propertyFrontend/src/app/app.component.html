@@ -7,11 +7,16 @@
     [selectedLanguage]="selectedLanguage()"
     [filters]="filters()"
     [layoutCycleIcon]="getWorkspaceCycleIcon()"
+    [googleLoginEnabled]="googleLoginEnabled()"
+    [authenticatedUser]="authenticatedUser()"
+    [authenticatedUserAvatarUrl]="authenticatedUserAvatarUrl()"
     (tabChange)="onTabChange($event)"
     (languageChange)="onLanguageChange($event)"
     (filtersChange)="onFiltersChange($event)"
     (layoutCycleRequest)="cycleWorkspaceLayout()"
     (fullscreenRequest)="onFullscreenRequested()"
+    (googleLoginRequest)="onGoogleLoginRequested()"
+    (logoutRequest)="onLogoutRequested()"
   ></app-dashboard-top-bar>
 
   @if (activeTab() === 'DASHBOARD') {

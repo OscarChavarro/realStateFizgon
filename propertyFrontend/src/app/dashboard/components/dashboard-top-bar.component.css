@@ -115,6 +115,10 @@ app-dashboard-filter-menu {
   flex: 0 0 auto;
 }
 
+app-dashboard-user-menu {
+  flex: 0 0 auto;
+}
+
 .layout-cycle-trigger,
 .fullscreen-trigger {
   display: inline-flex;

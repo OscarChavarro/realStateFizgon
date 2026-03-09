@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
+import { firstValueFrom } from 'rxjs';
+import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
 import { DashboardPropertiesTableComponent } from 'src/app/dashboard/components/dashboard-properties-table.component';
@@ -61,6 +63,14 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly lockedSelectedPropertyKey = signal<string | null>(null);
   readonly selectedLanguage = signal<SupportedLanguage>('en');
   readonly activeTab = signal<DashboardTab>('DASHBOARD');
+  readonly googleLoginEnabled = signal<boolean>(true);
+  readonly authenticatedUser = signal<AuthenticatedUser | null>(null);
+  readonly authenticatedUserAvatarUrl = computed<string | null>(() => {
+    if (!this.authenticatedUser()) {
+      return null;
+    }
+    return `${this.backendBaseUrl}/auth/google/avatar`;
+  });
   readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
     new RemoveDanglingImagesOperation()
   ];
@@ -74,6 +84,8 @@ export class AppComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.loadSelectedLanguageFromSession();
     await this.loadBackendConfiguration();
+    await this.loadGoogleLoginAvailability();
+    await this.loadCurrentUser();
     await this.refreshDashboardData();
     this.connectUpdatesSocket();
   }
@@ -190,6 +202,16 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.toggleFullscreen();
   }
 
+  onGoogleLoginRequested(): void {
+    const loginUrl = new URL('/auth/google/login', `${this.backendBaseUrl}/`);
+    loginUrl.searchParams.set('returnTo', window.location.href);
+    window.location.assign(loginUrl.toString());
+  }
+
+  onLogoutRequested(): void {
+    void this.logoutCurrentUser();
+  }
+
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(event: MouseEvent): void {
     if (!this.isResizingWorkspace || !this.workspaceContainer) {
@@ -258,6 +280,67 @@ export class AppComponent implements OnInit, OnDestroy {
     const config = await this.dashboardDataService.loadBackendConfiguration(this.http);
     this.backendBaseUrl = config.backendBaseUrl;
     this.staticMediaBaseUrl = config.staticMediaBaseUrl;
+    this.warnIfAuthHostMismatch();
+  }
+
+  private async loadGoogleLoginAvailability(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ enabled?: boolean }>(`${this.backendBaseUrl}/auth/google/login-url`)
+      );
+      this.googleLoginEnabled.set(response.enabled === true);
+    } catch {
+      this.googleLoginEnabled.set(false);
+    }
+  }
+
+  private warnIfAuthHostMismatch(): void {
+    try {
+      const backendHost = new URL(this.backendBaseUrl).hostname;
+      const frontendHost = window.location.hostname;
+      if (backendHost !== frontendHost) {
+        // Cross-site hosts can prevent auth cookies from being sent back on /auth/google/me.
+        console.warn(
+          `Auth host mismatch detected (frontend=${frontendHost}, backend=${backendHost}). ` +
+          'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
+        );
+      }
+    } catch {
+      // Ignore URL parsing issues; normal request errors will surface elsewhere.
+    }
+  }
+
+  private async loadCurrentUser(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ authenticated?: boolean; user?: AuthenticatedUser | null }>(
+          `${this.backendBaseUrl}/auth/google/me`,
+          { withCredentials: true }
+        )
+      );
+
+      if (response.authenticated && response.user) {
+        this.authenticatedUser.set(response.user);
+      } else {
+        this.authenticatedUser.set(null);
+      }
+    } catch {
+      this.authenticatedUser.set(null);
+    }
+  }
+
+  private async logoutCurrentUser(): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `${this.backendBaseUrl}/auth/google/logout`,
+          {},
+          { withCredentials: true }
+        )
+      );
+    } finally {
+      this.authenticatedUser.set(null);
+    }
   }
 
   private async refreshDashboardData(): Promise<void> {

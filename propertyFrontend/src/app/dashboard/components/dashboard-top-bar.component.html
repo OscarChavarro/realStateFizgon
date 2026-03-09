@@ -63,5 +63,14 @@
         <option value="sp">{{ t('LANGUAGE_SP') }}</option>
       </select>
     </div>
+
+    <app-dashboard-user-menu
+      [selectedLanguage]="selectedLanguage"
+      [googleLoginEnabled]="googleLoginEnabled"
+      [authenticatedUser]="authenticatedUser"
+      [avatarUrl]="authenticatedUserAvatarUrl"
+      (googleLoginRequest)="onGoogleLoginClicked()"
+      (logoutRequest)="onLogoutClicked()"
+    ></app-dashboard-user-menu>
   </div>
 </header>

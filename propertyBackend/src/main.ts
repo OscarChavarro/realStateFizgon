@@ -7,7 +7,7 @@ import { Configuration } from 'src/infrastructure/config/configuration';
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: true, credentials: false });
+  app.enableCors({ origin: true, credentials: true });
 
   const configuration = app.get(Configuration);
   const port = configuration.apiPort;

@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { FixDatabaseController } from 'src/adapters/inbound/http/fix-database.controller';
+import { GoogleAuthController } from 'src/adapters/inbound/http/google-auth.controller';
+import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
 import { PropertiesController } from 'src/adapters/inbound/http/properties.controller';
 import { RemoveDanglingImagesController } from 'src/adapters/inbound/http/remove-dangling-images.controller';
 import { PropertiesUpdatesGateway } from 'src/adapters/inbound/websocket/properties-updates.gateway';
+import { GoogleOAuthBootstrapService } from 'src/application/services/auth/google/google-oauth-bootstrap.service';
 import { DanglingImagesCleanupService } from 'src/application/services/datamaintenance/dangling-images-cleanup.service';
 import { FileSystemOperationsService } from 'src/adapters/outbound/filesystem/file-system-operations.service';
 import { PriceFixer } from 'src/application/services/datamaintenance/price-fixer.service';
@@ -22,10 +25,13 @@ import { PropertiesMonitorService } from 'src/application/services/properties-mo
   controllers: [
     PropertiesController,
     FixDatabaseController,
-    RemoveDanglingImagesController
+    RemoveDanglingImagesController,
+    GoogleAuthController
   ],
   providers: [
     Configuration,
+    AuthSessionService,
+    GoogleOAuthBootstrapService,
     MongoDatabaseService,
     MongoRepository,
     PriceFixer,

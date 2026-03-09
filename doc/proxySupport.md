@@ -173,3 +173,26 @@ Main limitation:
 - You typically get one residential IP (or a very small set), not a large rotating pool.
 
 This makes the setup ideal for testing and for low-volume scraping workflows, while commercial providers are usually better for large-scale rotation, geo diversity, and enterprise-level uptime guarantees.
+
+### Using PAC rules to optimize costs
+
+When paying a proxy service by traffic, it is a good idea to use several different proxies. Traffic can be splitted using a script such as:
+
+´´´
+function FindProxyForURL(url, host) {
+    if (dnsDomainIs(host, "img4.idealista.com")) {
+        return "PROXY free-cheap-proxy.example:8080";
+    }
+
+    if (dnsDomainIs(host, "www.idealista.com")) {
+        return "PROXY payed-expensive-limited-proxy.example:8080";
+    }
+
+    return "PROXY payed-expensive-limited-proxy.example:8080";
+}
+´´´
+
+and then:
+´´´
+chromium --proxy-pac-url="http://127.0.0.1:8000/proxy.pac" ...
+´´´

@@ -59,6 +59,31 @@ export class I18nService {
       sp: 'Cambiar distribución'
     },
     {
+      id: 'USER_MENU',
+      en: 'User menu',
+      sp: 'Menú de usuario'
+    },
+    {
+      id: 'LOGIN_WITH_GOOGLE',
+      en: 'Continue with Google',
+      sp: 'Continuar con Google'
+    },
+    {
+      id: 'GOOGLE_LOGIN_NOT_CONFIGURED',
+      en: 'Google OAuth is not configured on backend yet.',
+      sp: 'Google OAuth todavía no está configurado en el backend.'
+    },
+    {
+      id: 'SIGNED_IN_USER',
+      en: 'Signed-in user',
+      sp: 'Usuario autenticado'
+    },
+    {
+      id: 'LOGOUT',
+      en: 'Logout',
+      sp: 'Cerrar sesión'
+    },
+    {
       id: 'CREATED_AT',
       en: 'Created at',
       sp: 'Creado en'

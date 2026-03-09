@@ -1,0 +1,54 @@
+<div class="user-menu">
+  <button
+    type="button"
+    class="user-trigger"
+    [class.open]="menuOpen()"
+    [attr.aria-expanded]="menuOpen()"
+    [attr.aria-label]="t('USER_MENU')"
+    [attr.title]="t('USER_MENU')"
+    aria-haspopup="true"
+    (click)="onToggleMenu()"
+  >
+    @if (showAvatarImage) {
+      <img class="user-avatar" [src]="avatarUrl!" alt="" (error)="onAvatarError()" />
+    } @else {
+      <span class="material-symbols-outlined">account_circle</span>
+    }
+  </button>
+
+  @if (menuOpen()) {
+    <div class="user-dropdown" role="menu">
+      @if (authenticatedUser) {
+        <div class="user-info">
+          <div class="user-name">{{ displayName }}</div>
+          @if (authenticatedUser.email) {
+            <div class="user-email">{{ authenticatedUser!.email }}</div>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="logout-button"
+          (click)="onLogoutClick()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          <span>{{ t('LOGOUT') }}</span>
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="google-login-button"
+          [disabled]="!googleLoginEnabled"
+          (click)="onGoogleLoginClick()"
+        >
+          <span class="google-icon" aria-hidden="true">G</span>
+          <span>{{ t('LOGIN_WITH_GOOGLE') }}</span>
+        </button>
+
+        @if (!googleLoginEnabled) {
+          <p class="google-login-hint">{{ t('GOOGLE_LOGIN_NOT_CONFIGURED') }}</p>
+        }
+      }
+    </div>
+  }
+</div>

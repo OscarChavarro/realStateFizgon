@@ -1,0 +1,10 @@
+meta {
+  name: googleOAuthCallback
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:8081/auth/google/callback?code=sample-code&state=sample-state
+  body: none
+}

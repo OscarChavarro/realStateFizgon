@@ -16,8 +16,8 @@
       <label class="filter-option">
         <input
           type="checkbox"
-          [checked]="filters.showClosedProperties"
-          (change)="onShowClosedPropertiesChange($any($event.target).checked)"
+          [checked]="filters.showClosed"
+          (change)="onShowClosedChange($any($event.target).checked)"
         />
         <span>{{ t('SHOW_CLOSED_PROPERTIES') }}</span>
       </label>

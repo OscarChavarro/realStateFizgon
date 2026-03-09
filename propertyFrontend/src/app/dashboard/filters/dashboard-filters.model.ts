@@ -1,9 +1,9 @@
 export type DashboardFiltersState = {
-  showClosedProperties: boolean;
+  showClosed: boolean;
 };
 
 export function createDefaultDashboardFilters(): DashboardFiltersState {
   return {
-    showClosedProperties: true
+    showClosed: true
   };
 }

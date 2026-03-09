@@ -199,6 +199,59 @@ export class AuthUserRepository {
     );
   }
 
+  async getUserPreferences(userIdRaw: string): Promise<Record<string, unknown>> {
+    const userId = this.parseObjectId(userIdRaw);
+    if (!userId) {
+      return {};
+    }
+
+    const collection = await this.getUserPreferencesCollection();
+    const document = await collection.findOne({ userId });
+    if (!document || typeof document.preferences !== 'object' || document.preferences === null) {
+      return {};
+    }
+
+    return document.preferences;
+  }
+
+  async mergeUserPreferences(
+    userIdRaw: string,
+    preferencesPatch: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
+    const userId = this.parseObjectId(userIdRaw);
+    if (!userId) {
+      return {};
+    }
+
+    const collection = await this.getUserPreferencesCollection();
+    const current = await collection.findOne({ userId });
+    const currentPreferences = (
+      current && typeof current.preferences === 'object' && current.preferences !== null
+    ) ? current.preferences : {};
+    const mergedPreferences = {
+      ...currentPreferences,
+      ...preferencesPatch
+    };
+    const now = new Date();
+
+    await collection.updateOne(
+      { userId },
+      {
+        $set: {
+          preferences: mergedPreferences,
+          updatedAt: now
+        },
+        $setOnInsert: {
+          userId,
+          createdAt: now
+        }
+      },
+      { upsert: true }
+    );
+
+    return mergedPreferences;
+  }
+
   async findUserRole(userId: ObjectId): Promise<WithId<UserRoleDocument> | null> {
     const collection = await this.getUserRolesCollection();
     return collection.findOne({ userId });

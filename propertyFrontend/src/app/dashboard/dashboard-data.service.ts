@@ -88,11 +88,11 @@ export class DashboardDataService {
     http: HttpClient,
     backendBaseUrl: string,
     sortCriteria: SortCriterion[],
-    showClosedProperties: boolean
+    showClosed: boolean
   ): Promise<DashboardDataResult> {
     try {
       const response = await firstValueFrom(
-        http.get<PropertiesResponse>(this.buildPropertiesEndpointUrl(backendBaseUrl, sortCriteria, showClosedProperties))
+        http.get<PropertiesResponse>(this.buildPropertiesEndpointUrl(backendBaseUrl, sortCriteria, showClosed))
       );
 
       return {
@@ -129,10 +129,10 @@ export class DashboardDataService {
   private buildPropertiesEndpointUrl(
     backendBaseUrl: string,
     sortCriteria: SortCriterion[],
-    showClosedProperties: boolean
+    showClosed: boolean
   ): string {
     const url = new URL(`${backendBaseUrl}/properties`);
-    url.searchParams.set('showClosed', showClosedProperties ? 'true' : 'false');
+    url.searchParams.set('showClosed', showClosed ? 'true' : 'false');
     for (const criterion of sortCriteria) {
       url.searchParams.append('sortOrder', criterion.sortOrder);
       url.searchParams.append('sortBy', criterion.sortBy);

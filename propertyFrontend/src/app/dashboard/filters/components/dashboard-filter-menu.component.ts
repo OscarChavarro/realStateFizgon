@@ -25,10 +25,10 @@ export class DashboardFilterMenuComponent {
     this.menuOpen.update((current) => !current);
   }
 
-  onShowClosedPropertiesChange(checked: boolean): void {
+  onShowClosedChange(checked: boolean): void {
     this.filtersChange.emit({
       ...this.filters,
-      showClosedProperties: checked
+      showClosed: checked
     });
   }
 

@@ -5,7 +5,7 @@ export function applyDashboardFilters(
   rows: DashboardPropertyRow[],
   filters: DashboardFiltersState
 ): DashboardPropertyRow[] {
-  if (!filters.showClosedProperties) {
+  if (!filters.showClosed) {
     return rows.filter((row) => !row.unavailable);
   }
 

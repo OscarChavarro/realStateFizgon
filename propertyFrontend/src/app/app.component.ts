@@ -14,6 +14,7 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
+import { DashboardFiltersPreferencesService } from 'src/app/dashboard/filters/dashboard-filters-preferences.service';
 import {
   DashboardPropertyRow,
   DashboardTab,
@@ -50,6 +51,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly dashboardDataService = inject(DashboardDataService);
   private readonly authSessionApiService = inject(AuthSessionApiService);
   private readonly authUsersService = inject(AuthUsersService);
+  private readonly dashboardFiltersPreferencesService = inject(DashboardFiltersPreferencesService);
   private readonly workspaceLayoutService = inject(WorkspaceLayoutService);
   private readonly propertySelectionService = inject(PropertySelectionService);
   private readonly sortCriteriaService = inject(SortCriteriaService);
@@ -131,11 +133,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onFiltersChange(filters: DashboardFiltersState): void {
-    const current = this.filters();
-    this.filters.set(filters);
-    if (current.showClosedProperties !== filters.showClosedProperties) {
-      void this.refreshDashboardData();
-    }
+    void this.handleFiltersChange(filters);
   }
 
   onSortToggle(request: SortToggleRequest): void {
@@ -278,6 +276,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authenticatedUser.set(user);
 
     if (user) {
+      await this.loadFiltersPreferencesForAuthenticatedUser();
       if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
         this.activeTab.set('DASHBOARD');
       }
@@ -288,6 +287,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.users.set([]);
+    this.filters.set(createDefaultDashboardFilters());
     if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
       this.activeTab.set('DASHBOARD');
     }
@@ -297,9 +297,11 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.authSessionApiService.logout(this.http, this.backendBaseUrl);
     this.authenticatedUser.set(null);
     this.users.set([]);
+    this.filters.set(createDefaultDashboardFilters());
     if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
       this.activeTab.set('DASHBOARD');
     }
+    await this.refreshDashboardData();
   }
 
   private async loadUsers(): Promise<void> {
@@ -339,13 +341,44 @@ export class AppComponent implements OnInit, OnDestroy {
       this.http,
       this.backendBaseUrl,
       this.sortCriteria(),
-      this.filters().showClosedProperties
+      this.filters().showClosed
     );
 
     this.count.set(dashboardData.count);
     this.allProperties.set(dashboardData.properties);
     this.propertySelectionService.syncAfterRefresh(this.properties());
     this.loading.set(false);
+  }
+
+  private async handleFiltersChange(filters: DashboardFiltersState): Promise<void> {
+    const current = this.filters();
+    this.filters.set(filters);
+    if (current.showClosed === filters.showClosed) {
+      return;
+    }
+
+    if (this.authenticatedUser()) {
+      try {
+        await this.dashboardFiltersPreferencesService.saveFilters(this.http, this.backendBaseUrl, filters);
+      } catch {
+        // Ignore persistence errors so filtering still updates UI from backend.
+      }
+    }
+
+    await this.refreshDashboardData();
+  }
+
+  private async loadFiltersPreferencesForAuthenticatedUser(): Promise<void> {
+    const preferences = await this.dashboardFiltersPreferencesService.loadFilters(this.http, this.backendBaseUrl);
+    if (!preferences) {
+      this.filters.set(createDefaultDashboardFilters());
+      return;
+    }
+
+    this.filters.set({
+      ...this.filters(),
+      showClosed: preferences.showClosed
+    });
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy'], sortOrder: SortToggleRequest['sortOrder']): Promise<void> {

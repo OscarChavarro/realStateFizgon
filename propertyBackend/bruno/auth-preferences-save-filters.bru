@@ -1,0 +1,16 @@
+meta {
+  name: authPreferencesSaveFilters
+  type: http
+  seq: 13
+}
+
+post {
+  url: http://localhost:8081/auth/preferences/filters
+  body: json
+}
+
+body:json {
+  {
+    "showClosed": true
+  }
+}

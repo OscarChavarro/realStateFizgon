@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuthPreferencesController } from 'src/adapters/inbound/http/auth-preferences.controller';
 import { AuthUsersController } from 'src/adapters/inbound/http/auth-users.controller';
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { FixDatabaseController } from 'src/adapters/inbound/http/fix-database.controller';
 import { GoogleAuthController } from 'src/adapters/inbound/http/google-auth.controller';
+import { AuthFiltersPreferencesService } from 'src/application/services/auth/auth-filters-preferences.service';
 import { AuthUserIdentityService } from 'src/application/services/auth/auth-user-identity.service';
 import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
 import { PropertiesController } from 'src/adapters/inbound/http/properties.controller';
@@ -30,11 +32,13 @@ import { PropertiesMonitorService } from 'src/application/services/properties-mo
     FixDatabaseController,
     RemoveDanglingImagesController,
     GoogleAuthController,
-    AuthUsersController
+    AuthUsersController,
+    AuthPreferencesController
   ],
   providers: [
     Configuration,
     AuthSessionService,
+    AuthFiltersPreferencesService,
     AuthUserIdentityService,
     GoogleOAuthBootstrapService,
     AuthUserRepository,

@@ -49,6 +49,21 @@ export class I18nService {
       sp: 'Mostrar propiedades cerradas'
     },
     {
+      id: 'SHOW_REVIEW_NEW',
+      en: 'Show review: New',
+      sp: 'Mostrar revisión: Nuevo'
+    },
+    {
+      id: 'SHOW_REVIEW_FAVOURITE',
+      en: 'Show review: Favourite',
+      sp: 'Mostrar revisión: Favorito'
+    },
+    {
+      id: 'SHOW_REVIEW_REJECTED',
+      en: 'Show review: Rejected',
+      sp: 'Mostrar revisión: Rechazado'
+    },
+    {
       id: 'SHOWING_PROPERTIES',
       en: 'Showing',
       sp: 'Mostrando'

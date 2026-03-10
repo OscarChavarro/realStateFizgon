@@ -24,7 +24,9 @@
           @if (authenticatedUser.email) {
             <div class="user-email">{{ authenticatedUser.email }}</div>
           }
-          <div class="user-role">{{ t('USER_ROLE') }}: {{ displayRole }}</div>
+          @if (shouldShowRole) {
+            <div class="user-role">{{ t('USER_ROLE') }}: {{ displayRole }}</div>
+          }
         </div>
 
         <button

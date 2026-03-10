@@ -372,7 +372,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.http,
       this.backendBaseUrl,
       this.sortCriteria(),
-      this.filters().showClosed
+      this.filters()
     );
 
     this.count.set(dashboardData.count);
@@ -384,7 +384,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private async handleFiltersChange(filters: DashboardFiltersState): Promise<void> {
     const current = this.filters();
     this.filters.set(filters);
-    if (current.showClosed === filters.showClosed) {
+    const filtersChanged = (
+      current.showClosed !== filters.showClosed
+      || current.showNew !== filters.showNew
+      || current.showFavourite !== filters.showFavourite
+      || current.showRejected !== filters.showRejected
+    );
+    if (!filtersChanged) {
       return;
     }
 

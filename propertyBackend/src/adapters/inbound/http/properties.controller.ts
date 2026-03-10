@@ -1,17 +1,33 @@
 import { Controller, Get, HttpException, HttpStatus, Query, Req } from '@nestjs/common';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import { MongoRepository, PropertySortCriterion, PropertySortField, PropertySortOrder } from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
+import {
+  AuthUserPreferencesService,
+  UserPropertyLabels
+} from 'src/application/services/auth/auth-user-preferences.service';
+import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
 
 type HttpRequestLike = {
   originalUrl?: string;
   url?: string;
+  headers?: {
+    cookie?: string;
+  };
+};
+
+type ReviewFilterState = {
+  showNew: boolean;
+  showFavourite: boolean;
+  showRejected: boolean;
 };
 
 @Controller('properties')
 export class PropertiesController {
   constructor(
     private readonly mongoDatabaseService: MongoDatabaseService,
-    private readonly mongoRepository: MongoRepository
+    private readonly mongoRepository: MongoRepository,
+    private readonly authSessionService: AuthSessionService,
+    private readonly authUserPreferencesService: AuthUserPreferencesService
   ) {}
 
   @Get('count')
@@ -25,7 +41,10 @@ export class PropertiesController {
     @Req() request: HttpRequestLike,
     @Query('page') pageQuery?: string,
     @Query('pageSize') pageSizeQuery?: string,
-    @Query('showClosed') showClosedQuery?: string
+    @Query('showClosed') showClosedQuery?: string,
+    @Query('showNew') showNewQuery?: string,
+    @Query('showFavourite') showFavouriteQuery?: string,
+    @Query('showRejected') showRejectedQuery?: string
   ): Promise<{
     error: string | null;
     data: unknown[];
@@ -35,22 +54,52 @@ export class PropertiesController {
       totalElements: number;
     };
   }> {
-    const totalElements = await this.mongoDatabaseService.countProperties();
-    const defaultPage = 1;
-    const defaultPageSize = totalElements;
-
-    const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
-    const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
     const showClosed = this.parseBooleanOrDefault(showClosedQuery, true, 'showClosed');
+    const reviewFilterState: ReviewFilterState = {
+      showNew: this.parseBooleanOrDefault(showNewQuery, true, 'showNew'),
+      showFavourite: this.parseBooleanOrDefault(showFavouriteQuery, true, 'showFavourite'),
+      showRejected: this.parseBooleanOrDefault(showRejectedQuery, true, 'showRejected')
+    };
     const sortCriteria = this.parseSortCriteriaFromRawQuery(this.readRawQueryString(request));
+    const userId = this.getOptionalUserId(request);
+    const shouldApplyReviewFilter = userId !== null && this.shouldApplyReviewFiltering(reviewFilterState);
 
-    if (pageSize > totalElements) {
-      this.throwPaginationBadRequest(
-        `Invalid pageSize=${pageSize}. pageSize cannot be greater than total properties (${totalElements}).`
-      );
+    let totalElements = 0;
+    let defaultPageSize = 0;
+    let data: unknown[] = [];
+    const defaultPage = 1;
+
+    if (shouldApplyReviewFilter && userId) {
+      const allRows = await this.mongoRepository.findAllPropertiesSorted(sortCriteria, showClosed);
+      const preferences = await this.authUserPreferencesService.getPreferences(userId);
+      const filteredRows = this.applyReviewFilter(allRows, preferences.propertyLabels, reviewFilterState);
+      totalElements = filteredRows.length;
+      defaultPageSize = totalElements;
+
+      const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
+      const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
+      this.assertPageSizeWithinTotal(pageSize, totalElements);
+      data = this.paginateInMemory(filteredRows, page, pageSize);
+
+      const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
+      return {
+        error: null,
+        data: normalizedData,
+        pagination: {
+          page,
+          pageSize,
+          totalElements
+        }
+      };
     }
 
-    const data = pageSize === 0
+    totalElements = await this.mongoRepository.countProperties(showClosed);
+    defaultPageSize = totalElements;
+    const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
+    const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
+    this.assertPageSizeWithinTotal(pageSize, totalElements);
+
+    data = pageSize === 0
       ? []
       : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria, showClosed);
     const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
@@ -89,7 +138,16 @@ export class PropertiesController {
       'price',
       'propertyId'
     ]);
-    const allowedQueryParams = new Set(['page', 'pageSize', 'showClosed', 'sortBy', 'sortOrder']);
+    const allowedQueryParams = new Set([
+      'page',
+      'pageSize',
+      'showClosed',
+      'showNew',
+      'showFavourite',
+      'showRejected',
+      'sortBy',
+      'sortOrder'
+    ]);
     const params = new URLSearchParams(rawQuery);
     const criteria: PropertySortCriterion[] = [];
     const seenSortBy = new Set<PropertySortField>();
@@ -98,7 +156,7 @@ export class PropertiesController {
     for (const [key, rawValue] of params.entries()) {
       if (!allowedQueryParams.has(key)) {
         this.throwSortBadRequest(
-          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, sortBy, sortOrder.`
+          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, showNew, showFavourite, showRejected, sortBy, sortOrder.`
         );
       }
 
@@ -157,6 +215,81 @@ export class PropertiesController {
       return '';
     }
     return source.slice(queryIndex + 1);
+  }
+
+  private getOptionalUserId(request?: HttpRequestLike): string | null {
+    const user = this.authSessionService.findUserByCookieHeader(request?.headers?.cookie);
+    if (!user) {
+      return null;
+    }
+
+    return user.id;
+  }
+
+  private shouldApplyReviewFiltering(filter: ReviewFilterState): boolean {
+    return !(filter.showNew && filter.showFavourite && filter.showRejected);
+  }
+
+  private applyReviewFilter(
+    rows: unknown[],
+    propertyLabels: UserPropertyLabels[],
+    filter: ReviewFilterState
+  ): unknown[] {
+    const reviewByPropertyId = new Map<string, 'NEW' | 'FAVOURITE' | 'DISCHARGED'>();
+    for (const labelEntry of propertyLabels) {
+      const propertyId = labelEntry.propertyId.trim();
+      if (!propertyId) {
+        continue;
+      }
+
+      const reviewRaw = labelEntry.labels.review;
+      if (reviewRaw === 'NEW' || reviewRaw === 'FAVOURITE' || reviewRaw === 'DISCHARGED') {
+        reviewByPropertyId.set(propertyId, reviewRaw);
+      }
+    }
+
+    return rows.filter((row) => {
+      const propertyId = this.readPropertyId(row);
+      const review = propertyId ? (reviewByPropertyId.get(propertyId) ?? 'NEW') : 'NEW';
+
+      if (review === 'NEW') {
+        return filter.showNew;
+      }
+      if (review === 'FAVOURITE') {
+        return filter.showFavourite;
+      }
+      return filter.showRejected;
+    });
+  }
+
+  private readPropertyId(row: unknown): string {
+    if (typeof row !== 'object' || row === null) {
+      return '';
+    }
+
+    const propertyIdRaw = (row as { propertyId?: unknown }).propertyId;
+    if (propertyIdRaw === null || propertyIdRaw === undefined) {
+      return '';
+    }
+
+    return String(propertyIdRaw).trim();
+  }
+
+  private paginateInMemory(rows: unknown[], page: number, pageSize: number): unknown[] {
+    if (pageSize === 0) {
+      return [];
+    }
+
+    const skip = (page - 1) * pageSize;
+    return rows.slice(skip, skip + pageSize);
+  }
+
+  private assertPageSizeWithinTotal(pageSize: number, totalElements: number): void {
+    if (pageSize > totalElements) {
+      this.throwPaginationBadRequest(
+        `Invalid pageSize=${pageSize}. pageSize cannot be greater than total properties (${totalElements}).`
+      );
+    }
   }
 
   private throwPaginationBadRequest(message: string): never {

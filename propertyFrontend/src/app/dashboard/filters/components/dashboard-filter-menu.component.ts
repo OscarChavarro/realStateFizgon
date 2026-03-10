@@ -18,6 +18,7 @@ export class DashboardFilterMenuComponent {
 
   @Input({ required: true }) filters: DashboardFiltersState = createDefaultDashboardFilters();
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
+  @Input() reviewFiltersEnabled = false;
 
   @Output() readonly filtersChange = new EventEmitter<DashboardFiltersState>();
 
@@ -29,6 +30,27 @@ export class DashboardFilterMenuComponent {
     this.filtersChange.emit({
       ...this.filters,
       showClosed: checked
+    });
+  }
+
+  onShowNewChange(checked: boolean): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      showNew: checked
+    });
+  }
+
+  onShowFavouriteChange(checked: boolean): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      showFavourite: checked
+    });
+  }
+
+  onShowRejectedChange(checked: boolean): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      showRejected: checked
     });
   }
 

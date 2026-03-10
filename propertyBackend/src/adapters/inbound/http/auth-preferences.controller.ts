@@ -14,6 +14,9 @@ type HttpRequestLike = {
 
 type SaveFiltersPreferencesBody = {
   showClosed?: unknown;
+  showNew?: unknown;
+  showFavourite?: unknown;
+  showRejected?: unknown;
 };
 
 type SetPropertyLabelsBody = {
@@ -34,6 +37,9 @@ export class AuthPreferencesController {
     if (!userId) {
       return {
         showClosed: true,
+        showNew: true,
+        showFavourite: true,
+        showRejected: true,
         propertyLabels: []
       };
     }
@@ -42,24 +48,57 @@ export class AuthPreferencesController {
   }
 
   @Get('filters')
-  async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<{ showClosed: boolean }> {
+  async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<{
+    showClosed: boolean;
+    showNew: boolean;
+    showFavourite: boolean;
+    showRejected: boolean;
+  }> {
     const preferences = await this.getPreferences(request);
-    return { showClosed: preferences.showClosed };
+    return {
+      showClosed: preferences.showClosed,
+      showNew: preferences.showNew,
+      showFavourite: preferences.showFavourite,
+      showRejected: preferences.showRejected
+    };
   }
 
   @Post('filters')
   async saveFiltersPreferences(
     @Req() request: HttpRequestLike,
     @Body() body: SaveFiltersPreferencesBody
-  ): Promise<{ showClosed: boolean }> {
+  ): Promise<{
+    showClosed: boolean;
+    showNew: boolean;
+    showFavourite: boolean;
+    showRejected: boolean;
+  }> {
     const userId = this.getOptionalUserId(request);
     const showClosed = this.toBoolean(body?.showClosed, true);
+    const showNew = this.toBoolean(body?.showNew, true);
+    const showFavourite = this.toBoolean(body?.showFavourite, true);
+    const showRejected = this.toBoolean(body?.showRejected, true);
     if (!userId) {
-      return { showClosed };
+      return {
+        showClosed,
+        showNew,
+        showFavourite,
+        showRejected
+      };
     }
 
-    const preferences = await this.authUserPreferencesService.saveFiltersPreferences(userId, { showClosed });
-    return { showClosed: preferences.showClosed };
+    const preferences = await this.authUserPreferencesService.saveFiltersPreferences(userId, {
+      showClosed,
+      showNew,
+      showFavourite,
+      showRejected
+    });
+    return {
+      showClosed: preferences.showClosed,
+      showNew: preferences.showNew,
+      showFavourite: preferences.showFavourite,
+      showRejected: preferences.showRejected
+    };
   }
 
   @Post('setPropertyLabels')
@@ -74,12 +113,18 @@ export class AuthPreferencesController {
       if (!propertyId || Object.keys(labels).length === 0) {
         return {
           showClosed: true,
+          showNew: true,
+          showFavourite: true,
+          showRejected: true,
           propertyLabels: []
         };
       }
 
       return {
         showClosed: true,
+        showNew: true,
+        showFavourite: true,
+        showRejected: true,
         propertyLabels: [
           {
             propertyId,

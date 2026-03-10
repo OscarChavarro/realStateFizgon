@@ -13,6 +13,9 @@ export type UserPropertyLabels = {
 
 export type AuthUserPreferences = {
   showClosed: boolean;
+  showNew: boolean;
+  showFavourite: boolean;
+  showRejected: boolean;
   propertyLabels: UserPropertyLabels[];
 };
 
@@ -25,13 +28,27 @@ export class AuthUserPreferencesService {
     const propertyLabels = this.normalizePropertyLabels(preferences['propertyLabels']);
     return {
       showClosed: this.toBoolean(preferences['showClosed'], true),
+      showNew: this.toBoolean(preferences['showNew'], true),
+      showFavourite: this.toBoolean(preferences['showFavourite'], true),
+      showRejected: this.toBoolean(preferences['showRejected'], true),
       propertyLabels
     };
   }
 
-  async saveFiltersPreferences(userId: string, preferences: { showClosed: boolean }): Promise<AuthUserPreferences> {
+  async saveFiltersPreferences(
+    userId: string,
+    preferences: {
+      showClosed: boolean;
+      showNew: boolean;
+      showFavourite: boolean;
+      showRejected: boolean;
+    }
+  ): Promise<AuthUserPreferences> {
     const normalized = {
-      showClosed: this.toBoolean(preferences.showClosed, true)
+      showClosed: this.toBoolean(preferences.showClosed, true),
+      showNew: this.toBoolean(preferences.showNew, true),
+      showFavourite: this.toBoolean(preferences.showFavourite, true),
+      showRejected: this.toBoolean(preferences.showRejected, true)
     };
 
     await this.authUserRepository.mergeUserPreferences(userId, normalized);

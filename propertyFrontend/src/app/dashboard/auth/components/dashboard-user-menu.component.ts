@@ -97,6 +97,15 @@ export class DashboardUserMenuComponent {
     return user.roles.join(', ');
   }
 
+  get shouldShowRole(): boolean {
+    const user = this.authenticatedUser;
+    if (!user || !Array.isArray(user.roles) || user.roles.length === 0) {
+      return false;
+    }
+
+    return user.roles.some((role) => role !== 'STANDARD_USER');
+  }
+
   get showAvatarImage(): boolean {
     return !!(this.avatarUrl && !this.avatarLoadFailed());
   }

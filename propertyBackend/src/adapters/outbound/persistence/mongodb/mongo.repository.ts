@@ -91,16 +91,8 @@ export class MongoRepository {
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
     const skip = (page - 1) * pageSize;
-    const mongoSort: Record<string, 1 | -1> = {};
     const query = this.buildPropertiesQuery(showClosed);
-
-    for (const criterion of sortCriteria) {
-      mongoSort[criterion.sortBy] = criterion.order === 'asc' ? 1 : -1;
-    }
-
-    if (Object.keys(mongoSort).length === 0) {
-      mongoSort._id = -1;
-    }
+    const mongoSort = this.buildMongoSort(sortCriteria);
 
     const documents = await collection
       .find(query)
@@ -110,6 +102,28 @@ export class MongoRepository {
       .toArray();
 
     return documents;
+  }
+
+  async findAllPropertiesSorted(
+    sortCriteria: PropertySortCriterion[],
+    showClosed: boolean
+  ): Promise<unknown[]> {
+    const collection = await this.mongoDatabaseService.getPropertiesCollection();
+    const query = this.buildPropertiesQuery(showClosed);
+    const mongoSort = this.buildMongoSort(sortCriteria);
+
+    const documents = await collection
+      .find(query)
+      .sort(mongoSort)
+      .toArray();
+
+    return documents;
+  }
+
+  async countProperties(showClosed: boolean): Promise<number> {
+    const collection = await this.mongoDatabaseService.getPropertiesCollection();
+    const query = this.buildPropertiesQuery(showClosed);
+    return collection.countDocuments(query);
   }
 
   private escapeRegex(value: string): string {
@@ -128,5 +142,19 @@ export class MongoRepository {
         { closed_by: { $exists: false } }
       ]
     };
+  }
+
+  private buildMongoSort(sortCriteria: PropertySortCriterion[]): Record<string, 1 | -1> {
+    const mongoSort: Record<string, 1 | -1> = {};
+
+    for (const criterion of sortCriteria) {
+      mongoSort[criterion.sortBy] = criterion.order === 'asc' ? 1 : -1;
+    }
+
+    if (Object.keys(mongoSort).length === 0) {
+      mongoSort._id = -1;
+    }
+
+    return mongoSort;
   }
 }

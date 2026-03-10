@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardPropertyRow, SortCriterion } from 'src/app/dashboard/dashboard.types';
+import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
 
 type PropertiesCountResponse = {
   count: number;
@@ -88,33 +89,28 @@ export class DashboardDataService {
     http: HttpClient,
     backendBaseUrl: string,
     sortCriteria: SortCriterion[],
-    showClosed: boolean
+    filters: DashboardFiltersState
   ): Promise<DashboardDataResult> {
     try {
       const response = await firstValueFrom(
-        http.get<PropertiesResponse>(this.buildPropertiesEndpointUrl(backendBaseUrl, sortCriteria, showClosed))
+        http.get<PropertiesResponse>(
+          this.buildPropertiesEndpointUrl(backendBaseUrl, sortCriteria, filters),
+          { withCredentials: true }
+        )
       );
+      const fallbackCount = response.pagination.totalElements ?? response.data.length;
+      const totalCount = await this.loadTotalCount(http, backendBaseUrl, fallbackCount);
 
       return {
-        count: response.pagination.totalElements ?? response.data.length,
+        count: totalCount,
         properties: this.mapPropertiesForDashboard(response.data)
       };
     } catch {
-      try {
-        const countResponse = await firstValueFrom(
-          http.get<PropertiesCountResponse>(`${backendBaseUrl}/properties/count`)
-        );
-
-        return {
-          count: countResponse.count,
-          properties: []
-        };
-      } catch {
-        return {
-          count: 0,
-          properties: []
-        };
-      }
+      const totalCount = await this.loadTotalCount(http, backendBaseUrl, 0);
+      return {
+        count: totalCount,
+        properties: []
+      };
     }
   }
 
@@ -129,10 +125,13 @@ export class DashboardDataService {
   private buildPropertiesEndpointUrl(
     backendBaseUrl: string,
     sortCriteria: SortCriterion[],
-    showClosed: boolean
+    filters: DashboardFiltersState
   ): string {
     const url = new URL(`${backendBaseUrl}/properties`);
-    url.searchParams.set('showClosed', showClosed ? 'true' : 'false');
+    url.searchParams.set('showClosed', filters.showClosed ? 'true' : 'false');
+    url.searchParams.set('showNew', filters.showNew ? 'true' : 'false');
+    url.searchParams.set('showFavourite', filters.showFavourite ? 'true' : 'false');
+    url.searchParams.set('showRejected', filters.showRejected ? 'true' : 'false');
     for (const criterion of sortCriteria) {
       url.searchParams.append('sortOrder', criterion.sortOrder);
       url.searchParams.append('sortBy', criterion.sortBy);
@@ -190,6 +189,17 @@ export class DashboardDataService {
         )
       };
     });
+  }
+
+  private async loadTotalCount(http: HttpClient, backendBaseUrl: string, fallback: number): Promise<number> {
+    try {
+      const countResponse = await firstValueFrom(
+        http.get<PropertiesCountResponse>(`${backendBaseUrl}/properties/count`, { withCredentials: true })
+      );
+      return countResponse.count;
+    } catch {
+      return fallback;
+    }
   }
 
   private toDateOnlyString(value: unknown): string {

@@ -21,6 +21,33 @@
         />
         <span>{{ t('SHOW_CLOSED_PROPERTIES') }}</span>
       </label>
+
+      @if (reviewFiltersEnabled) {
+        <label class="filter-option">
+          <input
+            type="checkbox"
+            [checked]="filters.showNew"
+            (change)="onShowNewChange($any($event.target).checked)"
+          />
+          <span>{{ t('SHOW_REVIEW_NEW') }}</span>
+        </label>
+        <label class="filter-option">
+          <input
+            type="checkbox"
+            [checked]="filters.showFavourite"
+            (change)="onShowFavouriteChange($any($event.target).checked)"
+          />
+          <span>{{ t('SHOW_REVIEW_FAVOURITE') }}</span>
+        </label>
+        <label class="filter-option">
+          <input
+            type="checkbox"
+            [checked]="filters.showRejected"
+            (change)="onShowRejectedChange($any($event.target).checked)"
+          />
+          <span>{{ t('SHOW_REVIEW_REJECTED') }}</span>
+        </label>
+      }
     </div>
   }
 </div>

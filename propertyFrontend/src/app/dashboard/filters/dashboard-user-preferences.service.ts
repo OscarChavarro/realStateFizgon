@@ -6,6 +6,9 @@ import { PropertyLabelEntry, PropertyLabels, PropertyReviewLabel } from 'src/app
 
 type UserPreferencesPayload = {
   showClosed?: unknown;
+  showNew?: unknown;
+  showFavourite?: unknown;
+  showRejected?: unknown;
   propertyLabels?: unknown;
 };
 
@@ -25,7 +28,10 @@ export class DashboardUserPreferencesService {
       );
       return {
         filters: {
-          showClosed: this.toBoolean(response?.showClosed, true)
+          showClosed: this.toBoolean(response?.showClosed, true),
+          showNew: this.toBoolean(response?.showNew, true),
+          showFavourite: this.toBoolean(response?.showFavourite, true),
+          showRejected: this.toBoolean(response?.showRejected, true)
         },
         propertyLabels: this.normalizePropertyLabels(response?.propertyLabels)
       };
@@ -38,7 +44,12 @@ export class DashboardUserPreferencesService {
     await firstValueFrom(
       http.post(
         `${backendBaseUrl}/auth/preferences/filters`,
-        { showClosed: filters.showClosed },
+        {
+          showClosed: filters.showClosed,
+          showNew: filters.showNew,
+          showFavourite: filters.showFavourite,
+          showRejected: filters.showRejected
+        },
         { withCredentials: true }
       )
     );

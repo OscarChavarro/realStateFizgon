@@ -39,6 +39,7 @@
     <app-dashboard-filter-menu
       [filters]="filters"
       [selectedLanguage]="selectedLanguage"
+      [reviewFiltersEnabled]="authenticatedUser !== null"
       (filtersChange)="onFiltersUpdate($event)"
     ></app-dashboard-filter-menu>
 

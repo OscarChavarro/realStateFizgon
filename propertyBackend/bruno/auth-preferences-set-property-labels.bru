@@ -1,0 +1,19 @@
+meta {
+  name: authPreferencesSetPropertyLabels
+  type: http
+  seq: 15
+}
+
+post {
+  url: http://localhost:8081/auth/preferences/setPropertyLabels
+  body: json
+}
+
+body:json {
+  {
+    "propertyId": "123456",
+    "labels": {
+      "review": "FAVOURITE"
+    }
+  }
+}

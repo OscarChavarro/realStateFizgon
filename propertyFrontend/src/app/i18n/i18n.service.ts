@@ -154,6 +154,11 @@ export class I18nService {
       sp: 'Precio (€/mes)'
     },
     {
+      id: 'REVIEW_COLUMN',
+      en: 'Review',
+      sp: 'Revisión'
+    },
+    {
       id: 'LOCATION',
       en: 'Location',
       sp: 'Ubicación'

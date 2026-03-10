@@ -12,7 +12,7 @@
 
 .spreadsheet-table {
   width: 100%;
-  min-width: 520px;
+  min-width: 620px;
   border-collapse: collapse;
   table-layout: fixed;
   font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
@@ -38,6 +38,11 @@
 .spreadsheet-table th:nth-child(4),
 .spreadsheet-table td:nth-child(4) {
   width: 20%;
+}
+
+.spreadsheet-table th:nth-child(5),
+.spreadsheet-table td:nth-child(5) {
+  width: 88px;
 }
 
 .spreadsheet-table thead th {
@@ -170,7 +175,7 @@
   font-size: 0.86rem;
 }
 
-.spreadsheet-table tbody td:nth-child(4) {
+.price-cell {
   text-align: right;
   font-weight: 600;
 }
@@ -204,4 +209,50 @@
   color: #5f6368;
   padding: 0.85rem;
   font-style: italic;
+}
+
+.review-header {
+  text-align: center;
+}
+
+.review-cell {
+  text-align: center;
+}
+
+.review-chip {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #d2d8e0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-chip .material-symbols-outlined {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.review-chip.new {
+  border-color: #d2d8e0;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.review-chip.favourite {
+  border-color: #95d5a6;
+  color: #166534;
+  background: #ecfdf3;
+}
+
+.review-chip.discharged {
+  border-color: #f3b6b6;
+  color: #991b1b;
+  background: #fff1f2;
 }

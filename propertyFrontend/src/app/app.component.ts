@@ -14,8 +14,10 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
-import { DashboardFiltersPreferencesService } from 'src/app/dashboard/filters/dashboard-filters-preferences.service';
+import { DashboardUserPreferencesService } from 'src/app/dashboard/filters/dashboard-user-preferences.service';
 import {
+  PropertyLabelEntry,
+  PropertyReviewLabel,
   DashboardPropertyRow,
   DashboardTab,
   SortCriterion,
@@ -51,7 +53,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly dashboardDataService = inject(DashboardDataService);
   private readonly authSessionApiService = inject(AuthSessionApiService);
   private readonly authUsersService = inject(AuthUsersService);
-  private readonly dashboardFiltersPreferencesService = inject(DashboardFiltersPreferencesService);
+  private readonly dashboardUserPreferencesService = inject(DashboardUserPreferencesService);
   private readonly workspaceLayoutService = inject(WorkspaceLayoutService);
   private readonly propertySelectionService = inject(PropertySelectionService);
   private readonly sortCriteriaService = inject(SortCriteriaService);
@@ -87,6 +89,7 @@ export class AppComponent implements OnInit, OnDestroy {
   );
   readonly users = signal<AuthUserListItem[]>([]);
   readonly usersLoading = signal<boolean>(false);
+  readonly propertyLabels = signal<PropertyLabelEntry[]>([]);
   readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
     new RemoveDanglingImagesOperation()
   ];
@@ -146,6 +149,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onPropertyRowClick(property: DashboardPropertyRow): void {
     this.propertySelectionService.onRowClick(property);
+  }
+
+  onPropertyReviewToggle(property: DashboardPropertyRow): void {
+    void this.togglePropertyReview(property);
   }
 
   onSplitterMouseDown(event: MouseEvent): void {
@@ -276,7 +283,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authenticatedUser.set(user);
 
     if (user) {
-      await this.loadFiltersPreferencesForAuthenticatedUser();
+      await this.loadUserPreferences();
       if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
         this.activeTab.set('DASHBOARD');
       }
@@ -288,6 +295,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.users.set([]);
     this.filters.set(createDefaultDashboardFilters());
+    this.propertyLabels.set([]);
     if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
       this.activeTab.set('DASHBOARD');
     }
@@ -298,6 +306,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.authenticatedUser.set(null);
     this.users.set([]);
     this.filters.set(createDefaultDashboardFilters());
+    this.propertyLabels.set([]);
     if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
       this.activeTab.set('DASHBOARD');
     }
@@ -359,7 +368,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     if (this.authenticatedUser()) {
       try {
-        await this.dashboardFiltersPreferencesService.saveFilters(this.http, this.backendBaseUrl, filters);
+        await this.dashboardUserPreferencesService.saveFilters(this.http, this.backendBaseUrl, filters);
       } catch {
         // Ignore persistence errors so filtering still updates UI from backend.
       }
@@ -368,17 +377,55 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.refreshDashboardData();
   }
 
-  private async loadFiltersPreferencesForAuthenticatedUser(): Promise<void> {
-    const preferences = await this.dashboardFiltersPreferencesService.loadFilters(this.http, this.backendBaseUrl);
+  private async loadUserPreferences(): Promise<void> {
+    const preferences = await this.dashboardUserPreferencesService.loadPreferences(this.http, this.backendBaseUrl);
     if (!preferences) {
       this.filters.set(createDefaultDashboardFilters());
+      this.propertyLabels.set([]);
       return;
     }
 
-    this.filters.set({
-      ...this.filters(),
-      showClosed: preferences.showClosed
-    });
+    this.filters.set(preferences.filters);
+    this.propertyLabels.set(preferences.propertyLabels);
+  }
+
+  private async togglePropertyReview(property: DashboardPropertyRow): Promise<void> {
+    if (!this.authenticatedUser()) {
+      return;
+    }
+
+    const currentReview = this.getPropertyReviewLabel(property.propertyId);
+    const nextReview = this.nextReviewLabel(currentReview);
+    try {
+      const updatedLabels = await this.dashboardUserPreferencesService.setPropertyReview(
+        this.http,
+        this.backendBaseUrl,
+        property.propertyId,
+        nextReview
+      );
+      this.propertyLabels.set(updatedLabels);
+    } catch {
+      // Ignore API errors; UI state remains unchanged.
+    }
+  }
+
+  private getPropertyReviewLabel(propertyId: string): PropertyReviewLabel {
+    const entry = this.propertyLabels().find((item) => item.propertyId === propertyId);
+    const review = entry?.labels.review;
+    if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {
+      return review;
+    }
+    return 'NEW';
+  }
+
+  private nextReviewLabel(current: PropertyReviewLabel): PropertyReviewLabel {
+    if (current === 'NEW') {
+      return 'FAVOURITE';
+    }
+    if (current === 'FAVOURITE') {
+      return 'DISCHARGED';
+    }
+    return 'NEW';
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy'], sortOrder: SortToggleRequest['sortOrder']): Promise<void> {

@@ -30,9 +30,12 @@
             [sortCriteria]="sortCriteria()"
             [selectedLanguage]="selectedLanguage()"
             [lockedRowKey]="lockedSelectedPropertyKey()"
+            [reviewEnabled]="authenticatedUser() !== null"
+            [propertyLabels]="propertyLabels()"
             (sortToggle)="onSortToggle($event)"
             (propertyHover)="onPropertyRowHover($event)"
             (propertySelect)="onPropertyRowClick($event)"
+            (propertyReviewToggle)="onPropertyReviewToggle($event)"
           ></app-dashboard-properties-table>
         </section>
 

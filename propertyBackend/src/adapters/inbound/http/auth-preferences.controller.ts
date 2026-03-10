@@ -1,6 +1,10 @@
-import { Body, Controller, Get, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
-import { AuthFiltersPreferences, AuthFiltersPreferencesService } from 'src/application/services/auth/auth-filters-preferences.service';
+import {
+  AuthUserPreferences,
+  AuthUserPreferencesService,
+  PropertyReviewLabel
+} from 'src/application/services/auth/auth-user-preferences.service';
 
 type HttpRequestLike = {
   headers?: {
@@ -12,34 +16,88 @@ type SaveFiltersPreferencesBody = {
   showClosed?: unknown;
 };
 
+type SetPropertyLabelsBody = {
+  propertyId?: unknown;
+  labels?: unknown;
+};
+
 @Controller('auth/preferences')
 export class AuthPreferencesController {
   constructor(
     private readonly authSessionService: AuthSessionService,
-    private readonly authFiltersPreferencesService: AuthFiltersPreferencesService
+    private readonly authUserPreferencesService: AuthUserPreferencesService
   ) {}
 
+  @Get()
+  async getPreferences(@Req() request: HttpRequestLike): Promise<AuthUserPreferences> {
+    const userId = this.getOptionalUserId(request);
+    if (!userId) {
+      return {
+        showClosed: true,
+        propertyLabels: []
+      };
+    }
+
+    return this.authUserPreferencesService.getPreferences(userId);
+  }
+
   @Get('filters')
-  async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<AuthFiltersPreferences> {
-    const userId = this.getAuthenticatedUserId(request);
-    return this.authFiltersPreferencesService.getFiltersPreferences(userId);
+  async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<{ showClosed: boolean }> {
+    const preferences = await this.getPreferences(request);
+    return { showClosed: preferences.showClosed };
   }
 
   @Post('filters')
   async saveFiltersPreferences(
     @Req() request: HttpRequestLike,
     @Body() body: SaveFiltersPreferencesBody
-  ): Promise<AuthFiltersPreferences> {
-    const userId = this.getAuthenticatedUserId(request);
+  ): Promise<{ showClosed: boolean }> {
+    const userId = this.getOptionalUserId(request);
     const showClosed = this.toBoolean(body?.showClosed, true);
-    return this.authFiltersPreferencesService.saveFiltersPreferences(userId, { showClosed });
+    if (!userId) {
+      return { showClosed };
+    }
+
+    const preferences = await this.authUserPreferencesService.saveFiltersPreferences(userId, { showClosed });
+    return { showClosed: preferences.showClosed };
   }
 
-  private getAuthenticatedUserId(request: HttpRequestLike): string {
+  @Post('setPropertyLabels')
+  async setPropertyLabels(
+    @Req() request: HttpRequestLike,
+    @Body() body: SetPropertyLabelsBody
+  ): Promise<AuthUserPreferences> {
+    const userId = this.getOptionalUserId(request);
+    const propertyId = this.toTrimmedString(body?.propertyId);
+    const labels = this.normalizeLabels(body?.labels);
+    if (!userId) {
+      if (!propertyId || Object.keys(labels).length === 0) {
+        return {
+          showClosed: true,
+          propertyLabels: []
+        };
+      }
+
+      return {
+        showClosed: true,
+        propertyLabels: [
+          {
+            propertyId,
+            labels
+          }
+        ]
+      };
+    }
+
+    return this.authUserPreferencesService.setPropertyLabels(userId, propertyId, labels);
+  }
+
+  private getOptionalUserId(request: HttpRequestLike): string | null {
     const user = this.authSessionService.findUserByCookieHeader(request?.headers?.cookie);
     if (!user) {
-      throw new UnauthorizedException('Authentication required.');
+      return null;
     }
+
     return user.id;
   }
 
@@ -60,5 +118,41 @@ export class AuthPreferencesController {
       }
     }
     return fallback;
+  }
+
+  private toTrimmedString(value: unknown): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    return value.trim();
+  }
+
+  private normalizeLabels(value: unknown): Record<string, unknown> {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return {};
+    }
+
+    const labels = { ...(value as Record<string, unknown>) };
+    const reviewRaw = labels['review'];
+    if (typeof reviewRaw === 'string') {
+      const normalized = reviewRaw.trim().toUpperCase() as PropertyReviewLabel;
+      if (normalized === 'NEW' || normalized === 'FAVOURITE' || normalized === 'DISCHARGED') {
+        labels['review'] = normalized;
+      } else {
+        delete labels['review'];
+      }
+    }
+
+    const commentsRaw = labels['propertyComments'];
+    if (commentsRaw !== undefined) {
+      if (typeof commentsRaw === 'string') {
+        labels['propertyComments'] = commentsRaw.trim();
+      } else {
+        delete labels['propertyComments'];
+      }
+    }
+
+    return labels;
   }
 }

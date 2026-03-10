@@ -12,6 +12,19 @@ export type DashboardPropertyRow = {
   unavailable: boolean;
 };
 
+export type PropertyReviewLabel = 'NEW' | 'FAVOURITE' | 'DISCHARGED';
+
+export type PropertyLabels = {
+  review?: PropertyReviewLabel;
+  propertyComments?: string;
+  [key: string]: unknown;
+};
+
+export type PropertyLabelEntry = {
+  propertyId: string;
+  labels: PropertyLabels;
+};
+
 export type SortDirection = 'asc' | 'desc';
 
 export type SortField = 'importedBy' | 'title' | 'price';

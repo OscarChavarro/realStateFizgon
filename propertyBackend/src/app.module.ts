@@ -5,7 +5,7 @@ import { AuthUsersController } from 'src/adapters/inbound/http/auth-users.contro
 import { Configuration } from 'src/infrastructure/config/configuration';
 import { FixDatabaseController } from 'src/adapters/inbound/http/fix-database.controller';
 import { GoogleAuthController } from 'src/adapters/inbound/http/google-auth.controller';
-import { AuthFiltersPreferencesService } from 'src/application/services/auth/auth-filters-preferences.service';
+import { AuthUserPreferencesService } from 'src/application/services/auth/auth-user-preferences.service';
 import { AuthUserIdentityService } from 'src/application/services/auth/auth-user-identity.service';
 import { AuthSessionService } from 'src/application/services/auth/auth-session.service';
 import { PropertiesController } from 'src/adapters/inbound/http/properties.controller';
@@ -38,7 +38,7 @@ import { PropertiesMonitorService } from 'src/application/services/properties-mo
   providers: [
     Configuration,
     AuthSessionService,
-    AuthFiltersPreferencesService,
+    AuthUserPreferencesService,
     AuthUserIdentityService,
     GoogleOAuthBootstrapService,
     AuthUserRepository,

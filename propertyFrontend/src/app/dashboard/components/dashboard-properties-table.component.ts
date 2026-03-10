@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import {
   DashboardPropertyRow,
+  PropertyLabelEntry,
+  PropertyReviewLabel,
   SortCriterion,
   SortDirection,
   SortField,
@@ -21,10 +23,13 @@ export class DashboardPropertiesTableComponent {
   @Input({ required: true }) sortCriteria: SortCriterion[] = [];
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
   @Input() lockedRowKey: string | null = null;
+  @Input() reviewEnabled = false;
+  @Input() propertyLabels: PropertyLabelEntry[] = [];
 
   @Output() readonly sortToggle = new EventEmitter<SortToggleRequest>();
   @Output() readonly propertyHover = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertySelect = new EventEmitter<DashboardPropertyRow>();
+  @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
 
   onSortToggle(sortBy: SortField, sortOrder: SortDirection): void {
     this.sortToggle.emit({ sortBy, sortOrder });
@@ -36,6 +41,11 @@ export class DashboardPropertiesTableComponent {
 
   onPropertyClick(property: DashboardPropertyRow): void {
     this.propertySelect.emit(property);
+  }
+
+  onPropertyReviewCellClick(event: MouseEvent, property: DashboardPropertyRow): void {
+    event.stopPropagation();
+    this.propertyReviewToggle.emit(property);
   }
 
   isPropertyRowLocked(property: DashboardPropertyRow): boolean {
@@ -66,6 +76,37 @@ export class DashboardPropertiesTableComponent {
 
   t(id: string): string {
     return this.i18nService.get(id, this.selectedLanguage);
+  }
+
+  getReviewClass(property: DashboardPropertyRow): string {
+    const review = this.getReview(property.propertyId);
+    if (review === 'FAVOURITE') {
+      return 'favourite';
+    }
+    if (review === 'DISCHARGED') {
+      return 'discharged';
+    }
+    return 'new';
+  }
+
+  getReviewIcon(property: DashboardPropertyRow): string {
+    const review = this.getReview(property.propertyId);
+    if (review === 'FAVOURITE') {
+      return 'check';
+    }
+    if (review === 'DISCHARGED') {
+      return 'close';
+    }
+    return 'flare';
+  }
+
+  private getReview(propertyId: string): PropertyReviewLabel {
+    const labels = this.propertyLabels.find((item) => item.propertyId === propertyId)?.labels;
+    const review = labels?.review;
+    if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {
+      return review;
+    }
+    return 'NEW';
   }
 
   private getPropertyRowKey(property: DashboardPropertyRow): string {

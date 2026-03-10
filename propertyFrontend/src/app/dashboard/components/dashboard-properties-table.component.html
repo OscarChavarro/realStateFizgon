@@ -3,7 +3,7 @@
     <thead>
       <tr>
         <th class="row-index-header"></th>
-        <th>
+        <th class="price-header">
           <div class="th-content">
             <span>{{ t('TITLE') }}</span>
             <div class="sort-controls">
@@ -87,13 +87,16 @@
             </div>
           </div>
         </th>
+        @if (reviewEnabled) {
+          <th class="review-header">{{ t('REVIEW_COLUMN') }}</th>
+        }
       </tr>
     </thead>
     <tbody>
       @if (properties.length === 0) {
         <tr>
           <td class="row-index-cell">1</td>
-          <td colspan="3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+          <td [attr.colspan]="reviewEnabled ? 4 : 3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
         </tr>
       } @else {
         @for (property of properties; track trackProperty($index, property); let rowIndex = $index) {
@@ -112,7 +115,22 @@
               <span class="title-text">{{ property.title }}</span>
             </td>
             <td>{{ property.createdAt || '-' }}</td>
-            <td>{{ property.price }}</td>
+            <td class="price-cell">{{ property.price }}</td>
+            @if (reviewEnabled) {
+              <td class="review-cell">
+                <button
+                  type="button"
+                  class="review-chip"
+                  [class.new]="getReviewClass(property) === 'new'"
+                  [class.favourite]="getReviewClass(property) === 'favourite'"
+                  [class.discharged]="getReviewClass(property) === 'discharged'"
+                  (click)="onPropertyReviewCellClick($event, property)"
+                  [attr.aria-label]="t('REVIEW_COLUMN')"
+                >
+                  <span class="material-symbols-outlined">{{ getReviewIcon(property) }}</span>
+                </button>
+              </td>
+            }
           </tr>
         }
       }

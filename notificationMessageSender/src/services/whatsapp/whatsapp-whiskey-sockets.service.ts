@@ -44,11 +44,17 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
   private socket: BaileysSocket | null = null;
   private isConnected = false;
   private initializationPromise: Promise<void> | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private shuttingDown = false;
   private readonly incomingMessageListeners = new Set<IncomingMessageListener>();
 
   constructor(private readonly configuration: Configuration) {}
 
   async initialize(): Promise<void> {
+    if (this.shuttingDown) {
+      return;
+    }
+
     if (this.socket && this.isConnected) {
       return;
     }
@@ -86,6 +92,11 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
+    this.shuttingDown = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.socket) {
       this.socket.end(undefined);
       this.socket = null;
@@ -123,6 +134,7 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
     });
 
     await new Promise<void>((resolvePromise, rejectPromise) => {
+      let wasOpened = false;
       socket.ev.on('connection.update', (update) => {
         const { connection, qr, lastDisconnect } = update;
 
@@ -132,7 +144,11 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
         }
 
         if (connection === 'open') {
+          if (this.socket !== socket) {
+            return;
+          }
           this.isConnected = true;
+          wasOpened = true;
           this.logger.log('WhatsApp is connected and ready.');
           resolvePromise();
           return;
@@ -152,11 +168,45 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
             this.logger.error(message);
           }
 
-          this.socket = null;
+          if (this.socket === socket) {
+            this.socket = null;
+          }
+
+          if (wasOpened) {
+            this.scheduleReconnect();
+            return;
+          }
+
           rejectPromise(new Error(message));
         }
       });
     });
+  }
+
+  private scheduleReconnect(): void {
+    if (this.shuttingDown) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      return;
+    }
+
+    this.logger.warn(
+      `Attempting to re-open WhatsApp connection in ${WhatsappWhiskeySocketsService.RETRY_DELAY_MS}ms.`
+    );
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.shuttingDown) {
+        return;
+      }
+
+      void this.initialize().catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Failed to re-open WhatsApp connection: ${message}`);
+      });
+    }, WhatsappWhiskeySocketsService.RETRY_DELAY_MS);
   }
 
   private async initializeSocketWithRetry(): Promise<void> {

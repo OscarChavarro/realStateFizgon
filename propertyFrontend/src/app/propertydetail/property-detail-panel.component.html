@@ -21,11 +21,39 @@
             }
           </td>
         </tr>
+        @if (reviewEnabled) {
+          <tr>
+            <th>{{ t('REVIEW_COLUMN') }}</th>
+            <td>
+              <button
+                type="button"
+                class="detail-review-chip"
+                [class.new]="getReviewClass(property.propertyId) === 'new'"
+                [class.favourite]="getReviewClass(property.propertyId) === 'favourite'"
+                [class.discharged]="getReviewClass(property.propertyId) === 'discharged'"
+                [attr.aria-label]="t('REVIEW_COLUMN')"
+                (click)="onPropertyReviewToggleClick(property)"
+              >
+                <span class="material-symbols-outlined">{{ getReviewIcon(property.propertyId) }}</span>
+                <span>{{ getReviewText(property.propertyId) }}</span>
+              </button>
+            </td>
+            <th>{{ t('COMMENT') }}</th>
+            <td>
+              <input
+                type="text"
+                class="detail-comment-input"
+                [value]="getDraftComment(property.propertyId)"
+                [placeholder]="t('COMMENT_PLACEHOLDER')"
+                (input)="onDraftCommentInput(property.propertyId, $event)"
+              />
+            </td>
+          </tr>
+        }
       </tbody>
     </table>
 
     <div class="carousel-block">
-      <label class="carousel-label">{{ t('PROPERTY_DETAIL_LOCAL_IMAGE_FILES') }}</label>
       <app-property-image-carousel
         [propertyId]="property.propertyId"
         [localImageUrls]="property.localImageUrls"

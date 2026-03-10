@@ -159,6 +159,31 @@ export class I18nService {
       sp: 'Revisión'
     },
     {
+      id: 'REVIEW_NEW',
+      en: 'New!',
+      sp: 'Nuevo!'
+    },
+    {
+      id: 'REVIEW_FAVOURITE',
+      en: 'Favourite',
+      sp: 'Favorito'
+    },
+    {
+      id: 'REVIEW_DISCHARGED',
+      en: 'Rejected',
+      sp: 'Rechazado'
+    },
+    {
+      id: 'COMMENT',
+      en: 'Comment',
+      sp: 'Comentario'
+    },
+    {
+      id: 'COMMENT_PLACEHOLDER',
+      en: 'Write a note...',
+      sp: 'Escribe una nota...'
+    },
+    {
       id: 'LOCATION',
       en: 'Location',
       sp: 'Ubicación'
@@ -167,11 +192,6 @@ export class I18nService {
       id: 'PROPERTY_DETAIL_SOURCE',
       en: 'Source',
       sp: 'Fuente'
-    },
-    {
-      id: 'PROPERTY_DETAIL_LOCAL_IMAGE_FILES',
-      en: 'Local image files',
-      sp: 'Archivos de imagen locales'
     },
     {
       id: 'DESCRIPTION',

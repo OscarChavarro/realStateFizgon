@@ -241,6 +241,21 @@ export class AppComponent implements OnInit, OnDestroy {
     if (event.key.toLowerCase() === 'f') {
       event.preventDefault();
       void this.browserFullscreenService.toggleFullscreen();
+      return;
+    }
+
+    if (event.code === 'Space' || event.key === ' ') {
+      if (this.activeTab() !== 'DASHBOARD' || !this.authenticatedUser()) {
+        return;
+      }
+
+      const visibleProperty = this.selectedProperty();
+      if (!visibleProperty) {
+        return;
+      }
+
+      event.preventDefault();
+      void this.togglePropertyReview(visibleProperty);
     }
   }
 

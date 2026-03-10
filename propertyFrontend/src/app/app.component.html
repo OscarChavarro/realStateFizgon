@@ -46,6 +46,9 @@
             [property]="selectedProperty()"
             [selectedLanguage]="selectedLanguage()"
             [staticMediaBaseUrl]="getStaticMediaBaseUrl()"
+            [reviewEnabled]="authenticatedUser() !== null"
+            [propertyLabels]="propertyLabels()"
+            (propertyReviewToggle)="onPropertyReviewToggle($event)"
           ></app-property-detail-panel>
         </section>
       </div>

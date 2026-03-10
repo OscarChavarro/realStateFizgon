@@ -55,14 +55,70 @@
   text-decoration: underline;
 }
 
+.detail-review-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.9rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d2d8e0;
+  color: #334155;
+  background: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.detail-review-chip .material-symbols-outlined {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.detail-review-chip.new {
+  border-color: #d2d8e0;
+  color: #334155;
+  background: #f8fafc;
+}
+
+.detail-review-chip.favourite {
+  border-color: #95d5a6;
+  color: #166534;
+  background: #ecfdf3;
+}
+
+.detail-review-chip.discharged {
+  border-color: #f3b6b6;
+  color: #991b1b;
+  background: #fff1f2;
+}
+
+.detail-comment-input {
+  width: 100%;
+  min-height: 1.95rem;
+  border: 1px solid #d9e0ed;
+  border-radius: 5px;
+  padding: 0.3rem 0.45rem;
+  font-family: inherit;
+  font-size: 0.86rem;
+  color: #1f2937;
+  background: #fbfcff;
+}
+
+.detail-comment-input:focus {
+  outline: 2px solid #d9e7ff;
+  border-color: #7ea3ea;
+}
+
 .description-block {
   display: grid;
   gap: 0.25rem;
   margin-bottom: 0.55rem;
 }
 
-.description-label,
-.carousel-label {
+.description-label {
   color: #5f6b7b;
   font-size: 0.76rem;
   font-weight: 700;

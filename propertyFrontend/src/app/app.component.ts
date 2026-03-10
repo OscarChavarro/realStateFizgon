@@ -65,6 +65,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private staticMediaBaseUrl = DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL;
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild(DashboardPropertiesTableComponent) dashboardPropertiesTable?: DashboardPropertiesTableComponent;
 
   readonly count = signal<number>(0);
   readonly loading = signal<boolean>(true);
@@ -229,7 +230,8 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       event.preventDefault();
-      this.propertySelectionService.selectByKeyboard(this.properties(), -1);
+      const selected = this.propertySelectionService.selectByKeyboard(this.properties(), -1);
+      this.scrollSelectedPropertyRow(selected);
       return;
     }
 
@@ -238,7 +240,8 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       event.preventDefault();
-      this.propertySelectionService.selectByKeyboard(this.properties(), 1);
+      const selected = this.propertySelectionService.selectByKeyboard(this.properties(), 1);
+      this.scrollSelectedPropertyRow(selected);
       return;
     }
 
@@ -523,5 +526,15 @@ export class AppComponent implements OnInit, OnDestroy {
       || tagName === 'textarea'
       || tagName === 'select'
       || target.isContentEditable;
+  }
+
+  private scrollSelectedPropertyRow(property: DashboardPropertyRow | null): void {
+    if (!property) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      this.dashboardPropertiesTable?.scrollPropertyIntoView(property);
+    });
   }
 }

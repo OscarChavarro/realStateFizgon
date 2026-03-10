@@ -54,9 +54,9 @@ export class PropertySelectionService {
     this.selectedProperty.set(rows.length > 0 ? rows[0] : null);
   }
 
-  selectByKeyboard(rows: DashboardPropertyRow[], delta: -1 | 1): void {
+  selectByKeyboard(rows: DashboardPropertyRow[], delta: -1 | 1): DashboardPropertyRow | null {
     if (rows.length === 0) {
-      return;
+      return null;
     }
 
     const lockedKey = this.lockedSelectedPropertyKey();
@@ -80,6 +80,7 @@ export class PropertySelectionService {
 
     this.selectedProperty.set(nextRow);
     this.lockedSelectedPropertyKey.set(nextKey);
+    return nextRow;
   }
 
   private getPropertyRowKey(property: DashboardPropertyRow): string {

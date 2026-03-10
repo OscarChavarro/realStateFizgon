@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
 import {
   DashboardPropertyRow,
   PropertyLabelEntry,
@@ -18,6 +18,7 @@ import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
 })
 export class DashboardPropertiesTableComponent {
   private readonly i18nService = inject(I18nService);
+  @ViewChild('tableScrollContainer') private tableScrollContainer?: ElementRef<HTMLDivElement>;
 
   @Input({ required: true }) properties: DashboardPropertyRow[] = [];
   @Input({ required: true }) sortCriteria: SortCriterion[] = [];
@@ -72,6 +73,44 @@ export class DashboardPropertiesTableComponent {
 
   trackProperty(_index: number, property: DashboardPropertyRow): string {
     return this.getPropertyRowKey(property);
+  }
+
+  scrollPropertyIntoView(property: DashboardPropertyRow): void {
+    const container = this.tableScrollContainer?.nativeElement;
+    if (!container) {
+      return;
+    }
+
+    const rowKey = this.getPropertyRowKey(property);
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>('tr.property-row'));
+    const targetRow = rows.find((row) => row.dataset['rowKey'] === rowKey);
+    if (!targetRow) {
+      return;
+    }
+
+    const rowTop = targetRow.offsetTop;
+    const rowBottom = rowTop + targetRow.offsetHeight;
+    const viewportTop = container.scrollTop;
+    const viewportBottom = viewportTop + container.clientHeight;
+    const headerHeight = container.querySelector('thead')?.clientHeight ?? 0;
+    const effectiveTop = viewportTop + headerHeight;
+    const targetTop = Math.max(0, rowTop - headerHeight);
+
+    if (rowTop < effectiveTop || rowBottom > viewportBottom) {
+      container.scrollTo({
+        top: targetTop,
+        behavior: 'auto'
+      });
+      return;
+    }
+
+    const relativeTop = rowTop - effectiveTop;
+    if (relativeTop > container.clientHeight * 0.6) {
+      container.scrollTo({
+        top: targetTop,
+        behavior: 'auto'
+      });
+    }
   }
 
   t(id: string): string {

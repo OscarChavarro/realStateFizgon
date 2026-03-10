@@ -1,4 +1,4 @@
-<div class="spreadsheet-table-wrapper">
+<div #tableScrollContainer class="spreadsheet-table-wrapper">
   <table class="spreadsheet-table">
     <thead>
       <tr>
@@ -102,6 +102,7 @@
         @for (property of properties; track trackProperty($index, property); let rowIndex = $index) {
           <tr
             class="property-row"
+            [attr.data-row-key]="trackProperty(rowIndex, property)"
             [class.locked]="isPropertyRowLocked(property)"
             [class.unavailable]="property.unavailable"
             (mouseenter)="onPropertyHover(property)"

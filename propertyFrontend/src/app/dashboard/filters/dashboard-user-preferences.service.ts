@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
-import { PropertyLabelEntry, PropertyReviewLabel } from 'src/app/dashboard/dashboard.types';
+import { PropertyLabelEntry, PropertyLabels, PropertyReviewLabel } from 'src/app/dashboard/dashboard.types';
 
 type UserPreferencesPayload = {
   showClosed?: unknown;
@@ -50,14 +50,30 @@ export class DashboardUserPreferencesService {
     propertyId: string,
     review: PropertyReviewLabel
   ): Promise<PropertyLabelEntry[]> {
+    return this.setPropertyLabels(http, backendBaseUrl, propertyId, { review });
+  }
+
+  async setPropertyComment(
+    http: HttpClient,
+    backendBaseUrl: string,
+    propertyId: string,
+    comment: string
+  ): Promise<PropertyLabelEntry[]> {
+    return this.setPropertyLabels(http, backendBaseUrl, propertyId, { comment });
+  }
+
+  private async setPropertyLabels(
+    http: HttpClient,
+    backendBaseUrl: string,
+    propertyId: string,
+    labels: Partial<PropertyLabels>
+  ): Promise<PropertyLabelEntry[]> {
     const response = await firstValueFrom(
       http.post<UserPreferencesPayload>(
         `${backendBaseUrl}/auth/preferences/setPropertyLabels`,
         {
           propertyId,
-          labels: {
-            review
-          }
+          labels
         },
         { withCredentials: true }
       )
@@ -114,6 +130,14 @@ export class DashboardUserPreferencesService {
           delete normalizedLabels['review'];
         }
       }
+      if (typeof normalizedLabels['comment'] === 'string') {
+        normalizedLabels['comment'] = (normalizedLabels['comment'] as string).trim();
+      } else if (typeof normalizedLabels['propertyComments'] === 'string') {
+        normalizedLabels['comment'] = (normalizedLabels['propertyComments'] as string).trim();
+      } else {
+        delete normalizedLabels['comment'];
+      }
+      delete normalizedLabels['propertyComments'];
 
       entries.push({
         propertyId: propertyId.trim(),

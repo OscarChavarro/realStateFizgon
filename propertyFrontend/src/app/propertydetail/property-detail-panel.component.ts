@@ -24,6 +24,7 @@ export class PropertyDetailPanelComponent {
   @Input() reviewEnabled = false;
   @Input() propertyLabels: PropertyLabelEntry[] = [];
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
+  @Output() readonly propertyCommentSave = new EventEmitter<{ property: DashboardPropertyRow; comment: string }>();
 
   t(id: string): string {
     return this.i18nService.get(id, this.selectedLanguage);
@@ -63,16 +64,27 @@ export class PropertyDetailPanelComponent {
   }
 
   getDraftComment(propertyId: string): string {
-    return this.draftComments.get(propertyId) ?? '';
+    const draftComment = this.draftComments.get(propertyId);
+    if (draftComment !== undefined) {
+      return draftComment;
+    }
+
+    return this.getPersistedComment(propertyId);
   }
 
   onDraftCommentInput(propertyId: string, event: Event): void {
-    const value = (event.target as HTMLInputElement | null)?.value ?? '';
+    const value = (event.target as HTMLTextAreaElement | null)?.value ?? '';
     this.draftComments.set(propertyId, value);
   }
 
   onPropertyReviewToggleClick(property: DashboardPropertyRow): void {
     this.propertyReviewToggle.emit(property);
+  }
+
+  onDraftCommentBlur(property: DashboardPropertyRow): void {
+    const comment = this.getDraftComment(property.propertyId).trim();
+    this.draftComments.set(property.propertyId, comment);
+    this.propertyCommentSave.emit({ property, comment });
   }
 
   private getReview(propertyId: string): PropertyReviewLabel {
@@ -82,5 +94,15 @@ export class PropertyDetailPanelComponent {
       return review;
     }
     return 'NEW';
+  }
+
+  private getPersistedComment(propertyId: string): string {
+    const labels = this.propertyLabels.find((item) => item.propertyId === propertyId)?.labels;
+    const comment = labels?.comment;
+    if (typeof comment === 'string') {
+      return comment;
+    }
+
+    return '';
   }
 }

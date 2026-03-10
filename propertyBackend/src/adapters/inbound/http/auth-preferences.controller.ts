@@ -144,14 +144,23 @@ export class AuthPreferencesController {
       }
     }
 
-    const commentsRaw = labels['propertyComments'];
-    if (commentsRaw !== undefined) {
-      if (typeof commentsRaw === 'string') {
-        labels['propertyComments'] = commentsRaw.trim();
+    const commentRaw = labels['comment'];
+    const legacyCommentRaw = labels['propertyComments'];
+    if (commentRaw !== undefined) {
+      if (typeof commentRaw === 'string') {
+        labels['comment'] = commentRaw.trim();
       } else {
-        delete labels['propertyComments'];
+        delete labels['comment'];
+      }
+    } else if (legacyCommentRaw !== undefined) {
+      if (typeof legacyCommentRaw === 'string') {
+        labels['comment'] = legacyCommentRaw.trim();
+      } else {
+        delete labels['comment'];
       }
     }
+
+    delete labels['propertyComments'];
 
     return labels;
   }

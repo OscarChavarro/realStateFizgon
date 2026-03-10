@@ -97,7 +97,8 @@
 
 .detail-comment-input {
   width: 100%;
-  min-height: 1.95rem;
+  min-height: 2.4rem;
+  max-height: 13rem;
   border: 1px solid #d9e0ed;
   border-radius: 5px;
   padding: 0.3rem 0.45rem;
@@ -105,6 +106,8 @@
   font-size: 0.86rem;
   color: #1f2937;
   background: #fbfcff;
+  line-height: 1.35;
+  resize: vertical;
 }
 
 .detail-comment-input:focus {

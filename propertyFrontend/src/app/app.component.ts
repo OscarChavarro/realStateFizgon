@@ -155,6 +155,10 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.togglePropertyReview(property);
   }
 
+  onPropertyCommentSave(event: { property: DashboardPropertyRow; comment: string }): void {
+    void this.savePropertyComment(event.property, event.comment);
+  }
+
   onSplitterMouseDown(event: MouseEvent): void {
     this.workspaceLayoutService.startResize(event);
   }
@@ -431,6 +435,38 @@ export class AppComponent implements OnInit, OnDestroy {
       return review;
     }
     return 'NEW';
+  }
+
+  private getPropertyComment(propertyId: string): string {
+    const entry = this.propertyLabels().find((item) => item.propertyId === propertyId);
+    const comment = entry?.labels.comment;
+    if (typeof comment === 'string') {
+      return comment;
+    }
+    return '';
+  }
+
+  private async savePropertyComment(property: DashboardPropertyRow, commentRaw: string): Promise<void> {
+    if (!this.authenticatedUser()) {
+      return;
+    }
+
+    const comment = commentRaw.trim();
+    if (this.getPropertyComment(property.propertyId) === comment) {
+      return;
+    }
+
+    try {
+      const updatedLabels = await this.dashboardUserPreferencesService.setPropertyComment(
+        this.http,
+        this.backendBaseUrl,
+        property.propertyId,
+        comment
+      );
+      this.propertyLabels.set(updatedLabels);
+    } catch {
+      // Ignore API errors; UI state remains unchanged.
+    }
   }
 
   private nextReviewLabel(current: PropertyReviewLabel): PropertyReviewLabel {

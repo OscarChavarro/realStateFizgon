@@ -49,6 +49,7 @@
             [reviewEnabled]="authenticatedUser() !== null"
             [propertyLabels]="propertyLabels()"
             (propertyReviewToggle)="onPropertyReviewToggle($event)"
+            (propertyCommentSave)="onPropertyCommentSave($event)"
           ></app-property-detail-panel>
         </section>
       </div>

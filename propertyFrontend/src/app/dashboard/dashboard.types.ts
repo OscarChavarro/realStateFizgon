@@ -16,7 +16,7 @@ export type PropertyReviewLabel = 'NEW' | 'FAVOURITE' | 'DISCHARGED';
 
 export type PropertyLabels = {
   review?: PropertyReviewLabel;
-  propertyComments?: string;
+  comment?: string;
   [key: string]: unknown;
 };
 

@@ -40,13 +40,14 @@
             </td>
             <th>{{ t('COMMENT') }}</th>
             <td>
-              <input
-                type="text"
+              <textarea
                 class="detail-comment-input"
+                rows="2"
                 [value]="getDraftComment(property.propertyId)"
                 [placeholder]="t('COMMENT_PLACEHOLDER')"
                 (input)="onDraftCommentInput(property.propertyId, $event)"
-              />
+                (blur)="onDraftCommentBlur(property)"
+              ></textarea>
             </td>
           </tr>
         }

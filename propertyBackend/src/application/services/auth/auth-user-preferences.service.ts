@@ -7,7 +7,7 @@ export type UserPropertyLabels = {
   propertyId: string;
   labels: Record<string, unknown> & {
     review?: PropertyReviewLabel;
-    propertyComments?: string;
+    comment?: string;
   };
 };
 
@@ -120,10 +120,37 @@ export class AuthUserPreferencesService {
 
       entries.push({
         propertyId: propertyId.trim(),
-        labels: { ...(labels as Record<string, unknown>) }
+        labels: this.normalizeLabelsObject(labels as Record<string, unknown>)
       });
     }
 
     return entries;
+  }
+
+  private normalizeLabelsObject(labels: Record<string, unknown>): Record<string, unknown> {
+    const normalized = { ...labels };
+
+    const reviewRaw = normalized['review'];
+    if (typeof reviewRaw === 'string') {
+      const review = reviewRaw.trim().toUpperCase();
+      if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {
+        normalized['review'] = review as PropertyReviewLabel;
+      } else {
+        delete normalized['review'];
+      }
+    }
+
+    const commentRaw = normalized['comment'];
+    const legacyCommentRaw = normalized['propertyComments'];
+    if (typeof commentRaw === 'string') {
+      normalized['comment'] = commentRaw.trim();
+    } else if (typeof legacyCommentRaw === 'string') {
+      normalized['comment'] = legacyCommentRaw.trim();
+    } else {
+      delete normalized['comment'];
+    }
+
+    delete normalized['propertyComments'];
+    return normalized;
   }
 }

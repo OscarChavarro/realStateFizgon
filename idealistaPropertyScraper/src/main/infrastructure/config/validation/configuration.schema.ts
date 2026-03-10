@@ -16,6 +16,7 @@ import {
   EnvironmentMainPageTimeoutSchema,
   EnvironmentPaginationTimeoutSchema,
   EnvironmentPropertyDetailPageTimeoutSchema,
+  EnvironmentSchedulerSchema,
   EnvironmentScraperSchema,
   SecretsEndpointsSchema
 } from 'src/infrastructure/config/validation/scraper.schema';
@@ -35,6 +36,7 @@ export const EnvironmentSchema = z.object({
   rabbitmq: EnvironmentRabbitSchema,
   images: EnvironmentImagesSchema.optional(),
   timeouts: EnvironmentTimeoutsSchema,
+  scheduler: EnvironmentSchedulerSchema.optional(),
   scraper: EnvironmentScraperSchema,
   filters: EnvironmentFiltersSchema.optional()
 }).strict();

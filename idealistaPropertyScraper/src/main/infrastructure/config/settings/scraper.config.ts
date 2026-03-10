@@ -91,6 +91,10 @@ export class ScraperConfig {
     return this.configurationSourceService.secrets.endpoints.password;
   }
 
+  get reScrapeIntervalMs(): number {
+    return Math.max(0, this.configurationSourceService.environment.scheduler?.reScrapeIntervalMs ?? 900000);
+  }
+
   get initialScraperState(): ScraperState {
     const raw = (this.configurationSourceService.environment.initialState ?? '').toString().trim().toUpperCase();
     if (raw === ScraperState.SCRAPING_FOR_NEW_PROPERTIES) {

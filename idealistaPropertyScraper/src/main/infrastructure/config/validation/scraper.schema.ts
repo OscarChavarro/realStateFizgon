@@ -42,6 +42,10 @@ export const EnvironmentScraperSchema = z.object({
   }).strict()
 }).strict();
 
+export const EnvironmentSchedulerSchema = z.object({
+  reScrapeIntervalMs: z.number().int().nonnegative().optional()
+}).strict();
+
 export const SecretsEndpointsSchema = z.object({
   user: z.string().min(1, 'endpoints.user is required.'),
   password: z.string().min(1, 'endpoints.password is required.')

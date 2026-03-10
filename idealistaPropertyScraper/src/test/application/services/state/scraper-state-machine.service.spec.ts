@@ -1,10 +1,14 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 
 describe('ScraperStateMachineService', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('whenServiceIsCreated_getCurrentState_shouldReturnInitialStateFromConfig', () => {
     // Arrange
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
@@ -13,6 +17,27 @@ describe('ScraperStateMachineService', () => {
     const result = service.getCurrentState();
     // Assert
     expect(result).toBe(ScraperState.UPDATING_PROPERTIES);
+  });
+
+  it('whenServiceStartsInIdle_getLastIdleReachedAtMs_shouldCaptureCreationTime', () => {
+    // Arrange
+    jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
+    const config = new ScraperConfigMock({ initialScraperState: ScraperState.IDLE });
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    const lastIdleReachedAtMs = service.getLastIdleReachedAtMs();
+    // Assert
+    expect(lastIdleReachedAtMs).toBe(1700000000000);
+  });
+
+  it('whenServiceStartsInNonIdle_getLastIdleReachedAtMs_shouldBeNullUntilIdleIsReached', () => {
+    // Arrange
+    const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    // Action
+    const lastIdleReachedAtMs = service.getLastIdleReachedAtMs();
+    // Assert
+    expect(lastIdleReachedAtMs).toBeNull();
   });
 
   it('whenSameStateIsRequestedAgain_enqueueStateRequest_shouldCoalesceWithoutDuplicatingQueue', () => {
@@ -122,5 +147,27 @@ describe('ScraperStateMachineService', () => {
     service.setState(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
     // Assert
     expect(service.getCurrentState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+  });
+
+  it('whenStateTransitionsToIdle_setState_shouldUpdateLastIdleTimestamp', () => {
+    // Arrange
+    const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    jest.spyOn(Date, 'now').mockReturnValue(1700000005555);
+    // Action
+    service.setState(ScraperState.IDLE);
+    // Assert
+    expect(service.getLastIdleReachedAtMs()).toBe(1700000005555);
+  });
+
+  it('whenScrapeCycleFinishes_finishScrapingForNewPropertiesCycle_shouldUpdateLastIdleTimestamp', () => {
+    // Arrange
+    const config = new ScraperConfigMock({ initialScraperState: ScraperState.SCRAPING_FOR_NEW_PROPERTIES });
+    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    jest.spyOn(Date, 'now').mockReturnValue(1700000007777);
+    // Action
+    service.finishScrapingForNewPropertiesCycle();
+    // Assert
+    expect(service.getLastIdleReachedAtMs()).toBe(1700000007777);
   });
 });

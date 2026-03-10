@@ -144,6 +144,31 @@ describe('ScraperConfig', () => {
     expect(apiPort).toBe(3000);
   });
 
+  it.each([
+    {
+      environment: { scheduler: { reScrapeIntervalMs: 60000 } },
+      expected: 60000
+    },
+    {
+      environment: { scheduler: { reScrapeIntervalMs: -1 } },
+      expected: 0
+    },
+    {
+      environment: {},
+      expected: 900000
+    }
+  ])('whenRescrapeIntervalIsResolved_reScrapeIntervalMs_shouldReturnExpectedValue', ({
+    environment,
+    expected
+  }) => {
+    // Arrange
+    const config = createScraperConfig({ environment });
+    // Action
+    const value = config.reScrapeIntervalMs;
+    // Assert
+    expect(value).toBe(expected);
+  });
+
   it('whenFilterDefinitionIsRequested_getFilterDefinitionByName_shouldDelegateToSource', () => {
     // Arrange
     const definition: FilterDefinition = {

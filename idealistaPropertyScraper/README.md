@@ -23,6 +23,11 @@ cp secrets-example.json secrets.json
 
 Then edit `secrets.json` with valid credentials for your environment.
 
+Scheduler setup:
+
+- `environment.json.scheduler.reScrapeIntervalMs` controls automatic re-scrape while the state machine is idle.
+- Behavior: when state is `IDLE` and that interval has elapsed since the last time the machine reached `IDLE`, `ScheduleService` promotes the state to `SCRAPING_FOR_NEW_PROPERTIES`.
+
 ## Package Structure
 
 The codebase is intentionally split between **business scraping logic** and **technical/runtime concerns**:

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ScheduleService } from 'src/application/services/state/schedule.service';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { sleep } from 'src/infrastructure/sleep';
 
@@ -17,7 +18,8 @@ export class ScraperStateLoopService {
   private loopRunning = false;
 
   constructor(
-    private readonly scraperStateMachineService: ScraperStateMachineService
+    private readonly scraperStateMachineService: ScraperStateMachineService,
+    private readonly scheduleService: ScheduleService
   ) {}
 
   start(handlers: ScraperStateLoopHandlers): void {
@@ -55,6 +57,10 @@ export class ScraperStateLoopService {
         if (nextRequestedState) {
           this.scraperStateMachineService.setState(nextRequestedState);
         }
+        continue;
+      }
+
+      if (currentState === ScraperState.IDLE && this.scheduleService.promoteIdleToScheduledScrapeIfDue()) {
         continue;
       }
 

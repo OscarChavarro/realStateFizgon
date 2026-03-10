@@ -3,6 +3,9 @@
   "api": {
     "httpPort": 8080
   },
+  "scheduler": {
+    "reScrapeIntervalMs": 900000
+  },
   "chrome": {
     "binary": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
   },

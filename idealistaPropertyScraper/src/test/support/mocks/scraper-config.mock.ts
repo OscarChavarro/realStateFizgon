@@ -4,6 +4,7 @@ type ScraperConfigMockOptions = {
   initialScraperState?: ScraperState;
   endpointsUser?: string;
   endpointsPassword?: string;
+  reScrapeIntervalMs?: number;
 };
 
 export class ScraperConfigMock {
@@ -19,5 +20,9 @@ export class ScraperConfigMock {
 
   get endpointsPassword(): string {
     return this.options.endpointsPassword ?? 'password';
+  }
+
+  get reScrapeIntervalMs(): number {
+    return this.options.reScrapeIntervalMs ?? 900000;
   }
 }

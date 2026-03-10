@@ -7,15 +7,23 @@ export class ScraperStateMachineService {
   private readonly logger = new Logger(ScraperStateMachineService.name);
   private readonly maxPendingStateRequests = 10;
   private currentState: ScraperState;
+  private lastIdleReachedAtMs: number | null = null;
   private readonly requestedStateQueue: ScraperState[] = [];
 
   constructor(private readonly scraperConfig: ScraperConfig) {
     this.currentState = scraperConfig.initialScraperState;
+    if (this.currentState === ScraperState.IDLE) {
+      this.lastIdleReachedAtMs = Date.now();
+    }
     this.logger.log(`Initial scraper state set to: ${this.currentState}.`);
   }
 
   getCurrentState(): ScraperState {
     return this.currentState;
+  }
+
+  getLastIdleReachedAtMs(): number | null {
+    return this.lastIdleReachedAtMs;
   }
 
   enqueueUpdatePropertiesRequest(): number {
@@ -59,6 +67,7 @@ export class ScraperStateMachineService {
 
   finishScrapingForNewPropertiesCycle(): ScraperState {
     this.currentState = ScraperState.IDLE;
+    this.lastIdleReachedAtMs = Date.now();
     const nextRequestedState = this.requestedStateQueue.shift();
     if (nextRequestedState) {
       this.currentState = nextRequestedState;
@@ -70,6 +79,7 @@ export class ScraperStateMachineService {
 
   finishUpdatingPropertiesCycle(): ScraperState {
     this.currentState = ScraperState.IDLE;
+    this.lastIdleReachedAtMs = Date.now();
     const nextRequestedState = this.requestedStateQueue.shift();
     if (nextRequestedState) {
       this.currentState = nextRequestedState;
@@ -81,6 +91,9 @@ export class ScraperStateMachineService {
 
   setState(state: ScraperState): void {
     this.currentState = state;
+    if (state === ScraperState.IDLE) {
+      this.lastIdleReachedAtMs = Date.now();
+    }
     this.logger.log(`Current scraper state set to: ${state}.`);
   }
 

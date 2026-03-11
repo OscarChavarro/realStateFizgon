@@ -121,6 +121,48 @@ curl -X POST http://localhost:8080/updateProperties
 - Kubernetes manifest: `k8s/idealistaPropertyScraper.yaml`
 - Xvfb startup script: `start-with-xvfb.sh`
 
+## Recovery Runbook
+
+This service includes automatic browser recovery when Chromium fails during runtime.
+
+Failure handling behavior:
+
+- Trigger conditions:
+  - Chromium process exits unexpectedly and CDP is no longer reachable.
+  - A fatal error bubbles up from the scraper state loop.
+- Recovery actions:
+  - Stop Chromium (`SIGTERM`), wait briefly, then force kill (`SIGKILL`) if still alive.
+  - Wait a short recovery window before retrying (currently `10s` in bootstrap logic).
+  - Relaunch Chromium with the same startup path used on boot.
+  - Re-apply startup CDP readiness and geolocation startup permissions.
+  - Set scraper state to `IDLE`.
+- Post-recovery execution:
+  - The scraper loop is restarted.
+  - While state is `IDLE`, the scheduler can promote to `SCRAPING_FOR_NEW_PROPERTIES` after `environment.json.scheduler.reScrapeIntervalMs`.
+
+Expected state timeline after failure:
+
+1. Failure detected (`ChromiumFailureGuardService` logs an error).
+2. Browser restart sequence is executed.
+3. State machine is forced to `IDLE`.
+4. Scheduler eventually triggers a new scrape cycle if the configured idle interval has elapsed.
+
+How to diagnose:
+
+- Inspect application logs for recovery milestones:
+  - `Browser failure detected: ...`
+  - `Browser will be restarted after waiting ... seconds.`
+  - `Browser restart completed. Scraper state was set to IDLE.`
+- Check Chromium logs:
+  - `output/logs/chrome_stderr.log`
+  - `output/logs/chrome_stdout.log`
+- Validate scheduler behavior:
+  - Confirm `environment.json.scheduler.reScrapeIntervalMs`.
+  - Confirm state transitions include return to `IDLE` and later promotion to `SCRAPING_FOR_NEW_PROPERTIES`.
+- In Kubernetes:
+  - Verify pod logs around the failure timestamp.
+  - Confirm the container remains alive and no crash loop is occurring.
+
 ## Troubleshooting
 
 - If service starts but stays waiting, check MongoDB/RabbitMQ credentials in `secrets.json`.

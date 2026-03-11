@@ -22,7 +22,15 @@ const config: Config = {
     '!src/main/app.module.ts'
   ],
   coverageDirectory: '<rootDir>/coverage',
-  coverageReporters: ['text-summary', 'lcov', 'cobertura', 'html']
+  coverageReporters: ['text-summary', 'lcov', 'cobertura', 'html'],
+  coverageThreshold: {
+    global: {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    }
+  }
 };
 
 export default config;

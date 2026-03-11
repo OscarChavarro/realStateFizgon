@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { MongoServerError } from 'mongodb';
 import * as mongodb from 'mongodb';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
-import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
 import { Property } from 'src/domain/property/property.model';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
@@ -16,10 +15,6 @@ import { sleep } from 'src/infrastructure/sleep';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
-
-class RabbitMqServiceMock {
-  readonly publishIdealistaUpdateNotification = jest.fn<(url: string, title: string | null) => Promise<void>>();
-}
 
 type MockCollection = {
   updateOne: jest.Mock;
@@ -42,21 +37,19 @@ function createProperty(url: string, propertyId: string | null = null): Property
   );
 }
 
-function createService(collection: MockCollection, rabbit: RabbitMqServiceMock): MongoDatabaseService {
+function createService(collection: MockCollection): MongoDatabaseService {
   const service = new MongoDatabaseService(
     new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig,
-    rabbit as unknown as RabbitMqService
+    new MongoConfigMock() as unknown as MongoConfig
   );
   (service as unknown as { ensurePropertiesCollection: () => Promise<MockCollection> }).ensurePropertiesCollection = async () => collection;
   return service;
 }
 
-function createRawService(rabbit: RabbitMqServiceMock = new RabbitMqServiceMock()): MongoDatabaseService {
+function createRawService(): MongoDatabaseService {
   return new MongoDatabaseService(
     new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig,
-    rabbit as unknown as RabbitMqService
+    new MongoConfigMock() as unknown as MongoConfig
   );
 }
 
@@ -65,18 +58,16 @@ describe('MongoDatabaseService', () => {
     jest.clearAllMocks();
   });
 
-  it('whenPropertyIsNew_saveProperty_shouldUpsertAndPublishNotification', async () => {
+  it('whenPropertyIsNew_saveProperty_shouldUpsertAndReturnIsNewTrue', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ upsertedCount: 1 })),
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    rabbit.publishIdealistaUpdateNotification.mockResolvedValue(undefined);
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
-    await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', null));
+    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', null));
     // Assert
     expect(collection.updateOne).toHaveBeenCalledWith(
       { url: 'https://www.idealista.com/inmueble/123456789/' },
@@ -85,26 +76,22 @@ describe('MongoDatabaseService', () => {
       }),
       { upsert: true }
     );
-    expect(rabbit.publishIdealistaUpdateNotification).toHaveBeenCalledWith(
-      'https://www.idealista.com/inmueble/123456789/',
-      'Title'
-    );
+    expect(result).toEqual({ isNew: true });
   });
 
-  it('whenPropertyAlreadyExists_saveProperty_shouldSkipNotificationForNonUpsert', async () => {
+  it('whenPropertyAlreadyExists_saveProperty_shouldReturnIsNewFalse', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ upsertedCount: 0 })),
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
-    await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
+    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
     // Assert
     expect(collection.updateOne).toHaveBeenCalledTimes(1);
-    expect(rabbit.publishIdealistaUpdateNotification).not.toHaveBeenCalled();
+    expect(result).toEqual({ isNew: false });
   });
 
   it('whenDuplicateKeyErrorOccurs_saveProperty_shouldRetryWithUpsertDisabled', async () => {
@@ -120,15 +107,14 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicateError;
     // Action
-    await service.saveProperty(createProperty('https://www.idealista.com/inmueble/1/', '1'));
+    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/1/', '1'));
     // Assert
     expect(collection.updateOne).toHaveBeenNthCalledWith(1, { url: 'https://www.idealista.com/inmueble/1/' }, expect.any(Object), { upsert: true });
     expect(collection.updateOne).toHaveBeenNthCalledWith(2, { url: 'https://www.idealista.com/inmueble/1/' }, expect.any(Object), { upsert: false });
-    expect(rabbit.publishIdealistaUpdateNotification).not.toHaveBeenCalled();
+    expect(result).toEqual({ isNew: false });
   });
 
   it('whenClosedPropertyIsSaved_saveClosedProperty_shouldSetClosedByAndInsertMetadata', async () => {
@@ -139,8 +125,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     await service.saveClosedProperty('https://www.idealista.com/inmueble/987654321/', closedBy);
     // Assert
@@ -164,7 +149,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection, new RabbitMqServiceMock());
+    const service = createService(collection);
     // Action
     await service.saveClosedProperty('https://www.idealista.com/inmueble/999999999/');
     // Assert
@@ -206,8 +191,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => findOneResult),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     const result = await (service as unknown as Record<string, (url: string) => Promise<boolean>>)[method]('https://url');
     // Assert
@@ -221,8 +205,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     await service.touchPropertyLastTimeVisited('   ');
     // Assert
@@ -243,8 +226,7 @@ describe('MongoDatabaseService', () => {
         ]
       }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     const urls = await service.getOpenPropertyUrls();
     // Assert
@@ -264,8 +246,7 @@ describe('MongoDatabaseService', () => {
         ]
       }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     const urls = await service.getOpenPropertyUrlsWithoutLastTimeVisited();
     // Assert
@@ -296,8 +277,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => cursor as unknown as { toArray: () => Promise<Array<Record<string, unknown>>> })
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     // Action
     const result = await service.fixStringPricesToNumbers();
     // Assert
@@ -316,8 +296,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const rabbit = new RabbitMqServiceMock();
-    const service = createService(collection, rabbit);
+    const service = createService(collection);
     const close = jest.fn(async () => undefined);
     (service as unknown as { mongoClient: { close: () => Promise<void> } }).mongoClient = { close };
     (service as unknown as { database: object }).database = {};
@@ -353,7 +332,7 @@ describe('MongoDatabaseService', () => {
       updateOne: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn()
-    }, new RabbitMqServiceMock());
+    });
     // Action
     await (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
     // Assert
@@ -375,7 +354,7 @@ describe('MongoDatabaseService', () => {
       updateOne: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn()
-    }, new RabbitMqServiceMock());
+    });
     // Action
     await (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
     // Assert
@@ -397,7 +376,7 @@ describe('MongoDatabaseService', () => {
       updateOne: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn()
-    }, new RabbitMqServiceMock());
+    });
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicate;
     // Action
     const action = (service as unknown as { ensureUniqueUrlIndex: (col: typeof collection) => Promise<void> }).ensureUniqueUrlIndex(collection);
@@ -411,7 +390,7 @@ describe('MongoDatabaseService', () => {
       updateOne: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn()
-    }, new RabbitMqServiceMock());
+    });
     const ensureSpy = jest.spyOn(
       service as unknown as { ensurePropertiesCollectionAndUrlIndex: () => Promise<void> },
       'ensurePropertiesCollectionAndUrlIndex'
@@ -451,7 +430,7 @@ describe('MongoDatabaseService', () => {
       updateOne: jest.fn(),
       findOne: jest.fn(),
       find: jest.fn()
-    }, new RabbitMqServiceMock());
+    });
     // Action
     const result = (service as unknown as { parseStringPriceToNumber: (value: unknown) => number | null })
       .parseStringPriceToNumber(input);
@@ -469,7 +448,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection, new RabbitMqServiceMock());
+    const service = createService(collection);
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = () => false;
     // Action
     const action = service.saveProperty(createProperty('https://www.idealista.com/inmueble/200/', '200'));
@@ -485,7 +464,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection, new RabbitMqServiceMock());
+    const service = createService(collection);
     // Action
     await service.touchPropertyLastTimeVisited('  https://www.idealista.com/inmueble/123/  ', visitedAt);
     // Assert
@@ -507,7 +486,7 @@ describe('MongoDatabaseService', () => {
       findOne: jest.fn(async () => null),
       find: jest.fn(() => cursor as unknown as { toArray: () => Promise<Array<Record<string, unknown>>> })
     };
-    const service = createService(collection, new RabbitMqServiceMock());
+    const service = createService(collection);
     // Action
     const result = await service.fixStringPricesToNumbers();
     // Assert

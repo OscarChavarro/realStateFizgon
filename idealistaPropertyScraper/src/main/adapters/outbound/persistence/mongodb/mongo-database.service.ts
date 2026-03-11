@@ -3,9 +3,9 @@ import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
 import { Property } from 'src/domain/property/property.model';
-import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
 import { sleep } from 'src/infrastructure/sleep';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistencePort {
@@ -18,8 +18,7 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
-    private readonly mongoConfig: MongoConfig,
-    private readonly rabbitMqService: RabbitMqService
+    private readonly mongoConfig: MongoConfig
   ) {}
 
   async onModuleDestroy(): Promise<void> {
@@ -31,7 +30,7 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
     }
   }
 
-  async saveProperty(property: Property): Promise<void> {
+  async saveProperty(property: Property): Promise<SavePropertyResult> {
     const collection = await this.ensurePropertiesCollection();
     const importedBy = new Date();
     const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
@@ -55,9 +54,9 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
       );
 
       if (result.upsertedCount > 0) {
-        await this.rabbitMqService.publishIdealistaUpdateNotification(normalizedProperty.url, normalizedProperty.title);
+        return { isNew: true };
       }
-      return;
+      return { isNew: false };
     } catch (error) {
       if (!this.isDuplicateKeyError(error)) {
         throw error;
@@ -73,6 +72,7 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
         },
         { upsert: false }
       );
+      return { isNew: false };
     }
   }
 

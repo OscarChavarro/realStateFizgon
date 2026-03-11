@@ -1,8 +1,9 @@
 import { jest } from '@jest/globals';
 import { Property } from 'src/domain/property/property.model';
+import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
 
 export class PropertyPersistencePortMock {
-  readonly saveProperty = jest.fn<(property: Property) => Promise<void>>();
+  readonly saveProperty = jest.fn<(property: Property) => Promise<SavePropertyResult>>();
   readonly saveClosedProperty = jest.fn<(url: string, closedBy?: Date) => Promise<void>>();
   readonly isOpenPropertyByUrl = jest.fn<(url: string) => Promise<boolean>>();
   readonly touchPropertyLastTimeVisited = jest.fn<(url: string, visitedAt?: Date) => Promise<void>>();

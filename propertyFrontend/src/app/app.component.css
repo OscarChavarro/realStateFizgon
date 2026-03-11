@@ -15,7 +15,7 @@
   width: 100%;
   margin: 0;
   padding: 0;
-  background: #ffffff;
+  background: var(--color-surface);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
   display: flex;
@@ -34,7 +34,7 @@
   display: grid;
   align-items: stretch;
   height: 100%;
-  background: #ffffff;
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -45,7 +45,7 @@
 }
 
 .workspace-panel.left {
-  border-right: 1px solid #d6deea;
+  border-right: 1px solid var(--color-border-subtle);
 }
 
 .workspace-splitter {
@@ -55,8 +55,8 @@
   justify-content: center;
   align-items: center;
   background: linear-gradient(90deg, #f8fafd 0%, #edf2f9 50%, #f8fafd 100%);
-  border-left: 1px solid #d6deea;
-  border-right: 1px solid #d6deea;
+  border-left: 1px solid var(--color-border-subtle);
+  border-right: 1px solid var(--color-border-subtle);
   cursor: col-resize;
   user-select: none;
   position: relative;

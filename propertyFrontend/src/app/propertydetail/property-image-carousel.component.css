@@ -6,8 +6,8 @@
 .main-image {
   width: 100%;
   background: #f3f6fb;
-  border: 1px solid #d5dcea;
-  border-radius: 6px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
   min-height: 220px;
   display: grid;
   place-items: center;
@@ -20,7 +20,7 @@
   max-height: 420px;
   object-fit: contain;
   display: block;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .thumbnail-strip {
@@ -36,16 +36,16 @@
   width: 88px;
   height: 66px;
   border: 1px solid #ced7e8;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 0;
-  background: #ffffff;
+  background: var(--color-surface);
   overflow: hidden;
   cursor: pointer;
 }
 
 .thumbnail-button.selected {
-  border-color: #1967d2;
-  box-shadow: 0 0 0 3px #1967d2 inset;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand) inset;
 }
 
 .thumbnail-button img {

@@ -11,12 +11,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  border: 1px solid #c7d6ec;
-  border-radius: 6px;
-  background: #ffffff;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
   color: #1e3d69;
-  height: 36px;
+  height: var(--control-height-md);
   box-sizing: border-box;
   padding: 0 0.55rem;
   font-size: 0.82rem;
@@ -24,8 +24,8 @@
 }
 
 .filter-trigger.open {
-  background: #e8f0fe;
-  border-color: #a9c5ec;
+  background: var(--color-surface-emphasis);
+  border-color: var(--color-border-accent);
   color: #1b4d9b;
 }
 
@@ -41,22 +41,22 @@
 
 .filter-dropdown {
   position: absolute;
-  top: calc(100% + 0.35rem);
+  top: calc(100% + var(--space-2));
   right: 0;
   min-width: 220px;
-  border: 1px solid #d7e2f1;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 46, 85, 0.14);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-dropdown);
   z-index: 30;
-  padding: 0.5rem;
+  padding: var(--space-3);
 }
 
 .filter-option {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  color: #1f2937;
+  color: var(--color-text-primary);
   font-size: 0.86rem;
   cursor: pointer;
 }

@@ -2,12 +2,12 @@
   height: 100%;
   padding: 0.7rem;
   overflow: auto;
-  background: #ffffff;
+  background: var(--color-surface);
 }
 
 .detail-panel h2 {
   margin: 0 0 0.55rem 0;
-  color: #0f2e55;
+  color: var(--color-text-emphasis);
   font-size: 1.18rem;
 }
 
@@ -20,7 +20,7 @@
 
 .detail-meta-table th,
 .detail-meta-table td {
-  border: 1px solid #d9e0ed;
+  border: 1px solid var(--color-border-subtle);
   padding: 0.33rem 0.45rem;
   vertical-align: middle;
 }
@@ -37,7 +37,7 @@
 }
 
 .detail-meta-table td {
-  color: #1f2937;
+  color: var(--color-text-primary);
   font-size: 0.9rem;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .detail-meta-table td.url a {
-  color: #1967d2;
+  color: var(--color-brand);
   text-decoration: none;
   font-weight: 600;
 }
@@ -61,7 +61,7 @@
   gap: 0.3rem;
   min-height: 1.9rem;
   padding: 0 0.6rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid #d2d8e0;
   color: #334155;
   background: #f8fafc;
@@ -84,27 +84,27 @@
 }
 
 .detail-review-chip.favourite {
-  border-color: #95d5a6;
-  color: #166534;
-  background: #ecfdf3;
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
+  background: var(--color-success-bg);
 }
 
 .detail-review-chip.discharged {
-  border-color: #f3b6b6;
-  color: #991b1b;
-  background: #fff1f2;
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
 }
 
 .detail-comment-input {
   width: 100%;
   min-height: 2.4rem;
   max-height: 13rem;
-  border: 1px solid #d9e0ed;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 5px;
   padding: 0.3rem 0.45rem;
   font-family: inherit;
   font-size: 0.86rem;
-  color: #1f2937;
+  color: var(--color-text-primary);
   background: #fbfcff;
   line-height: 1.35;
   resize: vertical;
@@ -133,7 +133,7 @@
   width: 100%;
   min-height: 88px;
   max-height: 128px;
-  border: 1px solid #d9e0ed;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 5px;
   padding: 0.45rem;
   resize: none;
@@ -141,7 +141,7 @@
   font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.35;
-  color: #1f2937;
+  color: var(--color-text-primary);
   background: #fbfcff;
 }
 

@@ -1,15 +1,25 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
+import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
+import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
+import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ChromiumFailureGuardService {
   private readonly logger = new Logger(ChromiumFailureGuardService.name);
-  private debugHoldInProgress = false;
+  private recoveryInProgress = false;
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
-    private readonly chromiumPageSyncService: ChromiumPageSyncService
+    private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
+    private readonly chromiumCdpReadinessService: ChromiumCdpReadinessService,
+    private readonly chromiumGeolocationService: ChromiumGeolocationService,
+    private readonly scraperStateMachineService: ScraperStateMachineService
   ) {}
 
   async handleUnexpectedChromeExit(params: {
@@ -17,8 +27,9 @@ export class ChromiumFailureGuardService {
     signal: NodeJS.Signals | null;
     cdpHost: string;
     cdpPort: number;
-    browserFailureHoldMs: number;
+    browserFailureRecoveryWaitMs: number;
     isShuttingDown: () => boolean;
+    onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void;
   }): Promise<void> {
     if (params.isShuttingDown()) {
       return;
@@ -34,32 +45,63 @@ export class ChromiumFailureGuardService {
       return;
     }
 
-    await this.holdForDebug('CDP connection to the browser was lost.', params.browserFailureHoldMs, params.isShuttingDown);
+    await this.recoverFromFailure({
+      reason: 'CDP connection to the browser was lost.',
+      cdpHost: params.cdpHost,
+      cdpPort: params.cdpPort,
+      browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
+      isShuttingDown: params.isShuttingDown,
+      onUnexpectedExit: params.onUnexpectedExit
+    });
   }
 
-  async holdForDebug(reason: string, browserFailureHoldMs: number, isShuttingDown: () => boolean): Promise<void> {
-    if (isShuttingDown()) {
+  async recoverFromFailure(params: {
+    reason: string;
+    cdpHost: string;
+    cdpPort: number;
+    browserFailureRecoveryWaitMs: number;
+    isShuttingDown: () => boolean;
+    onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void;
+  }): Promise<void> {
+    if (params.isShuttingDown()) {
       return;
     }
 
-    if (this.debugHoldInProgress) {
-      this.logger.warn('Debug hold is already active; keeping current hold window.');
+    if (this.recoveryInProgress) {
+      this.logger.warn('Browser recovery is already in progress; waiting for the active retry to finish.');
       return;
     }
 
-    this.debugHoldInProgress = true;
-    const waitSeconds = Math.floor(browserFailureHoldMs / 1000);
+    this.recoveryInProgress = true;
+    const waitSeconds = Math.floor(params.browserFailureRecoveryWaitMs / 1000);
 
-    this.logger.error(`Browser failure detected: ${reason}`);
+    this.logger.error(`Browser failure detected: ${params.reason}`);
+    this.chromiumProcessLifecycleService.stopChromiumProcess();
+    await this.chromiumPageSyncService.sleep(1000);
+    this.chromiumProcessLifecycleService.forceKillChromiumProcess();
     this.logger.error(
-      `Keeping microservice alive for ${waitSeconds} seconds so the pod can be inspected.`
+      `Browser will be restarted after waiting ${waitSeconds} seconds.`
     );
 
     try {
-      await this.chromiumPageSyncService.sleep(browserFailureHoldMs);
+      await this.chromiumPageSyncService.sleep(params.browserFailureRecoveryWaitMs);
+      if (params.isShuttingDown()) {
+        return;
+      }
+
+      await this.chromiumProcessLifecycleService.launchChromiumProcess(
+        params.cdpPort,
+        params.onUnexpectedExit,
+        params.isShuttingDown
+      );
+      await this.chromiumCdpReadinessService.waitForReadyEndpoint(params.cdpHost, params.cdpPort);
+      await this.chromiumGeolocationService.grantStartupPermissions(params.cdpHost, params.cdpPort);
+      this.scraperStateMachineService.setState(ScraperState.IDLE);
+      this.logger.log('Browser restart completed. Scraper state was set to IDLE.');
+    } catch (error) {
+      this.logger.error(`Browser restart failed: ${toErrorMessage(error)}`);
     } finally {
-      this.debugHoldInProgress = false;
-      this.logger.warn('Debug hold finished. Browser automation is still stopped.');
+      this.recoveryInProgress = false;
     }
   }
 

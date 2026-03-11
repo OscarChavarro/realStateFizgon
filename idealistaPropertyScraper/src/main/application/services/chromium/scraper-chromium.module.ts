@@ -8,10 +8,11 @@ import { ChromiumPageTargetService } from 'src/application/services/chromium/chr
 import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
+import { ScraperStateModule } from 'src/application/services/state/scraper-state.module';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule],
+  imports: [ConfigurationModule, ScraperStateModule],
   providers: [
     ChromiumPageSyncService,
     ChromiumCdpReadinessService,

@@ -13,6 +13,7 @@ export class ChromiumProcessLifecycleService {
   private chromeProcess?: ChildProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
+  private controlledStopInProgress = false;
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
@@ -68,6 +69,10 @@ export class ChromiumProcessLifecycleService {
       this.logger.log(`Chrome process started with PID ${this.chromeProcess.pid ?? 'unknown'}.`);
       this.chromeProcess.once('exit', (code, signal) => {
         this.closeChromeLogFds();
+        if (this.controlledStopInProgress) {
+          this.controlledStopInProgress = false;
+          return;
+        }
         onUnexpectedExit(code, signal);
       });
 
@@ -78,10 +83,32 @@ export class ChromiumProcessLifecycleService {
   }
 
   stopChromiumProcess(): void {
+    if (this.chromeProcess && this.chromeProcess.pid && this.isPidAlive(this.chromeProcess.pid)) {
+      this.controlledStopInProgress = true;
+    }
     if (this.chromeProcess && !this.chromeProcess.killed) {
       this.chromeProcess.kill('SIGTERM');
     }
     this.closeChromeLogFds();
+  }
+
+  forceKillChromiumProcess(): void {
+    const pid = this.chromeProcess?.pid;
+    if (!pid) {
+      return;
+    }
+
+    if (!this.isPidAlive(pid)) {
+      return;
+    }
+
+    this.controlledStopInProgress = true;
+    try {
+      process.kill(pid, 'SIGKILL');
+      this.logger.warn(`Sent SIGKILL to Chrome process PID ${pid}.`);
+    } catch (error) {
+      this.logger.warn(`Failed to send SIGKILL to Chrome process PID ${pid}. ${toErrorMessage(error)}`);
+    }
   }
 
   private isBrowserBinaryMissingError(error: unknown): boolean {
@@ -128,6 +155,15 @@ export class ChromiumProcessLifecycleService {
     if (this.chromeStderrFd !== undefined) {
       closeSync(this.chromeStderrFd);
       this.chromeStderrFd = undefined;
+    }
+  }
+
+  private isPidAlive(pid: number): boolean {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
     }
   }
 

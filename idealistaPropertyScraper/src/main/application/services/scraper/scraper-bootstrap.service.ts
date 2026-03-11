@@ -11,7 +11,7 @@ import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
-  private readonly browserFailureHoldMs = 60 * 60 * 1000;
+  private readonly browserFailureRecoveryWaitMs = 10 * 1000;
   private readonly cdpHost = '127.0.0.1';
   private readonly cdpPort = 9222;
   private shuttingDown = false;
@@ -28,21 +28,38 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    const onUnexpectedExit = this.createUnexpectedChromeExitHandler();
     try {
       await this.infrastructurePreCheckService.runBeforeScraperStartup();
-      await this.launchChrome();
+      await this.launchChrome(onUnexpectedExit);
       await this.homeSearchPreparationFlowService.execute(this.cdpHost, this.cdpPort);
       this.scraperOrchestratorService.start({
         cdpHost: this.cdpHost,
         cdpPort: this.cdpPort,
-        isShuttingDown: () => this.shuttingDown
+        isShuttingDown: () => this.shuttingDown,
+        onUnexpectedChromeExit: onUnexpectedExit,
+        browserFailureRecoveryWaitMs: this.browserFailureRecoveryWaitMs
       });
     } catch (error) {
-      await this.chromiumFailureGuardService.holdForDebug(
-        `Browser startup flow failed. ${toErrorMessage(error)}`,
-        this.browserFailureHoldMs,
-        () => this.shuttingDown
-      );
+      await this.chromiumFailureGuardService.recoverFromFailure({
+        reason: `Browser startup flow failed. ${toErrorMessage(error)}`,
+        cdpHost: this.cdpHost,
+        cdpPort: this.cdpPort,
+        browserFailureRecoveryWaitMs: this.browserFailureRecoveryWaitMs,
+        isShuttingDown: () => this.shuttingDown,
+        onUnexpectedExit
+      });
+      if (this.shuttingDown) {
+        return;
+      }
+
+      this.scraperOrchestratorService.start({
+        cdpHost: this.cdpHost,
+        cdpPort: this.cdpPort,
+        isShuttingDown: () => this.shuttingDown,
+        onUnexpectedChromeExit: onUnexpectedExit,
+        browserFailureRecoveryWaitMs: this.browserFailureRecoveryWaitMs
+      });
     }
   }
 
@@ -51,25 +68,32 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
     this.chromiumProcessLifecycleService.stopChromiumProcess();
   }
 
-  private async launchChrome(): Promise<void> {
+  private async launchChrome(
+    onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void
+  ): Promise<void> {
     await this.chromiumProcessLifecycleService.launchChromiumProcess(
       this.cdpPort,
-      (code, signal) => {
-        void this.chromiumFailureGuardService.handleUnexpectedChromeExit({
-          code,
-          signal,
-          cdpHost: this.cdpHost,
-          cdpPort: this.cdpPort,
-          browserFailureHoldMs: this.browserFailureHoldMs,
-          isShuttingDown: () => this.shuttingDown
-        });
-      },
+      onUnexpectedExit,
       () => this.shuttingDown
     );
     await this.chromiumCdpReadinessService.waitForReadyEndpoint(this.cdpHost, this.cdpPort);
     await this.chromiumGeolocationService.grantStartupPermissions(this.cdpHost, this.cdpPort);
     this.chromiumGeolocationService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
     this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
+  }
+
+  private createUnexpectedChromeExitHandler(): (code: number | null, signal: NodeJS.Signals | null) => void {
+    return (code, signal) => {
+      void this.chromiumFailureGuardService.handleUnexpectedChromeExit({
+        code,
+        signal,
+        cdpHost: this.cdpHost,
+        cdpPort: this.cdpPort,
+        browserFailureRecoveryWaitMs: this.browserFailureRecoveryWaitMs,
+        isShuttingDown: () => this.shuttingDown,
+        onUnexpectedExit: this.createUnexpectedChromeExitHandler()
+      });
+    };
   }
 
 }

@@ -15,7 +15,7 @@ import { toErrorMessage } from 'src/infrastructure/error-message';
 @Injectable()
 export class ScraperOrchestratorService {
   private readonly logger = new Logger(ScraperOrchestratorService.name);
-  private readonly browserFailureHoldMs = 60 * 60 * 1000;
+  private loopRestartScheduled = false;
 
   constructor(
     private readonly scraperConfig: ScraperConfig,
@@ -33,19 +33,50 @@ export class ScraperOrchestratorService {
     cdpHost: string;
     cdpPort: number;
     isShuttingDown: () => boolean;
+    onUnexpectedChromeExit: (code: number | null, signal: NodeJS.Signals | null) => void;
+    browserFailureRecoveryWaitMs: number;
   }): void {
     this.scraperStateLoopService.start({
       onScrapingForNewProperties: async () => this.runScrapeNewPropertiesCycle(params.cdpHost, params.cdpPort),
       onUpdatingProperties: async () => this.runUpdateExistingPropertiesCycle(params.cdpHost, params.cdpPort),
       onLoopError: async (error: unknown) => {
-        await this.chromiumFailureGuardService.holdForDebug(
-          `Scraper state loop failed. ${toErrorMessage(error)}`,
-          this.browserFailureHoldMs,
-          params.isShuttingDown
-        );
+        await this.chromiumFailureGuardService.recoverFromFailure({
+          reason: `Scraper state loop failed. ${toErrorMessage(error)}`,
+          cdpHost: params.cdpHost,
+          cdpPort: params.cdpPort,
+          browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
+          isShuttingDown: params.isShuttingDown,
+          onUnexpectedExit: params.onUnexpectedChromeExit
+        });
+        this.scheduleLoopRestart(params);
       },
       isShuttingDown: params.isShuttingDown
     });
+  }
+
+  private scheduleLoopRestart(params: {
+    cdpHost: string;
+    cdpPort: number;
+    isShuttingDown: () => boolean;
+    onUnexpectedChromeExit: (code: number | null, signal: NodeJS.Signals | null) => void;
+    browserFailureRecoveryWaitMs: number;
+  }): void {
+    if (params.isShuttingDown()) {
+      return;
+    }
+
+    if (this.loopRestartScheduled) {
+      return;
+    }
+
+    this.loopRestartScheduled = true;
+    setTimeout(() => {
+      this.loopRestartScheduled = false;
+      if (params.isShuttingDown()) {
+        return;
+      }
+      this.start(params);
+    }, 0);
   }
 
   private async runScrapeNewPropertiesCycle(cdpHost: string, cdpPort: number): Promise<void> {

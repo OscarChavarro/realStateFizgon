@@ -46,6 +46,7 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
   private initializationPromise: Promise<void> | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private shuttingDown = false;
+  private shouldLogRestartOnNextOpen = false;
   private readonly incomingMessageListeners = new Set<IncomingMessageListener>();
 
   constructor(private readonly configuration: Configuration) {}
@@ -149,7 +150,12 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
           }
           this.isConnected = true;
           wasOpened = true;
-          this.logger.log('WhatsApp is connected and ready.');
+          if (this.shouldLogRestartOnNextOpen) {
+            this.logger.warn('Whatsapp connection restarted');
+            this.shouldLogRestartOnNextOpen = false;
+          } else {
+            this.logger.log('WhatsApp is connected and ready.');
+          }
           resolvePromise();
           return;
         }
@@ -164,8 +170,7 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
           const loggedOutCode = baileys.DisconnectReason?.loggedOut ?? 401;
           if (statusCode === loggedOutCode) {
             this.logger.error(`${message} Session was logged out; QR scan is required on next startup.`);
-          } else {
-            this.logger.error(message);
+            this.shouldLogRestartOnNextOpen = false;
           }
 
           if (this.socket === socket) {
@@ -173,9 +178,13 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
           }
 
           if (wasOpened) {
+            this.shouldLogRestartOnNextOpen = statusCode !== loggedOutCode;
             this.scheduleReconnect();
             return;
           }
+
+          this.shouldLogRestartOnNextOpen = false;
+          this.logger.error(message);
 
           rejectPromise(new Error(message));
         }
@@ -191,10 +200,6 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
     if (this.reconnectTimer) {
       return;
     }
-
-    this.logger.warn(
-      `Attempting to re-open WhatsApp connection in ${WhatsappWhiskeySocketsService.RETRY_DELAY_MS}ms.`
-    );
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 
 type CurrentUserResponse = {
@@ -12,10 +13,14 @@ type CurrentUserResponse = {
   providedIn: 'root'
 })
 export class AuthSessionApiService {
-  async loadGoogleLoginAvailability(http: HttpClient, backendBaseUrl: string): Promise<boolean> {
+  constructor(
+    private readonly apiRuntimeConfigService: ApiRuntimeConfigService
+  ) {}
+
+  async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        http.get<{ enabled?: boolean }>(`${backendBaseUrl}/auth/google/login-url`)
+        http.get<{ enabled?: boolean }>('/auth/google/login-url')
       );
       return response.enabled === true;
     } catch {
@@ -23,13 +28,10 @@ export class AuthSessionApiService {
     }
   }
 
-  async loadCurrentUser(http: HttpClient, backendBaseUrl: string): Promise<AuthenticatedUser | null> {
+  async loadCurrentUser(http: HttpClient): Promise<AuthenticatedUser | null> {
     try {
       const response = await firstValueFrom(
-        http.get<CurrentUserResponse>(
-          `${backendBaseUrl}/auth/google/me`,
-          { withCredentials: true }
-        )
+        http.get<CurrentUserResponse>('/auth/google/me')
       );
 
       if (response.authenticated && response.user) {
@@ -42,22 +44,18 @@ export class AuthSessionApiService {
     }
   }
 
-  async logout(http: HttpClient, backendBaseUrl: string): Promise<void> {
+  async logout(http: HttpClient): Promise<void> {
     try {
       await firstValueFrom(
-        http.post(
-          `${backendBaseUrl}/auth/google/logout`,
-          {},
-          { withCredentials: true }
-        )
+        http.post('/auth/google/logout', {})
       );
     } catch {
       // Ignore; caller will clear local state anyway.
     }
   }
 
-  buildGoogleLoginUrl(backendBaseUrl: string, returnTo: string): string {
-    const loginUrl = new URL('/auth/google/login', `${backendBaseUrl}/`);
+  buildGoogleLoginUrl(returnTo: string): string {
+    const loginUrl = new URL('/auth/google/login', `${this.apiRuntimeConfigService.getBackendBaseUrl()}/`);
     loginUrl.searchParams.set('returnTo', returnTo);
     return loginUrl.toString();
   }

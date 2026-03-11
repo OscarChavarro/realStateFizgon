@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
 import { DashboardPropertyRow, SortCriterion } from 'src/app/dashboard/dashboard.types';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
 
@@ -60,9 +61,6 @@ type DashboardConfiguration = {
   providedIn: 'root'
 })
 export class DashboardDataService {
-  static readonly DEFAULT_BACKEND_BASE_URL = 'http://192.168.1.110:4200';
-  static readonly DEFAULT_STATIC_MEDIA_BASE_URL = 'http://localhost:666/';
-
   async loadBackendConfiguration(http: HttpClient): Promise<DashboardConfiguration> {
     try {
       const secrets = await firstValueFrom(http.get<FrontendSecrets>('/secrets.json'));
@@ -72,41 +70,39 @@ export class DashboardDataService {
       return {
         backendBaseUrl: configuredBaseUrl
           ? this.normalizeBackendBaseUrl(configuredBaseUrl)
-          : DashboardDataService.DEFAULT_BACKEND_BASE_URL,
+          : ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
         staticMediaBaseUrl: configuredStaticMedia
           ? this.normalizeStaticMediaBaseUrl(configuredStaticMedia)
-          : DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL
+          : ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
       };
     } catch {
       return {
-        backendBaseUrl: DashboardDataService.DEFAULT_BACKEND_BASE_URL,
-        staticMediaBaseUrl: DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL
+        backendBaseUrl: ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
+        staticMediaBaseUrl: ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
       };
     }
   }
 
   async loadDashboardData(
     http: HttpClient,
-    backendBaseUrl: string,
     sortCriteria: SortCriterion[],
     filters: DashboardFiltersState
   ): Promise<DashboardDataResult> {
     try {
       const response = await firstValueFrom(
         http.get<PropertiesResponse>(
-          this.buildPropertiesEndpointUrl(backendBaseUrl, sortCriteria, filters),
-          { withCredentials: true }
+          this.buildPropertiesEndpointUrl(sortCriteria, filters)
         )
       );
       const fallbackCount = response.pagination.totalElements ?? response.data.length;
-      const totalCount = await this.loadTotalCount(http, backendBaseUrl, fallbackCount);
+      const totalCount = await this.loadTotalCount(http, fallbackCount);
 
       return {
         count: totalCount,
         properties: this.mapPropertiesForDashboard(response.data)
       };
     } catch {
-      const totalCount = await this.loadTotalCount(http, backendBaseUrl, 0);
+      const totalCount = await this.loadTotalCount(http, 0);
       return {
         count: totalCount,
         properties: []
@@ -123,21 +119,20 @@ export class DashboardDataService {
   }
 
   private buildPropertiesEndpointUrl(
-    backendBaseUrl: string,
     sortCriteria: SortCriterion[],
     filters: DashboardFiltersState
   ): string {
-    const url = new URL(`${backendBaseUrl}/properties`);
-    url.searchParams.set('showClosed', filters.showClosed ? 'true' : 'false');
-    url.searchParams.set('showNew', filters.showNew ? 'true' : 'false');
-    url.searchParams.set('showFavourite', filters.showFavourite ? 'true' : 'false');
-    url.searchParams.set('showRejected', filters.showRejected ? 'true' : 'false');
+    const searchParams = new URLSearchParams();
+    searchParams.set('showClosed', filters.showClosed ? 'true' : 'false');
+    searchParams.set('showNew', filters.showNew ? 'true' : 'false');
+    searchParams.set('showFavourite', filters.showFavourite ? 'true' : 'false');
+    searchParams.set('showRejected', filters.showRejected ? 'true' : 'false');
     for (const criterion of sortCriteria) {
-      url.searchParams.append('sortOrder', criterion.sortOrder);
-      url.searchParams.append('sortBy', criterion.sortBy);
+      searchParams.append('sortOrder', criterion.sortOrder);
+      searchParams.append('sortBy', criterion.sortBy);
     }
 
-    return url.toString();
+    return `/properties?${searchParams.toString()}`;
   }
 
   private mapPropertiesForDashboard(rawRows: PropertiesResponse['data']): DashboardPropertyRow[] {
@@ -191,10 +186,10 @@ export class DashboardDataService {
     });
   }
 
-  private async loadTotalCount(http: HttpClient, backendBaseUrl: string, fallback: number): Promise<number> {
+  private async loadTotalCount(http: HttpClient, fallback: number): Promise<number> {
     try {
       const countResponse = await firstValueFrom(
-        http.get<PropertiesCountResponse>(`${backendBaseUrl}/properties/count`, { withCredentials: true })
+        http.get<PropertiesCountResponse>('/properties/count')
       );
       return countResponse.count;
     } catch {

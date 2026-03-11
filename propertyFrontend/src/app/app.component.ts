@@ -1,9 +1,11 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
+import { ApiSessionEventsService } from 'src/app/api/api-session-events.service';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 import { DashboardUsersPanelComponent } from 'src/app/dashboard/auth/components/dashboard-users-panel.component';
-import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
 import { DashboardPropertiesTableComponent } from 'src/app/dashboard/components/dashboard-properties-table.component';
 import { DashboardTopBarComponent } from 'src/app/dashboard/components/dashboard-top-bar.component';
@@ -47,6 +49,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
 
   private readonly http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly apiRuntimeConfigService = inject(ApiRuntimeConfigService);
+  private readonly apiSessionEventsService = inject(ApiSessionEventsService);
   private readonly dashboardAuthFacadeService = inject(DashboardAuthFacadeService);
   private readonly dashboardStateFacadeService = inject(DashboardStateFacadeService);
   private readonly dashboardSessionCoordinatorService = inject(DashboardSessionCoordinatorService);
@@ -55,8 +60,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
   private readonly propertySelectionService = inject(PropertySelectionService);
 
-  private backendBaseUrl = DashboardDataService.DEFAULT_BACKEND_BASE_URL;
-  private staticMediaBaseUrl = DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL;
+  private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
+  private staticMediaBaseUrl = ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL;
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
   @ViewChild(DashboardPropertiesTableComponent) dashboardPropertiesTable?: DashboardPropertiesTableComponent;
@@ -99,14 +104,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.selectedLanguage.set(
       this.dashboardStateFacadeService.loadSelectedLanguageFromSession(AppComponent.SELECTED_LANGUAGE_KEY)
     );
+    this.subscribeToApiSessionEvents();
     await this.loadBackendConfiguration();
     await this.loadGoogleLoginAvailability();
     await this.loadCurrentUser();
     await this.refreshDashboardData();
-    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(
-      this.backendBaseUrl,
-      async () => this.refreshDashboardData()
-    );
+    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(async () => this.refreshDashboardData());
   }
 
   ngOnDestroy(): void {
@@ -187,7 +190,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onGoogleLoginRequested(): void {
-    const loginUrl = this.dashboardAuthFacadeService.buildGoogleLoginUrl(this.backendBaseUrl, window.location.href);
+    const loginUrl = this.dashboardAuthFacadeService.buildGoogleLoginUrl(window.location.href);
     window.location.assign(loginUrl);
   }
 
@@ -229,23 +232,22 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async loadBackendConfiguration(): Promise<void> {
     const config = await this.dashboardStateFacadeService.loadBackendConfiguration(this.http);
-    this.backendBaseUrl = config.backendBaseUrl;
-    this.staticMediaBaseUrl = config.staticMediaBaseUrl;
+    this.apiRuntimeConfigService.setConfiguration(config);
+    this.backendBaseUrl = this.apiRuntimeConfigService.getBackendBaseUrl();
+    this.staticMediaBaseUrl = this.apiRuntimeConfigService.getStaticMediaBaseUrl();
     this.dashboardAuthFacadeService.warnIfAuthHostMismatch(
-      this.backendBaseUrl,
       window.location.hostname
     );
   }
 
   private async loadGoogleLoginAvailability(): Promise<void> {
-    const enabled = await this.dashboardAuthFacadeService.loadGoogleLoginAvailability(this.http, this.backendBaseUrl);
+    const enabled = await this.dashboardAuthFacadeService.loadGoogleLoginAvailability(this.http);
     this.googleLoginEnabled.set(enabled);
   }
 
   private async loadCurrentUser(): Promise<void> {
     await this.dashboardSessionCoordinatorService.loadCurrentUserAndApplyState({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       activeTab: this.activeTab(),
       canMaintainDatabase: () => this.canMaintainDatabase(),
       canEditUsers: () => this.canEditUsers(),
@@ -260,7 +262,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async logoutCurrentUser(): Promise<void> {
     await this.dashboardSessionCoordinatorService.logoutAndReset({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
       onResetGuestState: () => {
         this.resetGuestState();
@@ -275,7 +276,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async loadUsers(): Promise<void> {
     await this.dashboardSessionCoordinatorService.loadUsers({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       canEditUsers: this.canEditUsers(),
       setUsersLoading: (loading) => this.usersLoading.set(loading),
       setUsers: (users) => this.users.set(users)
@@ -285,7 +285,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async deleteUserAndRefresh(userId: string): Promise<void> {
     await this.dashboardSessionCoordinatorService.deleteUserAndRefresh({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       userId,
       canEditUsers: this.canEditUsers(),
       currentUser: this.authenticatedUser(),
@@ -297,7 +296,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async refreshDashboardData(): Promise<void> {
     await this.dashboardDataCoordinatorService.refreshDashboardData({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       sortCriteria: this.sortCriteria(),
       filters: this.filters(),
       setLoading: (loading) => this.loading.set(loading),
@@ -310,7 +308,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async handleFiltersChange(filters: DashboardFiltersState): Promise<void> {
     await this.dashboardDataCoordinatorService.handleFiltersChange({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       currentFilters: this.filters(),
       nextFilters: filters,
       isAuthenticated: this.authenticatedUser() !== null,
@@ -322,7 +319,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private async loadUserPreferences(): Promise<void> {
     await this.dashboardDataCoordinatorService.loadUserPreferences({
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       setFilters: (filters) => this.filters.set(filters),
       setPropertyLabels: (labels) => this.propertyLabels.set(labels)
     });
@@ -336,7 +332,6 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const updatedLabels = await this.propertyLabelsFacadeService.togglePropertyReview(
         this.http,
-        this.backendBaseUrl,
         property.propertyId,
         this.propertyLabels()
       );
@@ -354,7 +349,6 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const updatedLabels = await this.propertyLabelsFacadeService.savePropertyComment(
         this.http,
-        this.backendBaseUrl,
         property.propertyId,
         commentRaw,
         this.propertyLabels()
@@ -381,10 +375,26 @@ export class AppComponent implements OnInit, OnDestroy {
     await this.dashboardDataCoordinatorService.runMaintenanceOperation({
       operation,
       http: this.http,
-      backendBaseUrl: this.backendBaseUrl,
       setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
       setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
     });
+  }
+
+  private subscribeToApiSessionEvents(): void {
+    this.apiSessionEventsService.unauthorized$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.authenticatedUser()) {
+          return;
+        }
+
+        this.authenticatedUser.set(null);
+        this.resetGuestState();
+        if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+          this.activeTab.set('DASHBOARD');
+        }
+        void this.refreshDashboardData();
+      });
   }
 
   private resetGuestState(): void {

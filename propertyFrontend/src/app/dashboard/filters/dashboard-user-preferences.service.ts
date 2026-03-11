@@ -17,14 +17,11 @@ type UserPreferencesPayload = {
 })
 export class DashboardUserPreferencesService {
   async loadPreferences(
-    http: HttpClient,
-    backendBaseUrl: string
+    http: HttpClient
   ): Promise<{ filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
     try {
       const response = await firstValueFrom(
-        http.get<UserPreferencesPayload>(`${backendBaseUrl}/auth/preferences`, {
-          withCredentials: true
-        })
+        http.get<UserPreferencesPayload>('/auth/preferences')
       );
       return {
         filters: {
@@ -40,53 +37,48 @@ export class DashboardUserPreferencesService {
     }
   }
 
-  async saveFilters(http: HttpClient, backendBaseUrl: string, filters: DashboardFiltersState): Promise<void> {
+  async saveFilters(http: HttpClient, filters: DashboardFiltersState): Promise<void> {
     await firstValueFrom(
       http.post(
-        `${backendBaseUrl}/auth/preferences/filters`,
+        '/auth/preferences/filters',
         {
           showClosed: filters.showClosed,
           showNew: filters.showNew,
           showFavourite: filters.showFavourite,
           showRejected: filters.showRejected
-        },
-        { withCredentials: true }
+        }
       )
     );
   }
 
   async setPropertyReview(
     http: HttpClient,
-    backendBaseUrl: string,
     propertyId: string,
     review: PropertyReviewLabel
   ): Promise<PropertyLabelEntry[]> {
-    return this.setPropertyLabels(http, backendBaseUrl, propertyId, { review });
+    return this.setPropertyLabels(http, propertyId, { review });
   }
 
   async setPropertyComment(
     http: HttpClient,
-    backendBaseUrl: string,
     propertyId: string,
     comment: string
   ): Promise<PropertyLabelEntry[]> {
-    return this.setPropertyLabels(http, backendBaseUrl, propertyId, { comment });
+    return this.setPropertyLabels(http, propertyId, { comment });
   }
 
   private async setPropertyLabels(
     http: HttpClient,
-    backendBaseUrl: string,
     propertyId: string,
     labels: Partial<PropertyLabels>
   ): Promise<PropertyLabelEntry[]> {
     const response = await firstValueFrom(
       http.post<UserPreferencesPayload>(
-        `${backendBaseUrl}/auth/preferences/setPropertyLabels`,
+        '/auth/preferences/setPropertyLabels',
         {
           propertyId,
           labels
-        },
-        { withCredentials: true }
+        }
       )
     );
 

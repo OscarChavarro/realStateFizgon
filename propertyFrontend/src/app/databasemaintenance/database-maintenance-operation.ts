@@ -13,8 +13,8 @@ export abstract class DatabaseMaintenanceOperation {
     private readonly endpointPath: string
   ) {}
 
-  async execute(http: HttpClient, backendBaseUrl: string): Promise<DatabaseMaintenanceOperationResult> {
-    const endpointUrl = this.buildEndpointUrl(backendBaseUrl);
+  async execute(http: HttpClient): Promise<DatabaseMaintenanceOperationResult> {
+    const endpointUrl = this.buildEndpointUrl();
     const response = await firstValueFrom(
       http.get<unknown>(endpointUrl, { observe: 'response' })
     );
@@ -29,10 +29,7 @@ export abstract class DatabaseMaintenanceOperation {
     };
   }
 
-  private buildEndpointUrl(backendBaseUrl: string): string {
-    const base = backendBaseUrl.endsWith('/')
-      ? backendBaseUrl.slice(0, -1)
-      : backendBaseUrl;
-    return `${base}${this.endpointPath}`;
+  private buildEndpointUrl(): string {
+    return this.endpointPath.startsWith('/') ? this.endpointPath : `/${this.endpointPath}`;
   }
 }

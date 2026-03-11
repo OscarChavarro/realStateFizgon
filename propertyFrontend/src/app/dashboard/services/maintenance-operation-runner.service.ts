@@ -8,11 +8,10 @@ import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/databa
 export class MaintenanceOperationRunnerService {
   async runOperation(
     operation: DatabaseMaintenanceOperation,
-    http: HttpClient,
-    backendBaseUrl: string
+    http: HttpClient
   ): Promise<string> {
     try {
-      const result = await operation.execute(http, backendBaseUrl);
+      const result = await operation.execute(http);
       return JSON.stringify(
         {
           status: result.status,

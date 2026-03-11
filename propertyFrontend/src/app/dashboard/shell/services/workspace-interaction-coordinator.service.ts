@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
+import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
 import { DashboardPropertyRow, DashboardTab } from 'src/app/dashboard/dashboard.types';
 import { BrowserFullscreenService } from 'src/app/dashboard/services/browser-fullscreen.service';
 import { PropertySelectionService } from 'src/app/dashboard/services/property-selection.service';
@@ -30,12 +31,13 @@ export class WorkspaceInteractionCoordinatorService {
     private readonly workspaceLayoutService: WorkspaceLayoutService,
     private readonly interactionShortcutsService: InteractionShortcutsService,
     private readonly browserFullscreenService: BrowserFullscreenService,
-    private readonly propertySelectionService: PropertySelectionService
+    private readonly propertySelectionService: PropertySelectionService,
+    private readonly apiRuntimeConfigService: ApiRuntimeConfigService
   ) {}
 
-  connectUpdatesSocket(backendBaseUrl: string, onPropertiesCountUpdated: () => Promise<void>): void {
+  connectUpdatesSocket(onPropertiesCountUpdated: () => Promise<void>): void {
     this.disconnectUpdatesSocket();
-    this.socket = io(backendBaseUrl);
+    this.socket = io(this.apiRuntimeConfigService.getBackendBaseUrl());
     this.socket.on('properties-count-updated', async () => {
       await onPropertiesCountUpdated();
     });

@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
 import { AuthSessionApiService } from 'src/app/dashboard/auth/auth-session-api.service';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
@@ -11,35 +12,37 @@ import { AuthUsersService } from 'src/app/dashboard/auth/auth-users.service';
 export class DashboardAuthFacadeService {
   constructor(
     private readonly authSessionApiService: AuthSessionApiService,
-    private readonly authUsersService: AuthUsersService
+    private readonly authUsersService: AuthUsersService,
+    private readonly apiRuntimeConfigService: ApiRuntimeConfigService
   ) {}
 
-  async loadGoogleLoginAvailability(http: HttpClient, backendBaseUrl: string): Promise<boolean> {
-    return this.authSessionApiService.loadGoogleLoginAvailability(http, backendBaseUrl);
+  async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {
+    return this.authSessionApiService.loadGoogleLoginAvailability(http);
   }
 
-  buildGoogleLoginUrl(backendBaseUrl: string, returnTo: string): string {
-    return this.authSessionApiService.buildGoogleLoginUrl(backendBaseUrl, returnTo);
+  buildGoogleLoginUrl(returnTo: string): string {
+    return this.authSessionApiService.buildGoogleLoginUrl(returnTo);
   }
 
-  async loadCurrentUser(http: HttpClient, backendBaseUrl: string): Promise<AuthenticatedUser | null> {
-    return this.authSessionApiService.loadCurrentUser(http, backendBaseUrl);
+  async loadCurrentUser(http: HttpClient): Promise<AuthenticatedUser | null> {
+    return this.authSessionApiService.loadCurrentUser(http);
   }
 
-  async logout(http: HttpClient, backendBaseUrl: string): Promise<void> {
-    await this.authSessionApiService.logout(http, backendBaseUrl);
+  async logout(http: HttpClient): Promise<void> {
+    await this.authSessionApiService.logout(http);
   }
 
-  async loadUsers(http: HttpClient, backendBaseUrl: string): Promise<AuthUserListItem[]> {
-    return this.authUsersService.loadUsers(http, backendBaseUrl);
+  async loadUsers(http: HttpClient): Promise<AuthUserListItem[]> {
+    return this.authUsersService.loadUsers(http);
   }
 
-  async deleteUser(http: HttpClient, backendBaseUrl: string, userId: string): Promise<boolean> {
-    return this.authUsersService.deleteUser(http, backendBaseUrl, userId);
+  async deleteUser(http: HttpClient, userId: string): Promise<boolean> {
+    return this.authUsersService.deleteUser(http, userId);
   }
 
-  warnIfAuthHostMismatch(backendBaseUrl: string, frontendHost: string): void {
+  warnIfAuthHostMismatch(frontendHost: string): void {
     try {
+      const backendBaseUrl = this.apiRuntimeConfigService.getBackendBaseUrl();
       const backendHost = new URL(backendBaseUrl).hostname;
       if (backendHost !== frontendHost) {
         console.warn(

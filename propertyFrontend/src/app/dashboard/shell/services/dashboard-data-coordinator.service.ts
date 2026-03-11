@@ -10,7 +10,6 @@ import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/databa
 
 type RefreshDashboardDataParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   sortCriteria: SortCriterion[];
   filters: DashboardFiltersState;
   setLoading: (loading: boolean) => void;
@@ -21,7 +20,6 @@ type RefreshDashboardDataParams = {
 
 type HandleFiltersChangeParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   currentFilters: DashboardFiltersState;
   nextFilters: DashboardFiltersState;
   isAuthenticated: boolean;
@@ -31,7 +29,6 @@ type HandleFiltersChangeParams = {
 
 type LoadUserPreferencesParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   setFilters: (filters: DashboardFiltersState) => void;
   setPropertyLabels: (entries: PropertyLabelEntry[]) => void;
 };
@@ -47,7 +44,6 @@ type ToggleSortParams = {
 type MaintenanceOperationParams = {
   operation: DatabaseMaintenanceOperation;
   http: HttpClient;
-  backendBaseUrl: string;
   setMaintenanceRunning: (running: boolean) => void;
   setMaintenanceResultText: (text: string) => void;
 };
@@ -64,7 +60,6 @@ export class DashboardDataCoordinatorService {
     params.setLoading(true);
     const dashboardData = await this.dashboardStateFacadeService.refreshDashboardData(
       params.http,
-      params.backendBaseUrl,
       params.sortCriteria,
       params.filters
     );
@@ -89,7 +84,6 @@ export class DashboardDataCoordinatorService {
       try {
         await this.dashboardStateFacadeService.saveFiltersPreference(
           params.http,
-          params.backendBaseUrl,
           params.nextFilters
         );
       } catch {
@@ -101,10 +95,7 @@ export class DashboardDataCoordinatorService {
   }
 
   async loadUserPreferences(params: LoadUserPreferencesParams): Promise<void> {
-    const preferences = await this.dashboardStateFacadeService.loadUserPreferences(
-      params.http,
-      params.backendBaseUrl
-    );
+    const preferences = await this.dashboardStateFacadeService.loadUserPreferences(params.http);
     if (!preferences) {
       params.setFilters(createDefaultDashboardFilters());
       params.setPropertyLabels([]);
@@ -130,8 +121,7 @@ export class DashboardDataCoordinatorService {
     params.setMaintenanceResultText('');
     const resultText = await this.dashboardStateFacadeService.runMaintenanceOperation(
       params.operation,
-      params.http,
-      params.backendBaseUrl
+      params.http
     );
     params.setMaintenanceResultText(resultText);
     params.setMaintenanceRunning(false);

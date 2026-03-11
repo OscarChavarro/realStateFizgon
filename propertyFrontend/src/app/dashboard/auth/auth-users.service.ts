@@ -11,12 +11,10 @@ type AuthUsersResponse = {
   providedIn: 'root'
 })
 export class AuthUsersService {
-  async loadUsers(http: HttpClient, backendBaseUrl: string): Promise<AuthUserListItem[]> {
+  async loadUsers(http: HttpClient): Promise<AuthUserListItem[]> {
     try {
       const response = await firstValueFrom(
-        http.get<AuthUsersResponse>(`${backendBaseUrl}/auth/users`, {
-          withCredentials: true
-        })
+        http.get<AuthUsersResponse>('/auth/users')
       );
       return Array.isArray(response.users) ? response.users : [];
     } catch {
@@ -24,12 +22,10 @@ export class AuthUsersService {
     }
   }
 
-  async deleteUser(http: HttpClient, backendBaseUrl: string, userId: string): Promise<boolean> {
+  async deleteUser(http: HttpClient, userId: string): Promise<boolean> {
     try {
       await firstValueFrom(
-        http.delete(`${backendBaseUrl}/auth/users/${encodeURIComponent(userId)}`, {
-          withCredentials: true
-        })
+        http.delete(`/auth/users/${encodeURIComponent(userId)}`)
       );
       return true;
     } catch {

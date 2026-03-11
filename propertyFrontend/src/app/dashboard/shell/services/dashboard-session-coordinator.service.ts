@@ -7,7 +7,6 @@ import { DashboardAuthFacadeService } from 'src/app/dashboard/shell/services/das
 
 type LoadCurrentUserParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   activeTab: DashboardTab;
   canMaintainDatabase: () => boolean;
   canEditUsers: () => boolean;
@@ -20,7 +19,6 @@ type LoadCurrentUserParams = {
 
 type LogoutParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   setAuthenticatedUser: (user: AuthenticatedUser | null) => void;
   onResetGuestState: () => void;
   onRefreshDashboardData: () => Promise<void>;
@@ -28,7 +26,6 @@ type LogoutParams = {
 
 type LoadUsersParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   canEditUsers: boolean;
   setUsersLoading: (loading: boolean) => void;
   setUsers: (users: AuthUserListItem[]) => void;
@@ -36,7 +33,6 @@ type LoadUsersParams = {
 
 type DeleteUserParams = {
   http: HttpClient;
-  backendBaseUrl: string;
   userId: string;
   canEditUsers: boolean;
   currentUser: AuthenticatedUser | null;
@@ -54,8 +50,7 @@ export class DashboardSessionCoordinatorService {
 
   async loadCurrentUserAndApplyState(params: LoadCurrentUserParams): Promise<void> {
     const user = await this.dashboardAuthFacadeService.loadCurrentUser(
-      params.http,
-      params.backendBaseUrl
+      params.http
     );
     params.setAuthenticatedUser(user);
 
@@ -78,7 +73,7 @@ export class DashboardSessionCoordinatorService {
   }
 
   async logoutAndReset(params: LogoutParams): Promise<void> {
-    await this.dashboardAuthFacadeService.logout(params.http, params.backendBaseUrl);
+    await this.dashboardAuthFacadeService.logout(params.http);
     params.setAuthenticatedUser(null);
     params.onResetGuestState();
     await params.onRefreshDashboardData();
@@ -91,7 +86,7 @@ export class DashboardSessionCoordinatorService {
     }
 
     params.setUsersLoading(true);
-    const users = await this.dashboardAuthFacadeService.loadUsers(params.http, params.backendBaseUrl);
+    const users = await this.dashboardAuthFacadeService.loadUsers(params.http);
     params.setUsers(users);
     params.setUsersLoading(false);
   }
@@ -108,7 +103,6 @@ export class DashboardSessionCoordinatorService {
     params.setUsersLoading(true);
     const deleted = await this.dashboardAuthFacadeService.deleteUser(
       params.http,
-      params.backendBaseUrl,
       params.userId
     );
     if (deleted) {

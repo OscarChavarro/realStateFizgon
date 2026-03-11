@@ -40,11 +40,10 @@ export class DashboardStateFacadeService {
 
   async refreshDashboardData(
     http: HttpClient,
-    backendBaseUrl: string,
     sortCriteria: SortCriterion[],
     filters: DashboardFiltersState
   ): Promise<{ count: number; properties: DashboardPropertyRow[] }> {
-    return this.dashboardDataService.loadDashboardData(http, backendBaseUrl, sortCriteria, filters);
+    return this.dashboardDataService.loadDashboardData(http, sortCriteria, filters);
   }
 
   areFiltersChanged(current: DashboardFiltersState, next: DashboardFiltersState): boolean {
@@ -54,15 +53,12 @@ export class DashboardStateFacadeService {
       || current.showRejected !== next.showRejected;
   }
 
-  async saveFiltersPreference(http: HttpClient, backendBaseUrl: string, filters: DashboardFiltersState): Promise<void> {
-    await this.dashboardUserPreferencesService.saveFilters(http, backendBaseUrl, filters);
+  async saveFiltersPreference(http: HttpClient, filters: DashboardFiltersState): Promise<void> {
+    await this.dashboardUserPreferencesService.saveFilters(http, filters);
   }
 
-  async loadUserPreferences(
-    http: HttpClient,
-    backendBaseUrl: string
-  ): Promise<{ filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
-    return this.dashboardUserPreferencesService.loadPreferences(http, backendBaseUrl);
+  async loadUserPreferences(http: HttpClient): Promise<{ filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
+    return this.dashboardUserPreferencesService.loadPreferences(http);
   }
 
   toggleSortCriteria(
@@ -75,9 +71,8 @@ export class DashboardStateFacadeService {
 
   async runMaintenanceOperation(
     operation: DatabaseMaintenanceOperation,
-    http: HttpClient,
-    backendBaseUrl: string
+    http: HttpClient
   ): Promise<string> {
-    return this.maintenanceOperationRunnerService.runOperation(operation, http, backendBaseUrl);
+    return this.maintenanceOperationRunnerService.runOperation(operation, http);
   }
 }

@@ -31,18 +31,16 @@ export class PropertyLabelsFacadeService {
 
   async togglePropertyReview(
     http: HttpClient,
-    backendBaseUrl: string,
     propertyId: string,
     propertyLabels: PropertyLabelEntry[]
   ): Promise<PropertyLabelEntry[]> {
     const currentReview = this.getPropertyReviewLabel(propertyLabels, propertyId);
     const nextReview = this.nextReviewLabel(currentReview);
-    return this.dashboardUserPreferencesService.setPropertyReview(http, backendBaseUrl, propertyId, nextReview);
+    return this.dashboardUserPreferencesService.setPropertyReview(http, propertyId, nextReview);
   }
 
   async savePropertyComment(
     http: HttpClient,
-    backendBaseUrl: string,
     propertyId: string,
     commentRaw: string,
     propertyLabels: PropertyLabelEntry[]
@@ -52,7 +50,7 @@ export class PropertyLabelsFacadeService {
       return null;
     }
 
-    return this.dashboardUserPreferencesService.setPropertyComment(http, backendBaseUrl, propertyId, comment);
+    return this.dashboardUserPreferencesService.setPropertyComment(http, propertyId, comment);
   }
 
   private nextReviewLabel(current: PropertyReviewLabel): PropertyReviewLabel {

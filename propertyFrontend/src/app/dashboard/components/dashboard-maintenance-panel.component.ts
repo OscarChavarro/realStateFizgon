@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-maintenance-panel',
@@ -22,7 +22,7 @@ export class DashboardMaintenancePanelComponent {
     this.operationRequested.emit(operation);
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 }

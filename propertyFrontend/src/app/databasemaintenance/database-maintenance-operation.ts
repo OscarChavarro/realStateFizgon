@@ -1,5 +1,6 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { TranslationKey } from 'src/app/i18n/i18n.service';
 
 export type DatabaseMaintenanceOperationResult = {
   status: number;
@@ -8,7 +9,7 @@ export type DatabaseMaintenanceOperationResult = {
 
 export abstract class DatabaseMaintenanceOperation {
   constructor(
-    public readonly i18nId: string,
+    public readonly i18nId: TranslationKey,
     private readonly endpointPath: string
   ) {}
 

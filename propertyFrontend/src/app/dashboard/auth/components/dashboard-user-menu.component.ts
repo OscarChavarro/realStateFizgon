@@ -1,6 +1,6 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges, inject, signal } from '@angular/core';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-user-menu',
@@ -70,7 +70,7 @@ export class DashboardUserMenuComponent {
     this.menuOpen.set(false);
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 

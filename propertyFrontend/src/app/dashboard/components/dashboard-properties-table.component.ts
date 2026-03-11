@@ -8,7 +8,7 @@ import {
   SortField,
   SortToggleRequest
 } from 'src/app/dashboard/dashboard.types';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-properties-table',
@@ -113,7 +113,7 @@ export class DashboardPropertiesTableComponent {
     }
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 

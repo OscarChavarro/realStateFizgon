@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-users-panel',
@@ -22,7 +22,7 @@ export class DashboardUsersPanelComponent {
     this.deleteUserRequest.emit(userId);
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 

@@ -4,7 +4,7 @@ import {
   PropertyLabelEntry,
   PropertyReviewLabel
 } from 'src/app/dashboard/dashboard.types';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 import { PropertyImageCarouselComponent } from 'src/app/propertydetail/property-image-carousel.component';
 
 @Component({
@@ -26,7 +26,7 @@ export class PropertyDetailPanelComponent {
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertyCommentSave = new EventEmitter<{ property: DashboardPropertyRow; comment: string }>();
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 

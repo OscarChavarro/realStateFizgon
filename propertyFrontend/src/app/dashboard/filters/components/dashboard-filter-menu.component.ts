@@ -3,7 +3,7 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-filter-menu',
@@ -73,7 +73,7 @@ export class DashboardFilterMenuComponent {
     this.menuOpen.set(false);
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 }

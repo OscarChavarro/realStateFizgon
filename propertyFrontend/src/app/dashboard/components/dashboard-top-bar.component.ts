@@ -7,7 +7,7 @@ import {
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
 import { DashboardFilterMenuComponent } from 'src/app/dashboard/filters/components/dashboard-filter-menu.component';
-import { I18nService, SupportedLanguage } from 'src/app/i18n/i18n.service';
+import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-top-bar',
@@ -68,7 +68,7 @@ export class DashboardTopBarComponent {
     this.logoutRequest.emit();
   }
 
-  t(id: string): string {
+  t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
   }
 }

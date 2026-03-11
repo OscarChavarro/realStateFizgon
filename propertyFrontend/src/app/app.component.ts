@@ -1,8 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
-import { ApiSessionEventsService } from 'src/app/api/api-session-events.service';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
 import { DashboardUsersPanelComponent } from 'src/app/dashboard/auth/components/dashboard-users-panel.component';
@@ -23,10 +21,13 @@ import {
 import { PropertySelectionService } from 'src/app/dashboard/services/property-selection.service';
 import { DashboardAuthFacadeService } from 'src/app/dashboard/shell/services/dashboard-auth-facade.service';
 import { DashboardDataCoordinatorService } from 'src/app/dashboard/shell/services/dashboard-data-coordinator.service';
-import { DashboardSessionCoordinatorService } from 'src/app/dashboard/shell/services/dashboard-session-coordinator.service';
 import { DashboardStateFacadeService } from 'src/app/dashboard/shell/services/dashboard-state-facade.service';
 import { PropertyLabelsFacadeService } from 'src/app/dashboard/shell/services/property-labels-facade.service';
 import { WorkspaceInteractionCoordinatorService } from 'src/app/dashboard/shell/services/workspace-interaction-coordinator.service';
+import { AuthBootstrapUseCaseService } from 'src/app/dashboard/shell/use-cases/auth-bootstrap.use-case.service';
+import { DashboardBootstrapUseCaseService } from 'src/app/dashboard/shell/use-cases/dashboard-bootstrap.use-case.service';
+import { KeyboardFlowUseCaseService } from 'src/app/dashboard/shell/use-cases/keyboard-flow.use-case.service';
+import { UserSessionManagementUseCaseService } from 'src/app/dashboard/shell/use-cases/user-session-management.use-case.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
 import { RemoveDanglingImagesOperation } from 'src/app/databasemaintenance/remove-dangling-images.operation';
 import { SupportedLanguage } from 'src/app/i18n/i18n.service';
@@ -50,14 +51,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly apiRuntimeConfigService = inject(ApiRuntimeConfigService);
-  private readonly apiSessionEventsService = inject(ApiSessionEventsService);
   private readonly dashboardAuthFacadeService = inject(DashboardAuthFacadeService);
   private readonly dashboardStateFacadeService = inject(DashboardStateFacadeService);
-  private readonly dashboardSessionCoordinatorService = inject(DashboardSessionCoordinatorService);
   private readonly dashboardDataCoordinatorService = inject(DashboardDataCoordinatorService);
   private readonly propertyLabelsFacadeService = inject(PropertyLabelsFacadeService);
   private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
+  private readonly authBootstrapUseCaseService = inject(AuthBootstrapUseCaseService);
+  private readonly dashboardBootstrapUseCaseService = inject(DashboardBootstrapUseCaseService);
+  private readonly keyboardFlowUseCaseService = inject(KeyboardFlowUseCaseService);
+  private readonly userSessionManagementUseCaseService = inject(UserSessionManagementUseCaseService);
   private readonly propertySelectionService = inject(PropertySelectionService);
 
   private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
@@ -101,19 +103,39 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly rightPanelHidden = this.workspaceInteractionCoordinatorService.rightPanelHidden;
 
   async ngOnInit(): Promise<void> {
-    this.selectedLanguage.set(
-      this.dashboardStateFacadeService.loadSelectedLanguageFromSession(AppComponent.SELECTED_LANGUAGE_KEY)
-    );
-    this.subscribeToApiSessionEvents();
-    await this.loadBackendConfiguration();
-    await this.loadGoogleLoginAvailability();
-    await this.loadCurrentUser();
-    await this.refreshDashboardData();
-    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(async () => this.refreshDashboardData());
+    await this.authBootstrapUseCaseService.initialize({
+      http: this.http,
+      destroyRef: this.destroyRef,
+      frontendHost: window.location.hostname,
+      selectedLanguageKey: AppComponent.SELECTED_LANGUAGE_KEY,
+      setSelectedLanguage: (language) => this.selectedLanguage.set(language),
+      setBackendBaseUrl: (backendBaseUrl) => {
+        this.backendBaseUrl = backendBaseUrl;
+      },
+      setStaticMediaBaseUrl: (staticMediaBaseUrl) => {
+        this.staticMediaBaseUrl = staticMediaBaseUrl;
+      },
+      setGoogleLoginEnabled: (enabled) => this.googleLoginEnabled.set(enabled),
+      activeTab: this.activeTab(),
+      canMaintainDatabase: () => this.canMaintainDatabase(),
+      canEditUsers: () => this.canEditUsers(),
+      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
+      setActiveTab: (tab) => this.activeTab.set(tab),
+      onLoadUserPreferences: () => this.loadUserPreferences(),
+      onLoadUsers: () => this.loadUsersForManagement(),
+      onResetGuestState: () => this.resetGuestState(),
+      isAuthenticated: () => this.authenticatedUser() !== null,
+      getActiveTab: () => this.activeTab(),
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
+
+    await this.dashboardBootstrapUseCaseService.initialize({
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
   }
 
   ngOnDestroy(): void {
-    this.workspaceInteractionCoordinatorService.disconnectUpdatesSocket();
+    this.dashboardBootstrapUseCaseService.teardown();
   }
 
   onTabChange(tabId: DashboardTab): void {
@@ -128,7 +150,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.activeTab.set(tabId);
     if (tabId === 'USERS_TAB') {
-      void this.loadUsers();
+      void this.loadUsersForManagement();
     }
   }
 
@@ -195,11 +217,25 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onLogoutRequested(): void {
-    void this.logoutCurrentUser();
+    void this.userSessionManagementUseCaseService.logoutCurrentUser({
+      http: this.http,
+      getActiveTab: () => this.activeTab(),
+      setActiveTab: (tab) => this.activeTab.set(tab),
+      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
+      onResetGuestState: () => this.resetGuestState(),
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
   }
 
   onDeleteUserRequested(userId: string): void {
-    void this.deleteUserAndRefresh(userId);
+    void this.userSessionManagementUseCaseService.deleteUserAndRefresh({
+      http: this.http,
+      userId,
+      canEditUsers: this.canEditUsers(),
+      currentUser: this.authenticatedUser(),
+      setUsersLoading: (loading) => this.usersLoading.set(loading),
+      onLoadUsers: () => this.loadUsersForManagement()
+    });
   }
 
   @HostListener('window:mousemove', ['$event'])
@@ -217,7 +253,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   onWindowKeyDown(event: KeyboardEvent): void {
-    this.workspaceInteractionCoordinatorService.handleWindowKeyDown({
+    this.keyboardFlowUseCaseService.handleWindowKeyDown({
       event,
       activeTab: this.activeTab(),
       isAuthenticated: this.authenticatedUser() !== null,
@@ -230,66 +266,12 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async loadBackendConfiguration(): Promise<void> {
-    const config = await this.dashboardStateFacadeService.loadBackendConfiguration(this.http);
-    this.apiRuntimeConfigService.setConfiguration(config);
-    this.backendBaseUrl = this.apiRuntimeConfigService.getBackendBaseUrl();
-    this.staticMediaBaseUrl = this.apiRuntimeConfigService.getStaticMediaBaseUrl();
-    this.dashboardAuthFacadeService.warnIfAuthHostMismatch(
-      window.location.hostname
-    );
-  }
-
-  private async loadGoogleLoginAvailability(): Promise<void> {
-    const enabled = await this.dashboardAuthFacadeService.loadGoogleLoginAvailability(this.http);
-    this.googleLoginEnabled.set(enabled);
-  }
-
-  private async loadCurrentUser(): Promise<void> {
-    await this.dashboardSessionCoordinatorService.loadCurrentUserAndApplyState({
-      http: this.http,
-      activeTab: this.activeTab(),
-      canMaintainDatabase: () => this.canMaintainDatabase(),
-      canEditUsers: () => this.canEditUsers(),
-      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
-      setActiveTab: (tab) => this.activeTab.set(tab),
-      onLoadUserPreferences: () => this.loadUserPreferences(),
-      onLoadUsers: () => this.loadUsers(),
-      onResetGuestState: () => this.resetGuestState()
-    });
-  }
-
-  private async logoutCurrentUser(): Promise<void> {
-    await this.dashboardSessionCoordinatorService.logoutAndReset({
-      http: this.http,
-      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
-      onResetGuestState: () => {
-        this.resetGuestState();
-        if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-          this.activeTab.set('DASHBOARD');
-        }
-      },
-      onRefreshDashboardData: () => this.refreshDashboardData()
-    });
-  }
-
-  private async loadUsers(): Promise<void> {
-    await this.dashboardSessionCoordinatorService.loadUsers({
+  private async loadUsersForManagement(): Promise<void> {
+    await this.userSessionManagementUseCaseService.loadUsers({
       http: this.http,
       canEditUsers: this.canEditUsers(),
       setUsersLoading: (loading) => this.usersLoading.set(loading),
       setUsers: (users) => this.users.set(users)
-    });
-  }
-
-  private async deleteUserAndRefresh(userId: string): Promise<void> {
-    await this.dashboardSessionCoordinatorService.deleteUserAndRefresh({
-      http: this.http,
-      userId,
-      canEditUsers: this.canEditUsers(),
-      currentUser: this.authenticatedUser(),
-      setUsersLoading: (loading) => this.usersLoading.set(loading),
-      onLoadUsers: () => this.loadUsers()
     });
   }
 
@@ -378,23 +360,6 @@ export class AppComponent implements OnInit, OnDestroy {
       setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
       setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
     });
-  }
-
-  private subscribeToApiSessionEvents(): void {
-    this.apiSessionEventsService.unauthorized$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.authenticatedUser()) {
-          return;
-        }
-
-        this.authenticatedUser.set(null);
-        this.resetGuestState();
-        if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-          this.activeTab.set('DASHBOARD');
-        }
-        void this.refreshDashboardData();
-      });
   }
 
   private resetGuestState(): void {

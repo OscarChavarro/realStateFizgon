@@ -6,6 +6,9 @@ import { Property } from 'src/domain/property/property.model';
 import { sleep } from 'src/infrastructure/sleep';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
+import { MongoPriceMigrationService, PriceFixSummary } from 'src/adapters/outbound/persistence/mongodb/mongo-price-migration.service';
+import { MongoPropertyUpsertService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
+import { MongoPropertyVisitService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistencePort {
@@ -18,7 +21,10 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
-    private readonly mongoConfig: MongoConfig
+    private readonly mongoConfig: MongoConfig,
+    private readonly mongoPriceMigrationService: MongoPriceMigrationService,
+    private readonly mongoPropertyUpsertService: MongoPropertyUpsertService,
+    private readonly mongoPropertyVisitService: MongoPropertyVisitService
   ) {}
 
   async onModuleDestroy(): Promise<void> {
@@ -32,48 +38,7 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
 
   async saveProperty(property: Property): Promise<SavePropertyResult> {
     const collection = await this.ensurePropertiesCollection();
-    const importedBy = new Date();
-    const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
-    const normalizedProperty: Property = propertyId === property.propertyId
-      ? property
-      : {
-          ...property,
-          propertyId
-        };
-
-    try {
-      const result = await collection.updateOne(
-        { url: normalizedProperty.url },
-        {
-          $set: {
-            ...normalizedProperty,
-            importedBy
-          } as Property & Document
-        },
-        { upsert: true }
-      );
-
-      if (result.upsertedCount > 0) {
-        return { isNew: true };
-      }
-      return { isNew: false };
-    } catch (error) {
-      if (!this.isDuplicateKeyError(error)) {
-        throw error;
-      }
-
-      await collection.updateOne(
-        { url: normalizedProperty.url },
-        {
-          $set: {
-            ...normalizedProperty,
-            importedBy
-          } as Property & Document
-        },
-        { upsert: false }
-      );
-      return { isNew: false };
-    }
+    return this.mongoPropertyUpsertService.saveProperty(collection, property);
   }
 
   async saveClosedProperty(url: string, closedBy?: Date): Promise<void> {
@@ -118,107 +83,23 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
   }
 
   async touchPropertyLastTimeVisited(url: string, visitedAt: Date = new Date()): Promise<void> {
-    const normalizedUrl = url.trim();
-    if (!normalizedUrl) {
-      return;
-    }
-
     const collection = await this.ensurePropertiesCollection();
-    await collection.updateOne(
-      { url: normalizedUrl },
-      { $set: { lastTimeVisited: visitedAt } }
-    );
+    await this.mongoPropertyVisitService.touchPropertyLastTimeVisited(collection, url, visitedAt);
   }
 
   async getOpenPropertyUrlsWithoutLastTimeVisited(): Promise<string[]> {
     const collection = await this.ensurePropertiesCollection();
-    const documents = await collection.find(
-      {
-        closedBy: { $exists: false },
-        url: { $type: 'string' },
-        $or: [
-          { lastTimeVisited: { $exists: false } },
-          { lastTimeVisited: null }
-        ]
-      },
-      {
-        projection: { _id: 0, url: 1 }
-      }
-    ).toArray();
-
-    return documents
-      .map((document) => (typeof document.url === 'string' ? document.url.trim() : ''))
-      .filter((candidateUrl) => candidateUrl.length > 0);
+    return this.mongoPropertyVisitService.getOpenPropertyUrlsWithoutLastTimeVisited(collection);
   }
 
   async getOpenPropertyUrls(): Promise<string[]> {
     const collection = await this.ensurePropertiesCollection();
-    const documents = await collection.find(
-      {
-        closedBy: { $exists: false },
-        url: { $type: 'string' }
-      },
-      {
-        projection: { _id: 0, url: 1 }
-      }
-    ).toArray();
-
-    return documents
-      .map((document) => (typeof document.url === 'string' ? document.url.trim() : ''))
-      .filter((url) => url.length > 0);
+    return this.mongoPropertyVisitService.getOpenPropertyUrls(collection);
   }
 
-  async fixStringPricesToNumbers(): Promise<{
-    scanned: number;
-    updated: number;
-    skipped: number;
-    failed: number;
-  }> {
+  async fixStringPricesToNumbers(): Promise<PriceFixSummary> {
     const collection = await this.ensurePropertiesCollection();
-    const cursor = collection.find(
-      {
-        price: { $exists: true, $type: 'string' }
-      },
-      {
-        projection: { _id: 1, price: 1 }
-      }
-    );
-
-    let scanned = 0;
-    let updated = 0;
-    let skipped = 0;
-    let failed = 0;
-
-    for await (const document of cursor) {
-      scanned += 1;
-      const normalizedPrice = this.parseStringPriceToNumber(document.price);
-
-      if (normalizedPrice === null) {
-        skipped += 1;
-        continue;
-      }
-
-      try {
-        const result = await collection.updateOne(
-          { _id: document._id },
-          { $set: { price: normalizedPrice } }
-        );
-        if (result.modifiedCount > 0) {
-          updated += 1;
-        } else {
-          skipped += 1;
-        }
-      } catch {
-        failed += 1;
-      }
-    }
-
-    return {
-      scanned,
-      updated,
-      skipped,
-      failed
-    };
+    return this.mongoPriceMigrationService.fixStringPricesToNumbers(collection);
   }
 
   async validateConnectionOrExit(): Promise<void> {
@@ -323,20 +204,6 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
 
   private isDuplicateKeyError(error: unknown): boolean {
     return error instanceof MongoServerError && error.code === 11000;
-  }
-
-  private parseStringPriceToNumber(value: unknown): number | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const digitsOnly = value.replace(/\D+/g, '');
-    if (digitsOnly.length === 0) {
-      return null;
-    }
-
-    const parsed = Number.parseInt(digitsOnly, 10);
-    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private extractPropertyIdFromUrl(url: string): string | null {

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { MongoServerError } from 'mongodb';
 import * as mongodb from 'mongodb';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
+import { PriceFixSummary } from 'src/adapters/outbound/persistence/mongodb/mongo-price-migration.service';
+import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
 import { Property } from 'src/domain/property/property.model';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
@@ -22,6 +24,30 @@ type MockCollection = {
   find: jest.Mock;
 };
 
+class MongoPriceMigrationServiceMock {
+  readonly fixStringPricesToNumbers = jest.fn<
+    (collection: unknown) => Promise<PriceFixSummary>
+  >();
+}
+
+class MongoPropertyUpsertServiceMock {
+  readonly saveProperty = jest.fn<
+    (collection: unknown, property: Property) => Promise<SavePropertyResult>
+  >();
+}
+
+class MongoPropertyVisitServiceMock {
+  readonly touchPropertyLastTimeVisited = jest.fn<
+    (collection: unknown, url: string, visitedAt?: Date) => Promise<void>
+  >();
+  readonly getOpenPropertyUrlsWithoutLastTimeVisited = jest.fn<
+    (collection: unknown) => Promise<string[]>
+  >();
+  readonly getOpenPropertyUrls = jest.fn<
+    (collection: unknown) => Promise<string[]>
+  >();
+}
+
 function createProperty(url: string, propertyId: string | null = null): Property {
   return new Property(
     propertyId,
@@ -37,19 +63,34 @@ function createProperty(url: string, propertyId: string | null = null): Property
   );
 }
 
-function createService(collection: MockCollection): MongoDatabaseService {
+function createService(
+  collection: MockCollection,
+  mongoPriceMigrationService: MongoPriceMigrationServiceMock = new MongoPriceMigrationServiceMock(),
+  mongoPropertyUpsertService: MongoPropertyUpsertServiceMock = new MongoPropertyUpsertServiceMock(),
+  mongoPropertyVisitService: MongoPropertyVisitServiceMock = new MongoPropertyVisitServiceMock()
+): MongoDatabaseService {
   const service = new MongoDatabaseService(
     new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig
+    new MongoConfigMock() as unknown as MongoConfig,
+    mongoPriceMigrationService as never,
+    mongoPropertyUpsertService as never,
+    mongoPropertyVisitService as never
   );
   (service as unknown as { ensurePropertiesCollection: () => Promise<MockCollection> }).ensurePropertiesCollection = async () => collection;
   return service;
 }
 
-function createRawService(): MongoDatabaseService {
+function createRawService(
+  mongoPriceMigrationService: MongoPriceMigrationServiceMock = new MongoPriceMigrationServiceMock(),
+  mongoPropertyUpsertService: MongoPropertyUpsertServiceMock = new MongoPropertyUpsertServiceMock(),
+  mongoPropertyVisitService: MongoPropertyVisitServiceMock = new MongoPropertyVisitServiceMock()
+): MongoDatabaseService {
   return new MongoDatabaseService(
     new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig
+    new MongoConfigMock() as unknown as MongoConfig,
+    mongoPriceMigrationService as never,
+    mongoPropertyUpsertService as never,
+    mongoPropertyVisitService as never
   );
 }
 
@@ -58,63 +99,40 @@ describe('MongoDatabaseService', () => {
     jest.clearAllMocks();
   });
 
-  it('whenPropertyIsNew_saveProperty_shouldUpsertAndReturnIsNewTrue', async () => {
+  it('whenPropertySaveIsRequested_saveProperty_shouldDelegateToMongoPropertyUpsertService', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ upsertedCount: 1 })),
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection);
+    const mongoPropertyUpsertService = new MongoPropertyUpsertServiceMock();
+    mongoPropertyUpsertService.saveProperty.mockResolvedValue({ isNew: true });
+    const service = createService(collection, new MongoPriceMigrationServiceMock(), mongoPropertyUpsertService);
+    const property = createProperty('https://www.idealista.com/inmueble/123456789/', null);
     // Action
-    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', null));
+    const result = await service.saveProperty(property);
     // Assert
-    expect(collection.updateOne).toHaveBeenCalledWith(
-      { url: 'https://www.idealista.com/inmueble/123456789/' },
-      expect.objectContaining({
-        $set: expect.objectContaining({ propertyId: '123456789' })
-      }),
-      { upsert: true }
-    );
+    expect(mongoPropertyUpsertService.saveProperty).toHaveBeenCalledWith(collection, property);
     expect(result).toEqual({ isNew: true });
   });
 
-  it('whenPropertyAlreadyExists_saveProperty_shouldReturnIsNewFalse', async () => {
+  it('whenPropertyUpsertFails_saveProperty_shouldPropagateError', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ upsertedCount: 0 })),
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection);
+    const mongoPropertyUpsertService = new MongoPropertyUpsertServiceMock();
+    const upsertError = new Error('upsert failed');
+    mongoPropertyUpsertService.saveProperty.mockRejectedValue(upsertError);
+    const service = createService(collection, new MongoPriceMigrationServiceMock(), mongoPropertyUpsertService);
+    const property = createProperty('https://www.idealista.com/inmueble/123456789/', '123456789');
     // Action
-    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
+    const action = service.saveProperty(property);
     // Assert
-    expect(collection.updateOne).toHaveBeenCalledTimes(1);
-    expect(result).toEqual({ isNew: false });
-  });
-
-  it('whenDuplicateKeyErrorOccurs_saveProperty_shouldRetryWithUpsertDisabled', async () => {
-    // Arrange
-    const duplicateError = new Error('E11000 duplicate key');
-    const updateOne = jest.fn();
-    updateOne.mockImplementationOnce(async () => {
-      throw duplicateError;
-    });
-    updateOne.mockImplementationOnce(async () => ({ modifiedCount: 1 }));
-    const collection: MockCollection = {
-      updateOne,
-      findOne: jest.fn(async () => null),
-      find: jest.fn(() => ({ toArray: async () => [] }))
-    };
-    const service = createService(collection);
-    (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicateError;
-    // Action
-    const result = await service.saveProperty(createProperty('https://www.idealista.com/inmueble/1/', '1'));
-    // Assert
-    expect(collection.updateOne).toHaveBeenNthCalledWith(1, { url: 'https://www.idealista.com/inmueble/1/' }, expect.any(Object), { upsert: true });
-    expect(collection.updateOne).toHaveBeenNthCalledWith(2, { url: 'https://www.idealista.com/inmueble/1/' }, expect.any(Object), { upsert: false });
-    expect(result).toEqual({ isNew: false });
+    await expect(action).rejects.toBe(upsertError);
   });
 
   it('whenClosedPropertyIsSaved_saveClosedProperty_shouldSetClosedByAndInsertMetadata', async () => {
@@ -198,95 +216,125 @@ describe('MongoDatabaseService', () => {
     expect(result).toBe(expected);
   });
 
-  it('whenTouchReceivesBlankUrl_touchPropertyLastTimeVisited_shouldSkipUpdate', async () => {
+  it('whenLastTimeVisitedIsUpdated_touchPropertyLastTimeVisited_shouldDelegateToMongoPropertyVisitService', async () => {
+    // Arrange
+    const visitedAt = new Date('2026-03-08T18:00:00.000Z');
+    const collection: MockCollection = {
+      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
+      findOne: jest.fn(async () => null),
+      find: jest.fn(() => ({ toArray: async () => [] }))
+    };
+    const mongoPropertyVisitService = new MongoPropertyVisitServiceMock();
+    mongoPropertyVisitService.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
+    const service = createService(
+      collection,
+      new MongoPriceMigrationServiceMock(),
+      new MongoPropertyUpsertServiceMock(),
+      mongoPropertyVisitService
+    );
+    // Action
+    await service.touchPropertyLastTimeVisited('  https://www.idealista.com/inmueble/123/  ', visitedAt);
+    // Assert
+    expect(mongoPropertyVisitService.touchPropertyLastTimeVisited).toHaveBeenCalledWith(
+      collection,
+      '  https://www.idealista.com/inmueble/123/  ',
+      visitedAt
+    );
+  });
+
+  it('whenVisitedAtIsOmitted_touchPropertyLastTimeVisited_shouldDelegateUsingCurrentDate', async () => {
+    // Arrange
+    jest.useFakeTimers();
+    const now = new Date('2026-03-08T18:15:00.000Z');
+    jest.setSystemTime(now);
+    const collection: MockCollection = {
+      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
+      findOne: jest.fn(async () => null),
+      find: jest.fn(() => ({ toArray: async () => [] }))
+    };
+    const mongoPropertyVisitService = new MongoPropertyVisitServiceMock();
+    mongoPropertyVisitService.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
+    const service = createService(
+      collection,
+      new MongoPriceMigrationServiceMock(),
+      new MongoPropertyUpsertServiceMock(),
+      mongoPropertyVisitService
+    );
+    // Action
+    await service.touchPropertyLastTimeVisited('https://www.idealista.com/inmueble/123/');
+    // Assert
+    expect(mongoPropertyVisitService.touchPropertyLastTimeVisited).toHaveBeenCalledWith(
+      collection,
+      'https://www.idealista.com/inmueble/123/',
+      now
+    );
+    jest.useRealTimers();
+  });
+
+  it('whenOpenUrlsAreRequested_getOpenPropertyUrls_shouldDelegateToMongoPropertyVisitServiceAndReturnResult', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
       findOne: jest.fn(async () => null),
       find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection);
-    // Action
-    await service.touchPropertyLastTimeVisited('   ');
-    // Assert
-    expect(collection.updateOne).not.toHaveBeenCalled();
-  });
-
-  it('whenOpenUrlsAreFetched_getOpenPropertyUrls_shouldReturnTrimmedNonEmptyUrls', async () => {
-    // Arrange
-    const collection: MockCollection = {
-      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
-      findOne: jest.fn(async () => null),
-      find: jest.fn(() => ({
-        toArray: async () => [
-          { url: ' https://a ' },
-          { url: '' },
-          { url: 'https://b' },
-          { url: 123 }
-        ]
-      }))
-    };
-    const service = createService(collection);
+    const mongoPropertyVisitService = new MongoPropertyVisitServiceMock();
+    mongoPropertyVisitService.getOpenPropertyUrls.mockResolvedValue(['https://a', 'https://b']);
+    const service = createService(
+      collection,
+      new MongoPriceMigrationServiceMock(),
+      new MongoPropertyUpsertServiceMock(),
+      mongoPropertyVisitService
+    );
     // Action
     const urls = await service.getOpenPropertyUrls();
     // Assert
+    expect(mongoPropertyVisitService.getOpenPropertyUrls).toHaveBeenCalledWith(collection);
     expect(urls).toEqual(['https://a', 'https://b']);
   });
 
-  it('whenMissingLastTimeVisitedUrlsAreFetched_getOpenPropertyUrlsWithoutLastTimeVisited_shouldReturnTrimmedNonEmptyUrls', async () => {
+  it('whenOpenUrlsWithoutLastTimeVisitedAreRequested_getOpenPropertyUrlsWithoutLastTimeVisited_shouldDelegateAndReturnResult', async () => {
     // Arrange
     const collection: MockCollection = {
       updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
       findOne: jest.fn(async () => null),
-      find: jest.fn(() => ({
-        toArray: async () => [
-          { url: ' https://a ' },
-          { url: null },
-          { url: 'https://b' }
-        ]
-      }))
+      find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection);
+    const mongoPropertyVisitService = new MongoPropertyVisitServiceMock();
+    mongoPropertyVisitService.getOpenPropertyUrlsWithoutLastTimeVisited.mockResolvedValue(['https://a']);
+    const service = createService(
+      collection,
+      new MongoPriceMigrationServiceMock(),
+      new MongoPropertyUpsertServiceMock(),
+      mongoPropertyVisitService
+    );
     // Action
     const urls = await service.getOpenPropertyUrlsWithoutLastTimeVisited();
     // Assert
-    expect(urls).toEqual(['https://a', 'https://b']);
+    expect(mongoPropertyVisitService.getOpenPropertyUrlsWithoutLastTimeVisited).toHaveBeenCalledWith(collection);
+    expect(urls).toEqual(['https://a']);
   });
 
-  it('whenStringPricesAreFixed_fixStringPricesToNumbers_shouldTrackUpdatedSkippedAndFailedCounters', async () => {
+  it('whenPriceMigrationIsRequested_fixStringPricesToNumbers_shouldDelegateToMongoPriceMigrationService', async () => {
     // Arrange
-    const documents = [
-      { _id: '1', price: '1.200 EUR' },
-      { _id: '2', price: 'N/A' },
-      { _id: '3', price: '700' }
-    ];
-    const cursor = {
-      async *[Symbol.asyncIterator](): AsyncGenerator<{ _id: string; price: string }> {
-        for (const document of documents) {
-          yield document;
-        }
-      }
-    };
-    const updateOne = jest.fn();
-    updateOne.mockImplementationOnce(async () => ({ modifiedCount: 1 }));
-    updateOne.mockImplementationOnce(async () => {
-      throw new Error('write failure');
-    });
     const collection: MockCollection = {
-      updateOne,
+      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
       findOne: jest.fn(async () => null),
-      find: jest.fn(() => cursor as unknown as { toArray: () => Promise<Array<Record<string, unknown>>> })
+      find: jest.fn(() => ({ toArray: async () => [] }))
     };
-    const service = createService(collection);
-    // Action
-    const result = await service.fixStringPricesToNumbers();
-    // Assert
-    expect(result).toEqual({
+    const mongoPriceMigrationService = new MongoPriceMigrationServiceMock();
+    mongoPriceMigrationService.fixStringPricesToNumbers.mockResolvedValue({
       scanned: 3,
       updated: 1,
       skipped: 1,
-      failed: 1
+      failed: 0
     });
+    const service = createService(collection, mongoPriceMigrationService);
+    // Action
+    const result = await service.fixStringPricesToNumbers();
+    // Assert
+    expect(mongoPriceMigrationService.fixStringPricesToNumbers).toHaveBeenCalledWith(collection);
+    expect(result).toEqual({ scanned: 3, updated: 1, skipped: 1, failed: 0 });
   });
 
   it('whenMongoClientExists_onModuleDestroy_shouldCloseClientAndResetReferences', async () => {
@@ -417,80 +465,6 @@ describe('MongoDatabaseService', () => {
     // Assert
     expect((sleep as jest.Mock)).toHaveBeenCalled();
     expect(ensureSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it.each([
-    { input: null, expected: null },
-    { input: 'abc', expected: null },
-    { input: '1.200 EUR', expected: 1200 },
-    { input: '9'.repeat(5000), expected: null }
-  ])('whenParsingStringPrice_parseStringPriceToNumber_shouldReturnExpectedNumber', ({ input, expected }) => {
-    // Arrange
-    const service = createService({
-      updateOne: jest.fn(),
-      findOne: jest.fn(),
-      find: jest.fn()
-    });
-    // Action
-    const result = (service as unknown as { parseStringPriceToNumber: (value: unknown) => number | null })
-      .parseStringPriceToNumber(input);
-    // Assert
-    expect(result).toBe(expected);
-  });
-
-  it('whenUnexpectedWriteErrorOccurs_saveProperty_shouldRethrowError', async () => {
-    // Arrange
-    const genericError = new Error('write failed');
-    const collection: MockCollection = {
-      updateOne: jest.fn(async () => {
-        throw genericError;
-      }),
-      findOne: jest.fn(async () => null),
-      find: jest.fn(() => ({ toArray: async () => [] }))
-    };
-    const service = createService(collection);
-    (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = () => false;
-    // Action
-    const action = service.saveProperty(createProperty('https://www.idealista.com/inmueble/200/', '200'));
-    // Assert
-    await expect(action).rejects.toBe(genericError);
-  });
-
-  it('whenTouchReceivesValidUrl_touchPropertyLastTimeVisited_shouldTrimAndUpdateDocument', async () => {
-    // Arrange
-    const visitedAt = new Date('2026-03-08T18:00:00.000Z');
-    const collection: MockCollection = {
-      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
-      findOne: jest.fn(async () => null),
-      find: jest.fn(() => ({ toArray: async () => [] }))
-    };
-    const service = createService(collection);
-    // Action
-    await service.touchPropertyLastTimeVisited('  https://www.idealista.com/inmueble/123/  ', visitedAt);
-    // Assert
-    expect(collection.updateOne).toHaveBeenCalledWith(
-      { url: 'https://www.idealista.com/inmueble/123/' },
-      { $set: { lastTimeVisited: visitedAt } }
-    );
-  });
-
-  it('whenPriceUpdateDoesNotModifyDocument_fixStringPricesToNumbers_shouldCountItAsSkipped', async () => {
-    // Arrange
-    const cursor = {
-      async *[Symbol.asyncIterator](): AsyncGenerator<{ _id: string; price: string }> {
-        yield { _id: '1', price: '1.200 EUR' };
-      }
-    };
-    const collection: MockCollection = {
-      updateOne: jest.fn(async () => ({ modifiedCount: 0 })),
-      findOne: jest.fn(async () => null),
-      find: jest.fn(() => cursor as unknown as { toArray: () => Promise<Array<Record<string, unknown>>> })
-    };
-    const service = createService(collection);
-    // Action
-    const result = await service.fixStringPricesToNumbers();
-    // Assert
-    expect(result).toEqual({ scanned: 1, updated: 0, skipped: 1, failed: 0 });
   });
 
   it('whenAdminHandleIsMissing_validateConnectionOrExit_shouldRetryUntilAdminPingIsAvailable', async () => {

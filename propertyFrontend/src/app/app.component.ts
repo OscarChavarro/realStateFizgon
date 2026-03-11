@@ -1,10 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { io, Socket } from 'socket.io-client';
-import { AuthSessionApiService } from 'src/app/dashboard/auth/auth-session-api.service';
 import { AuthUserListItem } from 'src/app/dashboard/auth/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/dashboard/auth/authenticated-user.model';
-import { AuthUsersService } from 'src/app/dashboard/auth/auth-users.service';
 import { DashboardUsersPanelComponent } from 'src/app/dashboard/auth/components/dashboard-users-panel.component';
 import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardMaintenancePanelComponent } from 'src/app/dashboard/components/dashboard-maintenance-panel.component';
@@ -14,20 +11,20 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
-import { DashboardUserPreferencesService } from 'src/app/dashboard/filters/dashboard-user-preferences.service';
 import {
   PropertyLabelEntry,
-  PropertyReviewLabel,
   DashboardPropertyRow,
   DashboardTab,
   SortCriterion,
   SortToggleRequest
 } from 'src/app/dashboard/dashboard.types';
-import { BrowserFullscreenService } from 'src/app/dashboard/services/browser-fullscreen.service';
-import { MaintenanceOperationRunnerService } from 'src/app/dashboard/services/maintenance-operation-runner.service';
 import { PropertySelectionService } from 'src/app/dashboard/services/property-selection.service';
-import { SortCriteriaService } from 'src/app/dashboard/services/sort-criteria.service';
-import { WorkspaceLayoutService } from 'src/app/dashboard/services/workspace-layout.service';
+import { DashboardAuthFacadeService } from 'src/app/dashboard/shell/services/dashboard-auth-facade.service';
+import { DashboardDataCoordinatorService } from 'src/app/dashboard/shell/services/dashboard-data-coordinator.service';
+import { DashboardSessionCoordinatorService } from 'src/app/dashboard/shell/services/dashboard-session-coordinator.service';
+import { DashboardStateFacadeService } from 'src/app/dashboard/shell/services/dashboard-state-facade.service';
+import { PropertyLabelsFacadeService } from 'src/app/dashboard/shell/services/property-labels-facade.service';
+import { WorkspaceInteractionCoordinatorService } from 'src/app/dashboard/shell/services/workspace-interaction-coordinator.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
 import { RemoveDanglingImagesOperation } from 'src/app/databasemaintenance/remove-dangling-images.operation';
 import { SupportedLanguage } from 'src/app/i18n/i18n.service';
@@ -50,17 +47,14 @@ export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
 
   private readonly http = inject(HttpClient);
-  private readonly dashboardDataService = inject(DashboardDataService);
-  private readonly authSessionApiService = inject(AuthSessionApiService);
-  private readonly authUsersService = inject(AuthUsersService);
-  private readonly dashboardUserPreferencesService = inject(DashboardUserPreferencesService);
-  private readonly workspaceLayoutService = inject(WorkspaceLayoutService);
+  private readonly dashboardAuthFacadeService = inject(DashboardAuthFacadeService);
+  private readonly dashboardStateFacadeService = inject(DashboardStateFacadeService);
+  private readonly dashboardSessionCoordinatorService = inject(DashboardSessionCoordinatorService);
+  private readonly dashboardDataCoordinatorService = inject(DashboardDataCoordinatorService);
+  private readonly propertyLabelsFacadeService = inject(PropertyLabelsFacadeService);
+  private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
   private readonly propertySelectionService = inject(PropertySelectionService);
-  private readonly sortCriteriaService = inject(SortCriteriaService);
-  private readonly maintenanceOperationRunnerService = inject(MaintenanceOperationRunnerService);
-  private readonly browserFullscreenService = inject(BrowserFullscreenService);
 
-  private socket: Socket | null = null;
   private backendBaseUrl = DashboardDataService.DEFAULT_BACKEND_BASE_URL;
   private staticMediaBaseUrl = DashboardDataService.DEFAULT_STATIC_MEDIA_BASE_URL;
 
@@ -97,22 +91,26 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly maintenanceRunning = signal<boolean>(false);
   readonly maintenanceResultText = signal<string>('');
   readonly sortCriteria = signal<SortCriterion[]>([]);
-  readonly leftPanelWidthPercent = this.workspaceLayoutService.leftPanelWidthPercent;
-  readonly leftPanelHidden = this.workspaceLayoutService.leftPanelHidden;
-  readonly rightPanelHidden = this.workspaceLayoutService.rightPanelHidden;
+  readonly leftPanelWidthPercent = this.workspaceInteractionCoordinatorService.leftPanelWidthPercent;
+  readonly leftPanelHidden = this.workspaceInteractionCoordinatorService.leftPanelHidden;
+  readonly rightPanelHidden = this.workspaceInteractionCoordinatorService.rightPanelHidden;
 
   async ngOnInit(): Promise<void> {
-    this.loadSelectedLanguageFromSession();
+    this.selectedLanguage.set(
+      this.dashboardStateFacadeService.loadSelectedLanguageFromSession(AppComponent.SELECTED_LANGUAGE_KEY)
+    );
     await this.loadBackendConfiguration();
     await this.loadGoogleLoginAvailability();
     await this.loadCurrentUser();
     await this.refreshDashboardData();
-    this.connectUpdatesSocket();
+    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(
+      this.backendBaseUrl,
+      async () => this.refreshDashboardData()
+    );
   }
 
   ngOnDestroy(): void {
-    this.socket?.disconnect();
-    this.socket = null;
+    this.workspaceInteractionCoordinatorService.disconnectUpdatesSocket();
   }
 
   onTabChange(tabId: DashboardTab): void {
@@ -133,7 +131,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onLanguageChange(language: SupportedLanguage): void {
     this.selectedLanguage.set(language);
-    sessionStorage.setItem(AppComponent.SELECTED_LANGUAGE_KEY, language);
+    this.dashboardStateFacadeService.persistSelectedLanguage(AppComponent.SELECTED_LANGUAGE_KEY, language);
   }
 
   onFiltersChange(filters: DashboardFiltersState): void {
@@ -161,19 +159,19 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onSplitterMouseDown(event: MouseEvent): void {
-    this.workspaceLayoutService.startResize(event);
+    this.workspaceInteractionCoordinatorService.startResize(event);
   }
 
   cycleWorkspaceLayout(): void {
-    this.workspaceLayoutService.cycleLayout();
+    this.workspaceInteractionCoordinatorService.cycleLayout();
   }
 
   getWorkspaceColumns(): string {
-    return this.workspaceLayoutService.getWorkspaceColumns();
+    return this.workspaceInteractionCoordinatorService.getWorkspaceColumns();
   }
 
   getWorkspaceCycleIcon(): string {
-    return this.workspaceLayoutService.getCycleIcon();
+    return this.workspaceInteractionCoordinatorService.getCycleIcon();
   }
 
   onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
@@ -185,11 +183,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onFullscreenRequested(): void {
-    void this.browserFullscreenService.toggleFullscreen();
+    this.workspaceInteractionCoordinatorService.toggleFullscreen();
   }
 
   onGoogleLoginRequested(): void {
-    const loginUrl = this.authSessionApiService.buildGoogleLoginUrl(this.backendBaseUrl, window.location.href);
+    const loginUrl = this.dashboardAuthFacadeService.buildGoogleLoginUrl(this.backendBaseUrl, window.location.href);
     window.location.assign(loginUrl);
   }
 
@@ -203,7 +201,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(event: MouseEvent): void {
-    this.workspaceLayoutService.updateResizeFromMouse(
+    this.workspaceInteractionCoordinatorService.handleWindowMouseMove(
       event,
       this.workspaceContainer?.nativeElement ?? null
     );
@@ -211,210 +209,123 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('window:mouseup')
   onWindowMouseUp(): void {
-    this.workspaceLayoutService.stopResize();
+    this.workspaceInteractionCoordinatorService.handleWindowMouseUp();
   }
 
   @HostListener('window:keydown', ['$event'])
   onWindowKeyDown(event: KeyboardEvent): void {
-    if (event.repeat || event.defaultPrevented) {
-      return;
-    }
-
-    const target = event.target as HTMLElement | null;
-    if (this.isTypingTarget(target)) {
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      if (this.activeTab() !== 'DASHBOARD') {
-        return;
-      }
-      event.preventDefault();
-      const selected = this.propertySelectionService.selectByKeyboard(this.properties(), -1);
-      this.scrollSelectedPropertyRow(selected);
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      if (this.activeTab() !== 'DASHBOARD') {
-        return;
-      }
-      event.preventDefault();
-      const selected = this.propertySelectionService.selectByKeyboard(this.properties(), 1);
-      this.scrollSelectedPropertyRow(selected);
-      return;
-    }
-
-    if (event.key.toLowerCase() === 'f') {
-      event.preventDefault();
-      void this.browserFullscreenService.toggleFullscreen();
-      return;
-    }
-
-    if (event.code === 'Space' || event.key === ' ') {
-      if (this.activeTab() !== 'DASHBOARD' || !this.authenticatedUser()) {
-        return;
-      }
-
-      const visibleProperty = this.selectedProperty();
-      if (!visibleProperty) {
-        return;
-      }
-
-      event.preventDefault();
-      void this.togglePropertyReview(visibleProperty);
-    }
-  }
-
-  private connectUpdatesSocket(): void {
-    this.socket = io(this.backendBaseUrl);
-    this.socket.on('properties-count-updated', async () => {
-      await this.refreshDashboardData();
+    this.workspaceInteractionCoordinatorService.handleWindowKeyDown({
+      event,
+      activeTab: this.activeTab(),
+      isAuthenticated: this.authenticatedUser() !== null,
+      properties: this.properties(),
+      selectedProperty: this.selectedProperty(),
+      onTogglePropertyReview: (property) => {
+        void this.togglePropertyReview(property);
+      },
+      scroller: this.dashboardPropertiesTable
     });
   }
 
   private async loadBackendConfiguration(): Promise<void> {
-    const config = await this.dashboardDataService.loadBackendConfiguration(this.http);
+    const config = await this.dashboardStateFacadeService.loadBackendConfiguration(this.http);
     this.backendBaseUrl = config.backendBaseUrl;
     this.staticMediaBaseUrl = config.staticMediaBaseUrl;
-    this.warnIfAuthHostMismatch();
+    this.dashboardAuthFacadeService.warnIfAuthHostMismatch(
+      this.backendBaseUrl,
+      window.location.hostname
+    );
   }
 
   private async loadGoogleLoginAvailability(): Promise<void> {
-    const enabled = await this.authSessionApiService.loadGoogleLoginAvailability(this.http, this.backendBaseUrl);
+    const enabled = await this.dashboardAuthFacadeService.loadGoogleLoginAvailability(this.http, this.backendBaseUrl);
     this.googleLoginEnabled.set(enabled);
   }
 
-  private warnIfAuthHostMismatch(): void {
-    try {
-      const backendHost = new URL(this.backendBaseUrl).hostname;
-      const frontendHost = window.location.hostname;
-      if (backendHost !== frontendHost) {
-        console.warn(
-          `Auth host mismatch detected (frontend=${frontendHost}, backend=${backendHost}). ` +
-          'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
-        );
-      }
-    } catch {
-      // Ignore URL parsing issues; normal request errors will surface elsewhere.
-    }
-  }
-
   private async loadCurrentUser(): Promise<void> {
-    const user = await this.authSessionApiService.loadCurrentUser(this.http, this.backendBaseUrl);
-    this.authenticatedUser.set(user);
-
-    if (user) {
-      await this.loadUserPreferences();
-      if (this.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
-        this.activeTab.set('DASHBOARD');
-      }
-      if (this.activeTab() === 'USERS_TAB' && this.canEditUsers()) {
-        await this.loadUsers();
-      }
-      return;
-    }
-
-    this.users.set([]);
-    this.filters.set(createDefaultDashboardFilters());
-    this.propertyLabels.set([]);
-    if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-      this.activeTab.set('DASHBOARD');
-    }
+    await this.dashboardSessionCoordinatorService.loadCurrentUserAndApplyState({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      activeTab: this.activeTab(),
+      canMaintainDatabase: () => this.canMaintainDatabase(),
+      canEditUsers: () => this.canEditUsers(),
+      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
+      setActiveTab: (tab) => this.activeTab.set(tab),
+      onLoadUserPreferences: () => this.loadUserPreferences(),
+      onLoadUsers: () => this.loadUsers(),
+      onResetGuestState: () => this.resetGuestState()
+    });
   }
 
   private async logoutCurrentUser(): Promise<void> {
-    await this.authSessionApiService.logout(this.http, this.backendBaseUrl);
-    this.authenticatedUser.set(null);
-    this.users.set([]);
-    this.filters.set(createDefaultDashboardFilters());
-    this.propertyLabels.set([]);
-    if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
-      this.activeTab.set('DASHBOARD');
-    }
-    await this.refreshDashboardData();
+    await this.dashboardSessionCoordinatorService.logoutAndReset({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
+      onResetGuestState: () => {
+        this.resetGuestState();
+        if (this.activeTab() === 'USERS_TAB' || this.activeTab() === 'DATABASE_MAINTENANCE_TAB') {
+          this.activeTab.set('DASHBOARD');
+        }
+      },
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
   }
 
   private async loadUsers(): Promise<void> {
-    if (!this.canEditUsers()) {
-      this.users.set([]);
-      return;
-    }
-
-    this.usersLoading.set(true);
-    const users = await this.authUsersService.loadUsers(this.http, this.backendBaseUrl);
-    this.users.set(users);
-    this.usersLoading.set(false);
+    await this.dashboardSessionCoordinatorService.loadUsers({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      canEditUsers: this.canEditUsers(),
+      setUsersLoading: (loading) => this.usersLoading.set(loading),
+      setUsers: (users) => this.users.set(users)
+    });
   }
 
   private async deleteUserAndRefresh(userId: string): Promise<void> {
-    if (!this.canEditUsers() || !userId) {
-      return;
-    }
-
-    const currentUser = this.authenticatedUser();
-    if (currentUser && currentUser.id === userId) {
-      return;
-    }
-
-    this.usersLoading.set(true);
-    const deleted = await this.authUsersService.deleteUser(this.http, this.backendBaseUrl, userId);
-    if (deleted) {
-      await this.loadUsers();
-    } else {
-      this.usersLoading.set(false);
-    }
+    await this.dashboardSessionCoordinatorService.deleteUserAndRefresh({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      userId,
+      canEditUsers: this.canEditUsers(),
+      currentUser: this.authenticatedUser(),
+      setUsersLoading: (loading) => this.usersLoading.set(loading),
+      onLoadUsers: () => this.loadUsers()
+    });
   }
 
   private async refreshDashboardData(): Promise<void> {
-    this.loading.set(true);
-    const dashboardData = await this.dashboardDataService.loadDashboardData(
-      this.http,
-      this.backendBaseUrl,
-      this.sortCriteria(),
-      this.filters()
-    );
-
-    this.count.set(dashboardData.count);
-    this.allProperties.set(dashboardData.properties);
-    this.propertySelectionService.syncAfterRefresh(this.properties());
-    this.loading.set(false);
+    await this.dashboardDataCoordinatorService.refreshDashboardData({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      sortCriteria: this.sortCriteria(),
+      filters: this.filters(),
+      setLoading: (loading) => this.loading.set(loading),
+      setCount: (count) => this.count.set(count),
+      setAllProperties: (properties) => this.allProperties.set(properties),
+      onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.properties())
+    });
   }
 
   private async handleFiltersChange(filters: DashboardFiltersState): Promise<void> {
-    const current = this.filters();
-    this.filters.set(filters);
-    const filtersChanged = (
-      current.showClosed !== filters.showClosed
-      || current.showNew !== filters.showNew
-      || current.showFavourite !== filters.showFavourite
-      || current.showRejected !== filters.showRejected
-    );
-    if (!filtersChanged) {
-      return;
-    }
-
-    if (this.authenticatedUser()) {
-      try {
-        await this.dashboardUserPreferencesService.saveFilters(this.http, this.backendBaseUrl, filters);
-      } catch {
-        // Ignore persistence errors so filtering still updates UI from backend.
-      }
-    }
-
-    await this.refreshDashboardData();
+    await this.dashboardDataCoordinatorService.handleFiltersChange({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      currentFilters: this.filters(),
+      nextFilters: filters,
+      isAuthenticated: this.authenticatedUser() !== null,
+      setFilters: (nextFilters) => this.filters.set(nextFilters),
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
   }
 
   private async loadUserPreferences(): Promise<void> {
-    const preferences = await this.dashboardUserPreferencesService.loadPreferences(this.http, this.backendBaseUrl);
-    if (!preferences) {
-      this.filters.set(createDefaultDashboardFilters());
-      this.propertyLabels.set([]);
-      return;
-    }
-
-    this.filters.set(preferences.filters);
-    this.propertyLabels.set(preferences.propertyLabels);
+    await this.dashboardDataCoordinatorService.loadUserPreferences({
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      setFilters: (filters) => this.filters.set(filters),
+      setPropertyLabels: (labels) => this.propertyLabels.set(labels)
+    });
   }
 
   private async togglePropertyReview(property: DashboardPropertyRow): Promise<void> {
@@ -422,37 +333,17 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const currentReview = this.getPropertyReviewLabel(property.propertyId);
-    const nextReview = this.nextReviewLabel(currentReview);
     try {
-      const updatedLabels = await this.dashboardUserPreferencesService.setPropertyReview(
+      const updatedLabels = await this.propertyLabelsFacadeService.togglePropertyReview(
         this.http,
         this.backendBaseUrl,
         property.propertyId,
-        nextReview
+        this.propertyLabels()
       );
       this.propertyLabels.set(updatedLabels);
     } catch {
       // Ignore API errors; UI state remains unchanged.
     }
-  }
-
-  private getPropertyReviewLabel(propertyId: string): PropertyReviewLabel {
-    const entry = this.propertyLabels().find((item) => item.propertyId === propertyId);
-    const review = entry?.labels.review;
-    if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {
-      return review;
-    }
-    return 'NEW';
-  }
-
-  private getPropertyComment(propertyId: string): string {
-    const entry = this.propertyLabels().find((item) => item.propertyId === propertyId);
-    const comment = entry?.labels.comment;
-    if (typeof comment === 'string') {
-      return comment;
-    }
-    return '';
   }
 
   private async savePropertyComment(property: DashboardPropertyRow, commentRaw: string): Promise<void> {
@@ -460,87 +351,45 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const comment = commentRaw.trim();
-    if (this.getPropertyComment(property.propertyId) === comment) {
-      return;
-    }
-
     try {
-      const updatedLabels = await this.dashboardUserPreferencesService.setPropertyComment(
+      const updatedLabels = await this.propertyLabelsFacadeService.savePropertyComment(
         this.http,
         this.backendBaseUrl,
         property.propertyId,
-        comment
+        commentRaw,
+        this.propertyLabels()
       );
-      this.propertyLabels.set(updatedLabels);
+      if (updatedLabels) {
+        this.propertyLabels.set(updatedLabels);
+      }
     } catch {
       // Ignore API errors; UI state remains unchanged.
     }
   }
 
-  private nextReviewLabel(current: PropertyReviewLabel): PropertyReviewLabel {
-    if (current === 'NEW') {
-      return 'FAVOURITE';
-    }
-    if (current === 'FAVOURITE') {
-      return 'DISCHARGED';
-    }
-    return 'NEW';
-  }
-
   private async toggleSort(sortBy: SortToggleRequest['sortBy'], sortOrder: SortToggleRequest['sortOrder']): Promise<void> {
-    const updated = this.sortCriteriaService.toggleSortCriteria(
-      this.sortCriteria(),
+    await this.dashboardDataCoordinatorService.toggleSortAndRefresh({
+      currentSortCriteria: this.sortCriteria(),
       sortBy,
-      sortOrder
-    );
-    this.sortCriteria.set(updated);
-    await this.refreshDashboardData();
+      sortOrder,
+      setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
+      onRefreshDashboardData: () => this.refreshDashboardData()
+    });
   }
 
   private async runDatabaseMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
-    this.maintenanceRunning.set(true);
-    this.maintenanceResultText.set('');
-
-    const resultText = await this.maintenanceOperationRunnerService.runOperation(
+    await this.dashboardDataCoordinatorService.runMaintenanceOperation({
       operation,
-      this.http,
-      this.backendBaseUrl
-    );
-    this.maintenanceResultText.set(resultText);
-    this.maintenanceRunning.set(false);
-  }
-
-  private loadSelectedLanguageFromSession(): void {
-    const savedLanguage = sessionStorage.getItem(AppComponent.SELECTED_LANGUAGE_KEY);
-    if (savedLanguage === 'sp' || savedLanguage === 'en') {
-      this.selectedLanguage.set(savedLanguage);
-      return;
-    }
-
-    this.selectedLanguage.set('en');
-    sessionStorage.setItem(AppComponent.SELECTED_LANGUAGE_KEY, 'en');
-  }
-
-  private isTypingTarget(target: HTMLElement | null): boolean {
-    if (!target) {
-      return false;
-    }
-
-    const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
-  }
-
-  private scrollSelectedPropertyRow(property: DashboardPropertyRow | null): void {
-    if (!property) {
-      return;
-    }
-
-    queueMicrotask(() => {
-      this.dashboardPropertiesTable?.scrollPropertyIntoView(property);
+      http: this.http,
+      backendBaseUrl: this.backendBaseUrl,
+      setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
+      setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
     });
+  }
+
+  private resetGuestState(): void {
+    this.users.set([]);
+    this.filters.set(createDefaultDashboardFilters());
+    this.propertyLabels.set([]);
   }
 }

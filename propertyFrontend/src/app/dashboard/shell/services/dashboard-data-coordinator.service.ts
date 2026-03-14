@@ -36,7 +36,6 @@ type LoadUserPreferencesParams = {
 type ToggleSortParams = {
   currentSortCriteria: SortCriterion[];
   sortBy: SortToggleRequest['sortBy'];
-  sortOrder: SortToggleRequest['sortOrder'];
   setSortCriteria: (criteria: SortCriterion[]) => void;
   onRefreshDashboardData: () => Promise<void>;
 };
@@ -109,8 +108,7 @@ export class DashboardDataCoordinatorService {
   async toggleSortAndRefresh(params: ToggleSortParams): Promise<void> {
     const updatedSortCriteria = this.dashboardStateFacadeService.toggleSortCriteria(
       params.currentSortCriteria,
-      params.sortBy,
-      params.sortOrder
+      params.sortBy
     );
     params.setSortCriteria(updatedSortCriteria);
     await params.onRefreshDashboardData();

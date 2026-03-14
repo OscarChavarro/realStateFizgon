@@ -164,7 +164,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onSortToggle(request: SortToggleRequest): void {
-    void this.toggleSort(request.sortBy, request.sortOrder);
+    void this.toggleSort(request.sortBy);
   }
 
   onPropertyRowHover(property: DashboardPropertyRow): void {
@@ -343,11 +343,10 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async toggleSort(sortBy: SortToggleRequest['sortBy'], sortOrder: SortToggleRequest['sortOrder']): Promise<void> {
+  private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
     await this.dashboardDataCoordinatorService.toggleSortAndRefresh({
       currentSortCriteria: this.sortCriteria(),
       sortBy,
-      sortOrder,
       setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
       onRefreshDashboardData: () => this.refreshDashboardData()
     });

@@ -32,8 +32,8 @@ export class DashboardPropertiesTableComponent {
   @Output() readonly propertySelect = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
 
-  onSortToggle(sortBy: SortField, sortOrder: SortDirection): void {
-    this.sortToggle.emit({ sortBy, sortOrder });
+  onSortToggle(sortBy: SortField): void {
+    this.sortToggle.emit({ sortBy });
   }
 
   onPropertyHover(property: DashboardPropertyRow): void {
@@ -56,6 +56,28 @@ export class DashboardPropertiesTableComponent {
   getSortDirection(sortBy: SortField): SortDirection | null {
     const criterion = this.sortCriteria.find((item) => item.sortBy === sortBy);
     return criterion?.sortOrder ?? null;
+  }
+
+  getSortIcon(sortBy: SortField): string {
+    const direction = this.getSortDirection(sortBy);
+    if (direction === 'asc') {
+      return 'arrow_upward';
+    }
+    if (direction === 'desc') {
+      return 'arrow_downward';
+    }
+    return 'swap_vert';
+  }
+
+  getSortAriaLabel(sortBy: SortField): string {
+    const direction = this.getSortDirection(sortBy);
+    if (direction === 'asc') {
+      return `${this.t('SORT_DESC')} ${this.getSortFieldLabel(sortBy)}`;
+    }
+    if (direction === 'desc') {
+      return `${this.t('SORT_DISABLED')} ${this.getSortFieldLabel(sortBy)}`;
+    }
+    return `${this.t('SORT_ASC')} ${this.getSortFieldLabel(sortBy)}`;
   }
 
   getSortPriority(sortBy: SortField): number | null {
@@ -146,6 +168,16 @@ export class DashboardPropertiesTableComponent {
       return review;
     }
     return 'NEW';
+  }
+
+  private getSortFieldLabel(sortBy: SortField): string {
+    if (sortBy === 'title') {
+      return this.t('TITLE');
+    }
+    if (sortBy === 'publicationDate') {
+      return this.t('PUBLICATION_DATE');
+    }
+    return this.t('PRICE');
   }
 
   private getPropertyRowKey(property: DashboardPropertyRow): string {

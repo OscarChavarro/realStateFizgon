@@ -37,5 +37,4 @@ export type SortCriterion = {
 
 export type SortToggleRequest = {
   sortBy: SortField;
-  sortOrder: SortDirection;
 };

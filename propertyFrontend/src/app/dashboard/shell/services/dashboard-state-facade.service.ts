@@ -63,10 +63,9 @@ export class DashboardStateFacadeService {
 
   toggleSortCriteria(
     currentSortCriteria: SortCriterion[],
-    sortBy: SortToggleRequest['sortBy'],
-    sortOrder: SortToggleRequest['sortOrder']
+    sortBy: SortToggleRequest['sortBy']
   ): SortCriterion[] {
-    return this.sortCriteriaService.toggleSortCriteria(currentSortCriteria, sortBy, sortOrder);
+    return this.sortCriteriaService.cycleSortCriteria(currentSortCriteria, sortBy);
   }
 
   async runMaintenanceOperation(

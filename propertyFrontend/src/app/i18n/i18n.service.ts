@@ -176,6 +176,10 @@ const TRANSLATIONS = {
     en: 'Sort descending',
     sp: 'Orden descendente'
   },
+  SORT_DISABLED: {
+    en: 'Disable sorting',
+    sp: 'Desactivar orden'
+  },
   NO_PROPERTIES_FOUND: {
     en: 'No properties found',
     sp: 'No se encontraron propiedades'

@@ -161,6 +161,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.http,
       this.authenticatedUser() !== null,
       this.filters(),
+      this.sortCriteria(),
       language
     );
   }
@@ -298,6 +299,7 @@ export class AppComponent implements OnInit, OnDestroy {
       http: this.http,
       currentFilters: this.filters(),
       nextFilters: filters,
+      sortCriteria: this.sortCriteria(),
       selectedLanguage: this.selectedLanguage(),
       isAuthenticated: this.authenticatedUser() !== null,
       setFilters: (nextFilters) => this.filters.set(nextFilters),
@@ -314,6 +316,7 @@ export class AppComponent implements OnInit, OnDestroy {
         language
       ),
       setFilters: (filters) => this.filters.set(filters),
+      setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
       setPropertyLabels: (labels) => this.propertyLabels.set(labels)
     });
   }
@@ -357,8 +360,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
     await this.dashboardDataCoordinatorService.toggleSortAndRefresh({
+      http: this.http,
       currentSortCriteria: this.sortCriteria(),
       sortBy,
+      filters: this.filters(),
+      selectedLanguage: this.selectedLanguage(),
+      isAuthenticated: this.authenticatedUser() !== null,
       setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
       onRefreshDashboardData: () => this.refreshDashboardData()
     });
@@ -376,6 +383,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private resetGuestState(): void {
     this.users.set([]);
     this.filters.set(createDefaultDashboardFilters());
+    this.sortCriteria.set([]);
     this.propertyLabels.set([]);
   }
 }

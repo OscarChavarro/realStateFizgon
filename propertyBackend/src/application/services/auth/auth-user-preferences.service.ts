@@ -3,6 +3,13 @@ import { AuthUserRepository } from 'src/adapters/outbound/persistence/mongodb/au
 
 export type PropertyReviewLabel = 'NEW' | 'FAVOURITE' | 'DISCHARGED';
 export type PreferredLanguage = 'en' | 'sp';
+export type UserPreferencesSortField = 'publicationDate' | 'title' | 'price';
+export type UserPreferencesSortOrder = 'asc' | 'desc';
+
+export type UserPreferencesSortCriterion = {
+  sortBy: UserPreferencesSortField;
+  sortOrder: UserPreferencesSortOrder;
+};
 
 export type UserPropertyLabels = {
   propertyId: string;
@@ -20,6 +27,9 @@ export type AuthUserPreferences = {
   showRejected: boolean;
   minPublicationDate: string | null;
   maxPublicationDate: string | null;
+  minPrice: string | null;
+  maxPrice: string | null;
+  sortCriteria: UserPreferencesSortCriterion[];
   propertyLabels: UserPropertyLabels[];
 };
 
@@ -38,6 +48,9 @@ export class AuthUserPreferencesService {
       showRejected: this.toBoolean(preferences['showRejected'], true),
       minPublicationDate: this.toDateOnlyString(preferences['minPublicationDate']),
       maxPublicationDate: this.toDateOnlyString(preferences['maxPublicationDate']),
+      minPrice: this.toPriceStringOrNull(preferences['minPrice']),
+      maxPrice: this.toPriceStringOrNull(preferences['maxPrice']),
+      sortCriteria: this.normalizeSortCriteria(preferences['sortCriteria']),
       propertyLabels
     };
   }
@@ -51,18 +64,37 @@ export class AuthUserPreferencesService {
       showRejected: boolean;
       minPublicationDate?: unknown;
       maxPublicationDate?: unknown;
+      minPrice?: unknown;
+      maxPrice?: unknown;
       language?: unknown;
+      sortCriteria?: unknown;
     }
   ): Promise<AuthUserPreferences> {
-    const normalized = {
+    const normalized: {
+      language: PreferredLanguage;
+      showClosed: boolean;
+      showNew: boolean;
+      showFavourite: boolean;
+      showRejected: boolean;
+      minPublicationDate: string | null;
+      maxPublicationDate: string | null;
+      minPrice: string | null;
+      maxPrice: string | null;
+      sortCriteria?: UserPreferencesSortCriterion[];
+    } = {
       language: this.toPreferredLanguage(preferences.language, 'en'),
       showClosed: this.toBoolean(preferences.showClosed, true),
       showNew: this.toBoolean(preferences.showNew, true),
       showFavourite: this.toBoolean(preferences.showFavourite, true),
       showRejected: this.toBoolean(preferences.showRejected, true),
       minPublicationDate: this.toDateOnlyString(preferences.minPublicationDate),
-      maxPublicationDate: this.toDateOnlyString(preferences.maxPublicationDate)
+      maxPublicationDate: this.toDateOnlyString(preferences.maxPublicationDate),
+      minPrice: this.toPriceStringOrNull(preferences.minPrice),
+      maxPrice: this.toPriceStringOrNull(preferences.maxPrice)
     };
+    if (preferences.sortCriteria !== undefined) {
+      normalized.sortCriteria = this.normalizeSortCriteria(preferences.sortCriteria);
+    }
 
     await this.authUserRepository.mergeUserPreferences(userId, normalized);
     return this.getPreferences(userId);
@@ -151,6 +183,28 @@ export class AuthUserPreferencesService {
     return match[1];
   }
 
+  private toPriceStringOrNull(value: unknown): string | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      return String(Math.round(value));
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.replace(/[^\d]/g, '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(normalized, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return null;
+    }
+
+    return String(parsed);
+  }
+
   private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {
     if (typeof value === 'string') {
       const normalized = value.trim().toLowerCase();
@@ -159,6 +213,56 @@ export class AuthUserPreferencesService {
       }
       if (normalized === 'en') {
         return 'en';
+      }
+    }
+
+    return fallback;
+  }
+
+  private normalizeSortCriteria(value: unknown): UserPreferencesSortCriterion[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const allowedSortFields = new Set<UserPreferencesSortField>(['title', 'publicationDate', 'price']);
+    const seenSortFields = new Set<UserPreferencesSortField>();
+    const normalized: UserPreferencesSortCriterion[] = [];
+    for (const item of value) {
+      if (typeof item !== 'object' || item === null) {
+        continue;
+      }
+
+      const sortByRaw = (item as { sortBy?: unknown }).sortBy;
+      if (typeof sortByRaw !== 'string') {
+        continue;
+      }
+
+      const sortBy = sortByRaw.trim() as UserPreferencesSortField;
+      if (!allowedSortFields.has(sortBy) || seenSortFields.has(sortBy)) {
+        continue;
+      }
+
+      const sortOrderRaw = (item as { sortOrder?: unknown; order?: unknown }).sortOrder
+        ?? (item as { sortOrder?: unknown; order?: unknown }).order;
+      const sortOrder = this.toSortOrder(sortOrderRaw, 'asc');
+      seenSortFields.add(sortBy);
+      normalized.push({
+        sortBy,
+        sortOrder
+      });
+    }
+
+    return normalized;
+  }
+
+  private toSortOrder(value: unknown, fallback: UserPreferencesSortOrder): UserPreferencesSortOrder {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'asc') {
+        return 'asc';
+      }
+      if (normalized === 'desc') {
+        return 'desc';
       }
     }
 

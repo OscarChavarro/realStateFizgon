@@ -4,7 +4,8 @@ import {
   AuthUserPreferences,
   AuthUserPreferencesService,
   PreferredLanguage,
-  PropertyReviewLabel
+  PropertyReviewLabel,
+  UserPreferencesSortCriterion
 } from 'src/application/services/auth/auth-user-preferences.service';
 
 type HttpRequestLike = {
@@ -21,6 +22,9 @@ type SaveFiltersPreferencesBody = {
   showRejected?: unknown;
   minPublicationDate?: unknown;
   maxPublicationDate?: unknown;
+  minPrice?: unknown;
+  maxPrice?: unknown;
+  sortCriteria?: unknown;
 };
 
 type SetPropertyLabelsBody = {
@@ -47,6 +51,9 @@ export class AuthPreferencesController {
         showRejected: true,
         minPublicationDate: null,
         maxPublicationDate: null,
+        minPrice: null,
+        maxPrice: null,
+        sortCriteria: [],
         propertyLabels: []
       };
     }
@@ -54,29 +61,7 @@ export class AuthPreferencesController {
     return this.authUserPreferencesService.getPreferences(userId);
   }
 
-  @Get('filters')
-  async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<{
-    language: PreferredLanguage;
-    showClosed: boolean;
-    showNew: boolean;
-    showFavourite: boolean;
-    showRejected: boolean;
-    minPublicationDate: string | null;
-    maxPublicationDate: string | null;
-  }> {
-    const preferences = await this.getPreferences(request);
-    return {
-      language: preferences.language,
-      showClosed: preferences.showClosed,
-      showNew: preferences.showNew,
-      showFavourite: preferences.showFavourite,
-      showRejected: preferences.showRejected,
-      minPublicationDate: preferences.minPublicationDate,
-      maxPublicationDate: preferences.maxPublicationDate
-    };
-  }
-
-  @Post('filters')
+  @Post()
   async saveFiltersPreferences(
     @Req() request: HttpRequestLike,
     @Body() body: SaveFiltersPreferencesBody
@@ -88,6 +73,9 @@ export class AuthPreferencesController {
     showRejected: boolean;
     minPublicationDate: string | null;
     maxPublicationDate: string | null;
+    minPrice: string | null;
+    maxPrice: string | null;
+    sortCriteria: UserPreferencesSortCriterion[];
   }> {
     const userId = this.getOptionalUserId(request);
     const showClosed = this.toBoolean(body?.showClosed, true);
@@ -97,6 +85,9 @@ export class AuthPreferencesController {
     const language = this.toPreferredLanguage(body?.language, 'en');
     const minPublicationDate = this.toDateOnlyString(body?.minPublicationDate);
     const maxPublicationDate = this.toDateOnlyString(body?.maxPublicationDate);
+    const minPrice = this.toPriceStringOrNull(body?.minPrice);
+    const maxPrice = this.toPriceStringOrNull(body?.maxPrice);
+    const sortCriteria = this.normalizeSortCriteria(body?.sortCriteria);
     if (!userId) {
       return {
         language,
@@ -105,7 +96,10 @@ export class AuthPreferencesController {
         showFavourite,
         showRejected,
         minPublicationDate,
-        maxPublicationDate
+        maxPublicationDate,
+        minPrice,
+        maxPrice,
+        sortCriteria
       };
     }
 
@@ -116,7 +110,10 @@ export class AuthPreferencesController {
       showRejected,
       language,
       minPublicationDate,
-      maxPublicationDate
+      maxPublicationDate,
+      minPrice,
+      maxPrice,
+      sortCriteria: body?.sortCriteria
     });
     return {
       language: preferences.language,
@@ -125,7 +122,10 @@ export class AuthPreferencesController {
       showFavourite: preferences.showFavourite,
       showRejected: preferences.showRejected,
       minPublicationDate: preferences.minPublicationDate,
-      maxPublicationDate: preferences.maxPublicationDate
+      maxPublicationDate: preferences.maxPublicationDate,
+      minPrice: preferences.minPrice,
+      maxPrice: preferences.maxPrice,
+      sortCriteria: preferences.sortCriteria
     };
   }
 
@@ -147,6 +147,9 @@ export class AuthPreferencesController {
           showRejected: true,
           minPublicationDate: null,
           maxPublicationDate: null,
+          minPrice: null,
+          maxPrice: null,
+          sortCriteria: [],
           propertyLabels: []
         };
       }
@@ -159,6 +162,9 @@ export class AuthPreferencesController {
         showRejected: true,
         minPublicationDate: null,
         maxPublicationDate: null,
+        minPrice: null,
+        maxPrice: null,
+        sortCriteria: [],
         propertyLabels: [
           {
             propertyId,
@@ -222,6 +228,28 @@ export class AuthPreferencesController {
     return match[1];
   }
 
+  private toPriceStringOrNull(value: unknown): string | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      return String(Math.round(value));
+    }
+
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const normalized = value.replace(/[^\d]/g, '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(normalized, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return null;
+    }
+
+    return String(parsed);
+  }
+
   private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {
     if (typeof value === 'string') {
       const normalized = value.trim().toLowerCase();
@@ -279,5 +307,59 @@ export class AuthPreferencesController {
     delete labels['propertyComments'];
 
     return labels;
+  }
+
+  private normalizeSortCriteria(value: unknown): UserPreferencesSortCriterion[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const allowedSortFields = new Set<UserPreferencesSortCriterion['sortBy']>([
+      'title',
+      'publicationDate',
+      'price'
+    ]);
+    const seenSortFields = new Set<UserPreferencesSortCriterion['sortBy']>();
+    const normalized: UserPreferencesSortCriterion[] = [];
+    for (const item of value) {
+      if (typeof item !== 'object' || item === null) {
+        continue;
+      }
+
+      const sortByRaw = (item as { sortBy?: unknown }).sortBy;
+      if (typeof sortByRaw !== 'string') {
+        continue;
+      }
+
+      const sortBy = sortByRaw.trim() as UserPreferencesSortCriterion['sortBy'];
+      if (!allowedSortFields.has(sortBy) || seenSortFields.has(sortBy)) {
+        continue;
+      }
+
+      const sortOrderRaw = (item as { sortOrder?: unknown; order?: unknown }).sortOrder
+        ?? (item as { sortOrder?: unknown; order?: unknown }).order;
+      const sortOrder = this.toSortOrder(sortOrderRaw, 'asc');
+      seenSortFields.add(sortBy);
+      normalized.push({
+        sortBy,
+        sortOrder
+      });
+    }
+
+    return normalized;
+  }
+
+  private toSortOrder(value: unknown, fallback: UserPreferencesSortCriterion['sortOrder']): UserPreferencesSortCriterion['sortOrder'] {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'asc') {
+        return 'asc';
+      }
+      if (normalized === 'desc') {
+        return 'desc';
+      }
+    }
+
+    return fallback;
   }
 }

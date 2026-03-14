@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: http://localhost:8081/auth/preferences/filters
+  url: http://localhost:8081/auth/preferences
   body: json
 }
 
@@ -17,6 +17,18 @@ body:json {
     "showFavourite": true,
     "showRejected": true,
     "minPublicationDate": "2026-02-01",
-    "maxPublicationDate": "2026-03-13"
+    "maxPublicationDate": "2026-03-13",
+    "minPrice": "1400",
+    "maxPrice": "1501",
+    "sortCriteria": [
+      {
+        "sortBy": "publicationDate",
+        "sortOrder": "desc"
+      },
+      {
+        "sortBy": "price",
+        "sortOrder": "asc"
+      }
+    ]
   }
 }

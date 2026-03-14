@@ -2,7 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
-import { PropertyLabelEntry, PropertyLabels, PropertyReviewLabel } from 'src/app/dashboard/dashboard.types';
+import {
+  PropertyLabelEntry,
+  PropertyLabels,
+  PropertyReviewLabel,
+  SortCriterion,
+  SortDirection,
+  SortField
+} from 'src/app/dashboard/dashboard.types';
 import { SupportedLanguage } from 'src/app/i18n/i18n.service';
 
 type UserPreferencesPayload = {
@@ -15,6 +22,7 @@ type UserPreferencesPayload = {
   maxPublicationDate?: unknown;
   minPrice?: unknown;
   maxPrice?: unknown;
+  sortCriteria?: unknown;
   propertyLabels?: unknown;
 };
 
@@ -24,7 +32,12 @@ type UserPreferencesPayload = {
 export class DashboardUserPreferencesService {
   async loadPreferences(
     http: HttpClient
-  ): Promise<{ language: SupportedLanguage; filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
+  ): Promise<{
+    language: SupportedLanguage;
+    filters: DashboardFiltersState;
+    sortCriteria: SortCriterion[];
+    propertyLabels: PropertyLabelEntry[];
+  } | null> {
     try {
       const response = await firstValueFrom(
         http.get<UserPreferencesPayload>('/auth/preferences')
@@ -41,6 +54,7 @@ export class DashboardUserPreferencesService {
           minPrice: this.toIntegerString(response?.minPrice),
           maxPrice: this.toIntegerString(response?.maxPrice)
         },
+        sortCriteria: this.normalizeSortCriteria(response?.sortCriteria),
         propertyLabels: this.normalizePropertyLabels(response?.propertyLabels)
       };
     } catch {
@@ -51,11 +65,12 @@ export class DashboardUserPreferencesService {
   async saveFilters(
     http: HttpClient,
     filters: DashboardFiltersState,
-    language: SupportedLanguage
+    language: SupportedLanguage,
+    sortCriteria: SortCriterion[]
   ): Promise<void> {
     await firstValueFrom(
       http.post(
-        '/auth/preferences/filters',
+        '/auth/preferences',
         {
           language,
           showClosed: filters.showClosed,
@@ -65,7 +80,8 @@ export class DashboardUserPreferencesService {
           minPublicationDate: this.toDateOnlyString(filters.minPublicationDate),
           maxPublicationDate: this.toDateOnlyString(filters.maxPublicationDate),
           minPrice: this.toIntegerString(filters.minPrice),
-          maxPrice: this.toIntegerString(filters.maxPrice)
+          maxPrice: this.toIntegerString(filters.maxPrice),
+          sortCriteria: this.normalizeSortCriteria(sortCriteria)
         }
       )
     );
@@ -235,5 +251,55 @@ export class DashboardUserPreferencesService {
     }
 
     return entries;
+  }
+
+  private normalizeSortCriteria(value: unknown): SortCriterion[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const allowedSortFields = new Set<SortField>(['title', 'publicationDate', 'price']);
+    const seenSortFields = new Set<SortField>();
+    const normalized: SortCriterion[] = [];
+    for (const item of value) {
+      if (typeof item !== 'object' || item === null) {
+        continue;
+      }
+
+      const sortByRaw = (item as { sortBy?: unknown }).sortBy;
+      if (typeof sortByRaw !== 'string') {
+        continue;
+      }
+
+      const sortBy = sortByRaw.trim() as SortField;
+      if (!allowedSortFields.has(sortBy) || seenSortFields.has(sortBy)) {
+        continue;
+      }
+
+      const sortOrderRaw = (item as { sortOrder?: unknown; order?: unknown }).sortOrder
+        ?? (item as { sortOrder?: unknown; order?: unknown }).order;
+      const sortOrder = this.toSortDirection(sortOrderRaw, 'asc');
+      seenSortFields.add(sortBy);
+      normalized.push({
+        sortBy,
+        sortOrder
+      });
+    }
+
+    return normalized;
+  }
+
+  private toSortDirection(value: unknown, fallback: SortDirection): SortDirection {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'asc') {
+        return 'asc';
+      }
+      if (normalized === 'desc') {
+        return 'desc';
+      }
+    }
+
+    return fallback;
   }
 }

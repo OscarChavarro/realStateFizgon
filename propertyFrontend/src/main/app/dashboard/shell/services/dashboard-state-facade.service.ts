@@ -60,14 +60,20 @@ export class DashboardStateFacadeService {
   async saveFiltersPreference(
     http: HttpClient,
     filters: DashboardFiltersState,
-    language: SupportedLanguage
+    language: SupportedLanguage,
+    sortCriteria: SortCriterion[]
   ): Promise<void> {
-    await this.dashboardUserPreferencesService.saveFilters(http, filters, language);
+    await this.dashboardUserPreferencesService.saveFilters(http, filters, language, sortCriteria);
   }
 
   async loadUserPreferences(
     http: HttpClient
-  ): Promise<{ language: SupportedLanguage; filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
+  ): Promise<{
+    language: SupportedLanguage;
+    filters: DashboardFiltersState;
+    sortCriteria: SortCriterion[];
+    propertyLabels: PropertyLabelEntry[];
+  } | null> {
     return this.dashboardUserPreferencesService.loadPreferences(http);
   }
 

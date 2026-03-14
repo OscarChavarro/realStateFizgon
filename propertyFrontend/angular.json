@@ -6,7 +6,7 @@
     "property-frontend": {
       "projectType": "application",
       "root": "",
-      "sourceRoot": "src/main",
+      "sourceRoot": "src",
       "prefix": "app",
       "architect": {
         "build": {
@@ -64,6 +64,36 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "src/test/test.ts",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.cjs",
+            "include": [
+              "src/test/**/*.spec.ts",
+              "src/main/app/**/*.ts"
+            ],
+            "assets": [
+              {
+                "glob": "secrets.json",
+                "input": ".",
+                "output": "/"
+              },
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/main/styles.css"
+            ]
+          }
         }
       }
     }

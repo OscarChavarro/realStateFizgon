@@ -2,4 +2,5 @@ node_modules/
 dist/
 .angular/
 out-tsc/
+coverage/
 secrets.json

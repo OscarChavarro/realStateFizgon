@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AuthUserRepository } from 'src/adapters/outbound/persistence/mongodb/auth-user.repository';
 
 export type PropertyReviewLabel = 'NEW' | 'FAVOURITE' | 'DISCHARGED';
+export type PreferredLanguage = 'en' | 'sp';
 
 export type UserPropertyLabels = {
   propertyId: string;
@@ -12,6 +13,7 @@ export type UserPropertyLabels = {
 };
 
 export type AuthUserPreferences = {
+  language: PreferredLanguage;
   showClosed: boolean;
   showNew: boolean;
   showFavourite: boolean;
@@ -29,6 +31,7 @@ export class AuthUserPreferencesService {
     const preferences = await this.authUserRepository.getUserPreferences(userId);
     const propertyLabels = this.normalizePropertyLabels(preferences['propertyLabels']);
     return {
+      language: this.toPreferredLanguage(preferences['language'], 'en'),
       showClosed: this.toBoolean(preferences['showClosed'], true),
       showNew: this.toBoolean(preferences['showNew'], true),
       showFavourite: this.toBoolean(preferences['showFavourite'], true),
@@ -48,9 +51,11 @@ export class AuthUserPreferencesService {
       showRejected: boolean;
       minPublicationDate?: unknown;
       maxPublicationDate?: unknown;
+      language?: unknown;
     }
   ): Promise<AuthUserPreferences> {
     const normalized = {
+      language: this.toPreferredLanguage(preferences.language, 'en'),
       showClosed: this.toBoolean(preferences.showClosed, true),
       showNew: this.toBoolean(preferences.showNew, true),
       showFavourite: this.toBoolean(preferences.showFavourite, true),
@@ -144,6 +149,20 @@ export class AuthUserPreferencesService {
     }
 
     return match[1];
+  }
+
+  private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'sp') {
+        return 'sp';
+      }
+      if (normalized === 'en') {
+        return 'en';
+      }
+    }
+
+    return fallback;
   }
 
   private normalizePropertyLabels(value: unknown): UserPropertyLabels[] {

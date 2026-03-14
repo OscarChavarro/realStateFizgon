@@ -57,11 +57,17 @@ export class DashboardStateFacadeService {
       || current.maxPrice !== next.maxPrice;
   }
 
-  async saveFiltersPreference(http: HttpClient, filters: DashboardFiltersState): Promise<void> {
-    await this.dashboardUserPreferencesService.saveFilters(http, filters);
+  async saveFiltersPreference(
+    http: HttpClient,
+    filters: DashboardFiltersState,
+    language: SupportedLanguage
+  ): Promise<void> {
+    await this.dashboardUserPreferencesService.saveFilters(http, filters, language);
   }
 
-  async loadUserPreferences(http: HttpClient): Promise<{ filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
+  async loadUserPreferences(
+    http: HttpClient
+  ): Promise<{ language: SupportedLanguage; filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
     return this.dashboardUserPreferencesService.loadPreferences(http);
   }
 

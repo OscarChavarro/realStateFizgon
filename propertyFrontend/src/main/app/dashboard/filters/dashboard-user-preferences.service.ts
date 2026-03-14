@@ -3,8 +3,10 @@ import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
 import { PropertyLabelEntry, PropertyLabels, PropertyReviewLabel } from 'src/app/dashboard/dashboard.types';
+import { SupportedLanguage } from 'src/app/i18n/i18n.service';
 
 type UserPreferencesPayload = {
+  language?: unknown;
   showClosed?: unknown;
   showNew?: unknown;
   showFavourite?: unknown;
@@ -22,12 +24,13 @@ type UserPreferencesPayload = {
 export class DashboardUserPreferencesService {
   async loadPreferences(
     http: HttpClient
-  ): Promise<{ filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
+  ): Promise<{ language: SupportedLanguage; filters: DashboardFiltersState; propertyLabels: PropertyLabelEntry[] } | null> {
     try {
       const response = await firstValueFrom(
         http.get<UserPreferencesPayload>('/auth/preferences')
       );
       return {
+        language: this.toSupportedLanguage(response?.language, 'en'),
         filters: {
           showClosed: this.toBoolean(response?.showClosed, true),
           showNew: this.toBoolean(response?.showNew, true),
@@ -45,11 +48,16 @@ export class DashboardUserPreferencesService {
     }
   }
 
-  async saveFilters(http: HttpClient, filters: DashboardFiltersState): Promise<void> {
+  async saveFilters(
+    http: HttpClient,
+    filters: DashboardFiltersState,
+    language: SupportedLanguage
+  ): Promise<void> {
     await firstValueFrom(
       http.post(
         '/auth/preferences/filters',
         {
+          language,
           showClosed: filters.showClosed,
           showNew: filters.showNew,
           showFavourite: filters.showFavourite,
@@ -113,6 +121,20 @@ export class DashboardUserPreferencesService {
         return false;
       }
     }
+    return fallback;
+  }
+
+  private toSupportedLanguage(value: unknown, fallback: SupportedLanguage): SupportedLanguage {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'sp') {
+        return 'sp';
+      }
+      if (normalized === 'en') {
+        return 'en';
+      }
+    }
+
     return fallback;
   }
 

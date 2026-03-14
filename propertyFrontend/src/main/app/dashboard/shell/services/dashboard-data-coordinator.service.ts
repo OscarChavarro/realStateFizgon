@@ -7,6 +7,7 @@ import {
 } from 'src/app/dashboard/filters/dashboard-filters.model';
 import { DashboardStateFacadeService } from 'src/app/dashboard/shell/services/dashboard-state-facade.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
+import { SupportedLanguage } from 'src/app/i18n/i18n.service';
 
 type RefreshDashboardDataParams = {
   http: HttpClient;
@@ -22,6 +23,7 @@ type HandleFiltersChangeParams = {
   http: HttpClient;
   currentFilters: DashboardFiltersState;
   nextFilters: DashboardFiltersState;
+  selectedLanguage: SupportedLanguage;
   isAuthenticated: boolean;
   setFilters: (filters: DashboardFiltersState) => void;
   onRefreshDashboardData: () => Promise<void>;
@@ -30,6 +32,8 @@ type HandleFiltersChangeParams = {
 type LoadUserPreferencesParams = {
   http: HttpClient;
   setFilters: (filters: DashboardFiltersState) => void;
+  setSelectedLanguage: (language: SupportedLanguage) => void;
+  persistSelectedLanguage: (language: SupportedLanguage) => void;
   setPropertyLabels: (entries: PropertyLabelEntry[]) => void;
 };
 
@@ -83,7 +87,8 @@ export class DashboardDataCoordinatorService {
       try {
         await this.dashboardStateFacadeService.saveFiltersPreference(
           params.http,
-          params.nextFilters
+          params.nextFilters,
+          params.selectedLanguage
         );
       } catch {
         // Ignore persistence errors so filtering still updates UI from backend.
@@ -101,8 +106,27 @@ export class DashboardDataCoordinatorService {
       return;
     }
 
+    params.setSelectedLanguage(preferences.language);
+    params.persistSelectedLanguage(preferences.language);
     params.setFilters(preferences.filters);
     params.setPropertyLabels(preferences.propertyLabels);
+  }
+
+  async saveLanguagePreference(
+    http: HttpClient,
+    isAuthenticated: boolean,
+    filters: DashboardFiltersState,
+    selectedLanguage: SupportedLanguage
+  ): Promise<void> {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    try {
+      await this.dashboardStateFacadeService.saveFiltersPreference(http, filters, selectedLanguage);
+    } catch {
+      // Ignore persistence errors so language still updates locally.
+    }
   }
 
   async toggleSortAndRefresh(params: ToggleSortParams): Promise<void> {

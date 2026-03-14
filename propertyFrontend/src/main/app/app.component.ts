@@ -157,6 +157,12 @@ export class AppComponent implements OnInit, OnDestroy {
   onLanguageChange(language: SupportedLanguage): void {
     this.selectedLanguage.set(language);
     this.dashboardStateFacadeService.persistSelectedLanguage(AppComponent.SELECTED_LANGUAGE_KEY, language);
+    void this.dashboardDataCoordinatorService.saveLanguagePreference(
+      this.http,
+      this.authenticatedUser() !== null,
+      this.filters(),
+      language
+    );
   }
 
   onFiltersChange(filters: DashboardFiltersState): void {
@@ -292,6 +298,7 @@ export class AppComponent implements OnInit, OnDestroy {
       http: this.http,
       currentFilters: this.filters(),
       nextFilters: filters,
+      selectedLanguage: this.selectedLanguage(),
       isAuthenticated: this.authenticatedUser() !== null,
       setFilters: (nextFilters) => this.filters.set(nextFilters),
       onRefreshDashboardData: () => this.refreshDashboardData()
@@ -301,6 +308,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private async loadUserPreferences(): Promise<void> {
     await this.dashboardDataCoordinatorService.loadUserPreferences({
       http: this.http,
+      setSelectedLanguage: (language) => this.selectedLanguage.set(language),
+      persistSelectedLanguage: (language) => this.dashboardStateFacadeService.persistSelectedLanguage(
+        AppComponent.SELECTED_LANGUAGE_KEY,
+        language
+      ),
       setFilters: (filters) => this.filters.set(filters),
       setPropertyLabels: (labels) => this.propertyLabels.set(labels)
     });

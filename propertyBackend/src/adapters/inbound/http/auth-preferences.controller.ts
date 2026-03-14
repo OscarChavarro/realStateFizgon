@@ -3,6 +3,7 @@ import { AuthSessionService } from 'src/application/services/auth/auth-session.s
 import {
   AuthUserPreferences,
   AuthUserPreferencesService,
+  PreferredLanguage,
   PropertyReviewLabel
 } from 'src/application/services/auth/auth-user-preferences.service';
 
@@ -13,6 +14,7 @@ type HttpRequestLike = {
 };
 
 type SaveFiltersPreferencesBody = {
+  language?: unknown;
   showClosed?: unknown;
   showNew?: unknown;
   showFavourite?: unknown;
@@ -38,6 +40,7 @@ export class AuthPreferencesController {
     const userId = this.getOptionalUserId(request);
     if (!userId) {
       return {
+        language: 'en',
         showClosed: true,
         showNew: true,
         showFavourite: true,
@@ -53,6 +56,7 @@ export class AuthPreferencesController {
 
   @Get('filters')
   async getFiltersPreferences(@Req() request: HttpRequestLike): Promise<{
+    language: PreferredLanguage;
     showClosed: boolean;
     showNew: boolean;
     showFavourite: boolean;
@@ -62,6 +66,7 @@ export class AuthPreferencesController {
   }> {
     const preferences = await this.getPreferences(request);
     return {
+      language: preferences.language,
       showClosed: preferences.showClosed,
       showNew: preferences.showNew,
       showFavourite: preferences.showFavourite,
@@ -76,6 +81,7 @@ export class AuthPreferencesController {
     @Req() request: HttpRequestLike,
     @Body() body: SaveFiltersPreferencesBody
   ): Promise<{
+    language: PreferredLanguage;
     showClosed: boolean;
     showNew: boolean;
     showFavourite: boolean;
@@ -88,10 +94,12 @@ export class AuthPreferencesController {
     const showNew = this.toBoolean(body?.showNew, true);
     const showFavourite = this.toBoolean(body?.showFavourite, true);
     const showRejected = this.toBoolean(body?.showRejected, true);
+    const language = this.toPreferredLanguage(body?.language, 'en');
     const minPublicationDate = this.toDateOnlyString(body?.minPublicationDate);
     const maxPublicationDate = this.toDateOnlyString(body?.maxPublicationDate);
     if (!userId) {
       return {
+        language,
         showClosed,
         showNew,
         showFavourite,
@@ -106,10 +114,12 @@ export class AuthPreferencesController {
       showNew,
       showFavourite,
       showRejected,
+      language,
       minPublicationDate,
       maxPublicationDate
     });
     return {
+      language: preferences.language,
       showClosed: preferences.showClosed,
       showNew: preferences.showNew,
       showFavourite: preferences.showFavourite,
@@ -130,6 +140,7 @@ export class AuthPreferencesController {
     if (!userId) {
       if (!propertyId || Object.keys(labels).length === 0) {
         return {
+          language: 'en',
           showClosed: true,
           showNew: true,
           showFavourite: true,
@@ -141,6 +152,7 @@ export class AuthPreferencesController {
       }
 
       return {
+        language: 'en',
         showClosed: true,
         showNew: true,
         showFavourite: true,
@@ -208,6 +220,20 @@ export class AuthPreferencesController {
     }
 
     return match[1];
+  }
+
+  private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'sp') {
+        return 'sp';
+      }
+      if (normalized === 'en') {
+        return 'en';
+      }
+    }
+
+    return fallback;
   }
 
   private toTrimmedString(value: unknown): string {

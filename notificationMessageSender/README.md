@@ -19,10 +19,14 @@ Required files:
 Relevant configuration:
 - `metrics.httpPort`: HTTP port used to expose observability endpoints (default `9464`).
 - `notificaton.postMessageSentWaitInMs`: wait time in milliseconds after consuming each message (default `3600000`, i.e. 3600 seconds).
+- `rabbitmq.reconnectDelayMs`: delay in milliseconds before reconnecting RabbitMQ after connection/channel failure (default `5000`).
+- `rabbitmq.heartbeatSeconds`: AMQP heartbeat in seconds (default `30`).
 - `whiskeysocketswhatsapp.authFolderPath`: local folder to persist WhatsApp auth session.
 - `whiskeysocketswhatsapp.printQrInTerminal`: print QR in terminal when linking is needed.
 - `whiskeysocketswhatsapp.markOnlineOnConnect`: Baileys online presence behavior.
 - `whiskeysocketswhatsapp.connectTimeoutMs`: timeout for WhatsApp connection on startup.
+- `whiskeysocketswhatsapp.reconnectDelayMs`: standard retry delay for WhatsApp reconnects (default `5000`).
+- `whiskeysocketswhatsapp.reconnectDelayOnStatusCode405Ms`: retry delay when WhatsApp closes with status code `405` (default `600000`, i.e. 10 minutes).
 
 Credentials and destination data are read from `secrets.json`:
 - `whiskeysocketswhatsapp.phoneNumber`: destination phone number (used to derive `@s.whatsapp.net` JID).

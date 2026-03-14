@@ -37,10 +37,18 @@ type BaileysModule = {
   };
 };
 
+class WhatsappConnectionClosedError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode?: number
+  ) {
+    super(message);
+  }
+}
+
 @Injectable()
 export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
   private readonly logger = new Logger(WhatsappWhiskeySocketsService.name);
-  private static readonly RETRY_DELAY_MS = 5000;
   private socket: BaileysSocket | null = null;
   private isConnected = false;
   private initializationPromise: Promise<void> | null = null;
@@ -179,20 +187,20 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
 
           if (wasOpened) {
             this.shouldLogRestartOnNextOpen = statusCode !== loggedOutCode;
-            this.scheduleReconnect();
+            this.scheduleReconnect(this.resolveReconnectDelayMs(statusCode));
             return;
           }
 
           this.shouldLogRestartOnNextOpen = false;
           this.logger.error(message);
 
-          rejectPromise(new Error(message));
+          rejectPromise(new WhatsappConnectionClosedError(message, statusCode));
         }
       });
     });
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(delayMs: number): void {
     if (this.shuttingDown) {
       return;
     }
@@ -211,7 +219,7 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.error(`Failed to re-open WhatsApp connection: ${message}`);
       });
-    }, WhatsappWhiskeySocketsService.RETRY_DELAY_MS);
+    }, delayMs);
   }
 
   private async initializeSocketWithRetry(): Promise<void> {
@@ -221,8 +229,11 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
         return;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`WhatsApp initialization failed: ${message}. Retrying in ${WhatsappWhiskeySocketsService.RETRY_DELAY_MS}ms.`);
-        await this.sleep(WhatsappWhiskeySocketsService.RETRY_DELAY_MS);
+        const retryDelayMs = this.resolveReconnectDelayMs(
+          error instanceof WhatsappConnectionClosedError ? error.statusCode : undefined
+        );
+        this.logger.warn(`WhatsApp initialization failed: ${message}. Retrying in ${retryDelayMs}ms.`);
+        await this.sleep(retryDelayMs);
       }
     }
   }
@@ -241,6 +252,14 @@ export class WhatsappWhiskeySocketsService implements OnModuleDestroy {
     const errorObject = error as { output?: { statusCode?: unknown } };
     const statusCode = errorObject.output?.statusCode;
     return typeof statusCode === 'number' ? statusCode : undefined;
+  }
+
+  private resolveReconnectDelayMs(statusCode?: number): number {
+    if (statusCode === 405) {
+      return this.configuration.whiskeySocketsWhatsappReconnectDelayOnStatusCode405Ms;
+    }
+
+    return this.configuration.whiskeySocketsWhatsappReconnectDelayMs;
   }
 
   private async sleep(ms: number): Promise<void> {

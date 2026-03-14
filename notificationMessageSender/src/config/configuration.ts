@@ -6,6 +6,8 @@ type Environment = {
   rabbitmq: {
     host: string;
     port: number;
+    reconnectDelayMs?: number;
+    heartbeatSeconds?: number;
   };
   whatsapp?: {
     messageReceiveMode?: string;
@@ -21,6 +23,8 @@ type Environment = {
     printQrInTerminal?: boolean;
     markOnlineOnConnect?: boolean;
     connectTimeoutMs?: number;
+    reconnectDelayMs?: number;
+    reconnectDelayOnStatusCode405Ms?: number;
   };
 };
 
@@ -74,6 +78,14 @@ export class Configuration {
     return this.secrets.rabbitmq?.queue ?? 'outgoing-notification-messages';
   }
 
+  get rabbitMqReconnectDelayMs(): number {
+    return Math.max(1000, this.environment.rabbitmq?.reconnectDelayMs ?? 5000);
+  }
+
+  get rabbitMqHeartbeatSeconds(): number {
+    return Math.max(5, this.environment.rabbitmq?.heartbeatSeconds ?? 30);
+  }
+
   get rabbitMqUser(): string {
     return this.secrets.rabbitmq?.user ?? '';
   }
@@ -104,6 +116,17 @@ export class Configuration {
 
   get whiskeySocketsWhatsappConnectTimeoutMs(): number {
     return Math.max(1000, this.environment.whiskeysocketswhatsapp?.connectTimeoutMs ?? 60000);
+  }
+
+  get whiskeySocketsWhatsappReconnectDelayMs(): number {
+    return Math.max(1000, this.environment.whiskeysocketswhatsapp?.reconnectDelayMs ?? 5000);
+  }
+
+  get whiskeySocketsWhatsappReconnectDelayOnStatusCode405Ms(): number {
+    return Math.max(
+      this.whiskeySocketsWhatsappReconnectDelayMs,
+      this.environment.whiskeysocketswhatsapp?.reconnectDelayOnStatusCode405Ms ?? 600000
+    );
   }
 
   get whiskeySocketsWhatsappPhoneNumber(): string {

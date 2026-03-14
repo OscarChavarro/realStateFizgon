@@ -1,7 +1,9 @@
 {
   "rabbitmq": {
     "host": "localhost",
-    "port": 5672
+    "port": 5672,
+    "reconnectDelayMs": 5000,
+    "heartbeatSeconds": 30
   },
   "whatsapp": {
     "messageReceiveMode": "IGNORE"
@@ -16,6 +18,8 @@
     "authFolderPath": "./output/whatsapp-auth",
     "printQrInTerminal": true,
     "markOnlineOnConnect": false,
-    "connectTimeoutMs": 60000
+    "connectTimeoutMs": 60000,
+    "reconnectDelayMs": 5000,
+    "reconnectDelayOnStatusCode405Ms": 600000
   }
 }

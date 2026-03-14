@@ -15,6 +15,11 @@ type FrontendSecrets = {
   backend?: {
     baseUrl?: string;
   };
+  google?: {
+    maps?: {
+      'api-key'?: string;
+    };
+  };
 };
 
 type PropertiesResponse = {
@@ -61,6 +66,7 @@ type DashboardDataResult = {
 type DashboardConfiguration = {
   backendBaseUrl: string;
   staticMediaBaseUrl: string;
+  googleMapsApiKey: string | null;
 };
 
 @Injectable({
@@ -79,12 +85,14 @@ export class DashboardDataService {
           : ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
         staticMediaBaseUrl: configuredStaticMedia
           ? this.normalizeStaticMediaBaseUrl(configuredStaticMedia)
-          : ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+          : ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
+        googleMapsApiKey: this.normalizeGoogleMapsApiKey(secrets.google?.maps?.['api-key'])
       };
     } catch {
       return {
         backendBaseUrl: ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
-        staticMediaBaseUrl: ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+        staticMediaBaseUrl: ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
+        googleMapsApiKey: null
       };
     }
   }
@@ -204,6 +212,15 @@ export class DashboardDataService {
 
   private normalizeStaticMediaBaseUrl(value: string): string {
     return value.endsWith('/') ? value : `${value}/`;
+  }
+
+  private normalizeGoogleMapsApiKey(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
   }
 
   private buildPropertiesEndpointUrl(

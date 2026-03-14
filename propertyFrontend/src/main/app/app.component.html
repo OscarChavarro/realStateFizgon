@@ -52,6 +52,7 @@
             [property]="selectedProperty()"
             [selectedLanguage]="selectedLanguage()"
             [staticMediaBaseUrl]="getStaticMediaBaseUrl()"
+            [googleMapsApiKey]="getGoogleMapsApiKey()"
             [reviewEnabled]="authenticatedUser() !== null"
             [propertyLabels]="propertyLabels()"
             (propertyReviewToggle)="onPropertyReviewToggle($event)"

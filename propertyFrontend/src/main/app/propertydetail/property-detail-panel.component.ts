@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import {
   DashboardPropertyRow,
   PropertyLabelEntry,
@@ -15,24 +15,19 @@ import { PropertyLocationComponent } from 'src/app/propertydetail/property-locat
   templateUrl: './property-detail-panel.component.html',
   styleUrl: './property-detail-panel.component.css'
 })
-export class PropertyDetailPanelComponent implements OnChanges {
+export class PropertyDetailPanelComponent {
   private readonly i18nService = inject(I18nService);
   private readonly draftComments = new Map<string, string>();
 
   @Input() property: DashboardPropertyRow | null = null;
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Input() staticMediaBaseUrl = 'http://localhost:666/';
+  @Input() googleMapsApiKey: string | null = null;
   @Input() reviewEnabled = false;
   @Input() propertyLabels: PropertyLabelEntry[] = [];
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertyCommentSave = new EventEmitter<{ property: DashboardPropertyRow; comment: string }>();
   isLocationDialogOpen = false;
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['property']) {
-      this.isLocationDialogOpen = false;
-    }
-  }
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);

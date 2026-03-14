@@ -35,7 +35,9 @@ export class DashboardStateFacadeService {
     sessionStorage.setItem(selectedLanguageKey, language);
   }
 
-  async loadBackendConfiguration(http: HttpClient): Promise<{ backendBaseUrl: string; staticMediaBaseUrl: string }> {
+  async loadBackendConfiguration(
+    http: HttpClient
+  ): Promise<{ backendBaseUrl: string; staticMediaBaseUrl: string; googleMapsApiKey: string | null }> {
     return this.dashboardDataService.loadBackendConfiguration(http);
   }
 

@@ -23,12 +23,30 @@ export type InteractionShortcutsContext = {
 export class InteractionShortcutsService {
   handleWindowKeyDown(context: InteractionShortcutsContext): void {
     const { event } = context;
-    if (event.repeat || event.defaultPrevented) {
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingTarget(target)) {
       return;
     }
 
-    const target = event.target as HTMLElement | null;
-    if (this.isTypingTarget(target)) {
+    const isCtrlOrMetaFind = event.key.toLowerCase() === 'f' && (event.ctrlKey || event.metaKey);
+    if (isCtrlOrMetaFind) {
+      return;
+    }
+
+    const isPlainFullscreenToggle = event.key.toLowerCase() === 'f'
+      && !event.ctrlKey
+      && !event.metaKey
+      && !event.altKey;
+    if (isPlainFullscreenToggle) {
+      if (event.repeat) {
+        return;
+      }
+      event.preventDefault();
+      context.onToggleFullscreen();
+      return;
+    }
+
+    if (event.repeat || event.defaultPrevented) {
       return;
     }
 
@@ -49,12 +67,6 @@ export class InteractionShortcutsService {
       event.preventDefault();
       const selected = context.onKeyboardSelect(1);
       context.onScrollSelectedProperty(selected);
-      return;
-    }
-
-    if (event.key.toLowerCase() === 'f') {
-      event.preventDefault();
-      context.onToggleFullscreen();
       return;
     }
 

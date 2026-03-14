@@ -38,6 +38,10 @@ This system includes the scraper backend needed to get information from internet
 
 ![Frontend usage example](doc/frontend.png)
 
+The UI includes tools for the user to perform basic geographic context analysis, by locating common infrastructure around the property. This way user can evaluate daily activities as such commute to work or taking kids to school.
+
+![Frontend usage example](doc/frontendMap.png)
+
 # Deployment
 
 This project depends on several components, such as RabbitMQ, MongoDB, Prometheus, Grafana and other services that interact with micro services. The whole environment can be deployed in several different ways:

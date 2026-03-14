@@ -6,15 +6,15 @@
     "property-frontend": {
       "projectType": "application",
       "root": "",
-      "sourceRoot": "src",
+      "sourceRoot": "src/main",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/property-frontend",
-            "index": "src/index.html",
-            "browser": "src/main.ts",
+            "index": "src/main/index.html",
+            "browser": "src/main/main.ts",
             "polyfills": [
               "zone.js"
             ],
@@ -31,7 +31,7 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/main/styles.css"
             ]
           },
           "configurations": {

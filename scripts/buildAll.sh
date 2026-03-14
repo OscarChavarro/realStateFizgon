@@ -32,20 +32,6 @@ npm run build
 npm run test:cov
 cd ..
 
-print_build_msg "propertyBackend"
-cd propertyBackend
-npm install
-npm ci
-npm run build
-cd ..
-
-print_build_msg "propertyFrontend"
-cd propertyFrontend
-npm install
-npm ci
-npm run build
-cd ..
-
 print_build_msg "pendingImageDownloader"
 cd pendingImageDownloader
 npm install
@@ -58,4 +44,19 @@ cd notificationMessageSender
 npm install
 npm ci
 npm run build
+cd ..
+
+print_build_msg "propertyBackend"
+cd propertyBackend
+npm install
+npm ci
+npm run build
+cd ..
+
+print_build_msg "propertyFrontend"
+cd propertyFrontend
+npm install
+npm ci
+npm run build
+npm run test:cov
 cd ..

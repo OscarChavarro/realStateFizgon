@@ -1,91 +1,30 @@
 import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
+import {
+  GoogleLatLngLike,
+  GoogleMapLike as PoiGoogleMapLike,
+  GoogleMarkerLike as PoiGoogleMarkerLike,
+  GooglePlacesServiceLike,
+  LocationLayerId,
+  PropertyLocationPoiLayerManager
+} from './property-location-poi-layer-manager';
 
-type LocationLayerId =
-  | 'restaurants'
-  | 'supermarkets'
-  | 'hospitals'
-  | 'metroStations'
-  | 'schools'
-  | 'universities';
-
-type LocationLayerOption = {
-  id: LocationLayerId;
-  label: TranslationKey;
-  placeType: string;
-  markerColor: string;
-  markerGlyph: string;
-};
-
-type GoogleLatLngLike = {
-  lat: () => number;
-  lng: () => number;
-};
-
-type GoogleMapLike = {
-  setOptions: (options: unknown) => void;
+type GoogleMapWithCenter = PoiGoogleMapLike & {
   getCenter: () => GoogleLatLngLike | { lat: number; lng: number } | null;
 };
 
-type GoogleMarkerLike = {
-  setMap: (map: GoogleMapLike | null) => void;
-};
-
-type GooglePlaceResultLike = {
-  geometry?: {
-    location?: GoogleLatLngLike | { lat: number; lng: number };
-  };
-  name?: string;
-};
-
-type GooglePlacesServiceLike = {
-  nearbySearch: (
-    request: { location: { lat: number; lng: number }; radius: number; type: string },
-    callback: (results: GooglePlaceResultLike[] | null, status: string) => void
-  ) => void;
-};
-
 type GoogleMapsApi = {
-  Map: new (container: HTMLElement, options: unknown) => GoogleMapLike;
-  Marker: new (options: unknown) => GoogleMarkerLike;
+  Map: new (container: HTMLElement, options: unknown) => GoogleMapWithCenter;
+  Marker: new (options: unknown) => PoiGoogleMarkerLike;
   Size: new (width: number, height: number) => unknown;
   Point: new (x: number, y: number) => unknown;
   places?: {
-    PlacesService: new (map: GoogleMapLike) => GooglePlacesServiceLike;
+    PlacesService: new (map: GoogleMapWithCenter) => GooglePlacesServiceLike;
     PlacesServiceStatus: {
       OK: string;
     };
   };
 };
-
-type GoogleMapStyleRule = {
-  featureType: string;
-  elementType: string;
-  stylers: Array<{ visibility: 'on' | 'off' }>;
-};
-
-const MAP_BASE_STYLES: GoogleMapStyleRule[] = [
-  {
-    featureType: 'poi',
-    elementType: 'labels',
-    stylers: [{ visibility: 'off' }]
-  },
-  {
-    featureType: 'poi',
-    elementType: 'geometry',
-    stylers: [{ visibility: 'off' }]
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'labels',
-    stylers: [{ visibility: 'off' }]
-  },
-  {
-    featureType: 'transit.station',
-    elementType: 'geometry',
-    stylers: [{ visibility: 'off' }]
-  }
-];
 
 @Component({
   selector: 'app-property-location',
@@ -97,22 +36,13 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private static googleMapsScriptPromise: Promise<void> | null = null;
 
   private readonly i18nService = inject(I18nService);
-  private mapInstance: GoogleMapLike | null = null;
-  private markerInstance: GoogleMarkerLike | null = null;
+  private readonly poiLayerManager = new PropertyLocationPoiLayerManager();
+  private mapInstance: GoogleMapWithCenter | null = null;
+  private markerInstance: PoiGoogleMarkerLike | null = null;
   private placesService: GooglePlacesServiceLike | null = null;
-  private readonly layerMarkers = new Map<LocationLayerId, GoogleMarkerLike[]>();
-  private readonly layerSearchInFlight = new Set<LocationLayerId>();
   private isResizingLayerPanel = false;
   private layerPanelStartX = 0;
   private layerPanelStartWidth = 0;
-  private readonly layerSelection: Record<LocationLayerId, boolean> = {
-    restaurants: false,
-    supermarkets: false,
-    hospitals: false,
-    metroStations: false,
-    schools: false,
-    universities: false
-  };
 
   @Input() isOpen = false;
   @Input() propertyTitle = '';
@@ -126,14 +56,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   mapLoadError: string | null = null;
   isLayerPanelVisible = true;
   layerPanelWidthPx = 220;
-  readonly layerOptions: LocationLayerOption[] = [
-    { id: 'restaurants', label: 'PROPERTY_LOCATION_LAYER_RESTAURANTS', placeType: 'restaurant', markerColor: '#f97316', markerGlyph: '🍽' },
-    { id: 'supermarkets', label: 'PROPERTY_LOCATION_LAYER_SUPERMARKETS', placeType: 'supermarket', markerColor: '#2563eb', markerGlyph: '🛒' },
-    { id: 'hospitals', label: 'PROPERTY_LOCATION_LAYER_HOSPITALS', placeType: 'hospital', markerColor: '#dc2626', markerGlyph: '✚' },
-    { id: 'metroStations', label: 'PROPERTY_LOCATION_LAYER_METRO_STATIONS', placeType: 'subway_station', markerColor: '#7c3aed', markerGlyph: 'Ⓜ' },
-    { id: 'schools', label: 'PROPERTY_LOCATION_LAYER_SCHOOLS', placeType: 'school', markerColor: '#0891b2', markerGlyph: '🏫' },
-    { id: 'universities', label: 'PROPERTY_LOCATION_LAYER_UNIVERSITIES', placeType: 'university', markerColor: '#1f9d4d', markerGlyph: '🎓' }
-  ];
+  readonly layerOptions = this.poiLayerManager.layerOptions;
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
@@ -193,7 +116,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   }
 
   isLayerEnabled(id: LocationLayerId): boolean {
-    return this.layerSelection[id];
+    return this.poiLayerManager.isLayerEnabled(id);
   }
 
   toggleLayerPanelVisibility(): void {
@@ -214,14 +137,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
 
   onLayerToggle(id: LocationLayerId, event: Event): void {
     const checked = (event.target as HTMLInputElement | null)?.checked === true;
-    this.layerSelection[id] = checked;
-    this.applyLayerStyles();
-    if (!checked) {
-      this.hideLayerMarkers(id);
-      return;
-    }
-
-    this.enableLayer(id);
+    this.poiLayerManager.toggleLayer(id, checked, this.buildPoiLayerContext());
   }
 
   private async initializeMapIfReady(): Promise<void> {
@@ -295,15 +211,13 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       streetViewControl: false,
       fullscreenControl: false,
       keyboardShortcuts: false,
-      styles: this.buildMapStyles()
+      styles: this.poiLayerManager.buildMapStyles()
     });
 
     if (this.markerInstance) {
       this.markerInstance.setMap(null);
     }
 
-    this.clearAllLayerMarkers();
-    this.layerSearchInFlight.clear();
     this.markerInstance = new googleMaps.Marker({
       map: this.mapInstance,
       position: center,
@@ -319,12 +233,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       ? new googleMaps.places.PlacesService(this.mapInstance)
       : null;
 
-    for (const option of this.layerOptions) {
-      if (this.layerSelection[option.id]) {
-        this.enableLayer(option.id);
-      }
-    }
-    this.applyLayerStyles();
+    this.poiLayerManager.onMapReady(this.buildPoiLayerContext());
   }
 
   private buildHouseMarkerIconDataUrl(): string {
@@ -338,97 +247,6 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       </svg>
     `.trim();
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  }
-
-  private buildPoiMarkerIconDataUrl(backgroundColor: string, glyph: string): string {
-    const sanitizedGlyph = glyph.replace(/[<>&'"]/g, '');
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-        <circle cx="15" cy="15" r="14" fill="${backgroundColor}" />
-        <text x="15" y="19" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#ffffff">${sanitizedGlyph}</text>
-      </svg>
-    `.trim();
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  }
-
-  private enableLayer(id: LocationLayerId): void {
-    const existingMarkers = this.layerMarkers.get(id);
-    if (existingMarkers && existingMarkers.length > 0) {
-      for (const marker of existingMarkers) {
-        marker.setMap(this.mapInstance);
-      }
-      return;
-    }
-
-    if (this.layerSearchInFlight.has(id)) {
-      return;
-    }
-
-    const option = this.layerOptions.find((entry) => entry.id === id);
-    const center = this.getMapCenter();
-    if (!option || !this.placesService || !center || !this.mapInstance) {
-      return;
-    }
-
-    this.layerSearchInFlight.add(id);
-    this.placesService.nearbySearch(
-      {
-        location: center,
-        radius: 5000,
-        type: option.placeType
-      },
-      (results, status) => {
-        this.layerSearchInFlight.delete(id);
-        const mapsApi = this.getGoogleMaps();
-        if (!mapsApi?.places || status !== mapsApi.places.PlacesServiceStatus.OK || !results || !this.mapInstance) {
-          return;
-        }
-
-        const markers: GoogleMarkerLike[] = [];
-        for (const result of results) {
-          const resultLocation = result.geometry?.location;
-          const lat = this.readLatLng(resultLocation, 'lat');
-          const lng = this.readLatLng(resultLocation, 'lng');
-          if (lat === null || lng === null) {
-            continue;
-          }
-
-          const marker = new mapsApi.Marker({
-            map: this.layerSelection[id] ? this.mapInstance : null,
-            position: { lat, lng },
-            title: result.name ?? '',
-            icon: {
-              url: this.buildPoiMarkerIconDataUrl(option.markerColor, option.markerGlyph),
-              scaledSize: new mapsApi.Size(30, 30),
-              anchor: new mapsApi.Point(15, 15)
-            }
-          });
-          markers.push(marker);
-        }
-
-        this.layerMarkers.set(id, markers);
-      }
-    );
-  }
-
-  private hideLayerMarkers(id: LocationLayerId): void {
-    const markers = this.layerMarkers.get(id);
-    if (!markers) {
-      return;
-    }
-
-    for (const marker of markers) {
-      marker.setMap(null);
-    }
-  }
-
-  private clearAllLayerMarkers(): void {
-    for (const markers of this.layerMarkers.values()) {
-      for (const marker of markers) {
-        marker.setMap(null);
-      }
-    }
-    this.layerMarkers.clear();
   }
 
   private getMapCenter(): { lat: number; lng: number } | null {
@@ -468,55 +286,13 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     this.mapInstance.setOptions({ center });
   }
 
-  private applyLayerStyles(): void {
-    if (!this.mapInstance) {
-      return;
-    }
-
-    this.mapInstance.setOptions({
-      styles: this.buildMapStyles()
-    });
-  }
-
-  private buildMapStyles(): GoogleMapStyleRule[] {
-    const styles: GoogleMapStyleRule[] = [...MAP_BASE_STYLES];
-
-    if (this.layerSelection.restaurants) {
-      styles.push(
-        { featureType: 'poi.business', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'poi.business', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
-      );
-    }
-
-    if (this.layerSelection.supermarkets) {
-      styles.push(
-        { featureType: 'poi.grocery', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'poi.grocery', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
-      );
-    }
-
-    if (this.layerSelection.hospitals) {
-      styles.push(
-        { featureType: 'poi.medical', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'poi.medical', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
-      );
-    }
-
-    if (this.layerSelection.metroStations) {
-      styles.push(
-        { featureType: 'transit.station', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'transit.station', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
-      );
-    }
-
-    if (this.layerSelection.schools || this.layerSelection.universities) {
-      styles.push(
-        { featureType: 'poi.school', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'poi.school', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
-      );
-    }
-
-    return styles;
+  private buildPoiLayerContext() {
+    return {
+      mapInstance: this.mapInstance,
+      placesService: this.placesService,
+      mapsApi: this.getGoogleMaps(),
+      getMapCenter: () => this.getMapCenter()
+    };
   }
 
   private getGoogleMaps(): GoogleMapsApi | null {

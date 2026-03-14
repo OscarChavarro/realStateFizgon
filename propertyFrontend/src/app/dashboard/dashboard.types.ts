@@ -2,7 +2,7 @@ export type DashboardTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB
 
 export type DashboardPropertyRow = {
   propertyId: string;
-  createdAt: string;
+  publicationDate: string;
   title: string;
   url: string;
   price: string;
@@ -27,7 +27,7 @@ export type PropertyLabelEntry = {
 
 export type SortDirection = 'asc' | 'desc';
 
-export type SortField = 'importedBy' | 'title' | 'price';
+export type SortField = 'publicationDate' | 'title' | 'price';
 
 export type SortCriterion = {
   sortBy: SortField;

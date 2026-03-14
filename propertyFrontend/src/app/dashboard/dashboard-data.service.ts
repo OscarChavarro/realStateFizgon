@@ -19,15 +19,13 @@ type FrontendSecrets = {
 type PropertiesResponse = {
   error: string | null;
   data: Array<{
-    createdAt?: string | Date;
+    publicationDate?: string | Date;
     closedBy?: string | Date | null;
     closedby?: string | Date | null;
     closed_by?: string | Date | null;
     isClosed?: boolean | string | number | null;
     closedByExists?: boolean | string | number | null;
     propertyId?: string | number;
-    createdBy?: string;
-    importedBy?: string;
     title?: string;
     location?: string;
     description?: string;
@@ -145,11 +143,7 @@ export class DashboardDataService {
         || Object.prototype.hasOwnProperty.call(row, 'closedByExists')
       );
 
-      const createdAt = this.toDateOnlyString(
-        row.createdAt
-        ?? row.createdBy
-        ?? row.importedBy
-      );
+      const publicationDate = this.toDateOnlyString(row.publicationDate);
       const propertyId = row.propertyId === undefined || row.propertyId === null
         ? ''
         : String(row.propertyId);
@@ -170,7 +164,7 @@ export class DashboardDataService {
 
       return {
         propertyId,
-        createdAt,
+        publicationDate,
         title,
         url,
         price,

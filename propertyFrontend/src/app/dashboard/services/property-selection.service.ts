@@ -84,6 +84,6 @@ export class PropertySelectionService {
   }
 
   private getPropertyRowKey(property: DashboardPropertyRow): string {
-    return `${property.propertyId}|${property.url}|${property.createdAt}|${property.title}`;
+    return `${property.propertyId}|${property.url}|${property.publicationDate}|${property.title}`;
   }
 }

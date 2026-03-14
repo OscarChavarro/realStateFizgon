@@ -33,28 +33,28 @@
         </th>
         <th>
           <div class="th-content">
-            <span>{{ t('CREATED_AT') }}</span>
+            <span>{{ t('PUBLICATION_DATE') }}</span>
             <div class="sort-controls">
               <button
                 type="button"
                 class="sort-button"
-                [class.active]="getSortDirection('importedBy') === 'asc'"
-                (click)="onSortToggle('importedBy', 'asc')"
-                [attr.aria-label]="t('SORT_ASC') + ' ' + t('CREATED_AT')"
+                [class.active]="getSortDirection('publicationDate') === 'asc'"
+                (click)="onSortToggle('publicationDate', 'asc')"
+                [attr.aria-label]="t('SORT_ASC') + ' ' + t('PUBLICATION_DATE')"
               >
                 <span class="material-symbols-outlined">arrow_upward</span>
               </button>
               <button
                 type="button"
                 class="sort-button"
-                [class.active]="getSortDirection('importedBy') === 'desc'"
-                (click)="onSortToggle('importedBy', 'desc')"
-                [attr.aria-label]="t('SORT_DESC') + ' ' + t('CREATED_AT')"
+                [class.active]="getSortDirection('publicationDate') === 'desc'"
+                (click)="onSortToggle('publicationDate', 'desc')"
+                [attr.aria-label]="t('SORT_DESC') + ' ' + t('PUBLICATION_DATE')"
               >
                 <span class="material-symbols-outlined">arrow_downward</span>
               </button>
-              @if (shouldShowSortPriority('importedBy')) {
-                <span class="sort-priority">{{ getSortPriority('importedBy') }}</span>
+              @if (shouldShowSortPriority('publicationDate')) {
+                <span class="sort-priority">{{ getSortPriority('publicationDate') }}</span>
               }
             </div>
           </div>
@@ -115,7 +115,7 @@
               }
               <span class="title-text">{{ property.title }}</span>
             </td>
-            <td>{{ property.createdAt || '-' }}</td>
+            <td>{{ property.publicationDate || '-' }}</td>
             <td class="price-cell">{{ property.price }}</td>
             @if (reviewEnabled) {
               <td class="review-cell">

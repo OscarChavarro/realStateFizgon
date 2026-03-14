@@ -120,9 +120,9 @@ const TRANSLATIONS = {
     en: 'No users found.',
     sp: 'No se encontraron usuarios.'
   },
-  CREATED_AT: {
-    en: 'Created at',
-    sp: 'Creado en'
+  PUBLICATION_DATE: {
+    en: 'Published on',
+    sp: 'Publicado en'
   },
   TITLE: {
     en: 'Title',

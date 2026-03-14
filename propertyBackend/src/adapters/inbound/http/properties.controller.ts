@@ -134,6 +134,7 @@ export class PropertiesController {
       'location',
       'mainFeatures.area',
       'mainFeatures.bedrooms',
+      'publicationDate',
       'importedBy',
       'price',
       'propertyId'
@@ -330,6 +331,7 @@ export class PropertiesController {
     }
 
     payload.images = this.normalizeImagesWithLocalUrl(payload.images);
+    payload.publicationDate = this.normalizeDateLikeValue(payload.publicationDate);
     const normalizedClosedBy = this.normalizeClosedBy(payload.closedBy);
     payload.closedBy = normalizedClosedBy;
     payload.closedByExists = closedByExists;
@@ -384,6 +386,19 @@ export class PropertiesController {
   }
 
   private normalizeClosedBy(value: unknown): string | null {
+    const normalized = this.normalizeDateLikeValue(value);
+    if (normalized !== null) {
+      return normalized;
+    }
+
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return String(value);
+  }
+
+  private normalizeDateLikeValue(value: unknown): string | null {
     if (value === null || value === undefined) {
       return null;
     }
@@ -415,6 +430,6 @@ export class PropertiesController {
       }
     }
 
-    return String(value);
+    return null;
   }
 }

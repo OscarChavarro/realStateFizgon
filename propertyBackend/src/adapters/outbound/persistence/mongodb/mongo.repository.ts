@@ -13,6 +13,7 @@ export type PropertySortField =
   | 'location'
   | 'mainFeatures.area'
   | 'mainFeatures.bedrooms'
+  | 'publicationDate'
   | 'importedBy'
   | 'price'
   | 'propertyId';

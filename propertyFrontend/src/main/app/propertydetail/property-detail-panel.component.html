@@ -1,6 +1,29 @@
 @if (property) {
   <section class="detail-panel">
-    <h2>{{ property.title }}</h2>
+    <div class="detail-title-row">
+      <h2>{{ property.title }}</h2>
+      @if (hasGeoLocationHint(property)) {
+        <button
+          type="button"
+          class="location-trigger"
+          [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')"
+          [title]="t('PROPERTY_LOCATION_OPEN')"
+          (click)="openLocationDialog()"
+        >
+          <span class="material-symbols-outlined">map</span>
+        </button>
+      }
+    </div>
+
+    <app-property-location
+      [isOpen]="isLocationDialogOpen"
+      [propertyTitle]="property.title"
+      [latitude]="getGeoLatitude(property)"
+      [longitude]="getGeoLongitude(property)"
+      [selectedLanguage]="selectedLanguage"
+      (closeRequested)="closeLocationDialog()"
+    ></app-property-location>
+
     <table class="detail-meta-table">
       <tbody>
         <tr>

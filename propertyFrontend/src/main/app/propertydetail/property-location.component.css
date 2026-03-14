@@ -1,0 +1,60 @@
+.location-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.location-dialog {
+  width: min(560px, calc(100vw - 2rem));
+  min-height: 180px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle);
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  padding: 1rem 1.1rem;
+  position: relative;
+}
+
+.location-dialog-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: #fff;
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.location-dialog-close:hover {
+  background: #f4f6fb;
+}
+
+.location-dialog h3 {
+  margin: 0 2.5rem 0.35rem 0;
+  font-size: 1.05rem;
+  color: var(--color-text-emphasis);
+}
+
+.location-property-title {
+  margin: 0 0 0.7rem 0;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.location-coordinates p {
+  margin: 0 0 0.35rem 0;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}

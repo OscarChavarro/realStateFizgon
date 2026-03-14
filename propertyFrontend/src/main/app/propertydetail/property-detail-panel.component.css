@@ -5,10 +5,41 @@
   background: var(--color-surface);
 }
 
-.detail-panel h2 {
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
   margin: 0 0 0.55rem 0;
+}
+
+.detail-panel h2 {
+  margin: 0;
   color: var(--color-text-emphasis);
   font-size: 1.18rem;
+}
+
+.location-trigger {
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  background: #fff;
+  color: #1f4f96;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.location-trigger .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.location-trigger:hover {
+  background: #eef4ff;
+  border-color: #8fafe6;
 }
 
 .detail-meta-table {

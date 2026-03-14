@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
-import { DashboardPropertyRow, SortCriterion } from 'src/app/dashboard/dashboard.types';
+import { DashboardPropertyRow, GeoLocationHint, SortCriterion } from 'src/app/dashboard/dashboard.types';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
 import { DashboardPaginationState } from 'src/app/dashboard/pagination/dashboard-pagination.model';
 
@@ -38,6 +38,12 @@ type PropertiesResponse = {
       localUrl?: string | null;
       title?: string | null;
     }>;
+    geoLocationHint?: {
+      lat?: number | string | null;
+      lon?: number | string | null;
+      latitude?: number | string | null;
+      longitude?: number | string | null;
+    } | null;
   }>;
   pagination: {
     page: number;
@@ -265,6 +271,7 @@ export class DashboardDataService {
       const price = row.price === null || row.price === undefined
         ? '-'
         : String(row.price);
+      const geoLocationHint = this.parseGeoLocationHint(row.geoLocationHint);
 
       return {
         propertyId,
@@ -280,7 +287,8 @@ export class DashboardDataService {
           closedByValue,
           row.isClosed,
           row.closedByExists ?? closedByExistsFromPayload
-        )
+        ),
+        geoLocationHint
       };
     });
   }
@@ -370,6 +378,38 @@ export class DashboardDataService {
     }
 
     return localUrls;
+  }
+
+  private parseGeoLocationHint(value: PropertiesResponse['data'][number]['geoLocationHint']): GeoLocationHint | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const lat = this.toFiniteNumber(value.lat ?? value.latitude);
+    const lon = this.toFiniteNumber(value.lon ?? value.longitude);
+    if (lat === null || lon === null) {
+      return null;
+    }
+
+    return { lat, lon };
+  }
+
+  private toFiniteNumber(value: unknown): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const parsed = Number.parseFloat(trimmed);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
   }
 
   private hasClosedByValue(value: unknown): boolean {

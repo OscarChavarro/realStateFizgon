@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import {
   DashboardPropertyRow,
   PropertyLabelEntry,
@@ -6,15 +6,16 @@ import {
 } from 'src/app/dashboard/dashboard.types';
 import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 import { PropertyImageCarouselComponent } from 'src/app/propertydetail/property-image-carousel.component';
+import { PropertyLocationComponent } from 'src/app/propertydetail/property-location.component';
 
 @Component({
   selector: 'app-property-detail-panel',
   standalone: true,
-  imports: [PropertyImageCarouselComponent],
+  imports: [PropertyImageCarouselComponent, PropertyLocationComponent],
   templateUrl: './property-detail-panel.component.html',
   styleUrl: './property-detail-panel.component.css'
 })
-export class PropertyDetailPanelComponent {
+export class PropertyDetailPanelComponent implements OnChanges {
   private readonly i18nService = inject(I18nService);
   private readonly draftComments = new Map<string, string>();
 
@@ -25,6 +26,13 @@ export class PropertyDetailPanelComponent {
   @Input() propertyLabels: PropertyLabelEntry[] = [];
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertyCommentSave = new EventEmitter<{ property: DashboardPropertyRow; comment: string }>();
+  isLocationDialogOpen = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['property']) {
+      this.isLocationDialogOpen = false;
+    }
+  }
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
@@ -85,6 +93,28 @@ export class PropertyDetailPanelComponent {
     const comment = this.getDraftComment(property.propertyId).trim();
     this.draftComments.set(property.propertyId, comment);
     this.propertyCommentSave.emit({ property, comment });
+  }
+
+  hasGeoLocationHint(property: DashboardPropertyRow | null): boolean {
+    const lat = property?.geoLocationHint?.lat;
+    const lon = property?.geoLocationHint?.lon;
+    return Number.isFinite(lat) && Number.isFinite(lon);
+  }
+
+  getGeoLatitude(property: DashboardPropertyRow | null): number | null {
+    return this.hasGeoLocationHint(property) ? property?.geoLocationHint?.lat ?? null : null;
+  }
+
+  getGeoLongitude(property: DashboardPropertyRow | null): number | null {
+    return this.hasGeoLocationHint(property) ? property?.geoLocationHint?.lon ?? null : null;
+  }
+
+  openLocationDialog(): void {
+    this.isLocationDialogOpen = true;
+  }
+
+  closeLocationDialog(): void {
+    this.isLocationDialogOpen = false;
   }
 
   getPublicationDateExtended(publicationDate: string): string {

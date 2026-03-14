@@ -192,6 +192,26 @@ const TRANSLATIONS = {
     en: 'Source',
     sp: 'Fuente'
   },
+  PROPERTY_LOCATION_OPEN: {
+    en: 'Open location',
+    sp: 'Abrir ubicación'
+  },
+  PROPERTY_LOCATION_DIALOG_TITLE: {
+    en: 'Property location',
+    sp: 'Ubicación de la propiedad'
+  },
+  PROPERTY_LOCATION_CLOSE: {
+    en: 'Close location dialog',
+    sp: 'Cerrar diálogo de ubicación'
+  },
+  PROPERTY_LOCATION_LATITUDE: {
+    en: 'Latitude',
+    sp: 'Latitud'
+  },
+  PROPERTY_LOCATION_LONGITUDE: {
+    en: 'Longitude',
+    sp: 'Longitud'
+  },
   DESCRIPTION: {
     en: 'Description',
     sp: 'Descripción'

@@ -1,5 +1,10 @@
 export type DashboardTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB';
 
+export type GeoLocationHint = {
+  lat: number;
+  lon: number;
+};
+
 export type DashboardPropertyRow = {
   propertyId: string;
   publicationDate: string;
@@ -11,6 +16,7 @@ export type DashboardPropertyRow = {
   advertiserComment: string;
   localImageUrls: string[];
   unavailable: boolean;
+  geoLocationHint: GeoLocationHint | null;
 };
 
 export type PropertyReviewLabel = 'NEW' | 'FAVOURITE' | 'DISCHARGED';

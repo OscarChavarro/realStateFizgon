@@ -1,0 +1,22 @@
+@if (isOpen) {
+  <div class="location-dialog-backdrop" role="presentation">
+    <section class="location-dialog" role="dialog" aria-modal="true" [attr.aria-label]="t('PROPERTY_LOCATION_DIALOG_TITLE')">
+      <button
+        type="button"
+        class="location-dialog-close"
+        [attr.aria-label]="t('PROPERTY_LOCATION_CLOSE')"
+        (click)="onCloseClick()"
+      >
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <h3>{{ t('PROPERTY_LOCATION_DIALOG_TITLE') }}</h3>
+      <p class="location-property-title">{{ propertyTitle || '-' }}</p>
+
+      <div class="location-coordinates">
+        <p><strong>{{ t('PROPERTY_LOCATION_LATITUDE') }}:</strong> {{ latitude ?? '-' }}</p>
+        <p><strong>{{ t('PROPERTY_LOCATION_LONGITUDE') }}:</strong> {{ longitude ?? '-' }}</p>
+      </div>
+    </section>
+  </div>
+}

@@ -143,7 +143,8 @@ export class DashboardDataService {
         || Object.prototype.hasOwnProperty.call(row, 'closedByExists')
       );
 
-      const publicationDate = this.toDateOnlyString(row.publicationDate);
+      const publicationDate = this.toDateTimeString(row.publicationDate);
+      const publicationDateShort = this.toDateOnlyString(row.publicationDate);
       const propertyId = row.propertyId === undefined || row.propertyId === null
         ? ''
         : String(row.propertyId);
@@ -165,6 +166,7 @@ export class DashboardDataService {
       return {
         propertyId,
         publicationDate,
+        publicationDateShort,
         title,
         url,
         price,
@@ -213,6 +215,28 @@ export class DashboardDataService {
 
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       return this.formatLocalDate(value);
+    }
+
+    return '';
+  }
+
+  private toDateTimeString(value: unknown): string {
+    if (typeof value === 'string') {
+      const raw = value.trim();
+      if (!raw) {
+        return '';
+      }
+
+      const parsedFromString = new Date(raw);
+      if (!Number.isNaN(parsedFromString.getTime())) {
+        return parsedFromString.toISOString();
+      }
+
+      return raw;
+    }
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString();
     }
 
     return '';

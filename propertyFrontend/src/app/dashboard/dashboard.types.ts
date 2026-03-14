@@ -3,6 +3,7 @@ export type DashboardTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB
 export type DashboardPropertyRow = {
   propertyId: string;
   publicationDate: string;
+  publicationDateShort: string;
   title: string;
   url: string;
   price: string;

@@ -87,6 +87,25 @@ export class PropertyDetailPanelComponent {
     this.propertyCommentSave.emit({ property, comment });
   }
 
+  getPublicationDateExtended(publicationDate: string): string {
+    const parsedDate = this.parsePublicationDate(publicationDate);
+    if (!parsedDate) {
+      return publicationDate || '-';
+    }
+
+    const locale = this.selectedLanguage === 'sp' ? 'es-ES' : 'en-US';
+    const monthText = new Intl.DateTimeFormat(locale, { month: 'long' }).format(parsedDate);
+    const year = String(parsedDate.getFullYear());
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    const timeText = new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(parsedDate);
+
+    return `${year} ${monthText} ${day} ${timeText}`;
+  }
+
   private getReview(propertyId: string): PropertyReviewLabel {
     const labels = this.propertyLabels.find((item) => item.propertyId === propertyId)?.labels;
     const review = labels?.review;
@@ -104,5 +123,20 @@ export class PropertyDetailPanelComponent {
     }
 
     return '';
+  }
+
+  private parsePublicationDate(value: string): Date | null {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      const parsedDateOnly = new Date(`${trimmed}T00:00:00`);
+      return Number.isNaN(parsedDateOnly.getTime()) ? null : parsedDateOnly;
+    }
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 }

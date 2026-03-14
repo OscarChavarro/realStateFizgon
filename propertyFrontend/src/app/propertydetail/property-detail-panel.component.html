@@ -7,7 +7,7 @@
           <th>{{ t('PRICE') }}</th>
           <td>{{ property.price }}</td>
           <th>{{ t('PUBLICATION_DATE') }}</th>
-          <td>{{ property.publicationDate || '-' }}</td>
+          <td>{{ property.publicationDate ? getPublicationDateExtended(property.publicationDate) : '-' }}</td>
         </tr>
         <tr>
           <th>{{ t('LOCATION') }}</th>

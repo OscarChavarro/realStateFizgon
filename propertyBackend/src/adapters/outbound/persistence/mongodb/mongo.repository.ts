@@ -25,6 +25,11 @@ export type PropertySortCriterion = {
   order: PropertySortOrder;
 };
 
+export type PublicationDateRangeFilter = {
+  minPublicationDate?: Date;
+  maxPublicationDate?: Date;
+};
+
 @Injectable()
 export class MongoRepository {
   constructor(private readonly mongoDatabaseService: MongoDatabaseService) {}
@@ -88,11 +93,12 @@ export class MongoRepository {
     page: number,
     pageSize: number,
     sortCriteria: PropertySortCriterion[],
-    showClosed: boolean
+    showClosed: boolean,
+    publicationDateRangeFilter?: PublicationDateRangeFilter
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
     const skip = (page - 1) * pageSize;
-    const query = this.buildPropertiesQuery(showClosed);
+    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
     const mongoSort = this.buildMongoSort(sortCriteria);
 
     const documents = await collection
@@ -107,10 +113,11 @@ export class MongoRepository {
 
   async findAllPropertiesSorted(
     sortCriteria: PropertySortCriterion[],
-    showClosed: boolean
+    showClosed: boolean,
+    publicationDateRangeFilter?: PublicationDateRangeFilter
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
-    const query = this.buildPropertiesQuery(showClosed);
+    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
     const mongoSort = this.buildMongoSort(sortCriteria);
 
     const documents = await collection
@@ -121,9 +128,12 @@ export class MongoRepository {
     return documents;
   }
 
-  async countProperties(showClosed: boolean): Promise<number> {
+  async countProperties(
+    showClosed: boolean,
+    publicationDateRangeFilter?: PublicationDateRangeFilter
+  ): Promise<number> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
-    const query = this.buildPropertiesQuery(showClosed);
+    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
     return collection.countDocuments(query);
   }
 
@@ -131,17 +141,47 @@ export class MongoRepository {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  private buildPropertiesQuery(showClosed: boolean): Filter<Document> {
-    if (showClosed) {
+  private buildPropertiesQuery(
+    showClosed: boolean,
+    publicationDateRangeFilter?: PublicationDateRangeFilter
+  ): Filter<Document> {
+    const andConditions: Filter<Document>[] = [];
+
+    if (!showClosed) {
+      andConditions.push({
+        $and: [
+          { closedBy: { $exists: false } },
+          { closedby: { $exists: false } },
+          { closed_by: { $exists: false } }
+        ]
+      });
+    }
+
+    const publicationDateCondition: {
+      $gte?: Date;
+      $lte?: Date;
+    } = {};
+    if (publicationDateRangeFilter?.minPublicationDate) {
+      publicationDateCondition.$gte = publicationDateRangeFilter.minPublicationDate;
+    }
+    if (publicationDateRangeFilter?.maxPublicationDate) {
+      publicationDateCondition.$lte = publicationDateRangeFilter.maxPublicationDate;
+    }
+    if (Object.keys(publicationDateCondition).length > 0) {
+      andConditions.push({
+        publicationDate: publicationDateCondition
+      });
+    }
+
+    if (andConditions.length === 0) {
       return {};
+    }
+    if (andConditions.length === 1) {
+      return andConditions[0];
     }
 
     return {
-      $and: [
-        { closedBy: { $exists: false } },
-        { closedby: { $exists: false } },
-        { closed_by: { $exists: false } }
-      ]
+      $and: andConditions
     };
   }
 

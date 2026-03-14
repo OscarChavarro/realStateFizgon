@@ -16,6 +16,8 @@ export type AuthUserPreferences = {
   showNew: boolean;
   showFavourite: boolean;
   showRejected: boolean;
+  minPublicationDate: string | null;
+  maxPublicationDate: string | null;
   propertyLabels: UserPropertyLabels[];
 };
 
@@ -31,6 +33,8 @@ export class AuthUserPreferencesService {
       showNew: this.toBoolean(preferences['showNew'], true),
       showFavourite: this.toBoolean(preferences['showFavourite'], true),
       showRejected: this.toBoolean(preferences['showRejected'], true),
+      minPublicationDate: this.toDateOnlyString(preferences['minPublicationDate']),
+      maxPublicationDate: this.toDateOnlyString(preferences['maxPublicationDate']),
       propertyLabels
     };
   }
@@ -42,13 +46,17 @@ export class AuthUserPreferencesService {
       showNew: boolean;
       showFavourite: boolean;
       showRejected: boolean;
+      minPublicationDate?: unknown;
+      maxPublicationDate?: unknown;
     }
   ): Promise<AuthUserPreferences> {
     const normalized = {
       showClosed: this.toBoolean(preferences.showClosed, true),
       showNew: this.toBoolean(preferences.showNew, true),
       showFavourite: this.toBoolean(preferences.showFavourite, true),
-      showRejected: this.toBoolean(preferences.showRejected, true)
+      showRejected: this.toBoolean(preferences.showRejected, true),
+      minPublicationDate: this.toDateOnlyString(preferences.minPublicationDate),
+      maxPublicationDate: this.toDateOnlyString(preferences.maxPublicationDate)
     };
 
     await this.authUserRepository.mergeUserPreferences(userId, normalized);
@@ -113,6 +121,29 @@ export class AuthUserPreferencesService {
       }
     }
     return fallback;
+  }
+
+  private toDateOnlyString(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (!match) {
+      return null;
+    }
+
+    const parsed = new Date(`${match[1]}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== match[1]) {
+      return null;
+    }
+
+    return match[1];
   }
 
   private normalizePropertyLabels(value: unknown): UserPropertyLabels[] {

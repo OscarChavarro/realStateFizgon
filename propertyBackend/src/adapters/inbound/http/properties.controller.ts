@@ -1,6 +1,12 @@
 import { Controller, Get, HttpException, HttpStatus, Query, Req } from '@nestjs/common';
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
-import { MongoRepository, PropertySortCriterion, PropertySortField, PropertySortOrder } from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
+import {
+  MongoRepository,
+  PropertySortCriterion,
+  PropertySortField,
+  PropertySortOrder,
+  PublicationDateRangeFilter
+} from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
 import {
   AuthUserPreferencesService,
   UserPropertyLabels
@@ -44,7 +50,9 @@ export class PropertiesController {
     @Query('showClosed') showClosedQuery?: string,
     @Query('showNew') showNewQuery?: string,
     @Query('showFavourite') showFavouriteQuery?: string,
-    @Query('showRejected') showRejectedQuery?: string
+    @Query('showRejected') showRejectedQuery?: string,
+    @Query('minPublicationDate') minPublicationDateQuery?: string,
+    @Query('maxPublicationDate') maxPublicationDateQuery?: string
   ): Promise<{
     error: string | null;
     data: unknown[];
@@ -60,6 +68,10 @@ export class PropertiesController {
       showFavourite: this.parseBooleanOrDefault(showFavouriteQuery, true, 'showFavourite'),
       showRejected: this.parseBooleanOrDefault(showRejectedQuery, true, 'showRejected')
     };
+    const publicationDateRangeFilter = this.parsePublicationDateRangeFilter(
+      minPublicationDateQuery,
+      maxPublicationDateQuery
+    );
     const sortCriteria = this.parseSortCriteriaFromRawQuery(this.readRawQueryString(request));
     const userId = this.getOptionalUserId(request);
     const shouldApplyReviewFilter = userId !== null && this.shouldApplyReviewFiltering(reviewFilterState);
@@ -70,7 +82,11 @@ export class PropertiesController {
     const defaultPage = 1;
 
     if (shouldApplyReviewFilter && userId) {
-      const allRows = await this.mongoRepository.findAllPropertiesSorted(sortCriteria, showClosed);
+      const allRows = await this.mongoRepository.findAllPropertiesSorted(
+        sortCriteria,
+        showClosed,
+        publicationDateRangeFilter
+      );
       const preferences = await this.authUserPreferencesService.getPreferences(userId);
       const filteredRows = this.applyReviewFilter(allRows, preferences.propertyLabels, reviewFilterState);
       totalElements = filteredRows.length;
@@ -93,7 +109,7 @@ export class PropertiesController {
       };
     }
 
-    totalElements = await this.mongoRepository.countProperties(showClosed);
+    totalElements = await this.mongoRepository.countProperties(showClosed, publicationDateRangeFilter);
     defaultPageSize = totalElements;
     const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
     const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
@@ -101,7 +117,13 @@ export class PropertiesController {
 
     data = pageSize === 0
       ? []
-      : await this.mongoRepository.findAllPropertiesPaginated(page, pageSize, sortCriteria, showClosed);
+      : await this.mongoRepository.findAllPropertiesPaginated(
+        page,
+        pageSize,
+        sortCriteria,
+        showClosed,
+        publicationDateRangeFilter
+      );
     const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
 
     return {
@@ -146,6 +168,8 @@ export class PropertiesController {
       'showNew',
       'showFavourite',
       'showRejected',
+      'minPublicationDate',
+      'maxPublicationDate',
       'sortBy',
       'sortOrder'
     ]);
@@ -157,7 +181,7 @@ export class PropertiesController {
     for (const [key, rawValue] of params.entries()) {
       if (!allowedQueryParams.has(key)) {
         this.throwSortBadRequest(
-          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, showNew, showFavourite, showRejected, sortBy, sortOrder.`
+          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, showNew, showFavourite, showRejected, minPublicationDate, maxPublicationDate, sortBy, sortOrder.`
         );
       }
 
@@ -191,6 +215,59 @@ export class PropertiesController {
     }
 
     return criteria;
+  }
+
+  private parsePublicationDateRangeFilter(
+    minPublicationDateQuery: string | undefined,
+    maxPublicationDateQuery: string | undefined
+  ): PublicationDateRangeFilter {
+    const minPublicationDate = this.parseDateQueryValue(minPublicationDateQuery, 'minPublicationDate', false);
+    const maxPublicationDate = this.parseDateQueryValue(maxPublicationDateQuery, 'maxPublicationDate', true);
+    if (minPublicationDate && maxPublicationDate && minPublicationDate > maxPublicationDate) {
+      this.throwPaginationBadRequest(
+        'Invalid publication date range. minPublicationDate cannot be greater than maxPublicationDate.'
+      );
+    }
+
+    return {
+      minPublicationDate: minPublicationDate ?? undefined,
+      maxPublicationDate: maxPublicationDate ?? undefined
+    };
+  }
+
+  private parseDateQueryValue(
+    value: string | undefined,
+    fieldName: 'minPublicationDate' | 'maxPublicationDate',
+    endOfDay: boolean
+  ): Date | null {
+    if (value === undefined || value.trim().length === 0) {
+      return null;
+    }
+
+    const raw = value.trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+      this.throwPaginationBadRequest(
+        `Invalid ${fieldName}="${value}". Expected format YYYY-MM-DD.`
+      );
+    }
+
+    const year = Number.parseInt(match[1], 10);
+    const month = Number.parseInt(match[2], 10);
+    const day = Number.parseInt(match[3], 10);
+    const parsed = endOfDay
+      ? new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
+      : new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    if (Number.isNaN(parsed.getTime())
+      || parsed.getUTCFullYear() !== year
+      || parsed.getUTCMonth() !== month - 1
+      || parsed.getUTCDate() !== day) {
+      this.throwPaginationBadRequest(
+        `Invalid ${fieldName}="${value}". Expected a valid calendar date in format YYYY-MM-DD.`
+      );
+    }
+
+    return parsed;
   }
 
   private parseBooleanOrDefault(value: string | undefined, fallback: boolean, fieldName: string): boolean {

@@ -17,6 +17,8 @@ type SaveFiltersPreferencesBody = {
   showNew?: unknown;
   showFavourite?: unknown;
   showRejected?: unknown;
+  minPublicationDate?: unknown;
+  maxPublicationDate?: unknown;
 };
 
 type SetPropertyLabelsBody = {
@@ -40,6 +42,8 @@ export class AuthPreferencesController {
         showNew: true,
         showFavourite: true,
         showRejected: true,
+        minPublicationDate: null,
+        maxPublicationDate: null,
         propertyLabels: []
       };
     }
@@ -53,13 +57,17 @@ export class AuthPreferencesController {
     showNew: boolean;
     showFavourite: boolean;
     showRejected: boolean;
+    minPublicationDate: string | null;
+    maxPublicationDate: string | null;
   }> {
     const preferences = await this.getPreferences(request);
     return {
       showClosed: preferences.showClosed,
       showNew: preferences.showNew,
       showFavourite: preferences.showFavourite,
-      showRejected: preferences.showRejected
+      showRejected: preferences.showRejected,
+      minPublicationDate: preferences.minPublicationDate,
+      maxPublicationDate: preferences.maxPublicationDate
     };
   }
 
@@ -72,18 +80,24 @@ export class AuthPreferencesController {
     showNew: boolean;
     showFavourite: boolean;
     showRejected: boolean;
+    minPublicationDate: string | null;
+    maxPublicationDate: string | null;
   }> {
     const userId = this.getOptionalUserId(request);
     const showClosed = this.toBoolean(body?.showClosed, true);
     const showNew = this.toBoolean(body?.showNew, true);
     const showFavourite = this.toBoolean(body?.showFavourite, true);
     const showRejected = this.toBoolean(body?.showRejected, true);
+    const minPublicationDate = this.toDateOnlyString(body?.minPublicationDate);
+    const maxPublicationDate = this.toDateOnlyString(body?.maxPublicationDate);
     if (!userId) {
       return {
         showClosed,
         showNew,
         showFavourite,
-        showRejected
+        showRejected,
+        minPublicationDate,
+        maxPublicationDate
       };
     }
 
@@ -91,13 +105,17 @@ export class AuthPreferencesController {
       showClosed,
       showNew,
       showFavourite,
-      showRejected
+      showRejected,
+      minPublicationDate,
+      maxPublicationDate
     });
     return {
       showClosed: preferences.showClosed,
       showNew: preferences.showNew,
       showFavourite: preferences.showFavourite,
-      showRejected: preferences.showRejected
+      showRejected: preferences.showRejected,
+      minPublicationDate: preferences.minPublicationDate,
+      maxPublicationDate: preferences.maxPublicationDate
     };
   }
 
@@ -116,6 +134,8 @@ export class AuthPreferencesController {
           showNew: true,
           showFavourite: true,
           showRejected: true,
+          minPublicationDate: null,
+          maxPublicationDate: null,
           propertyLabels: []
         };
       }
@@ -125,6 +145,8 @@ export class AuthPreferencesController {
         showNew: true,
         showFavourite: true,
         showRejected: true,
+        minPublicationDate: null,
+        maxPublicationDate: null,
         propertyLabels: [
           {
             propertyId,
@@ -163,6 +185,29 @@ export class AuthPreferencesController {
       }
     }
     return fallback;
+  }
+
+  private toDateOnlyString(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})$/);
+    if (!match) {
+      return null;
+    }
+
+    const parsed = new Date(`${match[1]}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== match[1]) {
+      return null;
+    }
+
+    return match[1];
   }
 
   private toTrimmedString(value: unknown): string {

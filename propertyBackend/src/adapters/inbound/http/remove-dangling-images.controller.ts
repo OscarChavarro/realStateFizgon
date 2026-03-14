@@ -8,6 +8,8 @@ export class RemoveDanglingImagesController {
   @Get('removeDanglingImages')
   async removeDanglingImages(): Promise<{
     status: string;
+    incomingImagesRemoved: number;
+    leftoverImagesRemoved: number;
     scannedPropertyFolders: number;
     foldersWithoutMatchingProperty: number;
     propertyIdBackfilledInDatabase: number;

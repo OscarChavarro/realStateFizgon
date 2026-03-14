@@ -7,6 +7,8 @@ import { FileSystemOperationsService } from 'src/adapters/outbound/filesystem/fi
 import { PropertyImagesDatabaseCleanupService } from 'src/application/services/datamaintenance/property-images-database-cleanup.service';
 
 type RemoveDanglingImagesResult = {
+  incomingImagesRemoved: number;
+  leftoverImagesRemoved: number;
   scannedPropertyFolders: number;
   foldersWithoutMatchingProperty: number;
   propertyIdBackfilledInDatabase: number;
@@ -28,6 +30,8 @@ export class DanglingImagesCleanupService {
 
   async removeDanglingImages(): Promise<RemoveDanglingImagesResult> {
     const imagesRootPath = this.configuration.imageDownloadFolder;
+    const incomingImagesRemoved = await this.removeImagesFromSpecialFolder(imagesRootPath, '_incoming');
+    const leftoverImagesRemoved = await this.removeImagesFromSpecialFolder(imagesRootPath, '_leftovers');
     const entries = await this.fileSystemOperationsService.readDirectoryEntries(imagesRootPath);
     const numericPropertyFolders = entries
       .filter((entry) => entry.isDirectory())
@@ -35,6 +39,8 @@ export class DanglingImagesCleanupService {
       .filter((name) => /^\d+$/.test(name));
 
     const result: RemoveDanglingImagesResult = {
+      incomingImagesRemoved,
+      leftoverImagesRemoved,
       scannedPropertyFolders: 0,
       foldersWithoutMatchingProperty: 0,
       propertyIdBackfilledInDatabase: 0,
@@ -95,6 +101,70 @@ export class DanglingImagesCleanupService {
   private async listFiles(folderPath: string): Promise<Dirent[]> {
     const entries = await this.fileSystemOperationsService.readDirectoryEntries(folderPath);
     return entries.filter((entry) => entry.isFile());
+  }
+
+  private async removeImagesFromSpecialFolder(imagesRootPath: string, folderName: string): Promise<number> {
+    const folderPath = join(imagesRootPath, folderName);
+    const entries = await this.readDirectoryEntriesSafely(folderPath);
+    if (!entries) {
+      return 0;
+    }
+
+    let removedFiles = 0;
+
+    for (const entry of entries) {
+      const entryPath = join(folderPath, entry.name);
+      if (entry.isFile()) {
+        removedFiles += 1;
+        await this.fileSystemOperationsService.removeFile(entryPath);
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        removedFiles += await this.countFilesRecursively(entryPath);
+        await this.fileSystemOperationsService.removeDirectoryRecursively(entryPath);
+        continue;
+      }
+
+      removedFiles += 1;
+      await this.fileSystemOperationsService.removeFile(entryPath);
+    }
+
+    return removedFiles;
+  }
+
+  private async countFilesRecursively(path: string): Promise<number> {
+    const entries = await this.readDirectoryEntriesSafely(path);
+    if (!entries) {
+      return 0;
+    }
+
+    let filesCount = 0;
+    for (const entry of entries) {
+      const entryPath = join(path, entry.name);
+      if (entry.isFile()) {
+        filesCount += 1;
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        filesCount += await this.countFilesRecursively(entryPath);
+      }
+    }
+
+    return filesCount;
+  }
+
+  private async readDirectoryEntriesSafely(path: string): Promise<Dirent[] | null> {
+    try {
+      return await this.fileSystemOperationsService.readDirectoryEntries(path);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   private extractExpectedImageFileNames(lookup: PropertyLookupResult): Set<string> {

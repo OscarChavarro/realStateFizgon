@@ -6,7 +6,7 @@ import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property
 @Injectable()
 export class MongoPropertyUpsertService {
   async saveProperty(collection: Collection<Property & Document>, property: Property): Promise<SavePropertyResult> {
-    const importedBy = new Date();
+    const now = new Date();
     const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
     const normalizedProperty: Property = propertyId === property.propertyId
       ? property
@@ -20,9 +20,11 @@ export class MongoPropertyUpsertService {
         { url: normalizedProperty.url },
         {
           $set: {
-            ...normalizedProperty,
-            importedBy
-          } as Property & Document
+            ...normalizedProperty
+          } as Property & Document,
+          $setOnInsert: {
+            importedBy: now
+          } as Document
         },
         { upsert: true }
       );
@@ -30,6 +32,17 @@ export class MongoPropertyUpsertService {
       if (result.upsertedCount > 0) {
         return { isNew: true };
       }
+
+      await collection.updateOne(
+        { url: normalizedProperty.url },
+        {
+          $set: {
+            ...normalizedProperty,
+            updatedBy: now
+          } as Property & Document
+        },
+        { upsert: false }
+      );
       return { isNew: false };
     } catch (error) {
       if (!this.isDuplicateKeyError(error)) {
@@ -41,7 +54,7 @@ export class MongoPropertyUpsertService {
         {
           $set: {
             ...normalizedProperty,
-            importedBy
+            updatedBy: now
           } as Property & Document
         },
         { upsert: false }

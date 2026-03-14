@@ -38,7 +38,10 @@ describe('MongoPropertyUpsertService', () => {
     expect(collection.updateOne).toHaveBeenCalledWith(
       { url: 'https://www.idealista.com/inmueble/123456789/' },
       expect.objectContaining({
-        $set: expect.objectContaining({ propertyId: '123456789' })
+        $set: expect.objectContaining({ propertyId: '123456789' }),
+        $setOnInsert: expect.objectContaining({
+          importedBy: expect.any(Date)
+        })
       }),
       { upsert: true }
     );
@@ -54,7 +57,18 @@ describe('MongoPropertyUpsertService', () => {
     // Action
     const result = await service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
     // Assert
-    expect(collection.updateOne).toHaveBeenCalledTimes(1);
+    expect(collection.updateOne).toHaveBeenCalledTimes(2);
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      2,
+      { url: 'https://www.idealista.com/inmueble/123456789/' },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          propertyId: '123456789',
+          updatedBy: expect.any(Date)
+        })
+      }),
+      { upsert: false }
+    );
     expect(result).toEqual({ isNew: false });
   });
 
@@ -117,7 +131,10 @@ describe('MongoPropertyUpsertService', () => {
     expect(collection.updateOne).toHaveBeenCalledWith(
       { url: 'https://www.idealista.com/alquiler-viviendas/madrid/' },
       expect.objectContaining({
-        $set: expect.objectContaining({ propertyId: null })
+        $set: expect.objectContaining({ propertyId: null }),
+        $setOnInsert: expect.objectContaining({
+          importedBy: expect.any(Date)
+        })
       }),
       { upsert: true }
     );

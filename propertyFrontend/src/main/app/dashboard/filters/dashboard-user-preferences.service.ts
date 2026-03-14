@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
+import { DASHBOARD_PAGE_SIZE_OPTIONS } from 'src/app/dashboard/pagination/dashboard-pagination.model';
 import {
   PropertyLabelEntry,
   PropertyLabels,
@@ -18,6 +19,7 @@ type UserPreferencesPayload = {
   showNew?: unknown;
   showFavourite?: unknown;
   showRejected?: unknown;
+  pageSize?: unknown;
   minPublicationDate?: unknown;
   maxPublicationDate?: unknown;
   minPrice?: unknown;
@@ -34,6 +36,7 @@ export class DashboardUserPreferencesService {
     http: HttpClient
   ): Promise<{
     language: SupportedLanguage;
+    pageSize: number;
     filters: DashboardFiltersState;
     sortCriteria: SortCriterion[];
     propertyLabels: PropertyLabelEntry[];
@@ -44,6 +47,7 @@ export class DashboardUserPreferencesService {
       );
       return {
         language: this.toSupportedLanguage(response?.language, 'en'),
+        pageSize: this.toPageSize(response?.pageSize, 100),
         filters: {
           showClosed: this.toBoolean(response?.showClosed, true),
           showNew: this.toBoolean(response?.showNew, true),
@@ -66,7 +70,8 @@ export class DashboardUserPreferencesService {
     http: HttpClient,
     filters: DashboardFiltersState,
     language: SupportedLanguage,
-    sortCriteria: SortCriterion[]
+    sortCriteria: SortCriterion[],
+    pageSize: number
   ): Promise<void> {
     await firstValueFrom(
       http.post(
@@ -77,6 +82,7 @@ export class DashboardUserPreferencesService {
           showNew: filters.showNew,
           showFavourite: filters.showFavourite,
           showRejected: filters.showRejected,
+          pageSize: this.toPageSize(pageSize, 100),
           minPublicationDate: this.toDateOnlyString(filters.minPublicationDate),
           maxPublicationDate: this.toDateOnlyString(filters.maxPublicationDate),
           minPrice: this.toIntegerString(filters.minPrice),
@@ -204,6 +210,30 @@ export class DashboardUserPreferencesService {
     }
 
     return String(parsed);
+  }
+
+  private toPageSize(value: unknown, fallback: number): number {
+    const normalizedFallback = DASHBOARD_PAGE_SIZE_OPTIONS.includes(fallback as 100 | 500 | 1000)
+      ? fallback
+      : DASHBOARD_PAGE_SIZE_OPTIONS[0];
+
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 1) {
+      const parsed = Math.floor(value);
+      return DASHBOARD_PAGE_SIZE_OPTIONS.includes(parsed as 100 | 500 | 1000)
+        ? parsed
+        : normalizedFallback;
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number.parseInt(value.trim(), 10);
+      if (Number.isFinite(parsed) && parsed >= 1) {
+        return DASHBOARD_PAGE_SIZE_OPTIONS.includes(parsed as 100 | 500 | 1000)
+          ? parsed
+          : normalizedFallback;
+      }
+    }
+
+    return normalizedFallback;
   }
 
   private normalizePropertyLabels(value: unknown): PropertyLabelEntry[] {

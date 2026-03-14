@@ -212,6 +212,30 @@ const TRANSLATIONS = {
     en: 'No properties found',
     sp: 'No se encontraron propiedades'
   },
+  PAGINATION_PAGE: {
+    en: 'Page',
+    sp: 'Página'
+  },
+  PAGINATION_OF: {
+    en: 'of',
+    sp: 'de'
+  },
+  PAGINATION_TOTAL_ITEMS: {
+    en: 'Total items',
+    sp: 'Total elementos'
+  },
+  PAGINATION_PAGE_SIZE: {
+    en: 'Page size',
+    sp: 'Tamaño de página'
+  },
+  PAGINATION_PREVIOUS: {
+    en: 'Previous page',
+    sp: 'Página anterior'
+  },
+  PAGINATION_NEXT: {
+    en: 'Next page',
+    sp: 'Página siguiente'
+  },
   REMOVE_DANGLING_IMAGES: {
     en: 'Remove dangling images',
     sp: 'Eliminar imágenes huérfanas'

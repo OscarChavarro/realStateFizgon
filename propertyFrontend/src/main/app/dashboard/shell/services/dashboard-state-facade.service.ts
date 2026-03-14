@@ -4,6 +4,7 @@ import { DashboardDataService } from 'src/app/dashboard/dashboard-data.service';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
 import { DashboardUserPreferencesService } from 'src/app/dashboard/filters/dashboard-user-preferences.service';
 import { DashboardPropertyRow, PropertyLabelEntry, SortCriterion, SortToggleRequest } from 'src/app/dashboard/dashboard.types';
+import { DashboardPaginationState } from 'src/app/dashboard/pagination/dashboard-pagination.model';
 import { MaintenanceOperationRunnerService } from 'src/app/dashboard/services/maintenance-operation-runner.service';
 import { SortCriteriaService } from 'src/app/dashboard/services/sort-criteria.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
@@ -41,9 +42,11 @@ export class DashboardStateFacadeService {
   async refreshDashboardData(
     http: HttpClient,
     sortCriteria: SortCriterion[],
-    filters: DashboardFiltersState
-  ): Promise<{ count: number; properties: DashboardPropertyRow[] }> {
-    return this.dashboardDataService.loadDashboardData(http, sortCriteria, filters);
+    filters: DashboardFiltersState,
+    page: number,
+    pageSize: number
+  ): Promise<{ count: number; properties: DashboardPropertyRow[]; pagination: DashboardPaginationState }> {
+    return this.dashboardDataService.loadDashboardData(http, sortCriteria, filters, page, pageSize);
   }
 
   areFiltersChanged(current: DashboardFiltersState, next: DashboardFiltersState): boolean {
@@ -61,15 +64,17 @@ export class DashboardStateFacadeService {
     http: HttpClient,
     filters: DashboardFiltersState,
     language: SupportedLanguage,
-    sortCriteria: SortCriterion[]
+    sortCriteria: SortCriterion[],
+    pageSize: number
   ): Promise<void> {
-    await this.dashboardUserPreferencesService.saveFilters(http, filters, language, sortCriteria);
+    await this.dashboardUserPreferencesService.saveFilters(http, filters, language, sortCriteria, pageSize);
   }
 
   async loadUserPreferences(
     http: HttpClient
   ): Promise<{
     language: SupportedLanguage;
+    pageSize: number;
     filters: DashboardFiltersState;
     sortCriteria: SortCriterion[];
     propertyLabels: PropertyLabelEntry[];

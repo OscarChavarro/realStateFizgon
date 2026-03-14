@@ -25,6 +25,7 @@ export type AuthUserPreferences = {
   showNew: boolean;
   showFavourite: boolean;
   showRejected: boolean;
+  pageSize: number;
   minPublicationDate: string | null;
   maxPublicationDate: string | null;
   minPrice: string | null;
@@ -46,6 +47,7 @@ export class AuthUserPreferencesService {
       showNew: this.toBoolean(preferences['showNew'], true),
       showFavourite: this.toBoolean(preferences['showFavourite'], true),
       showRejected: this.toBoolean(preferences['showRejected'], true),
+      pageSize: this.toPageSize(preferences['pageSize'], 100),
       minPublicationDate: this.toDateOnlyString(preferences['minPublicationDate']),
       maxPublicationDate: this.toDateOnlyString(preferences['maxPublicationDate']),
       minPrice: this.toPriceStringOrNull(preferences['minPrice']),
@@ -62,6 +64,7 @@ export class AuthUserPreferencesService {
       showNew: boolean;
       showFavourite: boolean;
       showRejected: boolean;
+      pageSize?: unknown;
       minPublicationDate?: unknown;
       maxPublicationDate?: unknown;
       minPrice?: unknown;
@@ -76,6 +79,7 @@ export class AuthUserPreferencesService {
       showNew: boolean;
       showFavourite: boolean;
       showRejected: boolean;
+      pageSize: number;
       minPublicationDate: string | null;
       maxPublicationDate: string | null;
       minPrice: string | null;
@@ -87,6 +91,7 @@ export class AuthUserPreferencesService {
       showNew: this.toBoolean(preferences.showNew, true),
       showFavourite: this.toBoolean(preferences.showFavourite, true),
       showRejected: this.toBoolean(preferences.showRejected, true),
+      pageSize: this.toPageSize(preferences.pageSize, 100),
       minPublicationDate: this.toDateOnlyString(preferences.minPublicationDate),
       maxPublicationDate: this.toDateOnlyString(preferences.maxPublicationDate),
       minPrice: this.toPriceStringOrNull(preferences.minPrice),
@@ -203,6 +208,21 @@ export class AuthUserPreferencesService {
     }
 
     return String(parsed);
+  }
+
+  private toPageSize(value: unknown, fallback: number): number {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 1) {
+      return Math.floor(value);
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number.parseInt(value.trim(), 10);
+      if (Number.isFinite(parsed) && parsed >= 1) {
+        return parsed;
+      }
+    }
+
+    return fallback;
   }
 
   private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {

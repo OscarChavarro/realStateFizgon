@@ -32,10 +32,16 @@
             [lockedRowKey]="lockedSelectedPropertyKey()"
             [reviewEnabled]="authenticatedUser() !== null"
             [propertyLabels]="propertyLabels()"
+            [page]="pagination().page"
+            [pageSize]="pagination().pageSize"
+            [totalPages]="pagination().totalPages"
+            [loading]="loading()"
             (sortToggle)="onSortToggle($event)"
             (propertyHover)="onPropertyRowHover($event)"
             (propertySelect)="onPropertyRowClick($event)"
             (propertyReviewToggle)="onPropertyReviewToggle($event)"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
           ></app-dashboard-properties-table>
         </section>
 

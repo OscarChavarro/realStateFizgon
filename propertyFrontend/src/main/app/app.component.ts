@@ -18,6 +18,10 @@ import {
   SortCriterion,
   SortToggleRequest
 } from 'src/app/dashboard/dashboard.types';
+import {
+  DASHBOARD_PAGE_SIZE_OPTIONS,
+  createDefaultDashboardPaginationState
+} from 'src/app/dashboard/pagination/dashboard-pagination.model';
 import { PropertySelectionService } from 'src/app/dashboard/services/property-selection.service';
 import { DashboardAuthFacadeService } from 'src/app/dashboard/shell/services/dashboard-auth-facade.service';
 import { DashboardDataCoordinatorService } from 'src/app/dashboard/shell/services/dashboard-data-coordinator.service';
@@ -48,6 +52,7 @@ import { PropertyDetailPanelComponent } from 'src/app/propertydetail/property-de
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
+  private static readonly FILTERED_TOTAL_ELEMENTS_KEY = 'filteredTotalElements';
 
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
@@ -72,8 +77,10 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly loading = signal<boolean>(true);
   readonly allProperties = signal<DashboardPropertyRow[]>([]);
   readonly filters = signal<DashboardFiltersState>(createDefaultDashboardFilters());
+  readonly pagination = signal(createDefaultDashboardPaginationState());
   readonly properties = computed<DashboardPropertyRow[]>(() => this.allProperties());
-  readonly visibleCount = computed<number>(() => this.properties().length);
+  readonly filteredTotalElements = signal<number>(this.readFilteredTotalElementsFromSession());
+  readonly visibleCount = computed<number>(() => this.filteredTotalElements());
   readonly selectedProperty = this.propertySelectionService.selectedProperty;
   readonly lockedSelectedPropertyKey = this.propertySelectionService.lockedSelectedPropertyKey;
   readonly selectedLanguage = signal<SupportedLanguage>('en');
@@ -162,6 +169,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.authenticatedUser() !== null,
       this.filters(),
       this.sortCriteria(),
+      this.pagination().pageSize,
       language
     );
   }
@@ -172,6 +180,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onSortToggle(request: SortToggleRequest): void {
     void this.toggleSort(request.sortBy);
+  }
+
+  onPageChange(page: number): void {
+    void this.changePage(page);
+  }
+
+  onPageSizeChange(pageSize: number): void {
+    void this.changePageSize(pageSize);
   }
 
   onPropertyRowHover(property: DashboardPropertyRow): void {
@@ -283,13 +299,25 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async refreshDashboardData(): Promise<void> {
+    const requestPageSize = this.resolveRequestPageSize(this.pagination().pageSize);
+    const requestPage = requestPageSize > 0 ? this.pagination().page : 1;
+    const requestPagination = {
+      ...this.pagination(),
+      page: requestPage,
+      pageSize: requestPageSize
+    };
     await this.dashboardDataCoordinatorService.refreshDashboardData({
       http: this.http,
       sortCriteria: this.sortCriteria(),
       filters: this.filters(),
+      pagination: requestPagination,
       setLoading: (loading) => this.loading.set(loading),
       setCount: (count) => this.count.set(count),
       setAllProperties: (properties) => this.allProperties.set(properties),
+      setPagination: (pagination) => {
+        this.pagination.set(pagination);
+        this.persistFilteredTotalElementsInSession(pagination.totalElements);
+      },
       onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.properties())
     });
   }
@@ -300,14 +328,23 @@ export class AppComponent implements OnInit, OnDestroy {
       currentFilters: this.filters(),
       nextFilters: filters,
       sortCriteria: this.sortCriteria(),
+      pageSize: this.pagination().pageSize,
       selectedLanguage: this.selectedLanguage(),
       isAuthenticated: this.authenticatedUser() !== null,
       setFilters: (nextFilters) => this.filters.set(nextFilters),
+      onFiltersChanged: () => {
+        this.pagination.update((current) => ({
+          ...current,
+          page: 1
+        }));
+      },
       onRefreshDashboardData: () => this.refreshDashboardData()
     });
   }
 
   private async loadUserPreferences(): Promise<void> {
+    // Prevent stale session totals from clamping the restored page size before first data refresh.
+    this.persistFilteredTotalElementsInSession(0);
     await this.dashboardDataCoordinatorService.loadUserPreferences({
       http: this.http,
       setSelectedLanguage: (language) => this.selectedLanguage.set(language),
@@ -317,6 +354,12 @@ export class AppComponent implements OnInit, OnDestroy {
       ),
       setFilters: (filters) => this.filters.set(filters),
       setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
+      setPageSize: (pageSize) => {
+        this.pagination.update((current) => ({
+          ...current,
+          pageSize
+        }));
+      },
       setPropertyLabels: (labels) => this.propertyLabels.set(labels)
     });
   }
@@ -359,16 +402,69 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
+    this.pagination.update((current) => ({
+      ...current,
+      page: 1
+    }));
     await this.dashboardDataCoordinatorService.toggleSortAndRefresh({
       http: this.http,
       currentSortCriteria: this.sortCriteria(),
       sortBy,
       filters: this.filters(),
+      pageSize: this.pagination().pageSize,
       selectedLanguage: this.selectedLanguage(),
       isAuthenticated: this.authenticatedUser() !== null,
       setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
       onRefreshDashboardData: () => this.refreshDashboardData()
     });
+  }
+
+  private async changePage(page: number): Promise<void> {
+    const current = this.pagination();
+    const totalPages = current.totalPages;
+    let normalized = Number.isFinite(page) ? Math.floor(page) : current.page;
+    if (normalized < 1) {
+      normalized = 1;
+    }
+    if (totalPages > 0 && normalized > totalPages) {
+      normalized = totalPages;
+    }
+    if (normalized === current.page) {
+      return;
+    }
+
+    this.pagination.update((state) => ({
+      ...state,
+      page: normalized
+    }));
+    await this.refreshDashboardData();
+  }
+
+  private async changePageSize(pageSize: number): Promise<void> {
+    if (!Number.isFinite(pageSize) || pageSize < 1) {
+      return;
+    }
+
+    const current = this.pagination();
+    const normalized = Math.floor(pageSize);
+    if (current.pageSize === normalized) {
+      return;
+    }
+
+    this.pagination.set({
+      ...current,
+      page: 1,
+      pageSize: normalized
+    });
+    await this.dashboardDataCoordinatorService.saveLanguagePreference(
+      this.http,
+      this.authenticatedUser() !== null,
+      this.filters(),
+      this.sortCriteria(),
+      normalized,
+      this.selectedLanguage()
+    );
+    await this.refreshDashboardData();
   }
 
   private async runDatabaseMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
@@ -383,7 +479,35 @@ export class AppComponent implements OnInit, OnDestroy {
   private resetGuestState(): void {
     this.users.set([]);
     this.filters.set(createDefaultDashboardFilters());
+    this.pagination.set(createDefaultDashboardPaginationState());
+    this.persistFilteredTotalElementsInSession(0);
     this.sortCriteria.set([]);
     this.propertyLabels.set([]);
+  }
+
+  private readFilteredTotalElementsFromSession(): number {
+    const raw = sessionStorage.getItem(AppComponent.FILTERED_TOTAL_ELEMENTS_KEY);
+    const parsed = raw ? Number.parseInt(raw, 10) : 0;
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return parsed;
+  }
+
+  private persistFilteredTotalElementsInSession(totalElements: number): void {
+    const normalized = Number.isFinite(totalElements) && totalElements >= 0
+      ? Math.floor(totalElements)
+      : 0;
+    this.filteredTotalElements.set(normalized);
+    sessionStorage.setItem(AppComponent.FILTERED_TOTAL_ELEMENTS_KEY, String(normalized));
+  }
+
+  private resolveRequestPageSize(currentPageSize: number): number {
+    if (!Number.isFinite(currentPageSize) || currentPageSize <= 0) {
+      return DASHBOARD_PAGE_SIZE_OPTIONS[0];
+    }
+
+    return Math.floor(currentPageSize);
   }
 }

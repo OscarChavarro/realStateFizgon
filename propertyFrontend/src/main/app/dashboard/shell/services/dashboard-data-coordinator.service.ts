@@ -5,6 +5,7 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
+import { DashboardPaginationState } from 'src/app/dashboard/pagination/dashboard-pagination.model';
 import { DashboardStateFacadeService } from 'src/app/dashboard/shell/services/dashboard-state-facade.service';
 import { DatabaseMaintenanceOperation } from 'src/app/databasemaintenance/database-maintenance-operation';
 import { SupportedLanguage } from 'src/app/i18n/i18n.service';
@@ -13,9 +14,11 @@ type RefreshDashboardDataParams = {
   http: HttpClient;
   sortCriteria: SortCriterion[];
   filters: DashboardFiltersState;
+  pagination: DashboardPaginationState;
   setLoading: (loading: boolean) => void;
   setCount: (count: number) => void;
   setAllProperties: (properties: DashboardPropertyRow[]) => void;
+  setPagination: (pagination: DashboardPaginationState) => void;
   onAfterRefresh: () => void;
 };
 
@@ -24,9 +27,11 @@ type HandleFiltersChangeParams = {
   currentFilters: DashboardFiltersState;
   nextFilters: DashboardFiltersState;
   sortCriteria: SortCriterion[];
+  pageSize: number;
   selectedLanguage: SupportedLanguage;
   isAuthenticated: boolean;
   setFilters: (filters: DashboardFiltersState) => void;
+  onFiltersChanged: () => void;
   onRefreshDashboardData: () => Promise<void>;
 };
 
@@ -34,6 +39,7 @@ type LoadUserPreferencesParams = {
   http: HttpClient;
   setFilters: (filters: DashboardFiltersState) => void;
   setSortCriteria: (criteria: SortCriterion[]) => void;
+  setPageSize: (pageSize: number) => void;
   setSelectedLanguage: (language: SupportedLanguage) => void;
   persistSelectedLanguage: (language: SupportedLanguage) => void;
   setPropertyLabels: (entries: PropertyLabelEntry[]) => void;
@@ -44,6 +50,7 @@ type ToggleSortParams = {
   currentSortCriteria: SortCriterion[];
   sortBy: SortToggleRequest['sortBy'];
   filters: DashboardFiltersState;
+  pageSize: number;
   selectedLanguage: SupportedLanguage;
   isAuthenticated: boolean;
   setSortCriteria: (criteria: SortCriterion[]) => void;
@@ -70,11 +77,14 @@ export class DashboardDataCoordinatorService {
     const dashboardData = await this.dashboardStateFacadeService.refreshDashboardData(
       params.http,
       params.sortCriteria,
-      params.filters
+      params.filters,
+      params.pagination.page,
+      params.pagination.pageSize
     );
 
     params.setCount(dashboardData.count);
     params.setAllProperties(dashboardData.properties);
+    params.setPagination(dashboardData.pagination);
     params.onAfterRefresh();
     params.setLoading(false);
   }
@@ -88,6 +98,7 @@ export class DashboardDataCoordinatorService {
     if (!changed) {
       return;
     }
+    params.onFiltersChanged();
 
     if (params.isAuthenticated) {
       try {
@@ -95,7 +106,8 @@ export class DashboardDataCoordinatorService {
           params.http,
           params.nextFilters,
           params.selectedLanguage,
-          params.sortCriteria
+          params.sortCriteria,
+          params.pageSize
         );
       } catch {
         // Ignore persistence errors so filtering still updates UI from backend.
@@ -116,6 +128,7 @@ export class DashboardDataCoordinatorService {
 
     params.setSelectedLanguage(preferences.language);
     params.persistSelectedLanguage(preferences.language);
+    params.setPageSize(preferences.pageSize);
     params.setFilters(preferences.filters);
     params.setSortCriteria(preferences.sortCriteria);
     params.setPropertyLabels(preferences.propertyLabels);
@@ -126,6 +139,7 @@ export class DashboardDataCoordinatorService {
     isAuthenticated: boolean,
     filters: DashboardFiltersState,
     sortCriteria: SortCriterion[],
+    pageSize: number,
     selectedLanguage: SupportedLanguage
   ): Promise<void> {
     if (!isAuthenticated) {
@@ -133,7 +147,13 @@ export class DashboardDataCoordinatorService {
     }
 
     try {
-      await this.dashboardStateFacadeService.saveFiltersPreference(http, filters, selectedLanguage, sortCriteria);
+      await this.dashboardStateFacadeService.saveFiltersPreference(
+        http,
+        filters,
+        selectedLanguage,
+        sortCriteria,
+        pageSize
+      );
     } catch {
       // Ignore persistence errors so language still updates locally.
     }
@@ -151,7 +171,8 @@ export class DashboardDataCoordinatorService {
           params.http,
           params.filters,
           params.selectedLanguage,
-          updatedSortCriteria
+          updatedSortCriteria,
+          params.pageSize
         );
       } catch {
         // Ignore persistence errors so sorting keeps working in current session.

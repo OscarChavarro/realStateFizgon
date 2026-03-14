@@ -8,17 +8,19 @@ import {
   SortField,
   SortToggleRequest
 } from 'src/app/dashboard/dashboard.types';
+import { DashboardPaginationControlsComponent } from 'src/app/dashboard/components/dashboard-pagination-controls.component';
 import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-properties-table',
   standalone: true,
+  imports: [DashboardPaginationControlsComponent],
   templateUrl: './dashboard-properties-table.component.html',
   styleUrl: './dashboard-properties-table.component.css'
 })
 export class DashboardPropertiesTableComponent {
   private readonly i18nService = inject(I18nService);
-  @ViewChild('tableScrollContainer') private tableScrollContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('tableScrollContainer') private tableWrapperContainer?: ElementRef<HTMLDivElement>;
 
   @Input({ required: true }) properties: DashboardPropertyRow[] = [];
   @Input({ required: true }) sortCriteria: SortCriterion[] = [];
@@ -26,11 +28,17 @@ export class DashboardPropertiesTableComponent {
   @Input() lockedRowKey: string | null = null;
   @Input() reviewEnabled = false;
   @Input() propertyLabels: PropertyLabelEntry[] = [];
+  @Input() page = 1;
+  @Input() pageSize = 100;
+  @Input() totalPages = 0;
+  @Input() loading = false;
 
   @Output() readonly sortToggle = new EventEmitter<SortToggleRequest>();
   @Output() readonly propertyHover = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertySelect = new EventEmitter<DashboardPropertyRow>();
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();
+  @Output() readonly pageChange = new EventEmitter<number>();
+  @Output() readonly pageSizeChange = new EventEmitter<number>();
 
   onSortToggle(sortBy: SortField): void {
     this.sortToggle.emit({ sortBy });
@@ -47,6 +55,21 @@ export class DashboardPropertiesTableComponent {
   onPropertyReviewCellClick(event: MouseEvent, property: DashboardPropertyRow): void {
     event.stopPropagation();
     this.propertyReviewToggle.emit(property);
+  }
+
+  onPageChange(page: number): void {
+    this.pageChange.emit(page);
+  }
+
+  onPageSizeChange(pageSize: number): void {
+    this.pageSizeChange.emit(pageSize);
+  }
+
+  getDisplayRowIndex(rowIndex: number): number {
+    const normalizedPage = Number.isFinite(this.page) && this.page >= 1 ? Math.floor(this.page) : 1;
+    const normalizedPageSize = Number.isFinite(this.pageSize) && this.pageSize >= 1 ? Math.floor(this.pageSize) : 100;
+    const base = (normalizedPage - 1) * normalizedPageSize;
+    return base + rowIndex + 1;
   }
 
   isPropertyRowLocked(property: DashboardPropertyRow): boolean {
@@ -98,7 +121,7 @@ export class DashboardPropertiesTableComponent {
   }
 
   scrollPropertyIntoView(property: DashboardPropertyRow): void {
-    const container = this.tableScrollContainer?.nativeElement;
+    const container = this.tableWrapperContainer?.nativeElement.querySelector<HTMLDivElement>('.spreadsheet-table-scroll');
     if (!container) {
       return;
     }

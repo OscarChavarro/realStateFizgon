@@ -1,9 +1,10 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiRuntimeConfigService } from 'src/app/api/api-runtime-config.service';
 import { DashboardPropertyRow, SortCriterion } from 'src/app/dashboard/dashboard.types';
 import { DashboardFiltersState } from 'src/app/dashboard/filters/dashboard-filters.model';
+import { DashboardPaginationState } from 'src/app/dashboard/pagination/dashboard-pagination.model';
 
 type PropertiesCountResponse = {
   count: number;
@@ -48,6 +49,7 @@ type PropertiesResponse = {
 type DashboardDataResult = {
   count: number;
   properties: DashboardPropertyRow[];
+  pagination: DashboardPaginationState;
 };
 
 type DashboardConfiguration = {
@@ -84,28 +86,110 @@ export class DashboardDataService {
   async loadDashboardData(
     http: HttpClient,
     sortCriteria: SortCriterion[],
-    filters: DashboardFiltersState
+    filters: DashboardFiltersState,
+    page: number,
+    pageSize: number
   ): Promise<DashboardDataResult> {
+    const normalizedPage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+    const normalizedPageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.floor(pageSize) : 100;
+
     try {
-      const response = await firstValueFrom(
-        http.get<PropertiesResponse>(
-          this.buildPropertiesEndpointUrl(sortCriteria, filters)
-        )
-      );
+      let response: PropertiesResponse;
+      let effectiveRequestPageSize = normalizedPageSize;
+      try {
+        response = await firstValueFrom(
+          http.get<PropertiesResponse>(
+            this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, true)
+          )
+        );
+      } catch (error) {
+        const pageSizeLimitFromError = this.extractMaxAllowedPageSize(error);
+        if (pageSizeLimitFromError !== null) {
+          effectiveRequestPageSize = pageSizeLimitFromError;
+          response = await firstValueFrom(
+            http.get<PropertiesResponse>(
+              this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, true)
+            )
+          );
+        } else {
+          response = await firstValueFrom(
+            http.get<PropertiesResponse>(
+              this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, false)
+            )
+          );
+        }
+      }
       const fallbackCount = response.pagination.totalElements ?? response.data.length;
       const totalCount = await this.loadTotalCount(http, fallbackCount);
+      const filteredTotalElements = response.pagination.totalElements ?? response.data.length;
+      const responsePage = Number.isFinite(response.pagination.page) && response.pagination.page >= 1
+        ? response.pagination.page
+        : normalizedPage;
+      const totalPages = filteredTotalElements > 0
+        ? Math.ceil(filteredTotalElements / normalizedPageSize)
+        : 0;
+      const normalizedOutputPage = totalPages > 0
+        ? Math.min(Math.max(responsePage, 1), totalPages)
+        : 1;
 
       return {
         count: totalCount,
-        properties: this.mapPropertiesForDashboard(response.data)
+        properties: this.mapPropertiesForDashboard(response.data),
+        pagination: {
+          page: normalizedOutputPage,
+          pageSize: normalizedPageSize,
+          totalElements: filteredTotalElements,
+          totalPages
+        }
       };
     } catch {
       const totalCount = await this.loadTotalCount(http, 0);
       return {
         count: totalCount,
-        properties: []
+        properties: [],
+        pagination: {
+          page: normalizedPage,
+          pageSize: normalizedPageSize,
+          totalElements: 0,
+          totalPages: 0
+        }
       };
     }
+  }
+
+  private extractMaxAllowedPageSize(error: unknown): number | null {
+    if (!(error instanceof HttpErrorResponse)) {
+      return null;
+    }
+
+    const candidates: string[] = [];
+    if (typeof error.error === 'string') {
+      candidates.push(error.error);
+    } else if (typeof error.error === 'object' && error.error !== null) {
+      const nestedMessage = (error.error as { error?: unknown; message?: unknown }).error
+        ?? (error.error as { error?: unknown; message?: unknown }).message;
+      if (typeof nestedMessage === 'string') {
+        candidates.push(nestedMessage);
+      }
+    }
+    if (typeof error.message === 'string') {
+      candidates.push(error.message);
+    }
+
+    for (const message of candidates) {
+      const match = message.match(/pageSize\s+cannot\s+be\s+greater\s+than\s+total\s+properties\s+\((\d+)\)/i);
+      if (!match) {
+        continue;
+      }
+
+      const parsed = Number.parseInt(match[1], 10);
+      if (Number.isFinite(parsed) && parsed >= 1) {
+        return parsed;
+      }
+      return 1;
+    }
+
+    return null;
   }
 
   private normalizeBackendBaseUrl(value: string): string {
@@ -118,9 +202,16 @@ export class DashboardDataService {
 
   private buildPropertiesEndpointUrl(
     sortCriteria: SortCriterion[],
-    filters: DashboardFiltersState
+    filters: DashboardFiltersState,
+    page: number,
+    pageSize: number,
+    includePaginationParams: boolean
   ): string {
     const searchParams = new URLSearchParams();
+    if (includePaginationParams) {
+      searchParams.set('page', String(page));
+      searchParams.set('pageSize', String(pageSize));
+    }
     searchParams.set('showClosed', filters.showClosed ? 'true' : 'false');
     searchParams.set('showNew', filters.showNew ? 'true' : 'false');
     searchParams.set('showFavourite', filters.showFavourite ? 'true' : 'false');

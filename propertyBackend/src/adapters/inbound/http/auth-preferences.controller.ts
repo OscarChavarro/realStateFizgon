@@ -20,6 +20,7 @@ type SaveFiltersPreferencesBody = {
   showNew?: unknown;
   showFavourite?: unknown;
   showRejected?: unknown;
+  pageSize?: unknown;
   minPublicationDate?: unknown;
   maxPublicationDate?: unknown;
   minPrice?: unknown;
@@ -49,6 +50,7 @@ export class AuthPreferencesController {
         showNew: true,
         showFavourite: true,
         showRejected: true,
+        pageSize: 100,
         minPublicationDate: null,
         maxPublicationDate: null,
         minPrice: null,
@@ -71,6 +73,7 @@ export class AuthPreferencesController {
     showNew: boolean;
     showFavourite: boolean;
     showRejected: boolean;
+    pageSize: number;
     minPublicationDate: string | null;
     maxPublicationDate: string | null;
     minPrice: string | null;
@@ -82,6 +85,7 @@ export class AuthPreferencesController {
     const showNew = this.toBoolean(body?.showNew, true);
     const showFavourite = this.toBoolean(body?.showFavourite, true);
     const showRejected = this.toBoolean(body?.showRejected, true);
+    const pageSize = this.toPageSize(body?.pageSize, 100);
     const language = this.toPreferredLanguage(body?.language, 'en');
     const minPublicationDate = this.toDateOnlyString(body?.minPublicationDate);
     const maxPublicationDate = this.toDateOnlyString(body?.maxPublicationDate);
@@ -95,6 +99,7 @@ export class AuthPreferencesController {
         showNew,
         showFavourite,
         showRejected,
+        pageSize,
         minPublicationDate,
         maxPublicationDate,
         minPrice,
@@ -108,6 +113,7 @@ export class AuthPreferencesController {
       showNew,
       showFavourite,
       showRejected,
+      pageSize,
       language,
       minPublicationDate,
       maxPublicationDate,
@@ -121,6 +127,7 @@ export class AuthPreferencesController {
       showNew: preferences.showNew,
       showFavourite: preferences.showFavourite,
       showRejected: preferences.showRejected,
+      pageSize: preferences.pageSize,
       minPublicationDate: preferences.minPublicationDate,
       maxPublicationDate: preferences.maxPublicationDate,
       minPrice: preferences.minPrice,
@@ -145,6 +152,7 @@ export class AuthPreferencesController {
           showNew: true,
           showFavourite: true,
           showRejected: true,
+          pageSize: 100,
           minPublicationDate: null,
           maxPublicationDate: null,
           minPrice: null,
@@ -160,6 +168,7 @@ export class AuthPreferencesController {
         showNew: true,
         showFavourite: true,
         showRejected: true,
+        pageSize: 100,
         minPublicationDate: null,
         maxPublicationDate: null,
         minPrice: null,
@@ -248,6 +257,21 @@ export class AuthPreferencesController {
     }
 
     return String(parsed);
+  }
+
+  private toPageSize(value: unknown, fallback: number): number {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 1) {
+      return Math.floor(value);
+    }
+
+    if (typeof value === 'string') {
+      const parsed = Number.parseInt(value.trim(), 10);
+      if (Number.isFinite(parsed) && parsed >= 1) {
+        return parsed;
+      }
+    }
+
+    return fallback;
   }
 
   private toPreferredLanguage(value: unknown, fallback: PreferredLanguage): PreferredLanguage {

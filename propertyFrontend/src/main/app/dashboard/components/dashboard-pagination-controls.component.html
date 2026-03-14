@@ -1,0 +1,54 @@
+<div class="pagination-bar">
+  <div class="pagination-summary">
+    <span>{{ t('PAGINATION_PAGE') }} {{ normalizedCurrentPage() }} {{ t('PAGINATION_OF') }} {{ totalPages }}</span>
+  </div>
+
+  <div class="pagination-controls">
+    <label class="page-size-label" for="page-size-select">{{ t('PAGINATION_PAGE_SIZE') }}</label>
+    <select
+      id="page-size-select"
+      class="page-size-select"
+      [value]="pageSize"
+      [disabled]="loading"
+      (change)="onPageSizeSelect($event)"
+    >
+      @for (option of selectablePageSizes(); track option) {
+        <option [value]="option">{{ option }}</option>
+      }
+    </select>
+
+    <button
+      type="button"
+      class="pagination-nav-button"
+      [disabled]="!canGoPrevious()"
+      (click)="onPreviousClick()"
+      [attr.aria-label]="t('PAGINATION_PREVIOUS')"
+    >
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+
+    <div class="page-carousel">
+      @for (pageNumber of visiblePages(); track pageNumber) {
+        <button
+          type="button"
+          class="page-number-button"
+          [class.active]="pageNumber === normalizedCurrentPage()"
+          [disabled]="loading"
+          (click)="onPageNumberClick(pageNumber)"
+        >
+          {{ pageNumber }}
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="pagination-nav-button"
+      [disabled]="!canGoNext()"
+      (click)="onNextClick()"
+      [attr.aria-label]="t('PAGINATION_NEXT')"
+    >
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </div>
+</div>

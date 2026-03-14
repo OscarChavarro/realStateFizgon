@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: http://localhost:8081/properties?page=1&pageSize=100&showClosed=true&showNew=true&showFavourite=true&showRejected=true&minPublicationDate=2026-02-01&maxPublicationDate=2026-03-13&sortOrder=asc&sortBy=title&sortOrder=desc&sortBy=mainFeatures.area
+  url: http://localhost:8081/properties?page=1&pageSize=50&showClosed=true&showNew=true&showFavourite=true&showRejected=true&minPublicationDate=2026-02-01&maxPublicationDate=2026-03-13&sortOrder=asc&sortBy=title&sortOrder=desc&sortBy=mainFeatures.area
   body: none
   auth: none
 }
 
 params:query {
   page: 1
-  pageSize: 100
+  pageSize: 50
   showClosed: true
   showNew: true
   showFavourite: true

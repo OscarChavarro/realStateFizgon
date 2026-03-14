@@ -25,9 +25,11 @@ export type PropertySortCriterion = {
   order: PropertySortOrder;
 };
 
-export type PublicationDateRangeFilter = {
+export type PropertiesQueryFilter = {
   minPublicationDate?: Date;
   maxPublicationDate?: Date;
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 @Injectable()
@@ -94,11 +96,11 @@ export class MongoRepository {
     pageSize: number,
     sortCriteria: PropertySortCriterion[],
     showClosed: boolean,
-    publicationDateRangeFilter?: PublicationDateRangeFilter
+    propertiesQueryFilter?: PropertiesQueryFilter
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
     const skip = (page - 1) * pageSize;
-    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
+    const query = this.buildPropertiesQuery(showClosed, propertiesQueryFilter);
     const mongoSort = this.buildMongoSort(sortCriteria);
 
     const documents = await collection
@@ -114,10 +116,10 @@ export class MongoRepository {
   async findAllPropertiesSorted(
     sortCriteria: PropertySortCriterion[],
     showClosed: boolean,
-    publicationDateRangeFilter?: PublicationDateRangeFilter
+    propertiesQueryFilter?: PropertiesQueryFilter
   ): Promise<unknown[]> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
-    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
+    const query = this.buildPropertiesQuery(showClosed, propertiesQueryFilter);
     const mongoSort = this.buildMongoSort(sortCriteria);
 
     const documents = await collection
@@ -130,10 +132,10 @@ export class MongoRepository {
 
   async countProperties(
     showClosed: boolean,
-    publicationDateRangeFilter?: PublicationDateRangeFilter
+    propertiesQueryFilter?: PropertiesQueryFilter
   ): Promise<number> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
-    const query = this.buildPropertiesQuery(showClosed, publicationDateRangeFilter);
+    const query = this.buildPropertiesQuery(showClosed, propertiesQueryFilter);
     return collection.countDocuments(query);
   }
 
@@ -143,7 +145,7 @@ export class MongoRepository {
 
   private buildPropertiesQuery(
     showClosed: boolean,
-    publicationDateRangeFilter?: PublicationDateRangeFilter
+    propertiesQueryFilter?: PropertiesQueryFilter
   ): Filter<Document> {
     const andConditions: Filter<Document>[] = [];
 
@@ -161,15 +163,31 @@ export class MongoRepository {
       $gte?: Date;
       $lte?: Date;
     } = {};
-    if (publicationDateRangeFilter?.minPublicationDate) {
-      publicationDateCondition.$gte = publicationDateRangeFilter.minPublicationDate;
+    if (propertiesQueryFilter?.minPublicationDate) {
+      publicationDateCondition.$gte = propertiesQueryFilter.minPublicationDate;
     }
-    if (publicationDateRangeFilter?.maxPublicationDate) {
-      publicationDateCondition.$lte = publicationDateRangeFilter.maxPublicationDate;
+    if (propertiesQueryFilter?.maxPublicationDate) {
+      publicationDateCondition.$lte = propertiesQueryFilter.maxPublicationDate;
     }
     if (Object.keys(publicationDateCondition).length > 0) {
       andConditions.push({
         publicationDate: publicationDateCondition
+      });
+    }
+
+    const priceCondition: {
+      $gte?: number;
+      $lte?: number;
+    } = {};
+    if (propertiesQueryFilter?.minPrice !== undefined) {
+      priceCondition.$gte = propertiesQueryFilter.minPrice;
+    }
+    if (propertiesQueryFilter?.maxPrice !== undefined) {
+      priceCondition.$lte = propertiesQueryFilter.maxPrice;
+    }
+    if (Object.keys(priceCondition).length > 0) {
+      andConditions.push({
+        price: priceCondition
       });
     }
 

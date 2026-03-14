@@ -5,7 +5,7 @@ import {
   PropertySortCriterion,
   PropertySortField,
   PropertySortOrder,
-  PublicationDateRangeFilter
+  PropertiesQueryFilter
 } from 'src/adapters/outbound/persistence/mongodb/mongo.repository';
 import {
   AuthUserPreferencesService,
@@ -52,7 +52,9 @@ export class PropertiesController {
     @Query('showFavourite') showFavouriteQuery?: string,
     @Query('showRejected') showRejectedQuery?: string,
     @Query('minPublicationDate') minPublicationDateQuery?: string,
-    @Query('maxPublicationDate') maxPublicationDateQuery?: string
+    @Query('maxPublicationDate') maxPublicationDateQuery?: string,
+    @Query('minPrice') minPriceQuery?: string,
+    @Query('maxPrice') maxPriceQuery?: string
   ): Promise<{
     error: string | null;
     data: unknown[];
@@ -68,9 +70,11 @@ export class PropertiesController {
       showFavourite: this.parseBooleanOrDefault(showFavouriteQuery, true, 'showFavourite'),
       showRejected: this.parseBooleanOrDefault(showRejectedQuery, true, 'showRejected')
     };
-    const publicationDateRangeFilter = this.parsePublicationDateRangeFilter(
+    const propertiesQueryFilter = this.parsePropertiesQueryFilter(
       minPublicationDateQuery,
-      maxPublicationDateQuery
+      maxPublicationDateQuery,
+      minPriceQuery,
+      maxPriceQuery
     );
     const sortCriteria = this.parseSortCriteriaFromRawQuery(this.readRawQueryString(request));
     const userId = this.getOptionalUserId(request);
@@ -85,7 +89,7 @@ export class PropertiesController {
       const allRows = await this.mongoRepository.findAllPropertiesSorted(
         sortCriteria,
         showClosed,
-        publicationDateRangeFilter
+        propertiesQueryFilter
       );
       const preferences = await this.authUserPreferencesService.getPreferences(userId);
       const filteredRows = this.applyReviewFilter(allRows, preferences.propertyLabels, reviewFilterState);
@@ -109,7 +113,7 @@ export class PropertiesController {
       };
     }
 
-    totalElements = await this.mongoRepository.countProperties(showClosed, publicationDateRangeFilter);
+    totalElements = await this.mongoRepository.countProperties(showClosed, propertiesQueryFilter);
     defaultPageSize = totalElements;
     const page = this.parsePositiveIntOrDefault(pageQuery, defaultPage, 'page');
     const pageSize = this.parsePositiveIntOrDefault(pageSizeQuery, defaultPageSize, 'pageSize');
@@ -122,7 +126,7 @@ export class PropertiesController {
         pageSize,
         sortCriteria,
         showClosed,
-        publicationDateRangeFilter
+        propertiesQueryFilter
       );
     const normalizedData = data.map((item) => this.normalizePropertyPayload(item));
 
@@ -170,6 +174,8 @@ export class PropertiesController {
       'showRejected',
       'minPublicationDate',
       'maxPublicationDate',
+      'minPrice',
+      'maxPrice',
       'sortBy',
       'sortOrder'
     ]);
@@ -181,7 +187,7 @@ export class PropertiesController {
     for (const [key, rawValue] of params.entries()) {
       if (!allowedQueryParams.has(key)) {
         this.throwSortBadRequest(
-          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, showNew, showFavourite, showRejected, minPublicationDate, maxPublicationDate, sortBy, sortOrder.`
+          `Unknown query parameter "${key}". Allowed parameters: page, pageSize, showClosed, showNew, showFavourite, showRejected, minPublicationDate, maxPublicationDate, minPrice, maxPrice, sortBy, sortOrder.`
         );
       }
 
@@ -217,10 +223,12 @@ export class PropertiesController {
     return criteria;
   }
 
-  private parsePublicationDateRangeFilter(
+  private parsePropertiesQueryFilter(
     minPublicationDateQuery: string | undefined,
-    maxPublicationDateQuery: string | undefined
-  ): PublicationDateRangeFilter {
+    maxPublicationDateQuery: string | undefined,
+    minPriceQuery: string | undefined,
+    maxPriceQuery: string | undefined
+  ): PropertiesQueryFilter {
     const minPublicationDate = this.parseDateQueryValue(minPublicationDateQuery, 'minPublicationDate', false);
     const maxPublicationDate = this.parseDateQueryValue(maxPublicationDateQuery, 'maxPublicationDate', true);
     if (minPublicationDate && maxPublicationDate && minPublicationDate > maxPublicationDate) {
@@ -228,10 +236,19 @@ export class PropertiesController {
         'Invalid publication date range. minPublicationDate cannot be greater than maxPublicationDate.'
       );
     }
+    const minPrice = this.parsePriceQueryValue(minPriceQuery, 'minPrice');
+    const maxPrice = this.parsePriceQueryValue(maxPriceQuery, 'maxPrice');
+    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+      this.throwPaginationBadRequest(
+        'Invalid price range. minPrice cannot be greater than maxPrice.'
+      );
+    }
 
     return {
       minPublicationDate: minPublicationDate ?? undefined,
-      maxPublicationDate: maxPublicationDate ?? undefined
+      maxPublicationDate: maxPublicationDate ?? undefined,
+      minPrice: minPrice ?? undefined,
+      maxPrice: maxPrice ?? undefined
     };
   }
 
@@ -264,6 +281,24 @@ export class PropertiesController {
       || parsed.getUTCDate() !== day) {
       this.throwPaginationBadRequest(
         `Invalid ${fieldName}="${value}". Expected a valid calendar date in format YYYY-MM-DD.`
+      );
+    }
+
+    return parsed;
+  }
+
+  private parsePriceQueryValue(
+    value: string | undefined,
+    fieldName: 'minPrice' | 'maxPrice'
+  ): number | null {
+    if (value === undefined || value.trim().length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseFloat(value.trim());
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      this.throwPaginationBadRequest(
+        `Invalid ${fieldName}="${value}". Expected a non-negative number.`
       );
     }
 

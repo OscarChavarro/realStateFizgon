@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MongoServerError } from 'mongodb';
+import { MongoPublicationDateMapperService } from 'src/adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
 import { MongoPropertyUpsertService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
 import { Property } from 'src/domain/property/property.model';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
@@ -20,9 +21,13 @@ function createProperty(url: string, propertyId: string | null = null): Property
     new PropertyMainFeatures('80m2', '2', '2nd', []),
     'Comment',
     [new PropertyFeatureGroup('General', ['a'])],
-    'today',
+    'Anuncio actualizado hace 10 días',
     [new PropertyImage('https://img/1.jpg', null)]
   );
+}
+
+function createService(): MongoPropertyUpsertService {
+  return new MongoPropertyUpsertService(new MongoPublicationDateMapperService());
 }
 
 describe('MongoPropertyUpsertService', () => {
@@ -31,7 +36,7 @@ describe('MongoPropertyUpsertService', () => {
     const collection: UpsertCollectionMock = {
       updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
     };
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     // Action
     const result = await service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/123456789/', null));
     // Assert
@@ -40,7 +45,8 @@ describe('MongoPropertyUpsertService', () => {
       expect.objectContaining({
         $set: expect.objectContaining({ propertyId: '123456789' }),
         $setOnInsert: expect.objectContaining({
-          importedBy: expect.any(Date)
+          importedBy: expect.any(Date),
+          publicationDate: expect.any(Date)
         })
       }),
       { upsert: true }
@@ -53,11 +59,11 @@ describe('MongoPropertyUpsertService', () => {
     const collection: UpsertCollectionMock = {
       updateOne: jest.fn(async () => ({ upsertedCount: 0 }))
     };
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     // Action
     const result = await service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/123456789/', '123456789'));
     // Assert
-    expect(collection.updateOne).toHaveBeenCalledTimes(2);
+    expect(collection.updateOne).toHaveBeenCalledTimes(3);
     expect(collection.updateOne).toHaveBeenNthCalledWith(
       2,
       { url: 'https://www.idealista.com/inmueble/123456789/' },
@@ -69,6 +75,44 @@ describe('MongoPropertyUpsertService', () => {
       }),
       { upsert: false }
     );
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      3,
+      {
+        url: 'https://www.idealista.com/inmueble/123456789/',
+        publicationDate: { $exists: false }
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          publicationDate: expect.any(Date)
+        })
+      }),
+      { upsert: false }
+    );
+    expect(result).toEqual({ isNew: false });
+  });
+
+  it('whenPropertyExistsWithoutMappablePublicationAge_saveProperty_shouldAvoidPublicationDateFillUpdate', async () => {
+    // Arrange
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 0 }))
+    };
+    const service = createService();
+    const property = new Property(
+      '123456789',
+      'https://www.idealista.com/inmueble/123456789/',
+      'Title',
+      'Madrid',
+      1000,
+      new PropertyMainFeatures('80m2', '2', '2nd', []),
+      'Comment',
+      [new PropertyFeatureGroup('General', ['a'])],
+      'texto no parseable',
+      [new PropertyImage('https://img/1.jpg', null)]
+    );
+    // Action
+    const result = await service.saveProperty(collection as never, property);
+    // Assert
+    expect(collection.updateOne).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ isNew: false });
   });
 
@@ -83,11 +127,68 @@ describe('MongoPropertyUpsertService', () => {
         throw duplicateError;
       })
       .mockImplementationOnce(async () => ({ modifiedCount: 1 }));
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicateError;
     // Action
     const result = await service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/1/', '1'));
     // Assert
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      1,
+      { url: 'https://www.idealista.com/inmueble/1/' },
+      expect.any(Object),
+      { upsert: true }
+    );
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      2,
+      { url: 'https://www.idealista.com/inmueble/1/' },
+      expect.any(Object),
+      { upsert: false }
+    );
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      3,
+      {
+        url: 'https://www.idealista.com/inmueble/1/',
+        publicationDate: { $exists: false }
+      },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          publicationDate: expect.any(Date)
+        })
+      }),
+      { upsert: false }
+    );
+    expect(result).toEqual({ isNew: false });
+  });
+
+  it('whenDuplicateKeyErrorOccursAndPublicationAgeIsNotMappable_saveProperty_shouldSkipPublicationDateBackfill', async () => {
+    // Arrange
+    const duplicateError = new Error('E11000 duplicate key');
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn()
+    };
+    collection.updateOne
+      .mockImplementationOnce(async () => {
+        throw duplicateError;
+      })
+      .mockImplementationOnce(async () => ({ modifiedCount: 1 }));
+    const service = createService();
+    (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicateError;
+    const property = new Property(
+      '1',
+      'https://www.idealista.com/inmueble/1/',
+      'Title',
+      'Madrid',
+      1000,
+      new PropertyMainFeatures('80m2', '2', '2nd', []),
+      'Comment',
+      [new PropertyFeatureGroup('General', ['a'])],
+      'texto no parseable',
+      [new PropertyImage('https://img/1.jpg', null)]
+    );
+    // Action
+    const result = await service.saveProperty(collection as never, property);
+    // Assert
+    expect(collection.updateOne).toHaveBeenCalledTimes(2);
     expect(collection.updateOne).toHaveBeenNthCalledWith(
       1,
       { url: 'https://www.idealista.com/inmueble/1/' },
@@ -111,7 +212,7 @@ describe('MongoPropertyUpsertService', () => {
         throw genericError;
       })
     };
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = () => false;
     // Action
     const action = service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/200/', '200'));
@@ -124,7 +225,7 @@ describe('MongoPropertyUpsertService', () => {
     const collection: UpsertCollectionMock = {
       updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
     };
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     // Action
     await service.saveProperty(collection as never, createProperty('https://www.idealista.com/alquiler-viviendas/madrid/', null));
     // Assert
@@ -142,7 +243,7 @@ describe('MongoPropertyUpsertService', () => {
 
   it('whenErrorIsMongoDuplicateKey_isDuplicateKeyError_shouldReturnTrue', () => {
     // Arrange
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     const duplicateError = new MongoServerError({ ok: 0, code: 11000, errmsg: 'duplicate key' });
     // Action
     const result = (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError(duplicateError);
@@ -152,7 +253,7 @@ describe('MongoPropertyUpsertService', () => {
 
   it('whenErrorIsMongoButNotDuplicate_isDuplicateKeyError_shouldReturnFalse', () => {
     // Arrange
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     const nonDuplicateMongoError = new MongoServerError({ ok: 0, code: 50, errmsg: 'other mongo error' });
     // Action
     const result = (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError(nonDuplicateMongoError);
@@ -162,7 +263,7 @@ describe('MongoPropertyUpsertService', () => {
 
   it('whenErrorIsNotMongoServerError_isDuplicateKeyError_shouldReturnFalse', () => {
     // Arrange
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     const genericError = new Error('generic error');
     // Action
     const result = (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError(genericError);
@@ -175,7 +276,7 @@ describe('MongoPropertyUpsertService', () => {
     { input: 'https://www.idealista.com/alquiler-viviendas/madrid/' }
   ])('whenUrlHasNoPropertyId_extractPropertyIdFromUrl_shouldReturnNull', ({ input }) => {
     // Arrange
-    const service = new MongoPropertyUpsertService();
+    const service = createService();
     // Action
     const result = (service as unknown as { extractPropertyIdFromUrl: (url: string) => string | null }).extractPropertyIdFromUrl(input);
     // Assert

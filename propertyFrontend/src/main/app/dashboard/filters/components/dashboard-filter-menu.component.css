@@ -66,3 +66,25 @@
   height: 0.95rem;
   accent-color: #1967d2;
 }
+
+.filter-date-option {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.filter-date-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.filter-date-input {
+  height: var(--control-height-sm);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}

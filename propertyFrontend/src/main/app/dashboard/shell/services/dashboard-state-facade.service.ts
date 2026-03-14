@@ -50,7 +50,9 @@ export class DashboardStateFacadeService {
     return current.showClosed !== next.showClosed
       || current.showNew !== next.showNew
       || current.showFavourite !== next.showFavourite
-      || current.showRejected !== next.showRejected;
+      || current.showRejected !== next.showRejected
+      || current.minPublicationDate !== next.minPublicationDate
+      || current.maxPublicationDate !== next.maxPublicationDate;
   }
 
   async saveFiltersPreference(http: HttpClient, filters: DashboardFiltersState): Promise<void> {

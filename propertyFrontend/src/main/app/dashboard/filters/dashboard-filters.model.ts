@@ -3,6 +3,8 @@ export type DashboardFiltersState = {
   showNew: boolean;
   showFavourite: boolean;
   showRejected: boolean;
+  minPublicationDate: string;
+  maxPublicationDate: string;
 };
 
 export function createDefaultDashboardFilters(): DashboardFiltersState {
@@ -10,6 +12,8 @@ export function createDefaultDashboardFilters(): DashboardFiltersState {
     showClosed: true,
     showNew: true,
     showFavourite: true,
-    showRejected: true
+    showRejected: true,
+    minPublicationDate: '',
+    maxPublicationDate: ''
   };
 }

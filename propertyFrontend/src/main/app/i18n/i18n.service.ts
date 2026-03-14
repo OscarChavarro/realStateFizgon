@@ -48,6 +48,14 @@ const TRANSLATIONS = {
     en: 'Show review: Rejected',
     sp: 'Mostrar revisión: Rechazado'
   },
+  MIN_PUBLICATION_DATE: {
+    en: 'Min publication date',
+    sp: 'Mínima fecha de publicación'
+  },
+  MAX_PUBLICATION_DATE: {
+    en: 'Max publication date',
+    sp: 'Máxima fecha de publicación'
+  },
   SHOWING_PROPERTIES: {
     en: 'Showing',
     sp: 'Mostrando'

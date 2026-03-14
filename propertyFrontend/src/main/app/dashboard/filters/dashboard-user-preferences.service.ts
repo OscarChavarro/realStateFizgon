@@ -9,6 +9,8 @@ type UserPreferencesPayload = {
   showNew?: unknown;
   showFavourite?: unknown;
   showRejected?: unknown;
+  minPublicationDate?: unknown;
+  maxPublicationDate?: unknown;
   propertyLabels?: unknown;
 };
 
@@ -28,7 +30,9 @@ export class DashboardUserPreferencesService {
           showClosed: this.toBoolean(response?.showClosed, true),
           showNew: this.toBoolean(response?.showNew, true),
           showFavourite: this.toBoolean(response?.showFavourite, true),
-          showRejected: this.toBoolean(response?.showRejected, true)
+          showRejected: this.toBoolean(response?.showRejected, true),
+          minPublicationDate: this.toDateOnlyString(response?.minPublicationDate),
+          maxPublicationDate: this.toDateOnlyString(response?.maxPublicationDate)
         },
         propertyLabels: this.normalizePropertyLabels(response?.propertyLabels)
       };
@@ -45,7 +49,9 @@ export class DashboardUserPreferencesService {
           showClosed: filters.showClosed,
           showNew: filters.showNew,
           showFavourite: filters.showFavourite,
-          showRejected: filters.showRejected
+          showRejected: filters.showRejected,
+          minPublicationDate: this.toDateOnlyString(filters.minPublicationDate),
+          maxPublicationDate: this.toDateOnlyString(filters.maxPublicationDate)
         }
       )
     );
@@ -102,6 +108,36 @@ export class DashboardUserPreferencesService {
       }
     }
     return fallback;
+  }
+
+  private toDateOnlyString(value: unknown): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+    const match = trimmed.match(datePattern);
+    if (!match) {
+      return '';
+    }
+
+    const year = Number.parseInt(match[1], 10);
+    const month = Number.parseInt(match[2], 10);
+    const day = Number.parseInt(match[3], 10);
+    const parsed = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    if (Number.isNaN(parsed.getTime())
+      || parsed.getUTCFullYear() !== year
+      || parsed.getUTCMonth() !== month - 1
+      || parsed.getUTCDate() !== day) {
+      return '';
+    }
+
+    return trimmed;
   }
 
   private normalizePropertyLabels(value: unknown): PropertyLabelEntry[] {

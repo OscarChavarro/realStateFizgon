@@ -125,6 +125,12 @@ export class DashboardDataService {
     searchParams.set('showNew', filters.showNew ? 'true' : 'false');
     searchParams.set('showFavourite', filters.showFavourite ? 'true' : 'false');
     searchParams.set('showRejected', filters.showRejected ? 'true' : 'false');
+    if (filters.minPublicationDate.trim().length > 0) {
+      searchParams.set('minPublicationDate', filters.minPublicationDate.trim());
+    }
+    if (filters.maxPublicationDate.trim().length > 0) {
+      searchParams.set('maxPublicationDate', filters.maxPublicationDate.trim());
+    }
     for (const criterion of sortCriteria) {
       searchParams.append('sortOrder', criterion.sortOrder);
       searchParams.append('sortBy', criterion.sortBy);

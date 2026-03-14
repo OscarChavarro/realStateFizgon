@@ -48,6 +48,26 @@
           <span>{{ t('SHOW_REVIEW_REJECTED') }}</span>
         </label>
       }
+
+      <label class="filter-date-option">
+        <span class="filter-date-label">{{ t('MIN_PUBLICATION_DATE') }}</span>
+        <input
+          type="date"
+          class="filter-date-input"
+          [value]="filters.minPublicationDate"
+          (change)="onMinPublicationDateChange($any($event.target).value)"
+        />
+      </label>
+
+      <label class="filter-date-option">
+        <span class="filter-date-label">{{ t('MAX_PUBLICATION_DATE') }}</span>
+        <input
+          type="date"
+          class="filter-date-input"
+          [value]="filters.maxPublicationDate"
+          (change)="onMaxPublicationDateChange($any($event.target).value)"
+        />
+      </label>
     </div>
   }
 </div>

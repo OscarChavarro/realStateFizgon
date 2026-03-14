@@ -54,6 +54,20 @@ export class DashboardFilterMenuComponent {
     });
   }
 
+  onMinPublicationDateChange(value: string): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      minPublicationDate: this.normalizeDateValue(value)
+    });
+  }
+
+  onMaxPublicationDateChange(value: string): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      maxPublicationDate: this.normalizeDateValue(value)
+    });
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.menuOpen()) {
@@ -75,5 +89,13 @@ export class DashboardFilterMenuComponent {
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
+  }
+
+  private normalizeDateValue(value: string): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    return value.trim();
   }
 }

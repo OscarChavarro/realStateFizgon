@@ -20,14 +20,13 @@ export class MongoPropertyUpsertService {
           ...property,
           propertyId
         };
+    const upsertSetDocument = this.toSetDocument(normalizedProperty);
 
     try {
       const result = await collection.updateOne(
         { url: normalizedProperty.url },
         {
-          $set: {
-            ...normalizedProperty
-          } as Property & Document,
+          $set: upsertSetDocument,
           $setOnInsert: {
             importedBy: now,
             ...(publicationDate ? { publicationDate } : {})
@@ -43,10 +42,7 @@ export class MongoPropertyUpsertService {
       await collection.updateOne(
         { url: normalizedProperty.url },
         {
-          $set: {
-            ...normalizedProperty,
-            updatedBy: now
-          } as Property & Document
+          $set: this.toSetDocument(normalizedProperty, now)
         },
         { upsert: false }
       );
@@ -73,10 +69,7 @@ export class MongoPropertyUpsertService {
       await collection.updateOne(
         { url: normalizedProperty.url },
         {
-          $set: {
-            ...normalizedProperty,
-            updatedBy: now
-          } as Property & Document
+          $set: this.toSetDocument(normalizedProperty, now)
         },
         { upsert: false }
       );
@@ -114,5 +107,22 @@ export class MongoPropertyUpsertService {
     }
 
     return match[1];
+  }
+
+  private toSetDocument(property: Property, updatedBy?: Date): Property & Document {
+    const document: Record<string, unknown> = {
+      ...property
+    };
+    if (updatedBy) {
+      document['updatedBy'] = updatedBy;
+    }
+
+    for (const [key, value] of Object.entries(document)) {
+      if (value === undefined) {
+        delete document[key];
+      }
+    }
+
+    return document as Property & Document;
   }
 }

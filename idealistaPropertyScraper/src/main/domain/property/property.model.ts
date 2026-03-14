@@ -1,4 +1,5 @@
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
+import { GeoLocationHint } from 'src/domain/property/geo-location-hint.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 
@@ -13,6 +14,7 @@ export class Property {
     public readonly advertiserComment: string | null,
     public readonly featureGroups: PropertyFeatureGroup[],
     public readonly publicationAge: string | null,
-    public readonly images: PropertyImage[]
+    public readonly images: PropertyImage[],
+    public readonly geoLocationHint: GeoLocationHint | null | undefined = undefined
   ) {}
 }

@@ -3,6 +3,7 @@ import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solv
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
+import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
@@ -19,6 +20,7 @@ export class PropertyDetailPageService {
     private readonly interactionService: PropertyDetailInteractionService,
     private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
     private readonly domExtractorService: PropertyDetailDomExtractorService,
+    private readonly geoCoordinateHintService: GeoCoordinateHintService,
     private readonly storageService: PropertyDetailStorageService
   ) {}
 
@@ -30,7 +32,7 @@ export class PropertyDetailPageService {
 
     try {
       await this.navigationService.waitForDetailUrlAndDomComplete(client.Runtime, url);
-      await this.processLoadedPropertyDetail(client, url);
+      await this.processLoadedPropertyDetail(client, url, 'ALWAYS');
     } finally {
       await this.navigationService.goBackToSearchResults(client.Runtime);
     }
@@ -39,13 +41,17 @@ export class PropertyDetailPageService {
   async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {
     try {
       await this.navigationService.navigateDirectlyToUrl(client.Runtime, url);
-      await this.processLoadedPropertyDetail(client, url);
+      await this.processLoadedPropertyDetail(client, url, 'ONLY_WHEN_MISSING_IN_DB');
     } finally {
       await this.navigationService.goBackToSearchResults(client.Runtime);
     }
   }
 
-  private async processLoadedPropertyDetail(client: CdpClient, url: string): Promise<void> {
+  private async processLoadedPropertyDetail(
+    client: CdpClient,
+    url: string,
+    geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB'
+  ): Promise<void> {
     await this.captchaDetectorService.panicIfCaptchaDetected({
       runtime: client.Runtime,
       logger: this.logger,
@@ -75,6 +81,11 @@ export class PropertyDetailPageService {
     }
 
     const filteredProperty = this.domExtractorService.filterPropertyImagesByBlurPattern(extractedProperty);
-    await this.storageService.savePropertyWithImages(filteredProperty);
+    const enrichedProperty = await this.geoCoordinateHintService.enrichProperty(
+      client.Runtime,
+      filteredProperty,
+      geoHintMode
+    );
+    await this.storageService.savePropertyWithImages(enrichedProperty);
   }
 }

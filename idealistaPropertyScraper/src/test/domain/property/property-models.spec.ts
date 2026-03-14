@@ -72,7 +72,8 @@ describe('Property domain models', () => {
       advertiserComment: 'Excelente ubicación',
       featureGroups,
       publicationAge: 'Publicado ayer',
-      images
+      images,
+      geoLocationHint: undefined
     });
   });
 });

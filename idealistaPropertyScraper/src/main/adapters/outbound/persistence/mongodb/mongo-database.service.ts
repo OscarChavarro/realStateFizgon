@@ -82,6 +82,19 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistenc
     return existing !== null;
   }
 
+  async hasGeoLocationHintByUrl(url: string): Promise<boolean> {
+    const collection = await this.ensurePropertiesCollection();
+    const existing = await collection.findOne(
+      {
+        url,
+        'geoLocationHint.lat': { $type: 'number' },
+        'geoLocationHint.lon': { $type: 'number' }
+      },
+      { projection: { _id: 1 } }
+    );
+    return existing !== null;
+  }
+
   async touchPropertyLastTimeVisited(url: string, visitedAt: Date = new Date()): Promise<void> {
     const collection = await this.ensurePropertiesCollection();
     await this.mongoPropertyVisitService.touchPropertyLastTimeVisited(collection, url, visitedAt);

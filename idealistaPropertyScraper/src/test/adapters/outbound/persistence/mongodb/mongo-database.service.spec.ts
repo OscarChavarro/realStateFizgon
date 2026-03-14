@@ -201,6 +201,16 @@ describe('MongoDatabaseService', () => {
       method: 'isOpenPropertyByUrl',
       findOneResult: null,
       expected: false
+    },
+    {
+      method: 'hasGeoLocationHintByUrl',
+      findOneResult: { _id: 1 },
+      expected: true
+    },
+    {
+      method: 'hasGeoLocationHintByUrl',
+      findOneResult: null,
+      expected: false
     }
   ])('whenUrlExistenceIsChecked_$method_shouldReturnExpectedBoolean', async ({ method, findOneResult, expected }) => {
     // Arrange
@@ -214,6 +224,27 @@ describe('MongoDatabaseService', () => {
     const result = await (service as unknown as Record<string, (url: string) => Promise<boolean>>)[method]('https://url');
     // Assert
     expect(result).toBe(expected);
+  });
+
+  it('whenCheckingGeoHintExistence_hasGeoLocationHintByUrl_shouldRequireNumericCoordinatesToAvoidSkippingNulls', async () => {
+    // Arrange
+    const collection: MockCollection = {
+      updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
+      findOne: jest.fn(async () => null),
+      find: jest.fn(() => ({ toArray: async () => [] }))
+    };
+    const service = createService(collection);
+    // Action
+    await service.hasGeoLocationHintByUrl('https://www.idealista.com/inmueble/110906048/');
+    // Assert
+    expect(collection.findOne).toHaveBeenCalledWith(
+      {
+        url: 'https://www.idealista.com/inmueble/110906048/',
+        'geoLocationHint.lat': { $type: 'number' },
+        'geoLocationHint.lon': { $type: 'number' }
+      },
+      { projection: { _id: 1 } }
+    );
   });
 
   it('whenLastTimeVisitedIsUpdated_touchPropertyLastTimeVisited_shouldDelegateToMongoPropertyVisitService', async () => {

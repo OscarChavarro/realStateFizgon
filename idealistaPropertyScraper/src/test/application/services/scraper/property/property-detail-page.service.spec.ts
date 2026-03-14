@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
+import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
@@ -35,6 +36,12 @@ class DeactivatedDetailStatusServiceMockForDetailPage {
 class PropertyDetailDomExtractorServiceMockForDetailPage {
   readonly extractProperty = jest.fn<(runtime: unknown, url: string) => Promise<Property | null>>();
   readonly filterPropertyImagesByBlurPattern = jest.fn<(property: Property) => Property>();
+}
+
+class GeoCoordinateHintServiceMockForDetailPage {
+  readonly enrichProperty = jest.fn<
+    (runtime: unknown, property: Property, mode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB') => Promise<Property>
+  >();
 }
 
 class PropertyDetailStorageServiceMockForDetailPage {
@@ -74,6 +81,7 @@ function createService() {
   const interaction = new PropertyDetailInteractionServiceMockForDetailPage();
   const deactivated = new DeactivatedDetailStatusServiceMockForDetailPage();
   const extractor = new PropertyDetailDomExtractorServiceMockForDetailPage();
+  const geoCoordinateHint = new GeoCoordinateHintServiceMockForDetailPage();
   const storage = new PropertyDetailStorageServiceMockForDetailPage();
 
   const service = new PropertyDetailPageService(
@@ -82,10 +90,11 @@ function createService() {
     interaction as unknown as PropertyDetailInteractionService,
     deactivated as unknown as DeactivatedDetailStatusService,
     extractor as unknown as PropertyDetailDomExtractorService,
+    geoCoordinateHint as unknown as GeoCoordinateHintService,
     storage as unknown as PropertyDetailStorageService
   );
 
-  return { service, cookie, navigation, interaction, deactivated, extractor, storage };
+  return { service, cookie, navigation, interaction, deactivated, extractor, geoCoordinateHint, storage };
 }
 
 describe('PropertyDetailPageService', () => {
@@ -140,10 +149,23 @@ describe('PropertyDetailPageService', () => {
 
   it('whenDetailIsActiveAndExtracted_loadPropertyUrl_shouldFilterAndPersistProperty', async () => {
     // Arrange
-    const { service, navigation, interaction, cookie, deactivated, extractor, storage } = createService();
+    const { service, navigation, interaction, cookie, deactivated, extractor, geoCoordinateHint, storage } = createService();
     const client = createClient();
     const rawProperty = createProperty('https://www.idealista.com/inmueble/3/');
     const filteredProperty = createProperty('https://www.idealista.com/inmueble/3/');
+    const geoEnrichedProperty = new Property(
+      filteredProperty.propertyId,
+      filteredProperty.url,
+      filteredProperty.title,
+      filteredProperty.location,
+      filteredProperty.price,
+      filteredProperty.mainFeatures,
+      filteredProperty.advertiserComment,
+      filteredProperty.featureGroups,
+      filteredProperty.publicationAge,
+      filteredProperty.images,
+      { lat: 40.5, lon: -3.6 }
+    );
     navigation.clickPropertyLinkFromResults.mockResolvedValue(true);
     navigation.waitForDetailUrlAndDomComplete.mockResolvedValue(undefined);
     navigation.goBackToSearchResults.mockResolvedValue(undefined);
@@ -153,12 +175,41 @@ describe('PropertyDetailPageService', () => {
     deactivated.detect.mockResolvedValue({ isDeactivated: false, closedBy: null });
     extractor.extractProperty.mockResolvedValue(rawProperty);
     extractor.filterPropertyImagesByBlurPattern.mockReturnValue(filteredProperty);
+    geoCoordinateHint.enrichProperty.mockResolvedValue(geoEnrichedProperty);
     storage.savePropertyWithImages.mockResolvedValue(undefined);
     // Action
     await service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/3/');
     // Assert
     expect(interaction.revealDetailMedia).toHaveBeenCalledWith(client.Runtime);
     expect(extractor.filterPropertyImagesByBlurPattern).toHaveBeenCalledWith(rawProperty);
+    expect(geoCoordinateHint.enrichProperty).toHaveBeenCalledWith(client.Runtime, filteredProperty, 'ALWAYS');
+    expect(storage.savePropertyWithImages).toHaveBeenCalledWith(geoEnrichedProperty);
+  });
+
+  it('whenDetailIsActiveAndExtractedFromDatabase_loadPropertyUrlFromDatabase_shouldEnrichOnlyWhenMissingGeoLocationHint', async () => {
+    // Arrange
+    const { service, navigation, interaction, cookie, deactivated, extractor, geoCoordinateHint, storage } = createService();
+    const client = createClient();
+    const rawProperty = createProperty('https://www.idealista.com/inmueble/3b/');
+    const filteredProperty = createProperty('https://www.idealista.com/inmueble/3b/');
+    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
+    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
+    interaction.revealDetailMedia.mockResolvedValue(undefined);
+    cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
+    deactivated.detect.mockResolvedValue({ isDeactivated: false, closedBy: null });
+    extractor.extractProperty.mockResolvedValue(rawProperty);
+    extractor.filterPropertyImagesByBlurPattern.mockReturnValue(filteredProperty);
+    geoCoordinateHint.enrichProperty.mockResolvedValue(filteredProperty);
+    storage.savePropertyWithImages.mockResolvedValue(undefined);
+    // Action
+    await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/3b/');
+    // Assert
+    expect(geoCoordinateHint.enrichProperty).toHaveBeenCalledWith(
+      client.Runtime,
+      filteredProperty,
+      'ONLY_WHEN_MISSING_IN_DB'
+    );
     expect(storage.savePropertyWithImages).toHaveBeenCalledWith(filteredProperty);
   });
 

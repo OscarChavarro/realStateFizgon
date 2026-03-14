@@ -5,6 +5,7 @@ import { ImageDownloadModule } from 'src/application/services/imagedownload/imag
 import { OriginErrorDetectorModule } from 'src/application/services/resilience/origin-error-detector.module';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
+import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
@@ -24,6 +25,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
   providers: [
     CookieApprovalDialogScraperService,
     DeactivatedDetailStatusService,
+    GeoCoordinateHintService,
     PropertyDetailNavigationService,
     PropertyDetailInteractionService,
     PropertyDetailDomExtractorService,

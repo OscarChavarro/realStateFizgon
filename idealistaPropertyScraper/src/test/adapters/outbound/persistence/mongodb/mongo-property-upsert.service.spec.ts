@@ -54,6 +54,48 @@ describe('MongoPropertyUpsertService', () => {
     expect(result).toEqual({ isNew: true });
   });
 
+  it('whenPropertyHasNoGeoLocationHint_saveProperty_shouldNotPersistUndefinedGeoLocationHintField', async () => {
+    // Arrange
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
+    };
+    const service = createService();
+    const property = createProperty('https://www.idealista.com/inmueble/123456780/', '123456780');
+    // Action
+    await service.saveProperty(collection as never, property);
+    // Assert
+    const firstCallUpdate = collection.updateOne.mock.calls[0]?.[1] as { $set?: Record<string, unknown> };
+    expect(firstCallUpdate.$set).toBeDefined();
+    expect(firstCallUpdate.$set).not.toHaveProperty('geoLocationHint');
+  });
+
+  it('whenPropertyHasNullGeoLocationHint_saveProperty_shouldPersistNullGeoLocationHintField', async () => {
+    // Arrange
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
+    };
+    const service = createService();
+    const property = new Property(
+      '123456781',
+      'https://www.idealista.com/inmueble/123456781/',
+      'Title',
+      'Madrid',
+      1000,
+      new PropertyMainFeatures('80m2', '2', '2nd', []),
+      'Comment',
+      [new PropertyFeatureGroup('General', ['a'])],
+      'Anuncio actualizado hace 1 día',
+      [new PropertyImage('https://img/1.jpg', null)],
+      null
+    );
+    // Action
+    await service.saveProperty(collection as never, property);
+    // Assert
+    const firstCallUpdate = collection.updateOne.mock.calls[0]?.[1] as { $set?: Record<string, unknown> };
+    expect(firstCallUpdate.$set).toBeDefined();
+    expect(firstCallUpdate.$set).toHaveProperty('geoLocationHint', null);
+  });
+
   it('whenPropertyAlreadyExists_saveProperty_shouldReturnIsNewFalse', async () => {
     // Arrange
     const collection: UpsertCollectionMock = {

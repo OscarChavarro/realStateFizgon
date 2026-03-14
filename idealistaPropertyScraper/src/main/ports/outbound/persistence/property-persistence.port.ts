@@ -5,6 +5,7 @@ export interface PropertyPersistencePort {
   saveProperty(property: Property): Promise<SavePropertyResult>;
   saveClosedProperty(url: string, closedBy?: Date): Promise<void>;
   isOpenPropertyByUrl(url: string): Promise<boolean>;
+  hasGeoLocationHintByUrl(url: string): Promise<boolean>;
   touchPropertyLastTimeVisited(url: string, visitedAt?: Date): Promise<void>;
   getOpenPropertyUrlsWithoutLastTimeVisited(): Promise<string[]>;
   getOpenPropertyUrls(): Promise<string[]>;

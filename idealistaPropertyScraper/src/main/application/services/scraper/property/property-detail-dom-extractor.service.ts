@@ -233,7 +233,8 @@ export class PropertyDetailDomExtractorService {
       property.advertiserComment,
       property.featureGroups,
       property.publicationAge,
-      images
+      images,
+      property.geoLocationHint
     );
   }
 

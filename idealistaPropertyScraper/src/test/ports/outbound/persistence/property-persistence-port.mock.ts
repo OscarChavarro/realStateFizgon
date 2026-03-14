@@ -6,6 +6,7 @@ export class PropertyPersistencePortMock {
   readonly saveProperty = jest.fn<(property: Property) => Promise<SavePropertyResult>>();
   readonly saveClosedProperty = jest.fn<(url: string, closedBy?: Date) => Promise<void>>();
   readonly isOpenPropertyByUrl = jest.fn<(url: string) => Promise<boolean>>();
+  readonly hasGeoLocationHintByUrl = jest.fn<(url: string) => Promise<boolean>>();
   readonly touchPropertyLastTimeVisited = jest.fn<(url: string, visitedAt?: Date) => Promise<void>>();
   readonly getOpenPropertyUrlsWithoutLastTimeVisited = jest.fn<() => Promise<string[]>>();
   readonly getOpenPropertyUrls = jest.fn<() => Promise<string[]>>();

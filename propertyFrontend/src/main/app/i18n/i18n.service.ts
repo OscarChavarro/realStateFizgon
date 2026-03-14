@@ -56,6 +56,26 @@ const TRANSLATIONS = {
     en: 'Max publication date',
     sp: 'Máxima fecha de publicación'
   },
+  PRICE_RANGE: {
+    en: 'Price range',
+    sp: 'Rango de precio'
+  },
+  MIN_PRICE: {
+    en: 'Min price',
+    sp: 'Precio mínimo'
+  },
+  MAX_PRICE: {
+    en: 'Max price',
+    sp: 'Precio máximo'
+  },
+  LOADING_PRICE_RANGE: {
+    en: 'Loading price range...',
+    sp: 'Cargando rango de precio...'
+  },
+  PRICE_RANGE_NOT_AVAILABLE: {
+    en: 'Price range is not available.',
+    sp: 'El rango de precio no está disponible.'
+  },
   SHOWING_PROPERTIES: {
     en: 'Showing',
     sp: 'Mostrando'

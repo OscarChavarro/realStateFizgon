@@ -3,11 +3,13 @@ import {
   DashboardFiltersState,
   createDefaultDashboardFilters
 } from 'src/app/dashboard/filters/dashboard-filters.model';
+import { DashboardPriceRangeFilterComponent } from 'src/app/dashboard/filters/components/dashboard-price-range-filter.component';
 import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18n.service';
 
 @Component({
   selector: 'app-dashboard-filter-menu',
   standalone: true,
+  imports: [DashboardPriceRangeFilterComponent],
   templateUrl: './dashboard-filter-menu.component.html',
   styleUrl: './dashboard-filter-menu.component.css'
 })
@@ -68,6 +70,20 @@ export class DashboardFilterMenuComponent {
     });
   }
 
+  onMinPriceChange(value: string): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      minPrice: this.normalizeIntegerValue(value)
+    });
+  }
+
+  onMaxPriceChange(value: string): void {
+    this.filtersChange.emit({
+      ...this.filters,
+      maxPrice: this.normalizeIntegerValue(value)
+    });
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (!this.menuOpen()) {
@@ -97,5 +113,13 @@ export class DashboardFilterMenuComponent {
     }
 
     return value.trim();
+  }
+
+  private normalizeIntegerValue(value: string): string {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    return value.replace(/[^\d]/g, '').trim();
   }
 }

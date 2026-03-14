@@ -131,6 +131,12 @@ export class DashboardDataService {
     if (filters.maxPublicationDate.trim().length > 0) {
       searchParams.set('maxPublicationDate', filters.maxPublicationDate.trim());
     }
+    if (filters.minPrice.trim().length > 0) {
+      searchParams.set('minPrice', filters.minPrice.trim());
+    }
+    if (filters.maxPrice.trim().length > 0) {
+      searchParams.set('maxPrice', filters.maxPrice.trim());
+    }
     for (const criterion of sortCriteria) {
       searchParams.append('sortOrder', criterion.sortOrder);
       searchParams.append('sortBy', criterion.sortBy);

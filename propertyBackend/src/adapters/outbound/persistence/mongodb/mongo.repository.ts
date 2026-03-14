@@ -32,9 +32,62 @@ export type PropertiesQueryFilter = {
   maxPrice?: number;
 };
 
+export type PropertiesPriceRange = {
+  minPrice: number | null;
+  maxPrice: number | null;
+};
+
 @Injectable()
 export class MongoRepository {
   constructor(private readonly mongoDatabaseService: MongoDatabaseService) {}
+
+  async getPriceRanges(): Promise<PropertiesPriceRange> {
+    const collection = await this.mongoDatabaseService.getPropertiesCollection();
+    const aggregation = await collection.aggregate<{
+      minPrice?: number | null;
+      maxPrice?: number | null;
+    }>([
+      {
+        $project: {
+          numericPrice: {
+            $convert: {
+              input: '$price',
+              to: 'double',
+              onError: null,
+              onNull: null
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          numericPrice: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          minPrice: { $min: '$numericPrice' },
+          maxPrice: { $max: '$numericPrice' }
+        }
+      }
+    ]).toArray();
+
+    if (aggregation.length === 0) {
+      return {
+        minPrice: null,
+        maxPrice: null
+      };
+    }
+
+    const raw = aggregation[0];
+    const minPrice = this.normalizePriceBoundary(raw.minPrice, Math.floor);
+    const maxPrice = this.normalizePriceBoundary(raw.maxPrice, Math.ceil);
+    return {
+      minPrice,
+      maxPrice
+    };
+  }
 
   async findPropertyByPropertyIdOrUrl(propertyId: string): Promise<PropertyLookupResult | null> {
     const collection = await this.mongoDatabaseService.getPropertiesCollection();
@@ -141,6 +194,17 @@ export class MongoRepository {
 
   private escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private normalizePriceBoundary(
+    value: number | null | undefined,
+    round: (value: number) => number
+  ): number | null {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return null;
+    }
+
+    return round(value);
   }
 
   private buildPropertiesQuery(

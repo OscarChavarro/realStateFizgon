@@ -2,6 +2,7 @@ import { Controller, Get, HttpException, HttpStatus, Query, Req } from '@nestjs/
 import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
 import {
   MongoRepository,
+  PropertiesPriceRange,
   PropertySortCriterion,
   PropertySortField,
   PropertySortOrder,
@@ -40,6 +41,11 @@ export class PropertiesController {
   async getPropertiesCount(): Promise<{ count: number }> {
     const count = await this.mongoDatabaseService.countProperties();
     return { count };
+  }
+
+  @Get('getPriceRanges')
+  async getPriceRanges(): Promise<PropertiesPriceRange> {
+    return this.mongoRepository.getPriceRanges();
   }
 
   @Get()

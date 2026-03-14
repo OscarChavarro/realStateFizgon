@@ -52,7 +52,9 @@ export class DashboardStateFacadeService {
       || current.showFavourite !== next.showFavourite
       || current.showRejected !== next.showRejected
       || current.minPublicationDate !== next.minPublicationDate
-      || current.maxPublicationDate !== next.maxPublicationDate;
+      || current.maxPublicationDate !== next.maxPublicationDate
+      || current.minPrice !== next.minPrice
+      || current.maxPrice !== next.maxPrice;
   }
 
   async saveFiltersPreference(http: HttpClient, filters: DashboardFiltersState): Promise<void> {

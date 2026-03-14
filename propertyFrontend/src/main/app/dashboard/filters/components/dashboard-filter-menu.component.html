@@ -68,6 +68,14 @@
           (change)="onMaxPublicationDateChange($any($event.target).value)"
         />
       </label>
+
+      <app-dashboard-price-range-filter
+        [selectedLanguage]="selectedLanguage"
+        [minPrice]="filters.minPrice"
+        [maxPrice]="filters.maxPrice"
+        (minPriceChange)="onMinPriceChange($event)"
+        (maxPriceChange)="onMaxPriceChange($event)"
+      ></app-dashboard-price-range-filter>
     </div>
   }
 </div>

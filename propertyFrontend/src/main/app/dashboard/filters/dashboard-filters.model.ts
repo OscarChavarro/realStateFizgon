@@ -5,6 +5,8 @@ export type DashboardFiltersState = {
   showRejected: boolean;
   minPublicationDate: string;
   maxPublicationDate: string;
+  minPrice: string;
+  maxPrice: string;
 };
 
 export function createDefaultDashboardFilters(): DashboardFiltersState {
@@ -14,6 +16,8 @@ export function createDefaultDashboardFilters(): DashboardFiltersState {
     showFavourite: true,
     showRejected: true,
     minPublicationDate: '',
-    maxPublicationDate: ''
+    maxPublicationDate: '',
+    minPrice: '',
+    maxPrice: ''
   };
 }

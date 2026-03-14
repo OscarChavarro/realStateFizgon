@@ -1,0 +1,119 @@
+:host {
+  display: block;
+  margin-top: var(--space-2);
+}
+
+.price-range-filter {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.price-range-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.price-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.price-input-group {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.price-input-label {
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+}
+
+.price-input {
+  height: var(--control-height-sm);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+.price-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.price-slider {
+  position: relative;
+  height: 1.6rem;
+}
+
+.price-slider-track,
+.price-slider-selected {
+  position: absolute;
+  top: 0.65rem;
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+}
+
+.price-slider-track {
+  left: 0;
+  right: 0;
+  background: #dbe5f4;
+}
+
+.price-slider-selected {
+  background: var(--color-brand);
+}
+
+.price-slider-input {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.price-slider-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-brand);
+  background: var(--color-surface);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.price-slider-input::-moz-range-thumb {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-brand);
+  background: var(--color-surface);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.price-slider-input::-webkit-slider-runnable-track {
+  height: 0.25rem;
+  background: transparent;
+}
+
+.price-slider-input::-moz-range-track {
+  height: 0.25rem;
+  background: transparent;
+}
+
+.price-range-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}

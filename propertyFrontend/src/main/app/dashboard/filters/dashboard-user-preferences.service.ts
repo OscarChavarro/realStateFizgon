@@ -11,6 +11,8 @@ type UserPreferencesPayload = {
   showRejected?: unknown;
   minPublicationDate?: unknown;
   maxPublicationDate?: unknown;
+  minPrice?: unknown;
+  maxPrice?: unknown;
   propertyLabels?: unknown;
 };
 
@@ -32,7 +34,9 @@ export class DashboardUserPreferencesService {
           showFavourite: this.toBoolean(response?.showFavourite, true),
           showRejected: this.toBoolean(response?.showRejected, true),
           minPublicationDate: this.toDateOnlyString(response?.minPublicationDate),
-          maxPublicationDate: this.toDateOnlyString(response?.maxPublicationDate)
+          maxPublicationDate: this.toDateOnlyString(response?.maxPublicationDate),
+          minPrice: this.toIntegerString(response?.minPrice),
+          maxPrice: this.toIntegerString(response?.maxPrice)
         },
         propertyLabels: this.normalizePropertyLabels(response?.propertyLabels)
       };
@@ -51,7 +55,9 @@ export class DashboardUserPreferencesService {
           showFavourite: filters.showFavourite,
           showRejected: filters.showRejected,
           minPublicationDate: this.toDateOnlyString(filters.minPublicationDate),
-          maxPublicationDate: this.toDateOnlyString(filters.maxPublicationDate)
+          maxPublicationDate: this.toDateOnlyString(filters.maxPublicationDate),
+          minPrice: this.toIntegerString(filters.minPrice),
+          maxPrice: this.toIntegerString(filters.maxPrice)
         }
       )
     );
@@ -138,6 +144,28 @@ export class DashboardUserPreferencesService {
     }
 
     return trimmed;
+  }
+
+  private toIntegerString(value: unknown): string {
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      return String(Math.round(value));
+    }
+
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const normalized = value.replace(/[^\d]/g, '').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    const parsed = Number.parseInt(normalized, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return '';
+    }
+
+    return String(parsed);
   }
 
   private normalizePropertyLabels(value: unknown): PropertyLabelEntry[] {

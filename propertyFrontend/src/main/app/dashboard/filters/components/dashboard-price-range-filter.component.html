@@ -1,0 +1,57 @@
+<div class="price-range-filter">
+  <div class="price-range-title">{{ t('PRICE_RANGE') }}</div>
+
+  <div class="price-range-inputs">
+    <label class="price-input-group">
+      <span class="price-input-label">{{ t('MIN_PRICE') }}</span>
+      <input
+        type="text"
+        inputmode="numeric"
+        class="price-input"
+        [value]="minPrice"
+        [disabled]="loading()"
+        (input)="onMinPriceTextInput($any($event.target).value)"
+      />
+    </label>
+
+    <label class="price-input-group">
+      <span class="price-input-label">{{ t('MAX_PRICE') }}</span>
+      <input
+        type="text"
+        inputmode="numeric"
+        class="price-input"
+        [value]="maxPrice"
+        [disabled]="loading()"
+        (input)="onMaxPriceTextInput($any($event.target).value)"
+      />
+    </label>
+  </div>
+
+  @if (loading()) {
+    <div class="price-range-hint">{{ t('LOADING_PRICE_RANGE') }}</div>
+  } @else if (hasRange()) {
+    <div class="price-slider">
+      <div class="price-slider-track"></div>
+      <div class="price-slider-selected" [style]="getSelectedRangeStyle()"></div>
+
+      <input
+        type="range"
+        class="price-slider-input"
+        [min]="absoluteMinPrice()"
+        [max]="absoluteMaxPrice()"
+        [value]="sliderMinPrice()"
+        (input)="onMinSliderInput($any($event.target).value)"
+      />
+      <input
+        type="range"
+        class="price-slider-input"
+        [min]="absoluteMinPrice()"
+        [max]="absoluteMaxPrice()"
+        [value]="sliderMaxPrice()"
+        (input)="onMaxSliderInput($any($event.target).value)"
+      />
+    </div>
+  } @else {
+    <div class="price-range-hint">{{ t('PRICE_RANGE_NOT_AVAILABLE') }}</div>
+  }
+</div>

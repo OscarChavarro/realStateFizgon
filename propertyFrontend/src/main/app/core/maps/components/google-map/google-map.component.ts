@@ -21,31 +21,19 @@ import {
 } from 'src/app/core/maps/model/google-map-layers.model';
 import { PropertyMiniSummaryComponent } from 'src/app/core/maps/components/property-mini-summary/property-mini-summary.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
-import { GoogleMapLike as PoiGoogleMapLike, GoogleMapPoiLayerManager } from 'src/app/core/maps/services/google-map-poi-layer-manager';
-
-type GoogleLatLngLike = {
-  lat: () => number;
-  lng: () => number;
-};
-
-type GoogleMapWithCenter = PoiGoogleMapLike & {
-  getCenter: () => GoogleLatLngLike | { lat: number; lng: number } | null;
-};
-
-type GoogleMarkerLike = {
-  setMap: (map: GoogleMapWithCenter | null) => void;
-  addListener?: (eventName: string, handler: () => void) => unknown;
-};
-
-type GoogleMapsApi = {
-  Map: new (container: HTMLElement, options: unknown) => GoogleMapWithCenter;
-  Marker: new (options: unknown) => GoogleMarkerLike;
-  Size: new (width: number, height: number) => unknown;
-  Point: new (x: number, y: number) => unknown;
-  event?: {
-    trigger: (instance: unknown, eventName: string) => void;
-  };
-};
+import { GoogleMapPoiLayerManager } from 'src/app/core/maps/services/google-map-poi-layer-manager';
+import {
+  GoogleMapsApi,
+  GoogleMarkerLike,
+  GoogleMapWithCenter
+} from 'src/app/core/maps/model/google-maps-runtime.types';
+import { GoogleMapsRuntimeLoader } from 'src/app/core/maps/services/google-maps-runtime-loader';
+import { GoogleMapViewportManager } from 'src/app/core/maps/services/google-map-viewport-manager';
+import { GoogleMapMarkerIconFactory } from 'src/app/core/maps/services/google-map-marker-icon-factory';
+import {
+  GoogleMapKeyboardSelectionResult,
+  GoogleMapSelectionController
+} from 'src/app/core/maps/services/google-map-selection-controller';
 
 @Component({
   selector: 'app-google-map',
@@ -55,11 +43,13 @@ type GoogleMapsApi = {
   styleUrl: './google-map.component.scss'
 })
 export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
-  private static googleMapsScriptPromise: Promise<void> | null = null;
-
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly i18nService = inject(I18nService);
   private readonly ngZone = inject(NgZone);
+  private readonly runtimeLoader = new GoogleMapsRuntimeLoader();
+  private readonly viewportManager = new GoogleMapViewportManager();
+  private readonly markerIconFactory = new GoogleMapMarkerIconFactory();
+  private readonly selectionController = new GoogleMapSelectionController();
   private readonly poiLayerManager = new GoogleMapPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
   private markerClusterer: MarkerClusterer | null = null;
@@ -100,7 +90,6 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('miniSummaryContainer') private miniSummaryContainerRef?: ElementRef<HTMLDivElement>;
 
   mapLoadError: string | null = null;
-  selectedPropertySummary: GoogleMapProperty | null = null;
   isLayerPanelVisible = true;
   layerPanelWidthPx = 220;
   readonly layerOptions = this.poiLayerManager.layerOptions;
@@ -110,6 +99,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     { id: 'hybrid', label: 'PROPERTY_LOCATION_STYLE_HYBRID' }
   ];
   selectedMapVisualStyle: GoogleMapVisualStyleId = 'hybrid';
+
+  get selectedPropertySummary(): GoogleMapProperty | null {
+    return this.selectionController.getSelectedPropertySummary();
+  }
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
@@ -136,8 +129,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     if (changes['interactionEnabled'] && !this.interactionEnabled) {
-      this.selectedPropertySummary = null;
-      this.clearSelectedTargetMarker();
+      this.clearSelectionState();
       this.cdr.markForCheck();
     }
   }
@@ -216,7 +208,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
-      this.selectedPropertySummary = null;
+      this.selectionController.clearSelection();
       this.clearPropertyMarkers();
       this.clearSelectedTargetMarker();
       return;
@@ -227,7 +219,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
-      this.selectedPropertySummary = null;
+      this.selectionController.clearSelection();
       this.clearSelectedTargetMarker();
       return;
     }
@@ -238,7 +230,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       const interactionChanged = this.markerInteractionEnabledSnapshot !== this.interactionEnabled;
       if (this.propertiesRenderSignature === propertiesSignature) {
         if (interactionChanged) {
-          const googleMaps = this.getGoogleMaps();
+          const googleMaps = this.runtimeLoader.getGoogleMaps();
           if (!googleMaps) {
             this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
             return;
@@ -246,8 +238,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
           this.renderMarkers(mappableProperties, googleMaps);
           if (!this.interactionEnabled) {
-            this.selectedPropertySummary = null;
-            this.clearSelectedTargetMarker();
+            this.clearSelectionState();
           } else {
             this.syncSelectedSummaryAgainstProperties(mappableProperties);
           }
@@ -255,7 +246,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         return;
       }
 
-      const googleMaps = this.getGoogleMaps();
+      const googleMaps = this.runtimeLoader.getGoogleMaps();
       if (!googleMaps) {
         this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
         return;
@@ -264,11 +255,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapLoadError = null;
       this.renderMarkers(mappableProperties, googleMaps);
       if (!this.preserveViewportOnPropertiesChange) {
-        this.applyViewportToMap(this.resolveViewport(mappableProperties));
+        this.applyViewportToMap(this.viewportManager.resolveViewport(mappableProperties, this.zoom));
       }
       if (!this.interactionEnabled) {
-        this.selectedPropertySummary = null;
-        this.clearSelectedTargetMarker();
+        this.clearSelectionState();
       } else {
         this.syncSelectedSummaryAgainstProperties(mappableProperties);
       }
@@ -277,14 +267,13 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     try {
-      await this.loadGoogleMapsScript(this.googleMapsApiKey);
-      await this.waitForGoogleMapsReady();
+      await this.runtimeLoader.loadGoogleMapsScript(this.googleMapsApiKey);
+      await this.runtimeLoader.waitForGoogleMapsReady();
       await this.renderMap(mappableProperties);
       this.mapRenderSignature = configSignature;
       this.propertiesRenderSignature = propertiesSignature;
       if (!this.interactionEnabled) {
-        this.selectedPropertySummary = null;
-        this.clearSelectedTargetMarker();
+        this.clearSelectionState();
       } else {
         this.syncSelectedSummaryAgainstProperties(mappableProperties);
       }
@@ -294,7 +283,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
-      this.selectedPropertySummary = null;
+      this.selectionController.clearSelection();
       this.clearSelectedTargetMarker();
     }
   }
@@ -306,61 +295,8 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     ));
   }
 
-  private loadGoogleMapsScript(apiKey: string): Promise<void> {
-    const googleMaps = this.getGoogleMaps();
-    if (googleMaps) {
-      return Promise.resolve();
-    }
-
-    if (GoogleMapComponent.googleMapsScriptPromise) {
-      return GoogleMapComponent.googleMapsScriptPromise;
-    }
-
-    GoogleMapComponent.googleMapsScriptPromise = new Promise<void>((resolve, reject) => {
-      const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-maps-api="true"]');
-      if (existingScript) {
-        if (this.getGoogleMaps()) {
-          resolve();
-          return;
-        }
-
-        existingScript.addEventListener('load', () => resolve(), { once: true });
-        existingScript.addEventListener('error', (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`)), { once: true });
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly`;
-      script.async = true;
-      script.defer = true;
-      script.dataset['googleMapsApi'] = 'true';
-      script.onload = () => resolve();
-      script.onerror = (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`));
-      document.head.appendChild(script);
-    }).catch((error: unknown) => {
-      GoogleMapComponent.googleMapsScriptPromise = null;
-      throw error;
-    });
-
-    return GoogleMapComponent.googleMapsScriptPromise;
-  }
-
-  private async waitForGoogleMapsReady(timeoutMs = 5000): Promise<void> {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
-      if (this.getGoogleMaps()) {
-        return;
-      }
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 50);
-      });
-    }
-
-    throw new Error('Google Maps namespace did not become available after script load.');
-  }
-
   private async renderMap(properties: GoogleMapProperty[]): Promise<void> {
-    const googleMaps = this.getGoogleMaps();
+    const googleMaps = this.runtimeLoader.getGoogleMaps();
     const mapContainer = this.mapContainerRef?.nativeElement;
     if (!googleMaps || !mapContainer) {
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
@@ -368,7 +304,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.mapLoadError = null;
-    const viewport = this.resolveViewport(properties);
+    const viewport = this.viewportManager.resolveViewport(properties, this.zoom);
     const mapOptions: Record<string, unknown> = {
       center: viewport.center,
       zoom: viewport.zoom,
@@ -400,7 +336,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         position: { lat: property.latitude, lng: property.longitude },
         title: property.title,
         icon: {
-          url: this.buildPropertyMarkerIconDataUrl(property),
+          url: this.markerIconFactory.buildPropertyMarkerIconDataUrl(property),
           scaledSize: new googleMaps.Size(38, 38),
           anchor: new googleMaps.Point(19, 19)
         }
@@ -425,43 +361,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
-    if (!this.mapInstance) {
-      return;
-    }
-
-    this.mapInstance.setOptions({
-      center: viewport.center,
-      zoom: viewport.zoom
-    });
-  }
-
-  private resolveViewport(properties: GoogleMapProperty[]): { center: { lat: number; lng: number }; zoom: number } {
-    if (properties.length <= 1) {
-      return {
-        center: { lat: properties[0].latitude, lng: properties[0].longitude },
-        zoom: this.zoom
-      };
-    }
-
-    let minLat = Number.POSITIVE_INFINITY;
-    let maxLat = Number.NEGATIVE_INFINITY;
-    let minLng = Number.POSITIVE_INFINITY;
-    let maxLng = Number.NEGATIVE_INFINITY;
-
-    for (const property of properties) {
-      minLat = Math.min(minLat, property.latitude);
-      maxLat = Math.max(maxLat, property.latitude);
-      minLng = Math.min(minLng, property.longitude);
-      maxLng = Math.max(maxLng, property.longitude);
-    }
-
-    return {
-      center: {
-        lat: (minLat + maxLat) / 2,
-        lng: (minLng + maxLng) / 2
-      },
-      zoom: 10
-    };
+    this.viewportManager.applyViewportToMap(this.mapInstance, viewport);
   }
 
   private buildConfigSignature(): string {
@@ -481,75 +381,26 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   onPropertyMiniSummaryCloseRequested(): void {
-    this.selectedPropertySummary = null;
-    this.clearSelectedTargetMarker();
+    this.clearSelectionState();
     this.cdr.markForCheck();
   }
 
   @HostListener('window:keydown', ['$event'])
   onWindowKeyDown(event: KeyboardEvent): void {
-    if (!this.interactionEnabled || event.defaultPrevented || event.repeat) {
-      return;
-    }
+    const keyboardResult = this.selectionController.handleKeyboardSelection(
+      event,
+      this.interactionEnabled,
+      this.getMappableProperties()
+    );
 
-    if (event.ctrlKey || event.metaKey || event.altKey) {
-      return;
-    }
-
-    const target = event.target as HTMLElement | null;
-    if (this.isTypingTarget(target)) {
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      this.selectPropertyByKeyboard(-1);
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      this.selectPropertyByKeyboard(1);
-    }
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscapeKey(): void {
-    if (!this.interactionEnabled || this.selectedPropertySummary === null) {
-      return;
-    }
-
-    this.selectedPropertySummary = null;
-    this.clearSelectedTargetMarker();
-    this.cdr.markForCheck();
-  }
-
-  private selectPropertyByKeyboard(delta: -1 | 1): void {
-    const mappableProperties = this.getMappableProperties();
-    if (mappableProperties.length === 0) {
-      return;
-    }
-
-    const currentId = this.selectedPropertySummary?.id ?? null;
-    const currentIndex = currentId === null
-      ? -1
-      : mappableProperties.findIndex((property) => property.id === currentId);
-
-    const startIndex = currentIndex >= 0
-      ? currentIndex
-      : (delta === 1 ? -1 : 0);
-    const nextIndex = (startIndex + delta + mappableProperties.length) % mappableProperties.length;
-    const selected = mappableProperties[nextIndex];
-
-    this.openPropertyMiniSummary(selected, { focus: true });
-    this.centerMapOnProperty(selected);
+    this.applyKeyboardSelectionResult(keyboardResult);
   }
 
   private openPropertyMiniSummary(
     property: GoogleMapProperty,
     options: { focus?: boolean } = {}
   ): void {
-    this.selectedPropertySummary = property;
+    this.selectionController.selectProperty(property);
     this.updateSelectedTargetMarker();
     this.cdr.markForCheck();
 
@@ -570,33 +421,33 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private centerMapOnProperty(property: GoogleMapProperty): void {
-    if (!this.mapInstance) {
-      return;
-    }
-
-    this.mapInstance.setOptions({
-      center: {
-        lat: property.latitude,
-        lng: property.longitude
-      }
-    });
+    this.viewportManager.centerMapOnProperty(this.mapInstance, property);
   }
 
-  private syncSelectedSummaryAgainstProperties(mappableProperties: GoogleMapProperty[]): void {
-    if (this.selectedPropertySummary === null) {
-      this.clearSelectedTargetMarker();
+  private applyKeyboardSelectionResult(result: GoogleMapKeyboardSelectionResult): void {
+    if (result.type === 'none') {
       return;
     }
 
-    const selected = mappableProperties.find((item) => item.id === this.selectedPropertySummary?.id) ?? null;
-    if (selected === null) {
-      this.selectedPropertySummary = null;
+    if (result.type === 'closed') {
       this.clearSelectedTargetMarker();
       this.cdr.markForCheck();
       return;
     }
 
-    this.selectedPropertySummary = selected;
+    this.updateSelectedTargetMarker();
+    this.centerMapOnProperty(result.property);
+    this.focusMiniSummary();
+    this.cdr.markForCheck();
+  }
+
+  private syncSelectedSummaryAgainstProperties(mappableProperties: GoogleMapProperty[]): void {
+    const selected = this.selectionController.syncSelectionAgainstProperties(mappableProperties);
+    if (selected === null) {
+      this.clearSelectedTargetMarker();
+      return;
+    }
+
     this.updateSelectedTargetMarker();
     this.cdr.markForCheck();
   }
@@ -607,7 +458,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    const googleMaps = this.getGoogleMaps();
+    const googleMaps = this.runtimeLoader.getGoogleMaps();
     if (!googleMaps) {
       return;
     }
@@ -621,7 +472,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       },
       zIndex: 3000,
       icon: {
-        url: this.buildSelectedTargetMarkerIconDataUrl(),
+        url: this.markerIconFactory.buildSelectedTargetMarkerIconDataUrl(),
         scaledSize: new googleMaps.Size(56, 56),
         anchor: new googleMaps.Point(28, 28)
       }
@@ -637,16 +488,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.selectedTargetMarker = null;
   }
 
-  private isTypingTarget(target: HTMLElement | null): boolean {
-    if (!target) {
-      return false;
-    }
-
-    const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
+  private clearSelectionState(): void {
+    this.selectionController.clearSelection();
+    this.clearSelectedTargetMarker();
   }
 
   private attachLayerPanelResizeListeners(): void {
@@ -680,92 +524,8 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.markerClusterer = null;
   }
 
-  private buildPropertyMarkerIconDataUrl(property: GoogleMapProperty): string {
-    const isClosed = property.closed === true;
-    const baseColor = isClosed
-      ? '#4b5563'
-      : this.resolveReviewMarkerColor(property.review);
-    const glyph = isClosed
-      ? '<text x="19" y="25.5" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#ffffff">☠</text>'
-      : `
-        <path fill="#ffffff" d="M8.5 17.5 19 9l10.5 8.5-1.9 2.3-1.6-1.3V29h-5.8v-6.6h-2.4V29H12V18.5l-1.6 1.3-1.9-2.3z"/>
-        <rect x="17" y="23" width="4" height="6" fill="${baseColor}"/>
-        <rect x="13.8" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
-        <rect x="21" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
-      `;
-
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-        <circle cx="19" cy="19" r="18" fill="${baseColor}"/>
-        ${glyph}
-      </svg>
-    `.trim();
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  }
-
-  private resolveReviewMarkerColor(review: GoogleMapProperty['review']): string {
-    if (review === 'FAVOURITE') {
-      return '#20a24a';
-    }
-
-    if (review === 'DISCHARGED') {
-      return '#d44343';
-    }
-
-    return '#9ca3af';
-  }
-
-  private buildSelectedTargetMarkerIconDataUrl(): string {
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
-        <circle cx="28" cy="28" r="24" fill="rgba(255, 214, 10, 0.25)" stroke="#ffd60a" stroke-width="4"/>
-      </svg>
-    `.trim();
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-  }
-
-  private getMapCenter(): { lat: number; lng: number } | null {
-    if (!this.mapInstance) {
-      return null;
-    }
-
-    const center = this.mapInstance.getCenter();
-    const lat = this.readLatLng(center, 'lat');
-    const lng = this.readLatLng(center, 'lng');
-    if (lat === null || lng === null) {
-      return null;
-    }
-
-    return { lat, lng };
-  }
-
-  private readLatLng(
-    source: GoogleLatLngLike | { lat: number; lng: number } | null | undefined,
-    axis: 'lat' | 'lng'
-  ): number | null {
-    if (!source) {
-      return null;
-    }
-
-    const value = source[axis];
-    const numeric = typeof value === 'function' ? value() : value;
-    return Number.isFinite(numeric) ? numeric : null;
-  }
-
   private refreshMapViewport(): void {
-    if (!this.mapInstance) {
-      return;
-    }
-
-    const center = this.getMapCenter();
-    const googleMaps = this.getGoogleMaps();
-    if (googleMaps?.event) {
-      googleMaps.event.trigger(this.mapInstance, 'resize');
-    }
-
-    if (center) {
-      this.mapInstance.setOptions({ center });
-    }
+    this.viewportManager.refreshMapViewport(this.mapInstance, this.runtimeLoader.getGoogleMaps());
   }
 
   private applyMapVisualStyle(): void {
@@ -795,12 +555,4 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     };
   }
 
-  private getGoogleMaps(): GoogleMapsApi | null {
-    const globalWindow = window as Window & { google?: { maps?: unknown } };
-    if (!globalWindow.google || !globalWindow.google.maps) {
-      return null;
-    }
-
-    return globalWindow.google.maps as GoogleMapsApi;
-  }
 }

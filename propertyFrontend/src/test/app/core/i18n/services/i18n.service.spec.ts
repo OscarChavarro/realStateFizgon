@@ -61,7 +61,7 @@ describe('I18nService', () => {
   ];
 
   const explicitCases: ReadonlyArray<{ key: TranslationKey; en: string; sp: string }> = [
-    { key: 'DASHBOARD', en: 'Property list', sp: 'Listado de propiedades' },
+    { key: 'DASHBOARD', en: 'Listing', sp: 'Listado' },
     { key: 'REVIEW_DISCHARGED', en: 'Rejected', sp: 'Rechazado' },
     { key: 'PUBLICATION_DATE', en: 'Published on', sp: 'Publicado en' }
   ];

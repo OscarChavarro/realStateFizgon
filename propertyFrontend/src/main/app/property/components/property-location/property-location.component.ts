@@ -77,10 +77,14 @@ export class PropertyLocationComponent implements OnChanges {
 
     return [{
       id: this.propertyTitle || 'selected-property',
+      propertyId: '',
       title: this.propertyTitle || '-',
+      price: '-',
       latitude,
       longitude,
-      closed: this.isUnavailable === true
+      closed: this.isUnavailable === true,
+      review: 'NEW',
+      imageUrls: []
     }];
   }
 

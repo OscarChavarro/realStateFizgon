@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  HostListener,
   NgZone,
   Input,
   OnChanges,
@@ -95,6 +96,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   @ViewChild('mapLayout') private mapLayoutRef?: ElementRef<HTMLDivElement>;
   @ViewChild('mapContainer') private mapContainerRef?: ElementRef<HTMLDivElement>;
+  @ViewChild('miniSummaryContainer') private miniSummaryContainerRef?: ElementRef<HTMLDivElement>;
 
   mapLoadError: string | null = null;
   selectedPropertySummary: GoogleMapProperty | null = null;
@@ -392,8 +394,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (this.interactionEnabled && typeof marker.addListener === 'function') {
         marker.addListener('click', () => {
           this.ngZone.run(() => {
-            this.selectedPropertySummary = property;
-            this.cdr.markForCheck();
+            this.openPropertyMiniSummary(property, { focus: true });
           });
         });
       }
@@ -466,6 +467,112 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   onPropertyMiniSummaryCloseRequested(): void {
     this.selectedPropertySummary = null;
     this.cdr.markForCheck();
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeyDown(event: KeyboardEvent): void {
+    if (!this.interactionEnabled || event.defaultPrevented || event.repeat) {
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    if (this.isTypingTarget(target)) {
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.selectPropertyByKeyboard(-1);
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.selectPropertyByKeyboard(1);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (!this.interactionEnabled || this.selectedPropertySummary === null) {
+      return;
+    }
+
+    this.selectedPropertySummary = null;
+    this.cdr.markForCheck();
+  }
+
+  private selectPropertyByKeyboard(delta: -1 | 1): void {
+    const mappableProperties = this.getMappableProperties();
+    if (mappableProperties.length === 0) {
+      return;
+    }
+
+    const currentId = this.selectedPropertySummary?.id ?? null;
+    const currentIndex = currentId === null
+      ? -1
+      : mappableProperties.findIndex((property) => property.id === currentId);
+
+    const startIndex = currentIndex >= 0
+      ? currentIndex
+      : (delta === 1 ? -1 : 0);
+    const nextIndex = (startIndex + delta + mappableProperties.length) % mappableProperties.length;
+    const selected = mappableProperties[nextIndex];
+
+    this.openPropertyMiniSummary(selected, { focus: true });
+    this.centerMapOnProperty(selected);
+  }
+
+  private openPropertyMiniSummary(
+    property: GoogleMapProperty,
+    options: { focus?: boolean } = {}
+  ): void {
+    this.selectedPropertySummary = property;
+    this.cdr.markForCheck();
+
+    if (options.focus) {
+      this.focusMiniSummary();
+    }
+  }
+
+  private focusMiniSummary(): void {
+    requestAnimationFrame(() => {
+      const element = this.miniSummaryContainerRef?.nativeElement;
+      if (!element) {
+        return;
+      }
+
+      element.focus({ preventScroll: true });
+    });
+  }
+
+  private centerMapOnProperty(property: GoogleMapProperty): void {
+    if (!this.mapInstance) {
+      return;
+    }
+
+    this.mapInstance.setOptions({
+      center: {
+        lat: property.latitude,
+        lng: property.longitude
+      }
+    });
+  }
+
+  private isTypingTarget(target: HTMLElement | null): boolean {
+    if (!target) {
+      return false;
+    }
+
+    const tagName = target.tagName.toLowerCase();
+    return tagName === 'input'
+      || tagName === 'textarea'
+      || tagName === 'select'
+      || target.isContentEditable;
   }
 
   private attachLayerPanelResizeListeners(): void {

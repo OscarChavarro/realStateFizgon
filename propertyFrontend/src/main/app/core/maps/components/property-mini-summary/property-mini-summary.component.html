@@ -8,8 +8,20 @@
     <span class="material-symbols-outlined">close</span>
   </button>
 
-  <p class="property-mini-summary-title">{{ property.title }}</p>
-  <p class="property-mini-summary-availability">
-    closed: {{ property.closed === true ? 'true' : 'false' }}
-  </p>
+  <app-property-mini-image-carousel
+    class="property-mini-summary-carousel"
+    [imageUrls]="property.imageUrls"
+    [selectedLanguage]="selectedLanguage"
+  ></app-property-mini-image-carousel>
+
+  <section class="property-mini-summary-content">
+    <h4 class="property-mini-summary-title">{{ property.title }}</h4>
+    <p class="property-mini-summary-price">
+      <strong>{{ property.price }} € / mes</strong>
+    </p>
+    <button type="button" class="property-mini-summary-review {{ getReviewClass() }}">
+      <span class="material-symbols-outlined">{{ getReviewIcon() }}</span>
+      <span>{{ getReviewText() }}</span>
+    </button>
+  </section>
 </article>

@@ -52,9 +52,10 @@
     } @else {
       <div #mapContainer class="google-map"></div>
       @if (interactionEnabled && selectedPropertySummary !== null) {
-        <div class="google-map-mini-summary">
+        <div #miniSummaryContainer class="google-map-mini-summary" tabindex="-1">
           <app-property-mini-summary
             [property]="selectedPropertySummary"
+            [selectedLanguage]="selectedLanguage"
             (closeRequested)="onPropertyMiniSummaryCloseRequested()"
           ></app-property-mini-summary>
         </div>

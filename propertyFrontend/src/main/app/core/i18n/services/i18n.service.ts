@@ -260,6 +260,14 @@ const TRANSLATIONS = {
     en: 'Google Maps could not be loaded.',
     sp: 'No se pudo cargar Google Maps.'
   },
+  PROPERTY_MINI_CAROUSEL_PREVIOUS_IMAGE: {
+    en: 'Previous image',
+    sp: 'Imagen anterior'
+  },
+  PROPERTY_MINI_CAROUSEL_NEXT_IMAGE: {
+    en: 'Next image',
+    sp: 'Imagen siguiente'
+  },
   DESCRIPTION: {
     en: 'Description',
     sp: 'Descripción'

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-import { ListingPropertyRow } from 'src/app/listing/model/listing.types';
+import { ListingPropertyRow, PropertyLabelEntry, PropertyReviewLabel } from 'src/app/listing/model/listing.types';
 
 @Component({
   selector: 'app-listing-map-tab',
@@ -14,23 +14,39 @@ import { ListingPropertyRow } from 'src/app/listing/model/listing.types';
 })
 export class ListingMapTabComponent {
   private listingProperties: ListingPropertyRow[] = [];
+  private listingPropertyLabels: PropertyLabelEntry[] = [];
 
   @Input({ required: true })
   set properties(value: ListingPropertyRow[]) {
     this.listingProperties = Array.isArray(value) ? value : [];
-    this.mapProperties = this.buildMapProperties(this.listingProperties);
+    this.rebuildMapProperties();
   }
 
   get properties(): ListingPropertyRow[] {
     return this.listingProperties;
   }
 
+  @Input()
+  set propertyLabels(value: PropertyLabelEntry[]) {
+    this.listingPropertyLabels = Array.isArray(value) ? value : [];
+    this.rebuildMapProperties();
+  }
+
+  get propertyLabels(): PropertyLabelEntry[] {
+    return this.listingPropertyLabels;
+  }
+
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
   @Input() googleMapsApiKey: string | null = null;
   @Input() googleMapsMapId: string | null = null;
+  @Input() staticMediaBaseUrl = 'http://localhost:666/';
   mapProperties: GoogleMapProperty[] = [];
 
-  private buildMapProperties(properties: ListingPropertyRow[]): GoogleMapProperty[] {
+  private rebuildMapProperties(): void {
+    this.mapProperties = this.buildMapProperties(this.listingProperties, this.listingPropertyLabels);
+  }
+
+  private buildMapProperties(properties: ListingPropertyRow[], labels: PropertyLabelEntry[]): GoogleMapProperty[] {
     const output: GoogleMapProperty[] = [];
     for (const property of properties) {
       const lat = this.toFiniteNumber(property.geoLocationHint?.lat);
@@ -41,14 +57,48 @@ export class ListingMapTabComponent {
 
       output.push({
         id: property.propertyId || property.url || property.title,
+        propertyId: property.propertyId || '',
         title: property.title || '-',
+        price: property.price || '-',
         latitude: lat,
         longitude: lon,
-        closed: property.unavailable === true
+        closed: property.unavailable === true,
+        review: this.getReview(property.propertyId, labels),
+        imageUrls: this.buildImageUrls(property)
       });
     }
 
     return output;
+  }
+
+  private getReview(propertyId: string, labels: PropertyLabelEntry[]): PropertyReviewLabel {
+    const review = labels.find((item) => item.propertyId === propertyId)?.labels?.review;
+    if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {
+      return review;
+    }
+    return 'NEW';
+  }
+
+  private buildImageUrls(property: ListingPropertyRow): string[] {
+    const propertyId = (property.propertyId ?? '').trim();
+    if (!propertyId || !Array.isArray(property.localImageUrls) || property.localImageUrls.length === 0) {
+      return [];
+    }
+
+    const base = this.staticMediaBaseUrl.endsWith('/')
+      ? this.staticMediaBaseUrl
+      : `${this.staticMediaBaseUrl}/`;
+
+    const urls: string[] = [];
+    for (const imageName of property.localImageUrls) {
+      const trimmed = typeof imageName === 'string' ? imageName.trim() : '';
+      if (!trimmed) {
+        continue;
+      }
+      urls.push(`${base}${propertyId}/${trimmed}`);
+    }
+
+    return urls;
   }
 
   private toFiniteNumber(value: unknown): number | null {

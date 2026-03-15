@@ -1,0 +1,27 @@
+@if (hasImages()) {
+  <section class="mini-carousel">
+    <div class="mini-carousel-image-wrap">
+      <img [src]="currentImageUrl()" alt="" />
+
+      <button
+        type="button"
+        class="mini-carousel-nav previous"
+        [attr.aria-label]="t('PROPERTY_MINI_CAROUSEL_PREVIOUS_IMAGE')"
+        (click)="selectPreviousImage()"
+      >
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+
+      <button
+        type="button"
+        class="mini-carousel-nav next"
+        [attr.aria-label]="t('PROPERTY_MINI_CAROUSEL_NEXT_IMAGE')"
+        (click)="selectNextImage()"
+      >
+        <span class="material-symbols-outlined">chevron_right</span>
+      </button>
+    </div>
+  </section>
+} @else {
+  <section class="mini-carousel empty">-</section>
+}

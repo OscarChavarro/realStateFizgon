@@ -68,9 +68,11 @@
     <section class="listing-map-workspace">
       <app-listing-map-tab
         [properties]="properties()"
+        [propertyLabels]="propertyLabels()"
         [selectedLanguage]="selectedLanguage()"
         [googleMapsApiKey]="getGoogleMapsApiKey()"
         [googleMapsMapId]="getGoogleMapsMapId()"
+        [staticMediaBaseUrl]="getStaticMediaBaseUrl()"
       ></app-listing-map-tab>
     </section>
   }

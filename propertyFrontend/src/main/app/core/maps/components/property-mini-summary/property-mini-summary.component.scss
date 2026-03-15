@@ -9,27 +9,80 @@
   border-radius: 10px;
   background: t.$white;
   box-shadow: t.$dialog-shadow;
-  padding: 0.6rem 0.75rem 0.75rem;
   position: relative;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .property-mini-summary-close {
   @include m.icon-button();
   position: absolute;
-  top: 0.2rem;
-  right: 0.2rem;
+  top: 0.3rem;
+  right: 0.3rem;
+  z-index: 3;
+}
+
+.property-mini-summary-carousel {
+  display: block;
+  width: 100%;
+}
+
+.property-mini-summary-content {
+  padding: 0.55rem 0.72rem 0.72rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.38rem;
 }
 
 .property-mini-summary-title {
-  margin: 0 1.8rem 0.35rem 0;
-  font-size: 0.95rem;
-  font-weight: 700;
+  margin: 0;
+  padding-right: 2.2rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.22;
   color: t.$text-emphasis;
 }
 
-.property-mini-summary-availability {
+.property-mini-summary-price {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 2.1rem;
+  line-height: 1;
   color: t.$text-primary;
+}
+
+.property-mini-summary-price strong {
+  font-weight: 900;
+}
+
+.property-mini-summary-review {
+  border-radius: 999px;
+  border: 1px solid t.$review-chip-border;
+  background: transparent;
+  color: t.$review-chip-text;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.22rem 0.6rem;
+  font-weight: 700;
+}
+
+.property-mini-summary-review .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.property-mini-summary-review.new {
+  border-color: t.$review-chip-border;
+  color: t.$review-chip-text;
+}
+
+.property-mini-summary-review.favourite {
+  border-color: #7ccf97;
+  background: #e6f7ed;
+  color: #1f7a42;
+}
+
+.property-mini-summary-review.discharged {
+  border-color: #d94a4a;
+  background: #fff0f0;
+  color: #a52f2f;
 }

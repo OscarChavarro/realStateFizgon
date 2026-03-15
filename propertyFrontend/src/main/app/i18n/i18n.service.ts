@@ -212,13 +212,9 @@ const TRANSLATIONS = {
     en: 'Show layers panel',
     sp: 'Mostrar panel de capas'
   },
-  PROPERTY_LOCATION_LAYER_RESTAURANTS: {
-    en: 'Restaurants',
-    sp: 'Restaurantes'
-  },
-  PROPERTY_LOCATION_LAYER_SUPERMARKETS: {
-    en: 'Supermarkets',
-    sp: 'Supermercados'
+  PROPERTY_LOCATION_LAYER_BUSINESS: {
+    en: 'Business',
+    sp: 'Negocios'
   },
   PROPERTY_LOCATION_LAYER_HOSPITALS: {
     en: 'Hospitals',
@@ -231,10 +227,6 @@ const TRANSLATIONS = {
   PROPERTY_LOCATION_LAYER_SCHOOLS: {
     en: 'Schools',
     sp: 'Colegios'
-  },
-  PROPERTY_LOCATION_LAYER_UNIVERSITIES: {
-    en: 'Universities',
-    sp: 'Universidades'
   },
   PROPERTY_LOCATION_MAP_NOT_CONFIGURED: {
     en: 'Google Maps API key is not configured.',

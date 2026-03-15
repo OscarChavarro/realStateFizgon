@@ -3,7 +3,6 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/i18n/i18
 import {
   GoogleLatLngLike,
   GoogleMapLike as PoiGoogleMapLike,
-  GoogleMarkerLike as PoiGoogleMarkerLike,
   LocationLayerId,
   PropertyLocationPoiLayerManager
 } from './property-location-poi-layer-manager';
@@ -14,16 +13,14 @@ type GoogleMapWithCenter = PoiGoogleMapLike & {
 
 type GoogleMapsApi = {
   Map: new (container: HTMLElement, options: unknown) => GoogleMapWithCenter;
+  Marker: new (options: unknown) => GoogleMarkerLike;
+  Size: new (width: number, height: number) => unknown;
+  Point: new (x: number, y: number) => unknown;
   importLibrary?: (libraryName: string) => Promise<unknown>;
 };
 
-type MarkerLibraryLike = {
-  AdvancedMarkerElement?: new (options: {
-    map?: GoogleMapWithCenter | null;
-    position: { lat: number; lng: number };
-    title?: string;
-    content?: HTMLElement;
-  }) => PoiGoogleMarkerLike;
+type GoogleMarkerLike = {
+  setMap: (map: GoogleMapWithCenter | null) => void;
 };
 
 @Component({
@@ -38,7 +35,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private readonly i18nService = inject(I18nService);
   private readonly poiLayerManager = new PropertyLocationPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
-  private markerInstance: PoiGoogleMarkerLike | null = null;
+  private propertyMarkerInstance: GoogleMarkerLike | null = null;
   private isResizingLayerPanel = false;
   private layerPanelStartX = 0;
   private layerPanelStartWidth = 0;
@@ -239,19 +236,11 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       return;
     }
 
-    const markerLibrary = await this.loadMarkerLibrary(googleMaps);
-    if (!markerLibrary?.AdvancedMarkerElement) {
-      console.error('[PropertyLocationComponent] AdvancedMarkerElement is unavailable.');
-      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
-      return;
-    }
-
     this.mapLoadError = null;
     const center = { lat: this.latitude, lng: this.longitude };
     this.mapInstance = new googleMaps.Map(mapContainer, {
       center,
       zoom: 14,
-      mapId: this.googleMapsMapId ?? 'DEMO_MAP_ID',
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
@@ -259,34 +248,35 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       styles: this.poiLayerManager.buildMapStyles()
     });
 
-    if (this.markerInstance) {
-      this.setMarkerMap(this.markerInstance, null);
+    if (this.propertyMarkerInstance) {
+      this.propertyMarkerInstance.setMap(null);
     }
 
-    this.markerInstance = new markerLibrary.AdvancedMarkerElement({
+    this.propertyMarkerInstance = new googleMaps.Marker({
       map: this.mapInstance,
       position: center,
       title: this.propertyTitle,
-      content: this.buildHouseMarkerContentElement()
+      icon: {
+        url: this.buildHouseMarkerIconDataUrl(),
+        scaledSize: new googleMaps.Size(38, 38),
+        anchor: new googleMaps.Point(19, 19)
+      }
     });
 
     this.poiLayerManager.onMapReady(this.buildPoiLayerContext());
   }
 
-  private buildHouseMarkerContentElement(): HTMLElement {
-    const container = document.createElement('div');
-    container.style.width = '38px';
-    container.style.height = '38px';
-    container.style.borderRadius = '50%';
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.background = '#20a24a';
-    container.style.color = '#ffffff';
-    container.style.fontSize = '18px';
-    container.style.lineHeight = '1';
-    container.textContent = '🏠';
-    return container;
+  private buildHouseMarkerIconDataUrl(): string {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
+        <circle cx="19" cy="19" r="18" fill="#20a24a"/>
+        <path fill="#ffffff" d="M8.5 17.5 19 9l10.5 8.5-1.9 2.3-1.6-1.3V29h-5.8v-6.6h-2.4V29H12V18.5l-1.6 1.3-1.9-2.3z"/>
+        <rect x="17" y="23" width="4" height="6" fill="#20a24a"/>
+        <rect x="13.8" y="18.4" width="3.2" height="3" fill="#20a24a"/>
+        <rect x="21" y="18.4" width="3.2" height="3" fill="#20a24a"/>
+      </svg>
+    `.trim();
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   }
 
   private getMapCenter(): { lat: number; lng: number } | null {
@@ -329,27 +319,8 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private buildPoiLayerContext() {
     return {
       mapInstance: this.mapInstance,
-      mapsApi: this.getGoogleMaps(),
       getMapCenter: () => this.getMapCenter()
     };
-  }
-
-  private async loadMarkerLibrary(googleMaps: GoogleMapsApi): Promise<MarkerLibraryLike | null> {
-    if (!googleMaps.importLibrary) {
-      return null;
-    }
-
-    const markerLibrary = (await googleMaps.importLibrary('marker')) as MarkerLibraryLike | undefined;
-    return markerLibrary ?? null;
-  }
-
-  private setMarkerMap(marker: PoiGoogleMarkerLike, map: GoogleMapWithCenter | null): void {
-    if (typeof marker.setMap === 'function') {
-      marker.setMap(map);
-      return;
-    }
-
-    marker.map = map;
   }
 
   private getGoogleMaps(): GoogleMapsApi | null {

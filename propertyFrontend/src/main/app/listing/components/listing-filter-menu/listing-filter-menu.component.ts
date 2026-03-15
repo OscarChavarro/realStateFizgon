@@ -11,7 +11,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   standalone: true,
   imports: [ListingPriceRangeFilterComponent],
   templateUrl: './listing-filter-menu.component.html',
-  styleUrl: './listing-filter-menu.component.css'
+  styleUrl: './listing-filter-menu.component.scss'
 })
 export class ListingFilterMenuComponent {
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);

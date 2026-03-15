@@ -38,7 +38,7 @@ import { AppShellCommandsUseCaseService } from 'src/app/shell/services/app-shell
     PropertyDetailPanelComponent
   ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';

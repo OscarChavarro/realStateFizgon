@@ -29,7 +29,7 @@ type MapVisualStyleId = 'vector' | 'satellite' | 'hybrid';
   selector: 'app-property-location',
   standalone: true,
   templateUrl: './property-location.component.html',
-  styleUrl: './property-location.component.css'
+  styleUrl: './property-location.component.scss'
 })
 export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private static googleMapsScriptPromise: Promise<void> | null = null;

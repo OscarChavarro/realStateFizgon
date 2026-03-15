@@ -1,3 +1,6 @@
+@use 'app/core/styles/mixins' as m;
+@use 'app/core/styles/tokens' as t;
+
 :host {
   display: block;
   height: 100%;
@@ -10,7 +13,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: var(--color-surface);
+  background: t.$surface;
 }
 
 .spreadsheet-table-scroll {
@@ -26,7 +29,7 @@
   table-layout: fixed;
   font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif;
   font-size: 0.95rem;
-  color: var(--color-text-primary);
+  color: t.$text-primary;
 }
 
 .spreadsheet-table th:nth-child(1),
@@ -55,8 +58,8 @@
 }
 
 .spreadsheet-table thead th {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
+  background: t.$surface;
+  border: 1px solid t.$border-strong;
   border-top: 0;
   padding: 0.28rem var(--space-3);
   text-transform: uppercase;
@@ -70,7 +73,7 @@
 }
 
 .spreadsheet-table thead th.row-index-header {
-  background: var(--color-surface);
+  background: t.$surface;
   border-left: 0;
   padding: 0;
 }
@@ -93,11 +96,9 @@
   height: 1.7rem;
   border: 0;
   background: transparent;
-  color: #7e868f;
+  color: t.$sort-muted;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
   cursor: pointer;
   padding: 0;
 }
@@ -108,12 +109,12 @@
 }
 
 .sort-button:hover {
-  background: #e6eaef;
+  background: t.$sort-hover-bg;
 }
 
 .sort-button.active {
-  color: var(--color-brand);
-  background: var(--color-surface-emphasis);
+  color: t.$brand;
+  background: t.$surface-emphasis;
 }
 
 .sort-priority {
@@ -121,8 +122,8 @@
   height: 1rem;
   padding: 0 0.2rem;
   border-radius: 999px;
-  background: var(--color-brand);
-  color: var(--color-surface);
+  background: t.$brand;
+  color: t.$surface;
   font-size: 0.65rem;
   font-weight: 700;
   display: inline-flex;
@@ -131,10 +132,10 @@
 }
 
 .spreadsheet-table tbody td {
-  border: 1px solid #d0d0d0;
+  border: 1px solid t.$table-body-border;
   padding: 0.3rem 0.55rem;
   vertical-align: middle;
-  background: var(--color-surface);
+  background: t.$surface;
 }
 
 .spreadsheet-table tbody tr.property-row {
@@ -142,33 +143,33 @@
 }
 
 .spreadsheet-table tbody tr.property-row:hover td {
-  background: #eef4ff;
+  background: t.$row-hover;
 }
 
 .spreadsheet-table tbody tr.property-row.locked td {
-  background: #dbe9ff;
+  background: t.$row-locked;
 }
 
 .spreadsheet-table tbody tr.property-row.unavailable td {
-  background: #f9d7dc;
-  color: var(--color-danger-text);
+  background: t.$row-unavailable;
+  color: t.$danger-text;
 }
 
 .spreadsheet-table tbody tr.property-row.unavailable:hover td {
-  background: #f4c4cc;
+  background: t.$row-unavailable-hover;
 }
 
 .spreadsheet-table tbody tr.property-row.unavailable.locked td {
-  background: #efb0bb;
+  background: t.$row-unavailable-locked;
 }
 
 .spreadsheet-table tbody td:nth-child(1) {
   width: 46px;
   padding: 0;
   text-align: center;
-  color: #3c4043;
+  color: t.$row-index-text;
   font-size: 0.82rem;
-  background: #f1f3f4 !important;
+  background: t.$row-index-bg !important;
   border-left: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -176,11 +177,11 @@
 .spreadsheet-table tbody tr.property-row:hover td:nth-child(1),
 .spreadsheet-table tbody tr.property-row.locked td:nth-child(1),
 .spreadsheet-table tbody tr.property-row.unavailable td:nth-child(1) {
-  background: #f1f3f4 !important;
+  background: t.$row-index-bg !important;
 }
 
 .spreadsheet-table tbody td:nth-child(3) {
-  color: #3c4043;
+  color: t.$row-index-text;
   font-size: 0.86rem;
 }
 
@@ -190,24 +191,22 @@
 }
 
 .title-text {
-  color: var(--color-text-primary);
+  color: t.$text-primary;
   font-weight: 500;
 }
 
 .spreadsheet-table tbody tr.property-row.unavailable .title-text {
-  color: var(--color-danger-text);
+  color: t.$danger-text;
 }
 
 .unavailable-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
   width: 1rem;
   height: 1rem;
   margin-right: 0.35rem;
   border-radius: var(--radius-pill);
-  background: #b91c1c;
-  color: var(--color-surface);
+  background: t.$danger-solid;
+  color: t.$surface;
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
@@ -215,7 +214,7 @@
 
 .spreadsheet-table .empty-row {
   text-align: center;
-  color: #5f6368;
+  color: t.$empty-row-text;
   padding: 0.85rem;
   font-style: italic;
 }
@@ -231,16 +230,14 @@
 .review-chip {
   width: 2rem;
   height: 2rem;
-  border: 1px solid #d2d8e0;
+  border: 1px solid t.$review-chip-border;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
-  color: #334155;
+  background: t.$surface;
+  color: t.$review-chip-text;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
 }
 
 .review-chip .material-symbols-outlined {
@@ -249,19 +246,19 @@
 }
 
 .review-chip.new {
-  border-color: #d2d8e0;
-  color: #334155;
-  background: #f8fafc;
+  border-color: t.$review-chip-border;
+  color: t.$review-chip-text;
+  background: t.$surface-muted;
 }
 
 .review-chip.favourite {
-  border-color: var(--color-success-border);
-  color: var(--color-success-text);
-  background: var(--color-success-bg);
+  border-color: t.$success-border;
+  color: t.$success-text;
+  background: t.$success-bg;
 }
 
 .review-chip.discharged {
-  border-color: var(--color-danger-border);
-  color: var(--color-danger-text);
-  background: var(--color-danger-bg);
+  border-color: t.$danger-border;
+  color: t.$danger-text;
+  background: t.$danger-bg;
 }

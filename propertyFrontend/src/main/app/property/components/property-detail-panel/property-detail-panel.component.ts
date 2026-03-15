@@ -13,7 +13,7 @@ import { PropertyLocationComponent } from 'src/app/property/components/property-
   standalone: true,
   imports: [PropertyImageCarouselComponent, PropertyLocationComponent],
   templateUrl: './property-detail-panel.component.html',
-  styleUrl: './property-detail-panel.component.css'
+  styleUrl: './property-detail-panel.component.scss'
 })
 export class PropertyDetailPanelComponent {
   private readonly i18nService = inject(I18nService);

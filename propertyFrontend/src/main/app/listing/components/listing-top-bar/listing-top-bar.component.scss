@@ -1,3 +1,6 @@
+@use 'app/core/styles/mixins' as m;
+@use 'app/core/styles/tokens' as t;
+
 :host {
   display: block;
 }
@@ -9,8 +12,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  background: t.$surface;
+  border: 1px solid t.$border-subtle;
   border-left: 0;
   border-right: 0;
   border-top: 0;
@@ -22,16 +25,16 @@
   width: 100%;
   display: flex;
   gap: 0;
-  background: #f1f3f4;
-  border: 1px solid #dde1e6;
+  background: t.$tab-bg;
+  border: 1px solid t.$tab-border;
   overflow: hidden;
 }
 
 .tab {
   border: 0;
-  border-right: 1px solid #dde1e6;
-  background: #f1f3f4;
-  color: #3c4043;
+  border-right: 1px solid t.$tab-border;
+  background: t.$tab-bg;
+  color: t.$tab-text;
   padding: var(--space-2) var(--space-4);
   cursor: pointer;
   font-weight: 700;
@@ -48,8 +51,8 @@
 }
 
 .tab.active {
-  background: var(--color-surface-emphasis);
-  color: var(--color-brand);
+  background: t.$surface-emphasis;
+  color: t.$brand;
 }
 
 .tab.active::after {
@@ -60,7 +63,7 @@
   bottom: 0;
   height: 3px;
   border-radius: 999px;
-  background: var(--color-brand);
+  background: t.$brand;
 }
 
 .top-bar-actions {
@@ -73,26 +76,25 @@
 }
 
 .property-count-chip {
-  display: inline-flex;
-  align-items: center;
+  @include m.flex-center(flex-start);
   gap: var(--space-1);
-  border: 1px solid #d8e3ff;
+  border: 1px solid t.$chip-border;
   border-radius: var(--radius-sm);
-  background: #f4f7ff;
+  background: t.$chip-bg;
   height: var(--control-height-md);
   box-sizing: border-box;
   padding: 0 var(--space-4);
 }
 
 .count-label {
-  color: #2b4f7f;
+  color: t.$chip-label;
   font-weight: 600;
   font-size: 0.8rem;
   line-height: 1;
 }
 
 .count-value {
-  color: #0f2e55;
+  color: t.$chip-value;
   font-weight: 700;
   font-size: 0.95rem;
   min-width: 1.5rem;
@@ -121,15 +123,13 @@ app-user-menu {
 
 .layout-cycle-trigger,
 .fullscreen-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
   width: var(--control-size-icon);
   height: var(--control-height-md);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid t.$border-subtle;
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: #1e3d69;
+  background: t.$surface;
+  color: t.$control-text;
   cursor: pointer;
   box-sizing: border-box;
   flex: 0 0 auto;
@@ -141,22 +141,20 @@ app-user-menu {
   line-height: 1;
 }
 
-.layout-cycle-trigger:hover,
-.fullscreen-trigger:hover {
-  background: var(--color-surface-emphasis);
-  border-color: var(--color-border-accent);
-  color: #1b4d9b;
+.layout-cycle-trigger,
+.fullscreen-trigger {
+  @include m.hover-surface(t.$surface-emphasis, t.$border-accent, t.$control-hover-text);
 }
 
 .language-selector select {
   width: min(150px, 100%);
   height: var(--control-height-md);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid t.$border-subtle;
   border-radius: var(--radius-sm);
   box-sizing: border-box;
   padding: 0 0.35rem;
-  background: var(--color-surface);
-  color: #1e3d69;
+  background: t.$surface;
+  color: t.$control-text;
 }
 
 @media (min-width: 900px) {

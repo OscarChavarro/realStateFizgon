@@ -16,7 +16,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   standalone: true,
   imports: [ListingPaginationControlsComponent],
   templateUrl: './listing-properties-table.component.html',
-  styleUrl: './listing-properties-table.component.css'
+  styleUrl: './listing-properties-table.component.scss'
 })
 export class ListingPropertiesTableComponent {
   private readonly i18nService = inject(I18nService);

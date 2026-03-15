@@ -6,7 +6,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   selector: 'app-user-menu',
   standalone: true,
   templateUrl: './user-menu.component.html',
-  styleUrl: './user-menu.component.css'
+  styleUrl: './user-menu.component.scss'
 })
 export class UserMenuComponent {
   private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);

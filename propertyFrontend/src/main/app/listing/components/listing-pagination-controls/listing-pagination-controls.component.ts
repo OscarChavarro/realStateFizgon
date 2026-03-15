@@ -8,7 +8,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   selector: 'app-listing-pagination-controls',
   standalone: true,
   templateUrl: './listing-pagination-controls.component.html',
-  styleUrl: './listing-pagination-controls.component.css'
+  styleUrl: './listing-pagination-controls.component.scss'
 })
 export class ListingPaginationControlsComponent {
   private readonly i18nService = inject(I18nService);

@@ -14,7 +14,7 @@ import {
   selector: 'app-property-image-carousel',
   standalone: true,
   templateUrl: './property-image-carousel.component.html',
-  styleUrl: './property-image-carousel.component.css'
+  styleUrl: './property-image-carousel.component.scss'
 })
 export class PropertyImageCarouselComponent implements OnChanges {
   @Input() propertyId = '';

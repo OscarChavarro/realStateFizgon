@@ -6,7 +6,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   selector: 'app-maintenance-panel',
   standalone: true,
   templateUrl: './maintenance-panel.component.html',
-  styleUrl: './maintenance-panel.component.css'
+  styleUrl: './maintenance-panel.component.scss'
 })
 export class MaintenancePanelComponent {
   private readonly i18nService = inject(I18nService);

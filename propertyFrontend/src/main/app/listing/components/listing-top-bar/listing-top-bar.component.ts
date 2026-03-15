@@ -14,7 +14,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   standalone: true,
   imports: [ListingFilterMenuComponent, UserMenuComponent],
   templateUrl: './listing-top-bar.component.html',
-  styleUrl: './listing-top-bar.component.css'
+  styleUrl: './listing-top-bar.component.scss'
 })
 export class ListingTopBarComponent {
   private readonly i18nService = inject(I18nService);

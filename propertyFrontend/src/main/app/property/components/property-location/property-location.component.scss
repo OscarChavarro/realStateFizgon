@@ -1,11 +1,12 @@
+@use 'app/core/styles/mixins' as m;
+@use 'app/core/styles/tokens' as t;
+
 .location-dialog-backdrop {
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(15, 23, 42, 0.24);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: t.$dialog-backdrop;
+  @include m.flex-center();
   padding: 1rem;
 }
 
@@ -13,9 +14,9 @@
   width: 80vw;
   height: 80vh;
   border-radius: 12px;
-  border: 1px solid var(--color-border-subtle);
-  background: #fff;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  border: 1px solid t.$border-subtle;
+  background: t.$white;
+  box-shadow: t.$dialog-shadow;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -26,15 +27,13 @@
   display: grid;
   grid-template-columns: 3rem 1fr 3rem;
   align-items: center;
-  border-bottom: 1px solid var(--color-border-subtle);
-  background: #fff;
+  border-bottom: 1px solid t.$border-subtle;
+  background: t.$white;
   z-index: 3;
 }
 
 .location-dialog-toolbar-side {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
 }
 
 .location-dialog-toolbar-side-right {
@@ -46,7 +45,7 @@
   text-align: center;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--color-text-emphasis);
+  color: t.$text-emphasis;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -54,21 +53,11 @@
 
 .location-dialog-close,
 .location-layer-panel-toggle {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-subtle);
-  background: #fff;
-  color: var(--color-text-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  pointer-events: auto;
+  @include m.icon-button();
 }
 
 .location-layer-panel-toggle {
-  color: #1f4f96;
+  color: t.$toolbar-toggle-text;
 }
 
 .location-dialog-close {
@@ -76,7 +65,7 @@
 }
 
 .location-dialog-close:hover {
-  background: #f4f6fb;
+  background: t.$toolbar-hover;
 }
 
 .location-map-layout {
@@ -84,7 +73,7 @@
   min-height: 0;
   overflow: hidden;
   display: flex;
-  background: #fff;
+  background: t.$white;
 }
 
 .location-layer-panel {
@@ -92,23 +81,23 @@
   flex-direction: column;
   min-width: 180px;
   max-width: 460px;
-  background: #f8fafc;
-  border-right: 1px solid var(--color-border-subtle);
+  background: t.$panel-bg;
+  border-right: 1px solid t.$border-subtle;
   overflow: auto;
 }
 
 .location-layer-panel-header {
   padding: 0.7rem 0.8rem 0.5rem;
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid t.$border-subtle;
 }
 
 .location-layer-group + .location-layer-group .location-layer-panel-header {
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid t.$border-subtle;
 }
 
 .location-layer-panel-header h3 {
   margin: 0;
-  color: var(--color-text-emphasis);
+  color: t.$text-emphasis;
   font-size: 0.88rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -133,15 +122,15 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  color: var(--color-text-primary);
+  color: t.$text-primary;
   font-size: 0.9rem;
 }
 
 .location-layer-splitter {
   width: 6px;
   cursor: col-resize;
-  background: #e4ebf5;
-  border-right: 1px solid #d2ddeb;
+  background: t.$splitter-bg;
+  border-right: 1px solid t.$splitter-border;
 }
 
 .location-map-pane {
@@ -152,7 +141,7 @@
 }
 
 .location-layer-panel-toggle:hover {
-  background: #eef4ff;
+  background: t.$toolbar-toggle-hover;
 }
 
 .location-map {
@@ -163,11 +152,9 @@
 .location-map-message {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include m.flex-center();
   text-align: center;
   padding: 0.8rem;
-  color: var(--color-text-primary);
+  color: t.$text-primary;
   font-size: 0.92rem;
 }

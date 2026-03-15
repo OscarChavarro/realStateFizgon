@@ -6,7 +6,7 @@ import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18
   selector: 'app-users-panel',
   standalone: true,
   templateUrl: './users-panel.component.html',
-  styleUrl: './users-panel.component.css'
+  styleUrl: './users-panel.component.scss'
 })
 export class UsersPanelComponent {
   private readonly i18nService = inject(I18nService);

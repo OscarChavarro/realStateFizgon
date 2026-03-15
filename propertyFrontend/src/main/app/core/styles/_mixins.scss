@@ -1,0 +1,37 @@
+@use 'app/core/styles/tokens' as t;
+
+@mixin flex-center($justify: center, $align: center) {
+  display: flex;
+  align-items: $align;
+  justify-content: $justify;
+}
+
+@mixin icon-button(
+  $size: 2rem,
+  $radius: 999px,
+  $border-color: t.$border-subtle,
+  $bg: t.$white,
+  $color: t.$text-primary
+) {
+  width: $size;
+  height: $size;
+  border-radius: $radius;
+  border: 1px solid $border-color;
+  background: $bg;
+  color: $color;
+  cursor: pointer;
+  pointer-events: auto;
+  @include flex-center();
+}
+
+@mixin hover-surface($bg, $border-color: null, $color: null) {
+  &:hover {
+    background: $bg;
+    @if $border-color != null {
+      border-color: $border-color;
+    }
+    @if $color != null {
+      color: $color;
+    }
+  }
+}

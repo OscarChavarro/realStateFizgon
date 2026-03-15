@@ -12,7 +12,7 @@ type PriceRangesResponse = {
   selector: 'app-listing-price-range-filter',
   standalone: true,
   templateUrl: './listing-price-range-filter.component.html',
-  styleUrl: './listing-price-range-filter.component.css'
+  styleUrl: './listing-price-range-filter.component.scss'
 })
 export class ListingPriceRangeFilterComponent implements OnInit, OnChanges {
   private static cachedPriceRange: { minPrice: number; maxPrice: number } | null = null;

@@ -17,7 +17,7 @@
   <section class="property-mini-summary-content">
     <h4 class="property-mini-summary-title">{{ property.title }}</h4>
     <p class="property-mini-summary-price">
-      <strong>{{ property.price }} € / mes</strong>
+      <strong>{{ property.price }} € / {{ t('PROPERTY_MINI_SUMMARY_MONTH_UNIT') }}</strong>
     </p>
     <button type="button" class="property-mini-summary-review {{ getReviewClass() }}">
       <span class="material-symbols-outlined">{{ getReviewIcon() }}</span>

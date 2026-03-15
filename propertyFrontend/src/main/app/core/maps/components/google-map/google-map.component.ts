@@ -64,6 +64,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private mapInstance: GoogleMapWithCenter | null = null;
   private markerClusterer: MarkerClusterer | null = null;
   private propertyMarkerInstances: GoogleMarkerLike[] = [];
+  private selectedTargetMarker: GoogleMarkerLike | null = null;
   private markerInteractionEnabledSnapshot: boolean | null = null;
   private mapRenderSignature: string | null = null;
   private propertiesRenderSignature: string | null = null;
@@ -136,6 +137,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     if (changes['interactionEnabled'] && !this.interactionEnabled) {
       this.selectedPropertySummary = null;
+      this.clearSelectedTargetMarker();
       this.cdr.markForCheck();
     }
   }
@@ -144,6 +146,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.detachLayerPanelResizeListeners();
     this.clearMarkerClusterer();
     this.clearPropertyMarkers();
+    this.clearSelectedTargetMarker();
     this.mapInstance = null;
     this.mapRenderSignature = null;
     this.isResizingLayerPanel = false;
@@ -215,6 +218,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.markerInteractionEnabledSnapshot = null;
       this.selectedPropertySummary = null;
       this.clearPropertyMarkers();
+      this.clearSelectedTargetMarker();
       return;
     }
 
@@ -224,6 +228,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
       this.selectedPropertySummary = null;
+      this.clearSelectedTargetMarker();
       return;
     }
 
@@ -242,6 +247,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           this.renderMarkers(mappableProperties, googleMaps);
           if (!this.interactionEnabled) {
             this.selectedPropertySummary = null;
+            this.clearSelectedTargetMarker();
+          } else {
+            this.syncSelectedSummaryAgainstProperties(mappableProperties);
           }
         }
         return;
@@ -260,6 +268,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       }
       if (!this.interactionEnabled) {
         this.selectedPropertySummary = null;
+        this.clearSelectedTargetMarker();
+      } else {
+        this.syncSelectedSummaryAgainstProperties(mappableProperties);
       }
       this.propertiesRenderSignature = propertiesSignature;
       return;
@@ -273,6 +284,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.propertiesRenderSignature = propertiesSignature;
       if (!this.interactionEnabled) {
         this.selectedPropertySummary = null;
+        this.clearSelectedTargetMarker();
+      } else {
+        this.syncSelectedSummaryAgainstProperties(mappableProperties);
       }
     } catch (error) {
       console.error('[GoogleMapComponent] Google Maps initialization failed.', error);
@@ -281,6 +295,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
       this.selectedPropertySummary = null;
+      this.clearSelectedTargetMarker();
     }
   }
 
@@ -385,7 +400,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         position: { lat: property.latitude, lng: property.longitude },
         title: property.title,
         icon: {
-          url: this.buildHouseMarkerIconDataUrl(property.closed === true),
+          url: this.buildPropertyMarkerIconDataUrl(property),
           scaledSize: new googleMaps.Size(38, 38),
           anchor: new googleMaps.Point(19, 19)
         }
@@ -406,6 +421,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       markers: this.propertyMarkerInstances as unknown as never[]
     });
     this.markerInteractionEnabledSnapshot = this.interactionEnabled;
+    this.updateSelectedTargetMarker();
   }
 
   private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
@@ -459,13 +475,14 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private buildPropertiesSignature(properties: GoogleMapProperty[]): string {
     return properties
       .map((property) => (
-        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}`
+        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}:${property.review ?? 'NEW'}`
       ))
       .join('|');
   }
 
   onPropertyMiniSummaryCloseRequested(): void {
     this.selectedPropertySummary = null;
+    this.clearSelectedTargetMarker();
     this.cdr.markForCheck();
   }
 
@@ -503,6 +520,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.selectedPropertySummary = null;
+    this.clearSelectedTargetMarker();
     this.cdr.markForCheck();
   }
 
@@ -532,6 +550,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     options: { focus?: boolean } = {}
   ): void {
     this.selectedPropertySummary = property;
+    this.updateSelectedTargetMarker();
     this.cdr.markForCheck();
 
     if (options.focus) {
@@ -561,6 +580,61 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         lng: property.longitude
       }
     });
+  }
+
+  private syncSelectedSummaryAgainstProperties(mappableProperties: GoogleMapProperty[]): void {
+    if (this.selectedPropertySummary === null) {
+      this.clearSelectedTargetMarker();
+      return;
+    }
+
+    const selected = mappableProperties.find((item) => item.id === this.selectedPropertySummary?.id) ?? null;
+    if (selected === null) {
+      this.selectedPropertySummary = null;
+      this.clearSelectedTargetMarker();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.selectedPropertySummary = selected;
+    this.updateSelectedTargetMarker();
+    this.cdr.markForCheck();
+  }
+
+  private updateSelectedTargetMarker(): void {
+    if (!this.interactionEnabled || !this.mapInstance || this.selectedPropertySummary === null) {
+      this.clearSelectedTargetMarker();
+      return;
+    }
+
+    const googleMaps = this.getGoogleMaps();
+    if (!googleMaps) {
+      return;
+    }
+
+    this.clearSelectedTargetMarker();
+    this.selectedTargetMarker = new googleMaps.Marker({
+      map: this.mapInstance,
+      position: {
+        lat: this.selectedPropertySummary.latitude,
+        lng: this.selectedPropertySummary.longitude
+      },
+      zIndex: 3000,
+      icon: {
+        url: this.buildSelectedTargetMarkerIconDataUrl(),
+        scaledSize: new googleMaps.Size(56, 56),
+        anchor: new googleMaps.Point(28, 28)
+      }
+    });
+  }
+
+  private clearSelectedTargetMarker(): void {
+    if (!this.selectedTargetMarker) {
+      return;
+    }
+
+    this.selectedTargetMarker.setMap(null);
+    this.selectedTargetMarker = null;
   }
 
   private isTypingTarget(target: HTMLElement | null): boolean {
@@ -606,15 +680,45 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.markerClusterer = null;
   }
 
-  private buildHouseMarkerIconDataUrl(isUnavailable: boolean): string {
-    const baseColor = isUnavailable ? '#d44343' : '#20a24a';
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-        <circle cx="19" cy="19" r="18" fill="${baseColor}"/>
+  private buildPropertyMarkerIconDataUrl(property: GoogleMapProperty): string {
+    const isClosed = property.closed === true;
+    const baseColor = isClosed
+      ? '#4b5563'
+      : this.resolveReviewMarkerColor(property.review);
+    const glyph = isClosed
+      ? '<text x="19" y="25.5" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#ffffff">☠</text>'
+      : `
         <path fill="#ffffff" d="M8.5 17.5 19 9l10.5 8.5-1.9 2.3-1.6-1.3V29h-5.8v-6.6h-2.4V29H12V18.5l-1.6 1.3-1.9-2.3z"/>
         <rect x="17" y="23" width="4" height="6" fill="${baseColor}"/>
         <rect x="13.8" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
         <rect x="21" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
+      `;
+
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
+        <circle cx="19" cy="19" r="18" fill="${baseColor}"/>
+        ${glyph}
+      </svg>
+    `.trim();
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }
+
+  private resolveReviewMarkerColor(review: GoogleMapProperty['review']): string {
+    if (review === 'FAVOURITE') {
+      return '#20a24a';
+    }
+
+    if (review === 'DISCHARGED') {
+      return '#d44343';
+    }
+
+    return '#9ca3af';
+  }
+
+  private buildSelectedTargetMarkerIconDataUrl(): string {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="24" fill="rgba(255, 214, 10, 0.25)" stroke="#ffd60a" stroke-width="4"/>
       </svg>
     `.trim();
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;

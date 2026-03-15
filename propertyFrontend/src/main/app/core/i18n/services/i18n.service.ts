@@ -268,6 +268,10 @@ const TRANSLATIONS = {
     en: 'Next image',
     sp: 'Imagen siguiente'
   },
+  PROPERTY_MINI_SUMMARY_MONTH_UNIT: {
+    en: 'month',
+    sp: 'mes'
+  },
   DESCRIPTION: {
     en: 'Description',
     sp: 'Descripción'

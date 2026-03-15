@@ -1,0 +1,89 @@
+<header class="top-bar">
+  <nav class="tabs">
+    <button
+      type="button"
+      class="tab"
+      [class.active]="activeTab === 'DASHBOARD'"
+      (click)="selectTab('DASHBOARD')"
+    >
+      {{ t('DASHBOARD') }}
+    </button>
+    @if (canMaintainDatabase) {
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab === 'DATABASE_MAINTENANCE_TAB'"
+        (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
+      >
+        {{ t('DATABASE_MAINTENANCE_TAB') }}
+      </button>
+    }
+    @if (canEditUsers) {
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab === 'USERS_TAB'"
+        (click)="selectTab('USERS_TAB')"
+      >
+        {{ t('USERS_TAB') }}
+      </button>
+    }
+  </nav>
+
+  <div class="top-bar-actions">
+    <div class="property-count-chip">
+      <span class="count-label">{{ t('SHOWING_PROPERTIES') }}:</span>
+      <span class="count-value" [class.loading]="loading">{{ visibleCount }} / {{ totalCount }}</span>
+    </div>
+
+    <app-listing-filter-menu
+      [filters]="filters"
+      [selectedLanguage]="selectedLanguage"
+      [reviewFiltersEnabled]="authenticatedUser !== null"
+      (filtersChange)="onFiltersUpdate($event)"
+    ></app-listing-filter-menu>
+
+    @if (activeTab === 'DASHBOARD') {
+      <button
+        type="button"
+        class="layout-cycle-trigger"
+        [attr.aria-label]="t('CYCLE_LAYOUT')"
+        [attr.title]="t('CYCLE_LAYOUT')"
+        (click)="onLayoutCycleButtonClick()"
+      >
+        <span class="material-symbols-outlined">{{ layoutCycleIcon }}</span>
+      </button>
+    }
+
+    <button
+      type="button"
+      class="fullscreen-trigger"
+      [attr.aria-label]="t('FULLSCREEN')"
+      [attr.title]="t('FULLSCREEN')"
+      (click)="onFullscreenButtonClick()"
+    >
+      <span class="material-symbols-outlined">fullscreen</span>
+    </button>
+
+    <div class="language-selector">
+      <select
+        id="languageSelect"
+        aria-label="Language selector"
+        [value]="selectedLanguage"
+        (change)="onLanguageSelect($any($event.target).value)"
+      >
+        <option value="en">{{ t('LANGUAGE_EN') }}</option>
+        <option value="sp">{{ t('LANGUAGE_SP') }}</option>
+      </select>
+    </div>
+
+    <app-user-menu
+      [selectedLanguage]="selectedLanguage"
+      [googleLoginEnabled]="googleLoginEnabled"
+      [authenticatedUser]="authenticatedUser"
+      [avatarUrl]="authenticatedUserAvatarUrl"
+      (googleLoginRequest)="onGoogleLoginClicked()"
+      (logoutRequest)="onLogoutClicked()"
+    ></app-user-menu>
+  </div>
+</header>

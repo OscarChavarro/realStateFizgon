@@ -1,0 +1,125 @@
+<div #tableScrollContainer class="spreadsheet-table-wrapper">
+  <div class="spreadsheet-table-scroll">
+    <table class="spreadsheet-table">
+      <thead>
+        <tr>
+          <th class="row-index-header"></th>
+          <th class="price-header">
+            <div class="th-content">
+              <span>{{ t('TITLE') }}</span>
+              <div class="sort-controls">
+                <button
+                  type="button"
+                  class="sort-button"
+                  [class.active]="getSortDirection('title') !== null"
+                  (click)="onSortToggle('title')"
+                  [attr.aria-label]="getSortAriaLabel('title')"
+                >
+                  <span class="material-symbols-outlined">{{ getSortIcon('title') }}</span>
+                </button>
+                @if (shouldShowSortPriority('title')) {
+                  <span class="sort-priority">{{ getSortPriority('title') }}</span>
+                }
+              </div>
+            </div>
+          </th>
+          <th>
+            <div class="th-content">
+              <span>{{ t('PUBLICATION_DATE') }}</span>
+              <div class="sort-controls">
+                <button
+                  type="button"
+                  class="sort-button"
+                  [class.active]="getSortDirection('publicationDate') !== null"
+                  (click)="onSortToggle('publicationDate')"
+                  [attr.aria-label]="getSortAriaLabel('publicationDate')"
+                >
+                  <span class="material-symbols-outlined">{{ getSortIcon('publicationDate') }}</span>
+                </button>
+                @if (shouldShowSortPriority('publicationDate')) {
+                  <span class="sort-priority">{{ getSortPriority('publicationDate') }}</span>
+                }
+              </div>
+            </div>
+          </th>
+          <th>
+            <div class="th-content">
+              <span>{{ t('PRICE') }}</span>
+              <div class="sort-controls">
+                <button
+                  type="button"
+                  class="sort-button"
+                  [class.active]="getSortDirection('price') !== null"
+                  (click)="onSortToggle('price')"
+                  [attr.aria-label]="getSortAriaLabel('price')"
+                >
+                  <span class="material-symbols-outlined">{{ getSortIcon('price') }}</span>
+                </button>
+                @if (shouldShowSortPriority('price')) {
+                  <span class="sort-priority">{{ getSortPriority('price') }}</span>
+                }
+              </div>
+            </div>
+          </th>
+          @if (reviewEnabled) {
+            <th class="review-header">{{ t('REVIEW_COLUMN') }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (properties.length === 0) {
+          <tr>
+            <td class="row-index-cell">{{ getDisplayRowIndex(0) }}</td>
+            <td [attr.colspan]="reviewEnabled ? 4 : 3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+          </tr>
+        } @else {
+          @for (property of properties; track trackProperty($index, property); let rowIndex = $index) {
+            <tr
+              class="property-row"
+              [attr.data-row-key]="trackProperty(rowIndex, property)"
+              [class.locked]="isPropertyRowLocked(property)"
+              [class.unavailable]="property.unavailable"
+              (mouseenter)="onPropertyHover(property)"
+              (click)="onPropertyClick(property)"
+            >
+              <td class="row-index-cell">{{ getDisplayRowIndex(rowIndex) }}</td>
+              <td>
+                @if (property.unavailable) {
+                  <span class="unavailable-mark">X</span>
+                }
+                <span class="title-text">{{ property.title }}</span>
+              </td>
+              <td>{{ property.publicationDateShort || '-' }}</td>
+              <td class="price-cell">{{ property.price }}</td>
+              @if (reviewEnabled) {
+                <td class="review-cell">
+                  <button
+                    type="button"
+                    class="review-chip"
+                    [class.new]="getReviewClass(property) === 'new'"
+                    [class.favourite]="getReviewClass(property) === 'favourite'"
+                    [class.discharged]="getReviewClass(property) === 'discharged'"
+                    (click)="onPropertyReviewCellClick($event, property)"
+                    [attr.aria-label]="t('REVIEW_COLUMN')"
+                  >
+                    <span class="material-symbols-outlined">{{ getReviewIcon(property) }}</span>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-listing-pagination-controls
+    [selectedLanguage]="selectedLanguage"
+    [page]="page"
+    [pageSize]="pageSize"
+    [totalPages]="totalPages"
+    [loading]="loading"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
+  ></app-listing-pagination-controls>
+</div>

@@ -32,7 +32,7 @@ The internal architecture componentes are:
 - [Idealista scraper](idealistaPropertyScraper/README.md): scraper that controls a Google Chrome web browser to retrieve property listings based on a set of filters, extracts each property detail from Idealista, stores the collected information in the MongoDB database, and sends notifications via WhatsApp.
 - [Notification message sender](notificationMessageSender/README.md): consumes messages from RabbitMq that are intended to be sent to a Whatsapp user or group.
 - Property backend: Supports for the property frontend. Includes several queries to property data, end user authentication/authorization and personalization.
-- Property frontend: Angular web application, usable on mobile and optimized for desktop that allows final users to explore local database dump.
+- [Property frontend](propertyFrontend/README.md): Angular web application, usable on mobile and optimized for desktop that allows final users to explore local database dump.
 
 The external architecture componentes are:
 - Idealista: Spain based source of information.

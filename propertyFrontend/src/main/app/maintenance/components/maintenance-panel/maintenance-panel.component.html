@@ -1,0 +1,21 @@
+<section class="maintenance-card">
+  <h1>{{ t('DATABASE_MAINTENANCE_TAB') }}</h1>
+
+  <div class="maintenance-actions">
+    @for (operation of maintenanceOperations; track operation.i18nId) {
+      <button
+        type="button"
+        class="maintenance-button"
+        [disabled]="maintenanceRunning"
+        (click)="requestOperation(operation)"
+      >
+        {{ t(operation.i18nId) }}
+      </button>
+    }
+  </div>
+
+  <div class="maintenance-result">
+    <label for="maintenanceResult">{{ t('OPERATION_RESULT') }}</label>
+    <textarea id="maintenanceResult" [value]="maintenanceResultText" readonly></textarea>
+  </div>
+</section>

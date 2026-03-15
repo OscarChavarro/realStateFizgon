@@ -27,10 +27,23 @@ This system comprises several micro services that interacts with each other as s
 - Green arrows shows observability metrics flow.
 - Green background components are the micro services that makes up this project.
 
-The architecture componentes are:
+The internal architecture componentes are:
 
 - [Idealista scraper](idealistaPropertyScraper/README.md): scraper that controls a Google Chrome web browser to retrieve property listings based on a set of filters, extracts each property detail from Idealista, stores the collected information in the MongoDB database, and sends notifications via WhatsApp.
 - [Notification message sender](notificationMessageSender/README.md): consumes messages from RabbitMq that are intended to be sent to a Whatsapp user or group.
+- Property backend: Supports for the property frontend. Includes several queries to property data, end user authentication/authorization and personalization.
+- Property frontend: Angular web application, usable on mobile and optimized for desktop that allows final users to explore local database dump.
+
+The external architecture componentes are:
+- Idealista: Spain based source of information.
+- RabbitMQ: Used for intra-services asynchronous communications.
+- NFS: Used to manage image storage.
+- MongoDB: Used to store property system database.
+- Nginx: Web server for static content.
+- Google auth: for user authentication.
+- Google maps: for interactive access to GIS data.
+- Graphana + Prometheus: used for observability monitoring and alarms.
+- Docker + Kubernetes: used for deployment.
 
 # Frontend
 
@@ -46,7 +59,7 @@ The UI includes tools for the user to perform basic geographic context analysis,
 
 This project depends on several components, such as RabbitMQ, MongoDB, Prometheus, Grafana and other services that interact with micro services. The whole environment can be deployed in several different ways:
 - [Manually in local host](./doc/manualSetup.md): recommended for learning only.
-- Docker images in Kubernetes pods: recommended for deployment to production environment.
+- [Docker images in Kubernetes pods](./doc/dockerK8sSetup.md): recommended for deployment to production environment.
 - [Proxy support (Nginx + ZeroTier)](./doc/proxySupport.md): guide for residential egress through a forward proxy.
 - [Anti-scraper detection measures](./doc/antiScraperDetectionMeasures.md): currently implemented anti-detection strategy summary.
 

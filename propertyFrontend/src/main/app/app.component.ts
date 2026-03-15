@@ -70,6 +70,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
   private staticMediaBaseUrl = ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL;
   private googleMapsApiKey: string | null = null;
+  private googleMapsMapId: string | null = null;
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
   @ViewChild(DashboardPropertiesTableComponent) dashboardPropertiesTable?: DashboardPropertiesTableComponent;
@@ -125,6 +126,9 @@ export class AppComponent implements OnInit, OnDestroy {
       },
       setGoogleMapsApiKey: (googleMapsApiKey) => {
         this.googleMapsApiKey = googleMapsApiKey;
+      },
+      setGoogleMapsMapId: (googleMapsMapId) => {
+        this.googleMapsMapId = googleMapsMapId;
       },
       setGoogleLoginEnabled: (enabled) => this.googleLoginEnabled.set(enabled),
       activeTab: this.activeTab(),
@@ -236,6 +240,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   getGoogleMapsApiKey(): string | null {
     return this.googleMapsApiKey;
+  }
+
+  getGoogleMapsMapId(): string | null {
+    return this.googleMapsMapId;
   }
 
   onFullscreenRequested(): void {

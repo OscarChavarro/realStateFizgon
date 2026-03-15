@@ -18,6 +18,7 @@ type FrontendSecrets = {
   google?: {
     maps?: {
       'api-key'?: string;
+      'map-id'?: string;
     };
   };
 };
@@ -67,6 +68,7 @@ type DashboardConfiguration = {
   backendBaseUrl: string;
   staticMediaBaseUrl: string;
   googleMapsApiKey: string | null;
+  googleMapsMapId: string | null;
 };
 
 @Injectable({
@@ -86,13 +88,15 @@ export class DashboardDataService {
         staticMediaBaseUrl: configuredStaticMedia
           ? this.normalizeStaticMediaBaseUrl(configuredStaticMedia)
           : ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
-        googleMapsApiKey: this.normalizeGoogleMapsApiKey(secrets.google?.maps?.['api-key'])
+        googleMapsApiKey: this.normalizeGoogleMapsApiKey(secrets.google?.maps?.['api-key']),
+        googleMapsMapId: this.normalizeGoogleMapsMapId(secrets.google?.maps?.['map-id'])
       };
     } catch {
       return {
         backendBaseUrl: ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
         staticMediaBaseUrl: ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
-        googleMapsApiKey: null
+        googleMapsApiKey: null,
+        googleMapsMapId: null
       };
     }
   }
@@ -215,6 +219,15 @@ export class DashboardDataService {
   }
 
   private normalizeGoogleMapsApiKey(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  private normalizeGoogleMapsMapId(value: unknown): string | null {
     if (typeof value !== 'string') {
       return null;
     }

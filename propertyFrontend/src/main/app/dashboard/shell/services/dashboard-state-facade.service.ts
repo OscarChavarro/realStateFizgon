@@ -37,7 +37,12 @@ export class DashboardStateFacadeService {
 
   async loadBackendConfiguration(
     http: HttpClient
-  ): Promise<{ backendBaseUrl: string; staticMediaBaseUrl: string; googleMapsApiKey: string | null }> {
+  ): Promise<{
+    backendBaseUrl: string;
+    staticMediaBaseUrl: string;
+    googleMapsApiKey: string | null;
+    googleMapsMapId: string | null;
+  }> {
     return this.dashboardDataService.loadBackendConfiguration(http);
   }
 

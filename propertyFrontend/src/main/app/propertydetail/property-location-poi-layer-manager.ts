@@ -12,7 +12,6 @@ export type LocationLayerOption = {
   id: LocationLayerId;
   label: TranslationKey;
   searchType: string;
-  searchKeyword?: string;
   searchRadiusMeters?: number;
   allowedPlaceTypes?: string[];
   mapFeatureStyles?: GoogleMapStyleRule[];
@@ -30,33 +29,51 @@ export type GoogleMapLike = {
 };
 
 export type GoogleMarkerLike = {
-  setMap: (map: GoogleMapLike | null) => void;
+  setMap?: (map: GoogleMapLike | null) => void;
+  map?: GoogleMapLike | null;
 };
 
-export type GooglePlaceResultLike = {
-  geometry?: {
-    location?: GoogleLatLngLike | { lat: number; lng: number };
-  };
-  name?: string;
+type SearchNearbyRankPreferenceLike = {
+  POPULARITY?: string;
+  DISTANCE?: string;
+};
+
+type NearbySearchNewPlaceLike = {
+  location?: GoogleLatLngLike | { lat: number; lng: number };
+  displayName?: string | { text?: string };
   types?: string[];
+  primaryType?: string;
 };
 
-export type GooglePlacesServiceLike = {
-  nearbySearch: (
-    request: { location: { lat: number; lng: number }; radius: number; type: string; keyword?: string },
-    callback: (results: GooglePlaceResultLike[] | null, status: string) => void
-  ) => void;
+type NearbySearchNewRequestLike = {
+  fields: string[];
+  locationRestriction: {
+    center: { lat: number; lng: number };
+    radius: number;
+  };
+  includedPrimaryTypes: string[];
+  maxResultCount?: number;
+  rankPreference?: string;
+};
+
+type PlacesLibraryLike = {
+  Place?: {
+    searchNearby: (request: NearbySearchNewRequestLike) => Promise<{ places?: NearbySearchNewPlaceLike[] }>;
+  };
+  SearchNearbyRankPreference?: SearchNearbyRankPreferenceLike;
+};
+
+type MarkerLibraryLike = {
+  AdvancedMarkerElement?: new (options: {
+    map?: GoogleMapLike | null;
+    position: { lat: number; lng: number };
+    title?: string;
+    content?: HTMLElement;
+  }) => GoogleMarkerLike;
 };
 
 export type GoogleMapsApi = {
-  Marker: new (options: unknown) => GoogleMarkerLike;
-  Size: new (width: number, height: number) => unknown;
-  Point: new (x: number, y: number) => unknown;
-  places?: {
-    PlacesServiceStatus: {
-      OK: string;
-    };
-  };
+  importLibrary?: (libraryName: string) => Promise<unknown>;
 };
 
 export type GoogleMapStyleRule = {
@@ -65,9 +82,14 @@ export type GoogleMapStyleRule = {
   stylers: Array<{ visibility: 'on' | 'off' }>;
 };
 
+type NormalizedPlaceResult = {
+  location?: GoogleLatLngLike | { lat: number; lng: number };
+  name: string;
+  types?: string[];
+};
+
 type PoiLayerContext = {
   mapInstance: GoogleMapLike | null;
-  placesService: GooglePlacesServiceLike | null;
   mapsApi: GoogleMapsApi | null;
   getMapCenter: () => { lat: number; lng: number } | null;
 };
@@ -114,7 +136,7 @@ export class PropertyLocationPoiLayerManager {
     restaurants: false,
     supermarkets: false,
     hospitals: false,
-    metroStations: false,
+    metroStations: true,
     schools: false,
     universities: false
   };
@@ -124,7 +146,7 @@ export class PropertyLocationPoiLayerManager {
       id: 'restaurants',
       label: 'PROPERTY_LOCATION_LAYER_RESTAURANTS',
       searchType: 'restaurant',
-      allowedPlaceTypes: ['restaurant', 'meal_takeaway', 'meal_delivery', 'food', 'cafe'],
+      allowedPlaceTypes: ['restaurant', 'food', 'cafe', 'bar', 'meal_takeaway', 'meal_delivery'],
       markerColor: '#f97316',
       markerGlyph: '🍽'
     },
@@ -132,7 +154,6 @@ export class PropertyLocationPoiLayerManager {
       id: 'supermarkets',
       label: 'PROPERTY_LOCATION_LAYER_SUPERMARKETS',
       searchType: 'supermarket',
-      searchKeyword: 'supermarket grocery',
       allowedPlaceTypes: ['supermarket', 'grocery_store', 'discount_supermarket', 'hypermarket', 'food_store'],
       markerColor: '#2563eb',
       markerGlyph: '🛒'
@@ -141,7 +162,6 @@ export class PropertyLocationPoiLayerManager {
       id: 'hospitals',
       label: 'PROPERTY_LOCATION_LAYER_HOSPITALS',
       searchType: 'hospital',
-      searchKeyword: 'hospital',
       allowedPlaceTypes: ['hospital'],
       markerColor: '#dc2626',
       markerGlyph: '✚'
@@ -150,7 +170,6 @@ export class PropertyLocationPoiLayerManager {
       id: 'metroStations',
       label: 'PROPERTY_LOCATION_LAYER_METRO_STATIONS',
       searchType: 'subway_station',
-      searchKeyword: 'metro station',
       allowedPlaceTypes: ['subway_station', 'transit_station', 'light_rail_station', 'train_station'],
       mapFeatureStyles: [
         { featureType: 'transit.line', elementType: 'labels', stylers: [{ visibility: 'on' }] },
@@ -165,7 +184,6 @@ export class PropertyLocationPoiLayerManager {
       id: 'schools',
       label: 'PROPERTY_LOCATION_LAYER_SCHOOLS',
       searchType: 'school',
-      searchKeyword: 'school',
       allowedPlaceTypes: ['school'],
       markerColor: '#0891b2',
       markerGlyph: '🏫'
@@ -174,7 +192,6 @@ export class PropertyLocationPoiLayerManager {
       id: 'universities',
       label: 'PROPERTY_LOCATION_LAYER_UNIVERSITIES',
       searchType: 'university',
-      searchKeyword: 'university',
       allowedPlaceTypes: ['university'],
       markerColor: '#1f9d4d',
       markerGlyph: '🎓'
@@ -224,7 +241,7 @@ export class PropertyLocationPoiLayerManager {
     const existingMarkers = this.layerMarkers.get(id);
     if (existingMarkers && existingMarkers.length > 0) {
       for (const marker of existingMarkers) {
-        marker.setMap(context.mapInstance);
+        this.setMarkerMap(marker, context.mapInstance);
       }
       return;
     }
@@ -235,68 +252,133 @@ export class PropertyLocationPoiLayerManager {
 
     const option = this.layerOptions.find((entry) => entry.id === id);
     const center = context.getMapCenter();
-    if (!option || !context.placesService || !center || !context.mapInstance) {
+    const mapsApi = context.mapsApi;
+    if (!option || !center || !context.mapInstance || !mapsApi?.importLibrary) {
+      if (!mapsApi?.importLibrary) {
+        console.warn(`[PropertyLocationPoiLayerManager] Google Maps importLibrary('places') is unavailable for layer "${id}".`);
+      }
       return;
     }
 
     this.layerSearchInFlight.add(id);
-    context.placesService.nearbySearch(
-      {
-        location: center,
-        radius: option.searchRadiusMeters ?? 5000,
-        type: option.searchType,
-        keyword: option.searchKeyword
-      },
-      (results, status) => {
-        this.layerSearchInFlight.delete(id);
-        if (
-          !context.mapsApi?.places
-          || status !== context.mapsApi.places.PlacesServiceStatus.OK
-          || !results
-          || !context.mapInstance
-          || this.activeMap !== context.mapInstance
-        ) {
-          return;
-        }
-
-        const markers: GoogleMarkerLike[] = [];
-        for (const result of results) {
-          if (!this.isResultAllowedForLayer(result, option)) {
-            continue;
-          }
-          const resultLocation = result.geometry?.location;
-          const lat = this.readLatLng(resultLocation, 'lat');
-          const lng = this.readLatLng(resultLocation, 'lng');
-          if (lat === null || lng === null) {
-            continue;
-          }
-
-          const marker = new context.mapsApi.Marker({
-            map: this.layerSelection[id] ? context.mapInstance : null,
-            position: { lat, lng },
-            title: result.name ?? '',
-            icon: {
-              url: this.buildPoiMarkerIconDataUrl(option.markerColor, option.markerGlyph),
-              scaledSize: new context.mapsApi.Size(30, 30),
-              anchor: new context.mapsApi.Point(15, 15)
-            }
-          });
-          markers.push(marker);
-        }
-
-        this.layerMarkers.set(id, markers);
-      }
-    );
+    void this.fetchAndRenderLayerMarkers(id, option, center, context, mapsApi);
   }
 
-  private isResultAllowedForLayer(result: GooglePlaceResultLike, option: LocationLayerOption): boolean {
+  private async fetchAndRenderLayerMarkers(
+    id: LocationLayerId,
+    option: LocationLayerOption,
+    center: { lat: number; lng: number },
+    context: PoiLayerContext,
+    mapsApi: GoogleMapsApi
+  ): Promise<void> {
+    try {
+      const results = await this.searchNearbyPlacesNewApi(mapsApi, option, center);
+      const markerLibrary = await this.loadMarkerLibrary(mapsApi);
+      if (!markerLibrary?.AdvancedMarkerElement) {
+        console.warn('[PropertyLocationPoiLayerManager] AdvancedMarkerElement is unavailable.');
+        return;
+      }
+      if (!context.mapInstance || this.activeMap !== context.mapInstance) {
+        return;
+      }
+
+      const markers: GoogleMarkerLike[] = [];
+      for (const result of results) {
+        if (!this.isResultAllowedForLayer(result, option)) {
+          continue;
+        }
+
+        const lat = this.readLatLng(result.location, 'lat');
+        const lng = this.readLatLng(result.location, 'lng');
+        if (lat === null || lng === null) {
+          continue;
+        }
+
+        const marker = new markerLibrary.AdvancedMarkerElement({
+          map: this.layerSelection[id] ? context.mapInstance : null,
+          position: { lat, lng },
+          title: result.name,
+          content: this.buildPoiMarkerContentElement(option.markerColor, option.markerGlyph)
+        });
+        markers.push(marker);
+      }
+
+      this.layerMarkers.set(id, markers);
+    } finally {
+      this.layerSearchInFlight.delete(id);
+    }
+  }
+
+  private async searchNearbyPlacesNewApi(
+    mapsApi: GoogleMapsApi,
+    option: LocationLayerOption,
+    center: { lat: number; lng: number }
+  ): Promise<NormalizedPlaceResult[]> {
+    try {
+      const placesLibrary = (await mapsApi.importLibrary?.('places')) as PlacesLibraryLike | undefined;
+      if (!placesLibrary?.Place?.searchNearby) {
+        return [];
+      }
+
+      const rankPreference = placesLibrary.SearchNearbyRankPreference?.DISTANCE
+        ?? placesLibrary.SearchNearbyRankPreference?.POPULARITY;
+
+      const request: NearbySearchNewRequestLike = {
+        fields: ['displayName', 'location', 'types', 'primaryType'],
+        locationRestriction: {
+          center,
+          radius: option.searchRadiusMeters ?? 5000
+        },
+        includedPrimaryTypes: [option.searchType],
+        maxResultCount: 20,
+        rankPreference
+      };
+
+      const response = await placesLibrary.Place.searchNearby(request);
+      const places = response.places ?? [];
+      return places.map((place) => ({
+        location: place.location,
+        name: this.readDisplayName(place.displayName),
+        types: this.normalizeNewApiTypes(place.types, place.primaryType)
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[PropertyLocationPoiLayerManager] Places Nearby Search failed for layer "${option.id}": ${message}`);
+      return [];
+    }
+  }
+
+  private normalizeNewApiTypes(types: string[] | undefined, primaryType: string | undefined): string[] | undefined {
+    if (!types && !primaryType) {
+      return undefined;
+    }
+
+    const merged = [...(types ?? [])];
+    if (primaryType && !merged.includes(primaryType)) {
+      merged.push(primaryType);
+    }
+    return merged;
+  }
+
+  private readDisplayName(displayName: NearbySearchNewPlaceLike['displayName']): string {
+    if (typeof displayName === 'string') {
+      return displayName;
+    }
+
+    if (displayName && typeof displayName.text === 'string') {
+      return displayName.text;
+    }
+
+    return '';
+  }
+
+  private isResultAllowedForLayer(result: NormalizedPlaceResult, option: LocationLayerOption): boolean {
     if (!option.allowedPlaceTypes || option.allowedPlaceTypes.length === 0) {
       return true;
     }
 
     const resultTypes = result.types;
     if (!resultTypes || resultTypes.length === 0) {
-      // Fallback to request-level filtering when Google does not provide types in the payload.
       return true;
     }
 
@@ -310,17 +392,35 @@ export class PropertyLocationPoiLayerManager {
     }
 
     for (const marker of markers) {
-      marker.setMap(null);
+      this.setMarkerMap(marker, null);
     }
   }
 
   private clearAllLayerMarkers(): void {
     for (const markers of this.layerMarkers.values()) {
       for (const marker of markers) {
-        marker.setMap(null);
+        this.setMarkerMap(marker, null);
       }
     }
     this.layerMarkers.clear();
+  }
+
+  private async loadMarkerLibrary(mapsApi: GoogleMapsApi): Promise<MarkerLibraryLike | null> {
+    if (!mapsApi.importLibrary) {
+      return null;
+    }
+
+    const markerLibrary = (await mapsApi.importLibrary('marker')) as MarkerLibraryLike | undefined;
+    return markerLibrary ?? null;
+  }
+
+  private setMarkerMap(marker: GoogleMarkerLike, map: GoogleMapLike | null): void {
+    if (typeof marker.setMap === 'function') {
+      marker.setMap(map);
+      return;
+    }
+
+    marker.map = map;
   }
 
   private applyLayerStyles(mapInstance: GoogleMapLike | null): void {
@@ -346,14 +446,20 @@ export class PropertyLocationPoiLayerManager {
     return Number.isFinite(numeric) ? numeric : null;
   }
 
-  private buildPoiMarkerIconDataUrl(backgroundColor: string, glyph: string): string {
-    const sanitizedGlyph = glyph.replace(/[<>&'"]/g, '');
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-        <circle cx="15" cy="15" r="14" fill="${backgroundColor}" />
-        <text x="15" y="19" text-anchor="middle" font-size="12" font-family="Arial, sans-serif" fill="#ffffff">${sanitizedGlyph}</text>
-      </svg>
-    `.trim();
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  private buildPoiMarkerContentElement(backgroundColor: string, glyph: string): HTMLElement {
+    const sanitizedGlyph = glyph.replace(/[<>&'\"]/g, '');
+    const container = document.createElement('div');
+    container.style.width = '30px';
+    container.style.height = '30px';
+    container.style.borderRadius = '50%';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.background = backgroundColor;
+    container.style.color = '#ffffff';
+    container.style.fontSize = '12px';
+    container.style.lineHeight = '1';
+    container.textContent = sanitizedGlyph;
+    return container;
   }
 }

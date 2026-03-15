@@ -4,7 +4,6 @@ import {
   GoogleLatLngLike,
   GoogleMapLike as PoiGoogleMapLike,
   GoogleMarkerLike as PoiGoogleMarkerLike,
-  GooglePlacesServiceLike,
   LocationLayerId,
   PropertyLocationPoiLayerManager
 } from './property-location-poi-layer-manager';
@@ -15,15 +14,16 @@ type GoogleMapWithCenter = PoiGoogleMapLike & {
 
 type GoogleMapsApi = {
   Map: new (container: HTMLElement, options: unknown) => GoogleMapWithCenter;
-  Marker: new (options: unknown) => PoiGoogleMarkerLike;
-  Size: new (width: number, height: number) => unknown;
-  Point: new (x: number, y: number) => unknown;
-  places?: {
-    PlacesService: new (map: GoogleMapWithCenter) => GooglePlacesServiceLike;
-    PlacesServiceStatus: {
-      OK: string;
-    };
-  };
+  importLibrary?: (libraryName: string) => Promise<unknown>;
+};
+
+type MarkerLibraryLike = {
+  AdvancedMarkerElement?: new (options: {
+    map?: GoogleMapWithCenter | null;
+    position: { lat: number; lng: number };
+    title?: string;
+    content?: HTMLElement;
+  }) => PoiGoogleMarkerLike;
 };
 
 @Component({
@@ -39,7 +39,6 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private readonly poiLayerManager = new PropertyLocationPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
   private markerInstance: PoiGoogleMarkerLike | null = null;
-  private placesService: GooglePlacesServiceLike | null = null;
   private isResizingLayerPanel = false;
   private layerPanelStartX = 0;
   private layerPanelStartWidth = 0;
@@ -49,6 +48,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   @Input() latitude: number | null = null;
   @Input() longitude: number | null = null;
   @Input() googleMapsApiKey: string | null = null;
+  @Input() googleMapsMapId: string | null = null;
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Output() readonly closeRequested = new EventEmitter<void>();
   @ViewChild('mapLayout') private mapLayoutRef?: ElementRef<HTMLDivElement>;
@@ -72,6 +72,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
       || changes['latitude']
       || changes['longitude']
       || changes['googleMapsApiKey']
+      || changes['googleMapsMapId']
       || changes['propertyTitle']
     ) {
       if (changes['isOpen'] && !this.isOpen) {
@@ -157,8 +158,10 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
 
     try {
       await this.loadGoogleMapsScript(this.googleMapsApiKey);
-      this.renderMap();
-    } catch {
+      await this.waitForGoogleMapsReady();
+      await this.renderMap();
+    } catch (error) {
+      console.error('[PropertyLocationComponent] Google Maps initialization failed.', error);
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
     }
   }
@@ -176,28 +179,69 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     PropertyLocationComponent.googleMapsScriptPromise = new Promise<void>((resolve, reject) => {
       const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-maps-api="true"]');
       if (existingScript) {
+        if (this.getGoogleMaps()) {
+          resolve();
+          return;
+        }
+
         existingScript.addEventListener('load', () => resolve(), { once: true });
-        existingScript.addEventListener('error', () => reject(new Error('Failed loading Google Maps script.')), { once: true });
+        existingScript.addEventListener('error', (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`)), { once: true });
         return;
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly`;
       script.async = true;
       script.defer = true;
       script.dataset['googleMapsApi'] = 'true';
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed loading Google Maps script.'));
+      script.onerror = (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`));
       document.head.appendChild(script);
+    }).catch((error: unknown) => {
+      PropertyLocationComponent.googleMapsScriptPromise = null;
+      throw error;
     });
 
     return PropertyLocationComponent.googleMapsScriptPromise;
   }
 
-  private renderMap(): void {
+  private async waitForGoogleMapsReady(timeoutMs = 5000): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (this.getGoogleMaps()) {
+        return;
+      }
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 50);
+      });
+    }
+
+    throw new Error('Google Maps namespace did not become available after script load.');
+  }
+
+  private async renderMap(): Promise<void> {
     const googleMaps = this.getGoogleMaps();
     const mapContainer = this.mapContainerRef?.nativeElement;
     if (!googleMaps || !mapContainer || this.latitude === null || this.longitude === null) {
+      if (!googleMaps) {
+        console.error('[PropertyLocationComponent] renderMap aborted: window.google.maps is unavailable.');
+      }
+      if (!mapContainer) {
+        console.error('[PropertyLocationComponent] renderMap aborted: map container is missing.');
+      }
+      if (this.latitude === null || this.longitude === null) {
+        console.error('[PropertyLocationComponent] renderMap aborted: coordinates are missing.', {
+          latitude: this.latitude,
+          longitude: this.longitude
+        });
+      }
+      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+      return;
+    }
+
+    const markerLibrary = await this.loadMarkerLibrary(googleMaps);
+    if (!markerLibrary?.AdvancedMarkerElement) {
+      console.error('[PropertyLocationComponent] AdvancedMarkerElement is unavailable.');
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
       return;
     }
@@ -207,6 +251,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     this.mapInstance = new googleMaps.Map(mapContainer, {
       center,
       zoom: 14,
+      mapId: this.googleMapsMapId ?? 'DEMO_MAP_ID',
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
@@ -215,38 +260,33 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     });
 
     if (this.markerInstance) {
-      this.markerInstance.setMap(null);
+      this.setMarkerMap(this.markerInstance, null);
     }
 
-    this.markerInstance = new googleMaps.Marker({
+    this.markerInstance = new markerLibrary.AdvancedMarkerElement({
       map: this.mapInstance,
       position: center,
       title: this.propertyTitle,
-      icon: {
-        url: this.buildHouseMarkerIconDataUrl(),
-        scaledSize: new googleMaps.Size(38, 38),
-        anchor: new googleMaps.Point(19, 19)
-      }
+      content: this.buildHouseMarkerContentElement()
     });
-
-    this.placesService = googleMaps.places
-      ? new googleMaps.places.PlacesService(this.mapInstance)
-      : null;
 
     this.poiLayerManager.onMapReady(this.buildPoiLayerContext());
   }
 
-  private buildHouseMarkerIconDataUrl(): string {
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-        <circle cx="19" cy="19" r="18" fill="#20a24a"/>
-        <path fill="#ffffff" d="M8.5 17.5 19 9l10.5 8.5-1.9 2.3-1.6-1.3V29h-5.8v-6.6h-2.4V29H12V18.5l-1.6 1.3-1.9-2.3z"/>
-        <rect x="17" y="23" width="4" height="6" fill="#20a24a"/>
-        <rect x="13.8" y="18.4" width="3.2" height="3" fill="#20a24a"/>
-        <rect x="21" y="18.4" width="3.2" height="3" fill="#20a24a"/>
-      </svg>
-    `.trim();
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  private buildHouseMarkerContentElement(): HTMLElement {
+    const container = document.createElement('div');
+    container.style.width = '38px';
+    container.style.height = '38px';
+    container.style.borderRadius = '50%';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.background = '#20a24a';
+    container.style.color = '#ffffff';
+    container.style.fontSize = '18px';
+    container.style.lineHeight = '1';
+    container.textContent = '🏠';
+    return container;
   }
 
   private getMapCenter(): { lat: number; lng: number } | null {
@@ -289,10 +329,27 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   private buildPoiLayerContext() {
     return {
       mapInstance: this.mapInstance,
-      placesService: this.placesService,
       mapsApi: this.getGoogleMaps(),
       getMapCenter: () => this.getMapCenter()
     };
+  }
+
+  private async loadMarkerLibrary(googleMaps: GoogleMapsApi): Promise<MarkerLibraryLike | null> {
+    if (!googleMaps.importLibrary) {
+      return null;
+    }
+
+    const markerLibrary = (await googleMaps.importLibrary('marker')) as MarkerLibraryLike | undefined;
+    return markerLibrary ?? null;
+  }
+
+  private setMarkerMap(marker: PoiGoogleMarkerLike, map: GoogleMapWithCenter | null): void {
+    if (typeof marker.setMap === 'function') {
+      marker.setMap(map);
+      return;
+    }
+
+    marker.map = map;
   }
 
   private getGoogleMaps(): GoogleMapsApi | null {

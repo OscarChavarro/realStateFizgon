@@ -23,6 +23,7 @@ export class PropertyDetailPanelComponent {
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Input() staticMediaBaseUrl = 'http://localhost:666/';
   @Input() googleMapsApiKey: string | null = null;
+  @Input() googleMapsMapId: string | null = null;
   @Input() reviewEnabled = false;
   @Input() propertyLabels: PropertyLabelEntry[] = [];
   @Output() readonly propertyReviewToggle = new EventEmitter<DashboardPropertyRow>();

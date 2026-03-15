@@ -19,6 +19,7 @@ type AuthBootstrapParams = {
   setBackendBaseUrl: (backendBaseUrl: string) => void;
   setStaticMediaBaseUrl: (staticMediaBaseUrl: string) => void;
   setGoogleMapsApiKey: (googleMapsApiKey: string | null) => void;
+  setGoogleMapsMapId: (googleMapsMapId: string | null) => void;
   setGoogleLoginEnabled: (enabled: boolean) => void;
   activeTab: DashboardTab;
   canMaintainDatabase: () => boolean;
@@ -57,6 +58,7 @@ export class AuthBootstrapUseCaseService {
     params.setBackendBaseUrl(this.apiRuntimeConfigService.getBackendBaseUrl());
     params.setStaticMediaBaseUrl(this.apiRuntimeConfigService.getStaticMediaBaseUrl());
     params.setGoogleMapsApiKey(config.googleMapsApiKey);
+    params.setGoogleMapsMapId(config.googleMapsMapId);
     this.dashboardAuthFacadeService.warnIfAuthHostMismatch(params.frontendHost);
 
     const googleLoginEnabled = await this.dashboardAuthFacadeService.loadGoogleLoginAvailability(params.http);

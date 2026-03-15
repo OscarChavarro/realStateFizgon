@@ -14,6 +14,7 @@ type HandleWindowKeyDownParams = {
   properties: ListingPropertyRow[];
   selectedProperty: ListingPropertyRow | null;
   onTogglePropertyReview: (property: ListingPropertyRow) => void;
+  onTogglePropertyLocationDialog: () => void;
   scroller?: PropertyRowScroller;
 };
 
@@ -84,6 +85,7 @@ export class WorkspaceInteractionCoordinatorService {
         void this.browserFullscreenService.toggleFullscreen();
       },
       onTogglePropertyReview: params.onTogglePropertyReview,
+      onTogglePropertyLocationDialog: params.onTogglePropertyLocationDialog,
       onScrollSelectedProperty: (property) => {
         this.interactionShortcutsService.scrollSelectedPropertyRow(property, params.scroller);
       }

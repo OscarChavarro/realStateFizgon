@@ -51,7 +51,9 @@ export class PropertySelectionService {
       }
     }
 
-    this.selectedProperty.set(rows.length > 0 ? rows[0] : null);
+    const firstRow = rows.length > 0 ? rows[0] : null;
+    this.selectedProperty.set(firstRow);
+    this.lockedSelectedPropertyKey.set(firstRow ? this.getPropertyRowKey(firstRow) : null);
   }
 
   selectByKeyboard(rows: ListingPropertyRow[], delta: -1 | 1): ListingPropertyRow | null {

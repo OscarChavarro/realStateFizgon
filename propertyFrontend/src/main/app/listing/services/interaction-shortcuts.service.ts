@@ -14,6 +14,7 @@ type InteractionShortcutsContext = {
   onKeyboardSelect: (delta: -1 | 1) => ListingPropertyRow | null;
   onToggleFullscreen: () => void;
   onTogglePropertyReview: (property: ListingPropertyRow) => void;
+  onTogglePropertyLocationDialog: () => void;
   onScrollSelectedProperty: (property: ListingPropertyRow | null) => void;
 };
 
@@ -81,6 +82,20 @@ export class InteractionShortcutsService {
 
       event.preventDefault();
       context.onTogglePropertyReview(context.selectedProperty);
+      return;
+    }
+
+    const isPlainLocationToggle = event.key.toLowerCase() === 'm'
+      && !event.ctrlKey
+      && !event.metaKey
+      && !event.altKey;
+    if (isPlainLocationToggle) {
+      if (context.activeTab !== 'DASHBOARD' || !context.selectedProperty) {
+        return;
+      }
+
+      event.preventDefault();
+      context.onTogglePropertyLocationDialog();
     }
   }
 

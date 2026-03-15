@@ -60,6 +60,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
   @ViewChild(ListingPropertiesTableComponent) listingPropertiesTable?: ListingPropertiesTableComponent;
+  @ViewChild(PropertyDetailPanelComponent) propertyDetailPanel?: PropertyDetailPanelComponent;
 
   readonly count = this.appShellStateService.count;
   readonly loading = this.appShellStateService.loading;
@@ -275,6 +276,9 @@ export class AppComponent implements OnInit, OnDestroy {
       selectedProperty: this.selectedProperty(),
       onTogglePropertyReview: (property) => {
         void this.togglePropertyReview(property);
+      },
+      onTogglePropertyLocationDialog: () => {
+        this.propertyDetailPanel?.toggleLocationDialog();
       },
       scroller: this.listingPropertiesTable
     });

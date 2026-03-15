@@ -10,6 +10,7 @@ type ShellKeyboardInteractionParams = {
   properties: ListingPropertyRow[];
   selectedProperty: ListingPropertyRow | null;
   onTogglePropertyReview: (property: ListingPropertyRow) => void;
+  onTogglePropertyLocationDialog: () => void;
   scroller?: {
     scrollPropertyIntoView(property: ListingPropertyRow): void;
   };

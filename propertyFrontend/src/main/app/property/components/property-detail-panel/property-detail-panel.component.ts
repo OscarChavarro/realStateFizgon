@@ -109,6 +109,14 @@ export class PropertyDetailPanelComponent {
     this.isLocationDialogOpen = true;
   }
 
+  toggleLocationDialog(): void {
+    if (!this.property || !this.hasGeoLocationHint(this.property)) {
+      return;
+    }
+
+    this.isLocationDialogOpen = !this.isLocationDialogOpen;
+  }
+
   closeLocationDialog(): void {
     this.isLocationDialogOpen = false;
   }

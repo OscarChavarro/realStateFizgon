@@ -10,6 +10,7 @@ type KeyboardFlowParams = {
   properties: ListingPropertyRow[];
   selectedProperty: ListingPropertyRow | null;
   onTogglePropertyReview: (property: ListingPropertyRow) => void;
+  onTogglePropertyLocationDialog: () => void;
   scroller?: PropertyRowScroller;
 };
 

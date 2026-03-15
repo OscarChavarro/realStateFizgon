@@ -33,20 +33,41 @@
       <div #mapLayout class="location-map-layout">
         @if (isLayerPanelVisible) {
           <aside class="location-layer-panel" [style.width.px]="layerPanelWidthPx">
-            <header class="location-layer-panel-header">
-              <h3>{{ t('PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
-            </header>
-            <div class="location-layer-list">
-              @for (layer of layerOptions; track layer.id) {
-                <label class="location-layer-item">
-                  <input
-                    type="checkbox"
-                    [checked]="isLayerEnabled(layer.id)"
-                    (change)="onLayerToggle(layer.id, $event)"
-                  />
-                  <span>{{ t(layer.label) }}</span>
-                </label>
-              }
+            <div class="location-layer-group">
+              <header class="location-layer-panel-header">
+                <h3>{{ t('PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
+              </header>
+              <div class="location-layer-list">
+                @for (layer of layerOptions; track layer.id) {
+                  <label class="location-layer-item">
+                    <input
+                      type="checkbox"
+                      [checked]="isLayerEnabled(layer.id)"
+                      (change)="onLayerToggle(layer.id, $event)"
+                    />
+                    <span>{{ t(layer.label) }}</span>
+                  </label>
+                }
+              </div>
+            </div>
+
+            <div class="location-layer-group">
+              <header class="location-layer-panel-header">
+                <h3>{{ t('PROPERTY_LOCATION_STYLES_TITLE') }}</h3>
+              </header>
+              <div class="location-style-list">
+                @for (styleOption of mapVisualStyleOptions; track styleOption.id) {
+                  <label class="location-layer-item">
+                    <input
+                      type="radio"
+                      name="location-map-style"
+                      [checked]="selectedMapVisualStyle === styleOption.id"
+                      (change)="onMapVisualStyleChange(styleOption.id)"
+                    />
+                    <span>{{ t(styleOption.label) }}</span>
+                  </label>
+                }
+              </div>
             </div>
           </aside>
           <div

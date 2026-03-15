@@ -204,6 +204,22 @@ const TRANSLATIONS = {
     en: 'Layers',
     sp: 'Capas'
   },
+  PROPERTY_LOCATION_STYLES_TITLE: {
+    en: 'Styles',
+    sp: 'Estilos'
+  },
+  PROPERTY_LOCATION_STYLE_VECTOR: {
+    en: 'Vector',
+    sp: 'Vector'
+  },
+  PROPERTY_LOCATION_STYLE_SATELLITE: {
+    en: 'Satellite',
+    sp: 'Satélite'
+  },
+  PROPERTY_LOCATION_STYLE_HYBRID: {
+    en: 'Hybrid',
+    sp: 'Híbrido'
+  },
   PROPERTY_LOCATION_PANEL_HIDE: {
     en: 'Hide layers panel',
     sp: 'Ocultar panel de capas'

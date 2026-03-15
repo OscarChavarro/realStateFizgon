@@ -94,11 +94,16 @@
   max-width: 460px;
   background: #f8fafc;
   border-right: 1px solid var(--color-border-subtle);
+  overflow: auto;
 }
 
 .location-layer-panel-header {
   padding: 0.7rem 0.8rem 0.5rem;
   border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.location-layer-group + .location-layer-group .location-layer-panel-header {
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .location-layer-panel-header h3 {
@@ -112,7 +117,14 @@
 
 .location-layer-list {
   padding: 0.55rem 0.65rem;
-  overflow: auto;
+  overflow: visible;
+  display: grid;
+  gap: 0.44rem;
+}
+
+.location-style-list {
+  padding: 0.55rem 0.65rem 0.7rem;
+  overflow: visible;
   display: grid;
   gap: 0.44rem;
 }

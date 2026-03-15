@@ -15,5 +15,7 @@ echo "Cleaning logs..."
 rm -rf idealistaPropertyScraper/output/logs/chrome_std*
 rm -rf idealistaPropertyScraper/coverage
 rm -rf propertyFrontend/coverage
+rm -rf propertyFrontend/.angular
+rm -rf out-tsc
 
 echo "Clean completed."

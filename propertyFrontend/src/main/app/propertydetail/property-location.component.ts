@@ -23,6 +23,8 @@ type GoogleMarkerLike = {
   setMap: (map: GoogleMapWithCenter | null) => void;
 };
 
+type MapVisualStyleId = 'vector' | 'satellite' | 'hybrid';
+
 @Component({
   selector: 'app-property-location',
   standalone: true,
@@ -54,6 +56,12 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   isLayerPanelVisible = true;
   layerPanelWidthPx = 220;
   readonly layerOptions = this.poiLayerManager.layerOptions;
+  readonly mapVisualStyleOptions: Array<{ id: MapVisualStyleId; label: TranslationKey }> = [
+    { id: 'vector', label: 'PROPERTY_LOCATION_STYLE_VECTOR' },
+    { id: 'satellite', label: 'PROPERTY_LOCATION_STYLE_SATELLITE' },
+    { id: 'hybrid', label: 'PROPERTY_LOCATION_STYLE_HYBRID' }
+  ];
+  selectedMapVisualStyle: MapVisualStyleId = 'hybrid';
 
   t(id: TranslationKey): string {
     return this.i18nService.get(id, this.selectedLanguage);
@@ -136,6 +144,11 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
   onLayerToggle(id: LocationLayerId, event: Event): void {
     const checked = (event.target as HTMLInputElement | null)?.checked === true;
     this.poiLayerManager.toggleLayer(id, checked, this.buildPoiLayerContext());
+  }
+
+  onMapVisualStyleChange(styleId: MapVisualStyleId): void {
+    this.selectedMapVisualStyle = styleId;
+    this.applyMapVisualStyle();
   }
 
   private async initializeMapIfReady(): Promise<void> {
@@ -241,6 +254,7 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     this.mapInstance = new googleMaps.Map(mapContainer, {
       center,
       zoom: 14,
+      mapTypeId: this.resolveMapTypeId(this.selectedMapVisualStyle),
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
@@ -314,6 +328,27 @@ export class PropertyLocationComponent implements AfterViewInit, OnChanges {
     }
 
     this.mapInstance.setOptions({ center });
+  }
+
+  private applyMapVisualStyle(): void {
+    if (!this.mapInstance) {
+      return;
+    }
+
+    this.mapInstance.setOptions({
+      mapTypeId: this.resolveMapTypeId(this.selectedMapVisualStyle)
+    });
+  }
+
+  private resolveMapTypeId(style: MapVisualStyleId): 'roadmap' | 'satellite' | 'hybrid' {
+    switch (style) {
+      case 'satellite':
+        return 'satellite';
+      case 'hybrid':
+        return 'hybrid';
+      default:
+        return 'roadmap';
+    }
   }
 
   private buildPoiLayerContext() {

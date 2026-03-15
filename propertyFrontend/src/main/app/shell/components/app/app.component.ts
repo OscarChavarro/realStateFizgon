@@ -1,41 +1,31 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
-import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
-import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
+import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { UsersPanelComponent } from 'src/app/auth/components/users-panel/users-panel.component';
 import { MaintenancePanelComponent } from 'src/app/maintenance/components/maintenance-panel/maintenance-panel.component';
 import { ListingPropertiesTableComponent } from 'src/app/listing/components/listing-properties-table/listing-properties-table.component';
 import { ListingTopBarComponent } from 'src/app/listing/components/listing-top-bar/listing-top-bar.component';
+import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import {
-  ListingFiltersState,
-  createDefaultListingFilters
-} from 'src/app/listing/model/filters/listing-filters.model';
-import {
-  PropertyLabelEntry,
   ListingPropertyRow,
   ListingTab,
-  SortCriterion,
   SortToggleRequest
 } from 'src/app/listing/model/listing.types';
-import {
-  DASHBOARD_PAGE_SIZE_OPTIONS,
-  createDefaultListingPaginationState
-} from 'src/app/listing/model/pagination/listing-pagination.model';
+import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
-import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
-import { PropertyLabelsFacadeService } from 'src/app/prefs/services/property-labels-facade.service';
 import { WorkspaceInteractionCoordinatorService } from 'src/app/listing/services/workspace-interaction-coordinator.service';
 import { AuthBootstrapUseCaseService } from 'src/app/auth/services/auth-bootstrap.use-case.service';
 import { ListingBootstrapUseCaseService } from 'src/app/listing/services/listing-bootstrap.use-case.service';
-import { KeyboardFlowUseCaseService } from 'src/app/listing/services/keyboard-flow.use-case.service';
 import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { ListingInteractionUseCaseService } from 'src/app/listing/services/listing-interaction.use-case.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
-import { RemoveDanglingImagesOperation } from 'src/app/maintenance/model/remove-dangling-images.operation';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
 import { PropertyDetailPanelComponent } from 'src/app/property/components/property-detail-panel/property-detail-panel.component';
+import { ShellInputInteractionUseCaseService } from 'src/app/shell/services/shell-input-interaction.use-case.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
+import { AppShellCommandsUseCaseService } from 'src/app/shell/services/app-shell-commands.use-case.service';
 
 @Component({
   selector: 'app-root',
@@ -52,66 +42,56 @@ import { PropertyDetailPanelComponent } from 'src/app/property/components/proper
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
-  private static readonly FILTERED_TOTAL_ELEMENTS_KEY = 'filteredTotalElements';
 
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private readonly listingAuthFacadeService = inject(AuthFacadeService);
   private readonly listingStateFacadeService = inject(ListingStateFacadeService);
-  private readonly listingDataCoordinatorService = inject(ListingDataCoordinatorService);
-  private readonly propertyLabelsFacadeService = inject(PropertyLabelsFacadeService);
   private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
   private readonly authBootstrapUseCaseService = inject(AuthBootstrapUseCaseService);
   private readonly listingBootstrapUseCaseService = inject(ListingBootstrapUseCaseService);
-  private readonly keyboardFlowUseCaseService = inject(KeyboardFlowUseCaseService);
   private readonly userSessionManagementUseCaseService = inject(UserSessionManagementUseCaseService);
   private readonly propertySelectionService = inject(PropertySelectionService);
-
-  private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
-  private staticMediaBaseUrl = ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL;
-  private googleMapsApiKey: string | null = null;
-  private googleMapsMapId: string | null = null;
+  private readonly listingQueryOrchestratorService = inject(ListingQueryOrchestratorService);
+  private readonly listingInteractionUseCaseService = inject(ListingInteractionUseCaseService);
+  private readonly shellInputInteractionUseCaseService = inject(ShellInputInteractionUseCaseService);
+  private readonly appShellStateService = inject(AppShellStateService);
+  private readonly appShellCommandsUseCaseService = inject(AppShellCommandsUseCaseService);
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
   @ViewChild(ListingPropertiesTableComponent) listingPropertiesTable?: ListingPropertiesTableComponent;
 
-  readonly count = signal<number>(0);
-  readonly loading = signal<boolean>(true);
-  readonly allProperties = signal<ListingPropertyRow[]>([]);
-  readonly filters = signal<ListingFiltersState>(createDefaultListingFilters());
-  readonly pagination = signal(createDefaultListingPaginationState());
-  readonly properties = computed<ListingPropertyRow[]>(() => this.allProperties());
-  readonly filteredTotalElements = signal<number>(this.readFilteredTotalElementsFromSession());
-  readonly visibleCount = computed<number>(() => this.filteredTotalElements());
-  readonly selectedProperty = this.propertySelectionService.selectedProperty;
-  readonly lockedSelectedPropertyKey = this.propertySelectionService.lockedSelectedPropertyKey;
-  readonly selectedLanguage = signal<SupportedLanguage>('en');
-  readonly activeTab = signal<ListingTab>('DASHBOARD');
-  readonly googleLoginEnabled = signal<boolean>(true);
-  readonly authenticatedUser = signal<AuthenticatedUser | null>(null);
-  readonly canEditUsers = computed<boolean>(() =>
-    this.authenticatedUser()?.permissions?.includes('canEditUsers') === true
-  );
-  readonly canMaintainDatabase = computed<boolean>(() =>
-    this.authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
-  );
-  readonly authenticatedUserAvatarUrl = computed<string | null>(() =>
-    this.authenticatedUser() ? `${this.backendBaseUrl}/auth/google/avatar` : null
-  );
-  readonly users = signal<AuthUserListItem[]>([]);
-  readonly usersLoading = signal<boolean>(false);
-  readonly propertyLabels = signal<PropertyLabelEntry[]>([]);
-  readonly maintenanceOperations: DatabaseMaintenanceOperation[] = [
-    new RemoveDanglingImagesOperation()
-  ];
-  readonly maintenanceRunning = signal<boolean>(false);
-  readonly maintenanceResultText = signal<string>('');
-  readonly sortCriteria = signal<SortCriterion[]>([]);
-  readonly leftPanelWidthPercent = this.workspaceInteractionCoordinatorService.leftPanelWidthPercent;
-  readonly leftPanelHidden = this.workspaceInteractionCoordinatorService.leftPanelHidden;
-  readonly rightPanelHidden = this.workspaceInteractionCoordinatorService.rightPanelHidden;
+  readonly count = this.appShellStateService.count;
+  readonly loading = this.appShellStateService.loading;
+  readonly allProperties = this.appShellStateService.allProperties;
+  readonly filters = this.appShellStateService.filters;
+  readonly pagination = this.appShellStateService.pagination;
+  readonly properties = this.appShellStateService.properties;
+  readonly filteredTotalElements = this.appShellStateService.filteredTotalElements;
+  readonly visibleCount = this.appShellStateService.visibleCount;
+  readonly selectedProperty = this.appShellStateService.selectedProperty;
+  readonly lockedSelectedPropertyKey = this.appShellStateService.lockedSelectedPropertyKey;
+  readonly selectedLanguage = this.appShellStateService.selectedLanguage;
+  readonly activeTab = this.appShellStateService.activeTab;
+  readonly googleLoginEnabled = this.appShellStateService.googleLoginEnabled;
+  readonly authenticatedUser = this.appShellStateService.authenticatedUser;
+  readonly canEditUsers = this.appShellStateService.canEditUsers;
+  readonly canMaintainDatabase = this.appShellStateService.canMaintainDatabase;
+  readonly authenticatedUserAvatarUrl = this.appShellStateService.authenticatedUserAvatarUrl;
+  readonly users = this.appShellStateService.users;
+  readonly usersLoading = this.appShellStateService.usersLoading;
+  readonly propertyLabels = this.appShellStateService.propertyLabels;
+  readonly maintenanceOperations = this.appShellStateService.maintenanceOperations;
+  readonly maintenanceRunning = this.appShellStateService.maintenanceRunning;
+  readonly maintenanceResultText = this.appShellStateService.maintenanceResultText;
+  readonly sortCriteria = this.appShellStateService.sortCriteria;
+  readonly leftPanelWidthPercent = this.appShellStateService.leftPanelWidthPercent;
+  readonly leftPanelHidden = this.appShellStateService.leftPanelHidden;
+  readonly rightPanelHidden = this.appShellStateService.rightPanelHidden;
 
   async ngOnInit(): Promise<void> {
+    this.filteredTotalElements.set(this.listingQueryOrchestratorService.readFilteredTotalElementsFromSession());
+
     await this.authBootstrapUseCaseService.initialize({
       http: this.http,
       destroyRef: this.destroyRef,
@@ -119,16 +99,16 @@ export class AppComponent implements OnInit, OnDestroy {
       selectedLanguageKey: AppComponent.SELECTED_LANGUAGE_KEY,
       setSelectedLanguage: (language) => this.selectedLanguage.set(language),
       setBackendBaseUrl: (backendBaseUrl) => {
-        this.backendBaseUrl = backendBaseUrl;
+        this.appShellStateService.backendBaseUrl.set(backendBaseUrl);
       },
       setStaticMediaBaseUrl: (staticMediaBaseUrl) => {
-        this.staticMediaBaseUrl = staticMediaBaseUrl;
+        this.appShellStateService.staticMediaBaseUrl.set(staticMediaBaseUrl);
       },
       setGoogleMapsApiKey: (googleMapsApiKey) => {
-        this.googleMapsApiKey = googleMapsApiKey;
+        this.appShellStateService.googleMapsApiKey.set(googleMapsApiKey);
       },
       setGoogleMapsMapId: (googleMapsMapId) => {
-        this.googleMapsMapId = googleMapsMapId;
+        this.appShellStateService.googleMapsMapId.set(googleMapsMapId);
       },
       setGoogleLoginEnabled: (enabled) => this.googleLoginEnabled.set(enabled),
       activeTab: this.activeTab(),
@@ -154,32 +134,26 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: ListingTab): void {
-    if (tabId === 'USERS_TAB' && !this.canEditUsers()) {
-      this.activeTab.set('DASHBOARD');
-      return;
-    }
-    if (tabId === 'DATABASE_MAINTENANCE_TAB' && !this.canMaintainDatabase()) {
-      this.activeTab.set('DASHBOARD');
-      return;
-    }
-
-    this.activeTab.set(tabId);
-    if (tabId === 'USERS_TAB') {
-      void this.loadUsersForManagement();
-    }
+    this.appShellCommandsUseCaseService.onTabChange({
+      tabId,
+      canEditUsers: this.canEditUsers(),
+      canMaintainDatabase: this.canMaintainDatabase(),
+      setActiveTab: (tab) => this.activeTab.set(tab),
+      onLoadUsers: () => this.loadUsersForManagement()
+    });
   }
 
   onLanguageChange(language: SupportedLanguage): void {
-    this.selectedLanguage.set(language);
-    this.listingStateFacadeService.persistSelectedLanguage(AppComponent.SELECTED_LANGUAGE_KEY, language);
-    void this.listingDataCoordinatorService.saveLanguagePreference(
-      this.http,
-      this.authenticatedUser() !== null,
-      this.filters(),
-      this.sortCriteria(),
-      this.pagination().pageSize,
-      language
-    );
+    this.appShellCommandsUseCaseService.onLanguageChange({
+      http: this.http,
+      language,
+      selectedLanguageKey: AppComponent.SELECTED_LANGUAGE_KEY,
+      isAuthenticated: this.authenticatedUser() !== null,
+      filters: this.filters(),
+      sortCriteria: this.sortCriteria(),
+      pageSize: this.pagination().pageSize,
+      setSelectedLanguage: (nextLanguage) => this.selectedLanguage.set(nextLanguage)
+    });
   }
 
   onFiltersChange(filters: ListingFiltersState): void {
@@ -215,7 +189,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onSplitterMouseDown(event: MouseEvent): void {
-    this.workspaceInteractionCoordinatorService.startResize(event);
+    this.shellInputInteractionUseCaseService.onSplitterMouseDown(event);
   }
 
   cycleWorkspaceLayout(): void {
@@ -231,19 +205,24 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
-    void this.runDatabaseMaintenanceOperation(operation);
+    this.appShellCommandsUseCaseService.onMaintenanceOperationRequested({
+      operation,
+      http: this.http,
+      setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
+      setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
+    });
   }
 
   getStaticMediaBaseUrl(): string {
-    return this.staticMediaBaseUrl;
+    return this.appShellStateService.staticMediaBaseUrl();
   }
 
   getGoogleMapsApiKey(): string | null {
-    return this.googleMapsApiKey;
+    return this.appShellStateService.googleMapsApiKey();
   }
 
   getGoogleMapsMapId(): string | null {
-    return this.googleMapsMapId;
+    return this.appShellStateService.googleMapsMapId();
   }
 
   onFullscreenRequested(): void {
@@ -256,7 +235,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onLogoutRequested(): void {
-    void this.userSessionManagementUseCaseService.logoutCurrentUser({
+    this.appShellCommandsUseCaseService.onLogoutRequested({
       http: this.http,
       getActiveTab: () => this.activeTab(),
       setActiveTab: (tab) => this.activeTab.set(tab),
@@ -267,7 +246,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onDeleteUserRequested(userId: string): void {
-    void this.userSessionManagementUseCaseService.deleteUserAndRefresh({
+    this.appShellCommandsUseCaseService.onDeleteUserRequested({
       http: this.http,
       userId,
       canEditUsers: this.canEditUsers(),
@@ -279,20 +258,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('window:mousemove', ['$event'])
   onWindowMouseMove(event: MouseEvent): void {
-    this.workspaceInteractionCoordinatorService.handleWindowMouseMove(
-      event,
-      this.workspaceContainer?.nativeElement ?? null
-    );
+    this.shellInputInteractionUseCaseService.onWindowMouseMove(event, this.workspaceContainer);
   }
 
   @HostListener('window:mouseup')
   onWindowMouseUp(): void {
-    this.workspaceInteractionCoordinatorService.handleWindowMouseUp();
+    this.shellInputInteractionUseCaseService.onWindowMouseUp();
   }
 
   @HostListener('window:keydown', ['$event'])
   onWindowKeyDown(event: KeyboardEvent): void {
-    this.keyboardFlowUseCaseService.handleWindowKeyDown({
+    this.shellInputInteractionUseCaseService.onWindowKeyDown({
       event,
       activeTab: this.activeTab(),
       isAuthenticated: this.authenticatedUser() !== null,
@@ -315,40 +291,31 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async refreshListingData(): Promise<void> {
-    const requestPageSize = this.resolveRequestPageSize(this.pagination().pageSize);
-    const requestPage = requestPageSize > 0 ? this.pagination().page : 1;
-    const requestPagination = {
-      ...this.pagination(),
-      page: requestPage,
-      pageSize: requestPageSize
-    };
-    await this.listingDataCoordinatorService.refreshListingData({
+    await this.listingQueryOrchestratorService.refreshListingData({
       http: this.http,
-      sortCriteria: this.sortCriteria(),
-      filters: this.filters(),
-      pagination: requestPagination,
+      getSortCriteria: () => this.sortCriteria(),
+      getFilters: () => this.filters(),
+      getPagination: () => this.pagination(),
       setLoading: (loading) => this.loading.set(loading),
       setCount: (count) => this.count.set(count),
       setAllProperties: (properties) => this.allProperties.set(properties),
-      setPagination: (pagination) => {
-        this.pagination.set(pagination);
-        this.persistFilteredTotalElementsInSession(pagination.totalElements);
-      },
-      onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.properties())
+      setPagination: (pagination) => this.pagination.set(pagination),
+      onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.properties()),
+      setFilteredTotalElements: (totalElements) => this.filteredTotalElements.set(totalElements)
     });
   }
 
   private async handleFiltersChange(filters: ListingFiltersState): Promise<void> {
-    await this.listingDataCoordinatorService.handleFiltersChange({
+    await this.listingQueryOrchestratorService.handleFiltersChange({
       http: this.http,
-      currentFilters: this.filters(),
+      getCurrentFilters: () => this.filters(),
       nextFilters: filters,
-      sortCriteria: this.sortCriteria(),
-      pageSize: this.pagination().pageSize,
-      selectedLanguage: this.selectedLanguage(),
-      isAuthenticated: this.authenticatedUser() !== null,
+      getSortCriteria: () => this.sortCriteria(),
+      getPageSize: () => this.pagination().pageSize,
+      getSelectedLanguage: () => this.selectedLanguage(),
+      isAuthenticated: () => this.authenticatedUser() !== null,
       setFilters: (nextFilters) => this.filters.set(nextFilters),
-      onFiltersChanged: () => {
+      onResetToFirstPage: () => {
         this.pagination.update((current) => ({
           ...current,
           page: 1
@@ -359,9 +326,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async loadUserPreferences(): Promise<void> {
-    // Prevent stale session totals from clamping the restored page size before first data refresh.
-    this.persistFilteredTotalElementsInSession(0);
-    await this.listingDataCoordinatorService.loadUserPreferences({
+    await this.listingQueryOrchestratorService.loadUserPreferences({
       http: this.http,
       setSelectedLanguage: (language) => this.selectedLanguage.set(language),
       persistSelectedLanguage: (language) => this.listingStateFacadeService.persistSelectedLanguage(
@@ -376,119 +341,77 @@ export class AppComponent implements OnInit, OnDestroy {
           pageSize
         }));
       },
-      setPropertyLabels: (labels) => this.propertyLabels.set(labels)
+      setPropertyLabels: (labels) => this.propertyLabels.set(labels),
+      setFilteredTotalElements: (totalElements) => this.filteredTotalElements.set(totalElements)
     });
   }
 
   private async togglePropertyReview(property: ListingPropertyRow): Promise<void> {
-    if (!this.authenticatedUser()) {
-      return;
-    }
-
-    try {
-      const updatedLabels = await this.propertyLabelsFacadeService.togglePropertyReview(
-        this.http,
-        property.propertyId,
-        this.propertyLabels()
-      );
-      this.propertyLabels.set(updatedLabels);
-    } catch {
-      // Ignore API errors; UI state remains unchanged.
-    }
+    await this.listingInteractionUseCaseService.togglePropertyReview({
+      http: this.http,
+      propertyId: property.propertyId,
+      isAuthenticated: this.authenticatedUser() !== null,
+      getPropertyLabels: () => this.propertyLabels(),
+      setPropertyLabels: (labels) => this.propertyLabels.set(labels)
+    });
   }
 
   private async savePropertyComment(property: ListingPropertyRow, commentRaw: string): Promise<void> {
-    if (!this.authenticatedUser()) {
-      return;
-    }
-
-    try {
-      const updatedLabels = await this.propertyLabelsFacadeService.savePropertyComment(
-        this.http,
-        property.propertyId,
-        commentRaw,
-        this.propertyLabels()
-      );
-      if (updatedLabels) {
-        this.propertyLabels.set(updatedLabels);
-      }
-    } catch {
-      // Ignore API errors; UI state remains unchanged.
-    }
+    await this.listingInteractionUseCaseService.savePropertyComment({
+      http: this.http,
+      propertyId: property.propertyId,
+      commentRaw,
+      isAuthenticated: this.authenticatedUser() !== null,
+      getPropertyLabels: () => this.propertyLabels(),
+      setPropertyLabels: (labels) => this.propertyLabels.set(labels)
+    });
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
-    this.pagination.update((current) => ({
-      ...current,
-      page: 1
-    }));
-    await this.listingDataCoordinatorService.toggleSortAndRefresh({
+    await this.listingQueryOrchestratorService.toggleSort({
       http: this.http,
-      currentSortCriteria: this.sortCriteria(),
       sortBy,
-      filters: this.filters(),
-      pageSize: this.pagination().pageSize,
-      selectedLanguage: this.selectedLanguage(),
-      isAuthenticated: this.authenticatedUser() !== null,
+      getSortCriteria: () => this.sortCriteria(),
+      getFilters: () => this.filters(),
+      getPageSize: () => this.pagination().pageSize,
+      getSelectedLanguage: () => this.selectedLanguage(),
+      isAuthenticated: () => this.authenticatedUser() !== null,
       setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
+      onResetToFirstPage: () => {
+        this.pagination.update((current) => ({
+          ...current,
+          page: 1
+        }));
+      },
       onRefreshListingData: () => this.refreshListingData()
     });
   }
 
   private async changePage(page: number): Promise<void> {
-    const current = this.pagination();
-    const totalPages = current.totalPages;
-    let normalized = Number.isFinite(page) ? Math.floor(page) : current.page;
-    if (normalized < 1) {
-      normalized = 1;
-    }
-    if (totalPages > 0 && normalized > totalPages) {
-      normalized = totalPages;
-    }
-    if (normalized === current.page) {
-      return;
-    }
-
-    this.pagination.update((state) => ({
-      ...state,
-      page: normalized
-    }));
-    await this.refreshListingData();
+    await this.listingQueryOrchestratorService.changePage({
+      page,
+      getPagination: () => this.pagination(),
+      setPage: (normalizedPage) => {
+        this.pagination.update((state) => ({
+          ...state,
+          page: normalizedPage
+        }));
+      },
+      onRefreshListingData: () => this.refreshListingData()
+    });
   }
 
   private async changePageSize(pageSize: number): Promise<void> {
-    if (!Number.isFinite(pageSize) || pageSize < 1) {
-      return;
-    }
-
-    const current = this.pagination();
-    const normalized = Math.floor(pageSize);
-    if (current.pageSize === normalized) {
-      return;
-    }
-
-    this.pagination.set({
-      ...current,
-      page: 1,
-      pageSize: normalized
-    });
-    await this.listingDataCoordinatorService.saveLanguagePreference(
-      this.http,
-      this.authenticatedUser() !== null,
-      this.filters(),
-      this.sortCriteria(),
-      normalized,
-      this.selectedLanguage()
-    );
-    await this.refreshListingData();
-  }
-
-  private async runDatabaseMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
-    await this.listingDataCoordinatorService.runMaintenanceOperation({
-      operation,
+    await this.listingQueryOrchestratorService.changePageSize({
       http: this.http,
-      setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
-      setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
+      pageSize,
+      getPagination: () => this.pagination(),
+      setPagination: (pagination) => this.pagination.set(pagination),
+      getFilters: () => this.filters(),
+      getSortCriteria: () => this.sortCriteria(),
+      getSelectedLanguage: () => this.selectedLanguage(),
+      isAuthenticated: () => this.authenticatedUser() !== null,
+      onRefreshListingData: () => this.refreshListingData()
     });
   }
 
@@ -496,34 +419,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.users.set([]);
     this.filters.set(createDefaultListingFilters());
     this.pagination.set(createDefaultListingPaginationState());
-    this.persistFilteredTotalElementsInSession(0);
+    this.listingQueryOrchestratorService.persistFilteredTotalElementsInSession(
+      0,
+      (totalElements) => this.filteredTotalElements.set(totalElements)
+    );
     this.sortCriteria.set([]);
     this.propertyLabels.set([]);
-  }
-
-  private readFilteredTotalElementsFromSession(): number {
-    const raw = sessionStorage.getItem(AppComponent.FILTERED_TOTAL_ELEMENTS_KEY);
-    const parsed = raw ? Number.parseInt(raw, 10) : 0;
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      return 0;
-    }
-
-    return parsed;
-  }
-
-  private persistFilteredTotalElementsInSession(totalElements: number): void {
-    const normalized = Number.isFinite(totalElements) && totalElements >= 0
-      ? Math.floor(totalElements)
-      : 0;
-    this.filteredTotalElements.set(normalized);
-    sessionStorage.setItem(AppComponent.FILTERED_TOTAL_ELEMENTS_KEY, String(normalized));
-  }
-
-  private resolveRequestPageSize(currentPageSize: number): number {
-    if (!Number.isFinite(currentPageSize) || currentPageSize <= 0) {
-      return DASHBOARD_PAGE_SIZE_OPTIONS[0];
-    }
-
-    return Math.floor(currentPageSize);
   }
 }

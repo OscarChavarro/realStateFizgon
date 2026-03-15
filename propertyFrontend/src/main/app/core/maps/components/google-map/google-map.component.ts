@@ -9,6 +9,7 @@ import {
   ViewChild,
   inject
 } from '@angular/core';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
 import {
   GoogleMapLayerId,
@@ -53,6 +54,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private readonly i18nService = inject(I18nService);
   private readonly poiLayerManager = new GoogleMapPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
+  private markerClusterer: MarkerClusterer | null = null;
   private propertyMarkerInstances: GoogleMarkerLike[] = [];
   private mapRenderSignature: string | null = null;
   private propertiesRenderSignature: string | null = null;
@@ -122,6 +124,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.detachLayerPanelResizeListeners();
+    this.clearMarkerClusterer();
     this.clearPropertyMarkers();
     this.mapInstance = null;
     this.mapRenderSignature = null;
@@ -332,9 +335,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
+    this.clearMarkerClusterer();
     this.clearPropertyMarkers();
     this.propertyMarkerInstances = properties.map((property) => new googleMaps.Marker({
-      map: this.mapInstance,
       position: { lat: property.latitude, lng: property.longitude },
       title: property.title,
       icon: {
@@ -343,6 +346,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         anchor: new googleMaps.Point(19, 19)
       }
     }));
+    this.markerClusterer = new MarkerClusterer({
+      map: this.mapInstance as unknown as never,
+      markers: this.propertyMarkerInstances as unknown as never[]
+    });
   }
 
   private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
@@ -421,6 +428,15 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       marker.setMap(null);
     }
     this.propertyMarkerInstances = [];
+  }
+
+  private clearMarkerClusterer(): void {
+    if (!this.markerClusterer) {
+      return;
+    }
+
+    this.markerClusterer.clearMarkers();
+    this.markerClusterer = null;
   }
 
   private buildHouseMarkerIconDataUrl(isUnavailable: boolean): string {

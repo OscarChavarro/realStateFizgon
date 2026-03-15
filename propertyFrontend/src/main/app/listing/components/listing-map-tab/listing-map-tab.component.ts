@@ -33,14 +33,9 @@ export class ListingMapTabComponent {
   private buildMapProperties(properties: ListingPropertyRow[]): GoogleMapProperty[] {
     const output: GoogleMapProperty[] = [];
     for (const property of properties) {
-      const lat = property.geoLocationHint?.lat;
-      const lon = property.geoLocationHint?.lon;
-      if (
-        typeof lat !== 'number'
-        || typeof lon !== 'number'
-        || !Number.isFinite(lat)
-        || !Number.isFinite(lon)
-      ) {
+      const lat = this.toFiniteNumber(property.geoLocationHint?.lat);
+      const lon = this.toFiniteNumber(property.geoLocationHint?.lon);
+      if (lat === null || lon === null) {
         continue;
       }
 
@@ -49,10 +44,36 @@ export class ListingMapTabComponent {
         title: property.title || '-',
         latitude: lat,
         longitude: lon,
-        unavailable: property.unavailable === true
+        closed: property.unavailable === true
       });
     }
 
     return output;
+  }
+
+  private toFiniteNumber(value: unknown): number | null {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return null;
+      }
+
+      const parsed = Number.parseFloat(trimmed);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    if (value && typeof value === 'object') {
+      const decimalCandidate = (value as { $numberDecimal?: unknown }).$numberDecimal;
+      if (typeof decimalCandidate === 'string' && decimalCandidate.trim().length > 0) {
+        const parsed = Number.parseFloat(decimalCandidate);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+    }
+
+    return null;
   }
 }

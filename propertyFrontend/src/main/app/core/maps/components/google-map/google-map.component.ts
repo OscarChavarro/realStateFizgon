@@ -1,7 +1,9 @@
 import {
   AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ElementRef,
+  NgZone,
   Input,
   OnChanges,
   OnDestroy,
@@ -16,6 +18,7 @@ import {
   GoogleMapVisualStyleId,
   GoogleMapVisualStyleOption
 } from 'src/app/core/maps/model/google-map-layers.model';
+import { PropertyMiniSummaryComponent } from 'src/app/core/maps/components/property-mini-summary/property-mini-summary.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 import { GoogleMapLike as PoiGoogleMapLike, GoogleMapPoiLayerManager } from 'src/app/core/maps/services/google-map-poi-layer-manager';
 
@@ -30,6 +33,7 @@ type GoogleMapWithCenter = PoiGoogleMapLike & {
 
 type GoogleMarkerLike = {
   setMap: (map: GoogleMapWithCenter | null) => void;
+  addListener?: (eventName: string, handler: () => void) => unknown;
 };
 
 type GoogleMapsApi = {
@@ -45,17 +49,21 @@ type GoogleMapsApi = {
 @Component({
   selector: 'app-google-map',
   standalone: true,
+  imports: [PropertyMiniSummaryComponent],
   templateUrl: './google-map.component.html',
   styleUrl: './google-map.component.scss'
 })
 export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private static googleMapsScriptPromise: Promise<void> | null = null;
 
+  private readonly cdr = inject(ChangeDetectorRef);
   private readonly i18nService = inject(I18nService);
+  private readonly ngZone = inject(NgZone);
   private readonly poiLayerManager = new GoogleMapPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
   private markerClusterer: MarkerClusterer | null = null;
   private propertyMarkerInstances: GoogleMarkerLike[] = [];
+  private markerInteractionEnabledSnapshot: boolean | null = null;
   private mapRenderSignature: string | null = null;
   private propertiesRenderSignature: string | null = null;
   private isResizingLayerPanel = false;
@@ -83,11 +91,13 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Input() zoom = 14;
   @Input() preserveViewportOnPropertiesChange = false;
+  @Input() interactionEnabled = true;
 
   @ViewChild('mapLayout') private mapLayoutRef?: ElementRef<HTMLDivElement>;
   @ViewChild('mapContainer') private mapContainerRef?: ElementRef<HTMLDivElement>;
 
   mapLoadError: string | null = null;
+  selectedPropertySummary: GoogleMapProperty | null = null;
   isLayerPanelVisible = true;
   layerPanelWidthPx = 220;
   readonly layerOptions = this.poiLayerManager.layerOptions;
@@ -115,10 +125,16 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       || changes['googleMapsMapId']
       || changes['zoom']
       || changes['preserveViewportOnPropertiesChange']
+      || changes['interactionEnabled']
     ) {
       setTimeout(() => {
         void this.initializeMapIfReady();
       }, 0);
+    }
+
+    if (changes['interactionEnabled'] && !this.interactionEnabled) {
+      this.selectedPropertySummary = null;
+      this.cdr.markForCheck();
     }
   }
 
@@ -194,6 +210,8 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_MISSING_COORDINATES');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
+      this.markerInteractionEnabledSnapshot = null;
+      this.selectedPropertySummary = null;
       this.clearPropertyMarkers();
       return;
     }
@@ -202,13 +220,28 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_NOT_CONFIGURED');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
+      this.markerInteractionEnabledSnapshot = null;
+      this.selectedPropertySummary = null;
       return;
     }
 
     const configSignature = this.buildConfigSignature();
     const propertiesSignature = this.buildPropertiesSignature(mappableProperties);
     if (this.mapInstance && this.mapRenderSignature === configSignature) {
+      const interactionChanged = this.markerInteractionEnabledSnapshot !== this.interactionEnabled;
       if (this.propertiesRenderSignature === propertiesSignature) {
+        if (interactionChanged) {
+          const googleMaps = this.getGoogleMaps();
+          if (!googleMaps) {
+            this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+            return;
+          }
+
+          this.renderMarkers(mappableProperties, googleMaps);
+          if (!this.interactionEnabled) {
+            this.selectedPropertySummary = null;
+          }
+        }
         return;
       }
 
@@ -223,6 +256,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (!this.preserveViewportOnPropertiesChange) {
         this.applyViewportToMap(this.resolveViewport(mappableProperties));
       }
+      if (!this.interactionEnabled) {
+        this.selectedPropertySummary = null;
+      }
       this.propertiesRenderSignature = propertiesSignature;
       return;
     }
@@ -233,11 +269,16 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       await this.renderMap(mappableProperties);
       this.mapRenderSignature = configSignature;
       this.propertiesRenderSignature = propertiesSignature;
+      if (!this.interactionEnabled) {
+        this.selectedPropertySummary = null;
+      }
     } catch (error) {
       console.error('[GoogleMapComponent] Google Maps initialization failed.', error);
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
+      this.markerInteractionEnabledSnapshot = null;
+      this.selectedPropertySummary = null;
     }
   }
 
@@ -337,19 +378,33 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     this.clearMarkerClusterer();
     this.clearPropertyMarkers();
-    this.propertyMarkerInstances = properties.map((property) => new googleMaps.Marker({
-      position: { lat: property.latitude, lng: property.longitude },
-      title: property.title,
-      icon: {
-        url: this.buildHouseMarkerIconDataUrl(property.unavailable === true),
-        scaledSize: new googleMaps.Size(38, 38),
-        anchor: new googleMaps.Point(19, 19)
+    this.propertyMarkerInstances = properties.map((property) => {
+      const marker = new googleMaps.Marker({
+        position: { lat: property.latitude, lng: property.longitude },
+        title: property.title,
+        icon: {
+          url: this.buildHouseMarkerIconDataUrl(property.closed === true),
+          scaledSize: new googleMaps.Size(38, 38),
+          anchor: new googleMaps.Point(19, 19)
+        }
+      });
+
+      if (this.interactionEnabled && typeof marker.addListener === 'function') {
+        marker.addListener('click', () => {
+          this.ngZone.run(() => {
+            this.selectedPropertySummary = property;
+            this.cdr.markForCheck();
+          });
+        });
       }
-    }));
+
+      return marker;
+    });
     this.markerClusterer = new MarkerClusterer({
       map: this.mapInstance as unknown as never,
       markers: this.propertyMarkerInstances as unknown as never[]
     });
+    this.markerInteractionEnabledSnapshot = this.interactionEnabled;
   }
 
   private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
@@ -403,9 +458,14 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private buildPropertiesSignature(properties: GoogleMapProperty[]): string {
     return properties
       .map((property) => (
-        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.unavailable === true ? 'closed' : 'open'}`
+        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}`
       ))
       .join('|');
+  }
+
+  onPropertyMiniSummaryCloseRequested(): void {
+    this.selectedPropertySummary = null;
+    this.cdr.markForCheck();
   }
 
   private attachLayerPanelResizeListeners(): void {

@@ -51,6 +51,14 @@
       <div class="google-map-message">{{ mapLoadError }}</div>
     } @else {
       <div #mapContainer class="google-map"></div>
+      @if (interactionEnabled && selectedPropertySummary !== null) {
+        <div class="google-map-mini-summary">
+          <app-property-mini-summary
+            [property]="selectedPropertySummary"
+            (closeRequested)="onPropertyMiniSummaryCloseRequested()"
+          ></app-property-mini-summary>
+        </div>
+      }
     }
   </div>
 </div>

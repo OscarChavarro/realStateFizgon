@@ -440,6 +440,25 @@ export class ListingDataService {
       return Number.isFinite(parsed) ? parsed : null;
     }
 
+    if (value && typeof value === 'object') {
+      const numberDecimalCandidate = (value as { $numberDecimal?: unknown }).$numberDecimal;
+      if (typeof numberDecimalCandidate === 'string') {
+        const parsed = Number.parseFloat(numberDecimalCandidate.trim());
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      if (typeof (value as { valueOf?: unknown }).valueOf === 'function') {
+        const primitive = (value as { valueOf: () => unknown }).valueOf();
+        if (typeof primitive === 'number' && Number.isFinite(primitive)) {
+          return primitive;
+        }
+        if (typeof primitive === 'string') {
+          const parsed = Number.parseFloat(primitive.trim());
+          return Number.isFinite(parsed) ? parsed : null;
+        }
+      }
+    }
+
     return null;
   }
 

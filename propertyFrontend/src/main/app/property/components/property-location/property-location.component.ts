@@ -80,7 +80,7 @@ export class PropertyLocationComponent implements OnChanges {
       title: this.propertyTitle || '-',
       latitude,
       longitude,
-      unavailable: this.isUnavailable === true
+      closed: this.isUnavailable === true
     }];
   }
 

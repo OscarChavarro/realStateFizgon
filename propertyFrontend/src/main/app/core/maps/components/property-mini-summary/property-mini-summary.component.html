@@ -1,0 +1,15 @@
+<article class="property-mini-summary">
+  <button
+    type="button"
+    class="property-mini-summary-close"
+    aria-label="Close property summary"
+    (click)="onCloseClick()"
+  >
+    <span class="material-symbols-outlined">close</span>
+  </button>
+
+  <p class="property-mini-summary-title">{{ property.title }}</p>
+  <p class="property-mini-summary-availability">
+    closed: {{ property.closed === true ? 'true' : 'false' }}
+  </p>
+</article>

@@ -1,36 +1,11 @@
-import { TranslationKey } from 'src/app/core/i18n/services/i18n.service';
-
-export type LocationLayerId =
-  | 'business'
-  | 'hospitals'
-  | 'metroStations'
-  | 'schools';
-
-type LocationLayerOption = {
-  id: LocationLayerId;
-  label: TranslationKey;
-  placeTypeHint?: string;
-  mapFeatureStyles: GoogleMapStyleRule[];
-};
-
-export type GoogleLatLngLike = {
-  lat: () => number;
-  lng: () => number;
-};
+import {
+  GoogleMapLayerId,
+  GoogleMapLayerOption,
+  GoogleMapStyleRule
+} from 'src/app/core/maps/model/google-map-layers.model';
 
 export type GoogleMapLike = {
   setOptions: (options: unknown) => void;
-};
-
-export type GoogleMarkerLike = {
-  setMap?: (map: GoogleMapLike | null) => void;
-  map?: GoogleMapLike | null;
-};
-
-type GoogleMapStyleRule = {
-  featureType: string;
-  elementType: string;
-  stylers: Array<{ visibility: 'on' | 'off' }>;
 };
 
 type PoiLayerContext = {
@@ -70,15 +45,15 @@ const MAP_BASE_STYLES: GoogleMapStyleRule[] = [
   }
 ];
 
-export class PropertyLocationPoiLayerManager {
-  private readonly layerSelection: Record<LocationLayerId, boolean> = {
+export class GoogleMapPoiLayerManager {
+  private readonly layerSelection: Record<GoogleMapLayerId, boolean> = {
     business: false,
     hospitals: false,
     metroStations: true,
     schools: false
   };
 
-  readonly layerOptions: LocationLayerOption[] = [
+  readonly layerOptions: GoogleMapLayerOption[] = [
     {
       id: 'business',
       label: 'PROPERTY_LOCATION_LAYER_BUSINESS',
@@ -98,7 +73,6 @@ export class PropertyLocationPoiLayerManager {
     {
       id: 'metroStations',
       label: 'PROPERTY_LOCATION_LAYER_METRO_STATIONS',
-      placeTypeHint: 'subway_station',
       mapFeatureStyles: [
         { featureType: 'transit.station', elementType: 'labels', stylers: [{ visibility: 'on' }] },
         { featureType: 'transit.station', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
@@ -114,7 +88,7 @@ export class PropertyLocationPoiLayerManager {
     }
   ];
 
-  isLayerEnabled(id: LocationLayerId): boolean {
+  isLayerEnabled(id: GoogleMapLayerId): boolean {
     return this.layerSelection[id];
   }
 
@@ -122,7 +96,7 @@ export class PropertyLocationPoiLayerManager {
     this.applyLayerStyles(context.mapInstance);
   }
 
-  toggleLayer(id: LocationLayerId, checked: boolean, context: PoiLayerContext): void {
+  toggleLayer(id: GoogleMapLayerId, checked: boolean, context: PoiLayerContext): void {
     this.layerSelection[id] = checked;
     this.applyLayerStyles(context.mapInstance);
   }
@@ -160,3 +134,4 @@ export class PropertyLocationPoiLayerManager {
     });
   }
 }
+

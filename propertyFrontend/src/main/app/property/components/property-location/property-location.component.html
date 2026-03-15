@@ -2,13 +2,13 @@
   <div class="location-dialog-backdrop" role="presentation">
     <section class="location-dialog" role="dialog" aria-modal="true" [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')">
       <header class="location-dialog-toolbar">
-        <div class="location-dialog-toolbar-side">
+        <div class="location-dialog-toolbar-side-left">
           <button
             type="button"
             class="location-layer-panel-toggle"
             [attr.aria-label]="isLayerPanelVisible ? t('PROPERTY_LOCATION_PANEL_HIDE') : t('PROPERTY_LOCATION_PANEL_SHOW')"
             [title]="isLayerPanelVisible ? t('PROPERTY_LOCATION_PANEL_HIDE') : t('PROPERTY_LOCATION_PANEL_SHOW')"
-            (click)="toggleLayerPanelVisibility()"
+            (click)="onLayerPanelToggleClick()"
           >
             <span class="material-symbols-outlined">
               {{ isLayerPanelVisible ? 'left_panel_close' : 'left_panel_open' }}
@@ -18,7 +18,7 @@
 
         <p class="location-dialog-toolbar-title">{{ propertyTitle || '-' }}</p>
 
-        <div class="location-dialog-toolbar-side location-dialog-toolbar-side-right">
+        <div class="location-dialog-toolbar-side-right">
           <button
             type="button"
             class="location-dialog-close"
@@ -30,62 +30,12 @@
         </div>
       </header>
 
-      <div #mapLayout class="location-map-layout">
-        @if (isLayerPanelVisible) {
-          <aside class="location-layer-panel" [style.width.px]="layerPanelWidthPx">
-            <div class="location-layer-group">
-              <header class="location-layer-panel-header">
-                <h3>{{ t('PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
-              </header>
-              <div class="location-layer-list">
-                @for (layer of layerOptions; track layer.id) {
-                  <label class="location-layer-item">
-                    <input
-                      type="checkbox"
-                      [checked]="isLayerEnabled(layer.id)"
-                      (change)="onLayerToggle(layer.id, $event)"
-                    />
-                    <span>{{ t(layer.label) }}</span>
-                  </label>
-                }
-              </div>
-            </div>
-
-            <div class="location-layer-group">
-              <header class="location-layer-panel-header">
-                <h3>{{ t('PROPERTY_LOCATION_STYLES_TITLE') }}</h3>
-              </header>
-              <div class="location-style-list">
-                @for (styleOption of mapVisualStyleOptions; track styleOption.id) {
-                  <label class="location-layer-item">
-                    <input
-                      type="radio"
-                      name="location-map-style"
-                      [checked]="selectedMapVisualStyle === styleOption.id"
-                      (change)="onMapVisualStyleChange(styleOption.id)"
-                    />
-                    <span>{{ t(styleOption.label) }}</span>
-                  </label>
-                }
-              </div>
-            </div>
-          </aside>
-          <div
-            class="location-layer-splitter"
-            role="separator"
-            aria-orientation="vertical"
-            (mousedown)="onLayerPanelSplitterMouseDown($event)"
-          ></div>
-        }
-
-        <div class="location-map-pane">
-          @if (mapLoadError) {
-            <div class="location-map-message">{{ mapLoadError }}</div>
-          } @else {
-            <div #mapContainer class="location-map"></div>
-          }
-        </div>
-      </div>
+      <app-google-map
+        [properties]="mapProperties"
+        [googleMapsApiKey]="googleMapsApiKey"
+        [googleMapsMapId]="googleMapsMapId"
+        [selectedLanguage]="selectedLanguage"
+      ></app-google-map>
     </section>
   </div>
 }

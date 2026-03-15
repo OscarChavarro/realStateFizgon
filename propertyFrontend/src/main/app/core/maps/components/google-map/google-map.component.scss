@@ -1,0 +1,104 @@
+@use 'app/core/styles/mixins' as m;
+@use 'app/core/styles/tokens' as t;
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.google-map-layout {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  background: t.$white;
+}
+
+.google-map-layer-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-width: 460px;
+  background: t.$panel-bg;
+  border-right: 1px solid t.$border-subtle;
+  overflow: auto;
+}
+
+.google-map-layer-panel-header {
+  padding: 0.7rem 0.8rem 0.5rem;
+  border-bottom: 1px solid t.$border-subtle;
+}
+
+.google-map-layer-group + .google-map-layer-group .google-map-layer-panel-header {
+  border-top: 1px solid t.$border-subtle;
+}
+
+.google-map-layer-panel-header h3 {
+  margin: 0;
+  color: t.$text-emphasis;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.google-map-layer-list {
+  padding: 0.55rem 0.65rem;
+  overflow: visible;
+  display: grid;
+  gap: 0.44rem;
+}
+
+.google-map-style-list {
+  padding: 0.55rem 0.65rem 0.7rem;
+  overflow: visible;
+  display: grid;
+  gap: 0.44rem;
+}
+
+.google-map-layer-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: t.$text-primary;
+  font-size: 0.9rem;
+}
+
+.google-map-layer-splitter {
+  width: 6px;
+  cursor: col-resize;
+  background: t.$splitter-bg;
+  border-right: 1px solid t.$splitter-border;
+}
+
+.google-map-pane {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.google-map {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.google-map-message {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  @include m.flex-center();
+  text-align: center;
+  padding: 0.8rem;
+  color: t.$text-primary;
+  font-size: 0.92rem;
+}

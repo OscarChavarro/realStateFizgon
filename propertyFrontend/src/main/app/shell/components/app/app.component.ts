@@ -44,6 +44,7 @@ import { AppShellCommandsUseCaseService } from 'src/app/shell/services/app-shell
 })
 export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
+  private locationRef: Pick<Location, 'assign'> = window.location;
 
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
@@ -233,7 +234,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onGoogleLoginRequested(): void {
     const loginUrl = this.listingAuthFacadeService.buildGoogleLoginUrl(window.location.href);
-    window.location.assign(loginUrl);
+    this.navigateTo(loginUrl);
   }
 
   onLogoutRequested(): void {
@@ -430,5 +431,9 @@ export class AppComponent implements OnInit, OnDestroy {
     );
     this.sortCriteria.set([]);
     this.propertyLabels.set([]);
+  }
+
+  private navigateTo(url: string): void {
+    this.locationRef.assign(url);
   }
 }

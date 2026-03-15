@@ -100,6 +100,10 @@ describe('ListingMapTabComponent', () => {
         geoLocationHint: { lat: '   ' as unknown as number, lon: '-3.5' as unknown as number }
       }),
       ListingMapTabMockFactory.createPropertyRow({
+        propertyId: 'invalid-string-number',
+        geoLocationHint: { lat: 'not-a-number' as unknown as number, lon: '-3.51' as unknown as number }
+      }),
+      ListingMapTabMockFactory.createPropertyRow({
         propertyId: 'invalid-decimal',
         geoLocationHint: {
           lat: { $numberDecimal: 'abc' } as unknown as number,
@@ -184,6 +188,13 @@ describe('ListingMapTabComponent', () => {
         geoLocationHint: { lat: 40.42, lon: -3.71 }
       }),
       ListingMapTabMockFactory.createPropertyRow({
+        propertyId: '',
+        url: '',
+        title: 'Fallback Title Id',
+        localImageUrls: ['d.jpg'],
+        geoLocationHint: { lat: 40.425, lon: -3.715 }
+      }),
+      ListingMapTabMockFactory.createPropertyRow({
         propertyId: '   ',
         url: '',
         title: '',
@@ -195,11 +206,17 @@ describe('ListingMapTabComponent', () => {
         propertyId: 'non-array-images',
         localImageUrls: 'not-an-array' as unknown as string[],
         geoLocationHint: { lat: 40.44, lon: -3.73 }
+      }),
+      ListingMapTabMockFactory.createPropertyRow({
+        propertyId: undefined as unknown as string,
+        url: 'https://example.com/property-undefined-id',
+        localImageUrls: ['e.jpg'],
+        geoLocationHint: { lat: 40.45, lon: -3.74 }
       })
     ];
 
     // Action
-    const [first, second, third, fourth] = component.mapProperties;
+    const [first, second, third, fourth, fifth, sixth] = component.mapProperties;
 
     // Assert
     expect(first.id).toBe('p1');
@@ -216,11 +233,18 @@ describe('ListingMapTabComponent', () => {
     expect(second.review).toBe('DISCHARGED');
     expect(second.imageUrls).toEqual([]);
 
-    expect(third.title).toBe('-');
-    expect(third.price).toBe('-');
+    expect(third.id).toBe('Fallback Title Id');
+    expect(third.title).toBe('Fallback Title Id');
     expect(third.imageUrls).toEqual([]);
 
+    expect(fourth.title).toBe('-');
+    expect(fourth.price).toBe('-');
     expect(fourth.imageUrls).toEqual([]);
+
+    expect(fifth.imageUrls).toEqual([]);
+
+    expect(sixth.propertyId).toBe('');
+    expect(sixth.imageUrls).toEqual([]);
   });
 
   it('whenStaticMediaBaseUrlAlreadyEndsWithSlash_shouldNotDuplicateSlashInImageUrl', () => {

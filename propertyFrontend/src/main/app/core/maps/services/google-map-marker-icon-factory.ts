@@ -28,7 +28,6 @@ export class GoogleMapMarkerIconFactory {
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56">
         <circle cx="28" cy="28" r="24" fill="rgba(255, 214, 10, 0.25)" stroke="#ffd60a" stroke-width="4"/>
-        <text x="28" y="35" text-anchor="middle" dominant-baseline="middle" font-size="22">🎯</text>
       </svg>
     `.trim();
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;

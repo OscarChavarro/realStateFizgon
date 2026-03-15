@@ -38,7 +38,7 @@ export class WorkspaceInteractionCoordinatorService {
 
   connectUpdatesSocket(onPropertiesCountUpdated: () => Promise<void>): void {
     this.disconnectUpdatesSocket();
-    this.socket = io(this.apiRuntimeConfigService.getBackendBaseUrl());
+    this.socket = this.createSocket();
     this.socket.on('properties-count-updated', async () => {
       await onPropertiesCountUpdated();
     });
@@ -94,5 +94,9 @@ export class WorkspaceInteractionCoordinatorService {
 
   toggleFullscreen(): void {
     void this.browserFullscreenService.toggleFullscreen();
+  }
+
+  private createSocket(): Socket {
+    return io(this.apiRuntimeConfigService.getBackendBaseUrl());
   }
 }

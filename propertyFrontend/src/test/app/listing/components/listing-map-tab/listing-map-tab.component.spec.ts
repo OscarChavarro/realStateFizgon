@@ -174,6 +174,8 @@ describe('ListingMapTabComponent', () => {
         propertyId: 'p1',
         title: 'Property One',
         price: '1550',
+        area: '82 m²',
+        bedrooms: '2',
         unavailable: true,
         localImageUrls: ['a.jpg', ' ', 'b.jpg', 2 as unknown as string],
         geoLocationHint: { lat: 40.41, lon: -3.70 }
@@ -220,6 +222,9 @@ describe('ListingMapTabComponent', () => {
 
     // Assert
     expect(first.id).toBe('p1');
+    expect(first.url).toBe('https://example.com/property-1');
+    expect(first.area).toBe('82 m²');
+    expect(first.bedrooms).toBe('2');
     expect(first.closed).toBeTrue();
     expect(first.review).toBe('FAVOURITE');
     expect(first.imageUrls).toEqual([
@@ -229,6 +234,7 @@ describe('ListingMapTabComponent', () => {
 
     expect(second.id).toBe('https://example.com/property-two');
     expect(second.propertyId).toBe('');
+    expect(second.url).toBe('https://example.com/property-two');
     expect(second.price).toBe('-');
     expect(second.review).toBe('DISCHARGED');
     expect(second.imageUrls).toEqual([]);

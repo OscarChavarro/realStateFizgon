@@ -140,6 +140,26 @@ export class PropertyDetailPanelComponent {
     return `${year} ${monthText} ${day} ${timeText}`;
   }
 
+  getAreaDisplay(property: ListingPropertyRow | null): string {
+    const area = property?.area;
+    if (typeof area !== 'string') {
+      return '-';
+    }
+
+    const normalized = area.trim();
+    return normalized.length > 0 ? normalized : '-';
+  }
+
+  getBedroomsDisplay(property: ListingPropertyRow | null): string {
+    const bedrooms = property?.bedrooms;
+    if (typeof bedrooms !== 'string') {
+      return '-';
+    }
+
+    const normalized = bedrooms.trim();
+    return normalized.length > 0 ? normalized : '-';
+  }
+
   private getReview(propertyId: string): PropertyReviewLabel {
     const labels = this.propertyLabels.find((item) => item.propertyId === propertyId)?.labels;
     const review = labels?.review;

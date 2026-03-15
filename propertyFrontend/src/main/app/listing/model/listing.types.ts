@@ -12,6 +12,8 @@ export type ListingPropertyRow = {
   title: string;
   url: string;
   price: string;
+  area?: string;
+  bedrooms?: string;
   location: string;
   advertiserComment: string;
   localImageUrls: string[];

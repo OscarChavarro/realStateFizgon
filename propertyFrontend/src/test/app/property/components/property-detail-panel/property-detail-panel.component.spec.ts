@@ -295,4 +295,36 @@ describe('PropertyDetailPanelComponent', () => {
     // Assert
     expect(result).toBe('');
   });
+
+  [
+    {
+      property: PropertyDetailPanelMockFactory.createProperty({ area: ' 82 m² ', bedrooms: ' 3 ' }),
+      expectedArea: '82 m²',
+      expectedBedrooms: '3'
+    },
+    {
+      property: PropertyDetailPanelMockFactory.createProperty({ area: '   ', bedrooms: '' }),
+      expectedArea: '-',
+      expectedBedrooms: '-'
+    },
+    {
+      property: null,
+      expectedArea: '-',
+      expectedBedrooms: '-'
+    }
+  ].forEach(({ property, expectedArea, expectedBedrooms }) => {
+    it(`area and bedrooms display helpers should map area="${expectedArea}" and bedrooms="${expectedBedrooms}"`, () => {
+      // Arrange
+      const i18nMock = PropertyDetailPanelMockFactory.createI18nMock();
+      const component = PropertyDetailPanelMockFactory.createComponent(i18nMock);
+
+      // Action
+      const area = component.getAreaDisplay(property);
+      const bedrooms = component.getBedroomsDisplay(property);
+
+      // Assert
+      expect(area).toBe(expectedArea);
+      expect(bedrooms).toBe(expectedBedrooms);
+    });
+  });
 });

@@ -39,6 +39,10 @@ type PropertiesResponse = {
     advertiserComment?: string;
     url?: string;
     price?: number | string | null;
+    mainFeatures?: {
+      area?: string | number | null;
+      bedrooms?: string | number | null;
+    } | null;
     images?: Array<string | {
       url?: string;
       localUrl?: string | null;
@@ -302,6 +306,8 @@ export class ListingDataService {
       const price = row.price === null || row.price === undefined
         ? '-'
         : String(row.price);
+      const area = this.normalizeMainFeatureValue(row.mainFeatures?.area);
+      const bedrooms = this.normalizeMainFeatureValue(row.mainFeatures?.bedrooms);
       const geoLocationHint = this.parseGeoLocationHint(row.geoLocationHint);
 
       return {
@@ -311,6 +317,8 @@ export class ListingDataService {
         title,
         url,
         price,
+        ...(area.length > 0 ? { area } : {}),
+        ...(bedrooms.length > 0 ? { bedrooms } : {}),
         location,
         advertiserComment,
         localImageUrls: this.extractLocalImageUrls(row.images),
@@ -357,6 +365,18 @@ export class ListingDataService {
 
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       return this.formatLocalDate(value);
+    }
+
+    return '';
+  }
+
+  private normalizeMainFeatureValue(value: unknown): string {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
     }
 
     return '';

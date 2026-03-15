@@ -164,6 +164,14 @@ const TRANSLATIONS = {
     en: 'Price (€/month)',
     sp: 'Precio (€/mes)'
   },
+  AREA: {
+    en: 'Area',
+    sp: 'Área'
+  },
+  BEDROOMS: {
+    en: 'Bedrooms',
+    sp: 'Habitaciones'
+  },
   REVIEW_COLUMN: {
     en: 'Review',
     sp: 'Revisión'

@@ -5,6 +5,9 @@ export type GoogleMapProperty = {
   propertyId: string;
   title: string;
   price: string;
+  url?: string;
+  area?: string;
+  bedrooms?: string;
   latitude: number;
   longitude: number;
   closed?: boolean;

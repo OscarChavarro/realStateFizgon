@@ -641,4 +641,50 @@ describe('ListingDataService', () => {
     expect(row.advertiserComment).toBe('');
     expect(row.unavailable).toBeTrue();
   });
+
+  it('mapPropertiesForListing should map mainFeatures area and bedrooms when present', () => {
+    // Arrange
+    const mapped = (service as any).mapPropertiesForListing([
+      {
+        publicationDate: '2026-03-14',
+        propertyId: '101',
+        title: 'Feature row',
+        location: 'Madrid',
+        advertiserComment: '',
+        description: '',
+        url: 'https://example.com/101',
+        price: 1700,
+        mainFeatures: {
+          area: ' 82 m² ',
+          bedrooms: 3
+        },
+        images: [],
+        geoLocationHint: { lat: '40.2', lon: '-3.8' }
+      }
+    ]);
+
+    // Action
+    const row = mapped[0];
+
+    // Assert
+    expect(row.area).toBe('82 m²');
+    expect(row.bedrooms).toBe('3');
+  });
+
+  [
+    { input: ' 90 m² ', expected: '90 m²' },
+    { input: 2, expected: '2' },
+    { input: Number.POSITIVE_INFINITY, expected: '' },
+    { input: null, expected: '' }
+  ].forEach(({ input, expected }) => {
+    it(`normalizeMainFeatureValue should map ${String(input)} to "${expected}"`, () => {
+      // Arrange
+
+      // Action
+      const result = (service as any).normalizeMainFeatureValue(input);
+
+      // Assert
+      expect(result).toBe(expected);
+    });
+  });
 });

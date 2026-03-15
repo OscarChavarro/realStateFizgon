@@ -19,6 +19,30 @@
     <p class="property-mini-summary-price">
       <strong>{{ property.price }} € / {{ t('PROPERTY_MINI_SUMMARY_MONTH_UNIT') }}</strong>
     </p>
+    @if (property.area || property.bedrooms) {
+      <p class="property-mini-summary-features">
+        @if (property.area) {
+          <span class="property-mini-summary-feature">
+            <span class="material-symbols-outlined">straighten</span>
+            <span>{{ property.area }}</span>
+          </span>
+        }
+        @if (property.bedrooms) {
+          <span class="property-mini-summary-feature">
+            <span class="material-symbols-outlined">bed</span>
+            <span>{{ property.bedrooms }}</span>
+          </span>
+        }
+      </p>
+    }
+    <p class="property-mini-summary-source">
+      <span>{{ t('PROPERTY_DETAIL_SOURCE') }}: </span>
+      @if (property.url) {
+        <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
+      } @else {
+        <span>-</span>
+      }
+    </p>
     <button type="button" class="property-mini-summary-review {{ getReviewClass() }}">
       <span class="material-symbols-outlined">{{ getReviewIcon() }}</span>
       <span>{{ getReviewText() }}</span>

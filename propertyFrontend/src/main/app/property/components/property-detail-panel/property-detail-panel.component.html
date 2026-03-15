@@ -47,6 +47,12 @@
             }
           </td>
         </tr>
+        <tr>
+          <th>{{ t('AREA') }}</th>
+          <td>{{ getAreaDisplay(property) }}</td>
+          <th>{{ t('BEDROOMS') }}</th>
+          <td>{{ getBedroomsDisplay(property) }}</td>
+        </tr>
         @if (reviewEnabled) {
           <tr>
             <th>{{ t('REVIEW_COLUMN') }}</th>

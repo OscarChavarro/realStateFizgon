@@ -54,6 +54,44 @@
   font-weight: 900;
 }
 
+.property-mini-summary-features {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.property-mini-summary-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  font-size: 0.72rem;
+  color: t.$text-secondary;
+}
+
+.property-mini-summary-feature .material-symbols-outlined {
+  font-size: 0.95rem;
+}
+
+.property-mini-summary-source {
+  margin: 0;
+  font-size: 0.72rem;
+  color: t.$text-secondary;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.property-mini-summary-source a {
+  color: t.$brand;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.property-mini-summary-source a:hover {
+  text-decoration: underline;
+}
+
 .property-mini-summary-review {
   border-radius: 999px;
   border: 1px solid t.$review-chip-border;

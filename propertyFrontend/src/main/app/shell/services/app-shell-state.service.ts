@@ -52,7 +52,6 @@ export class AppShellStateService {
   readonly sortCriteria = signal<SortCriterion[]>([]);
   readonly selectedProperty = this.propertySelectionService.selectedProperty;
   readonly lockedSelectedPropertyKey = this.propertySelectionService.lockedSelectedPropertyKey;
-  readonly leftPanelWidthPercent = this.workspaceInteractionCoordinatorService.leftPanelWidthPercent;
   readonly leftPanelHidden = this.workspaceInteractionCoordinatorService.leftPanelHidden;
   readonly rightPanelHidden = this.workspaceInteractionCoordinatorService.rightPanelHidden;
 

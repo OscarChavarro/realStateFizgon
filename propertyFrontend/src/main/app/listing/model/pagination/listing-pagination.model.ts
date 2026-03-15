@@ -1,7 +1,5 @@
 export const DASHBOARD_PAGE_SIZE_OPTIONS = [100, 500, 1000] as const;
 
-export type ListingPageSize = (typeof DASHBOARD_PAGE_SIZE_OPTIONS)[number];
-
 export type ListingPaginationState = {
   page: number;
   pageSize: number;

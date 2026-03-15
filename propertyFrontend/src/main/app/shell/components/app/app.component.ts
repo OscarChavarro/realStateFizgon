@@ -85,7 +85,6 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly maintenanceRunning = this.appShellStateService.maintenanceRunning;
   readonly maintenanceResultText = this.appShellStateService.maintenanceResultText;
   readonly sortCriteria = this.appShellStateService.sortCriteria;
-  readonly leftPanelWidthPercent = this.appShellStateService.leftPanelWidthPercent;
   readonly leftPanelHidden = this.appShellStateService.leftPanelHidden;
   readonly rightPanelHidden = this.appShellStateService.rightPanelHidden;
 

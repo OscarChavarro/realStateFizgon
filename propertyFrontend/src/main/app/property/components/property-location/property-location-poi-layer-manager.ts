@@ -6,7 +6,7 @@ export type LocationLayerId =
   | 'metroStations'
   | 'schools';
 
-export type LocationLayerOption = {
+type LocationLayerOption = {
   id: LocationLayerId;
   label: TranslationKey;
   placeTypeHint?: string;
@@ -27,7 +27,7 @@ export type GoogleMarkerLike = {
   map?: GoogleMapLike | null;
 };
 
-export type GoogleMapStyleRule = {
+type GoogleMapStyleRule = {
   featureType: string;
   elementType: string;
   stylers: Array<{ visibility: 'on' | 'off' }>;

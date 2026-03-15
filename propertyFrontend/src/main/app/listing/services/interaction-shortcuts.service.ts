@@ -5,7 +5,7 @@ export type PropertyRowScroller = {
   scrollPropertyIntoView(property: ListingPropertyRow): void;
 };
 
-export type InteractionShortcutsContext = {
+type InteractionShortcutsContext = {
   event: KeyboardEvent;
   activeTab: ListingTab;
   isAuthenticated: boolean;

@@ -2,7 +2,7 @@ import { HttpClient, HttpResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { TranslationKey } from 'src/app/core/i18n/services/i18n.service';
 
-export type DatabaseMaintenanceOperationResult = {
+type DatabaseMaintenanceOperationResult = {
   status: number;
   body: unknown;
 };

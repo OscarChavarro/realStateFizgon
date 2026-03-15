@@ -3,5 +3,5 @@ export type GoogleMapProperty = {
   title: string;
   latitude: number;
   longitude: number;
+  unavailable?: boolean;
 };
-

@@ -2,7 +2,6 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  HostListener,
   Input,
   OnChanges,
   OnDestroy,
@@ -55,15 +54,33 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private readonly poiLayerManager = new GoogleMapPoiLayerManager();
   private mapInstance: GoogleMapWithCenter | null = null;
   private propertyMarkerInstances: GoogleMarkerLike[] = [];
+  private mapRenderSignature: string | null = null;
+  private propertiesRenderSignature: string | null = null;
   private isResizingLayerPanel = false;
   private layerPanelStartX = 0;
   private layerPanelStartWidth = 0;
+  private readonly onLayerPanelResizeMove = (event: MouseEvent): void => {
+    if (!this.isResizingLayerPanel || !this.mapLayoutRef) {
+      return;
+    }
+
+    const layoutRect = this.mapLayoutRef.nativeElement.getBoundingClientRect();
+    const deltaX = event.clientX - this.layerPanelStartX;
+    const maxPanelWidth = Math.max(220, layoutRect.width - 320);
+    const nextWidth = this.layerPanelStartWidth + deltaX;
+    this.layerPanelWidthPx = Math.min(Math.max(nextWidth, 180), maxPanelWidth);
+    this.refreshMapViewport();
+  };
+  private readonly onLayerPanelResizeEnd = (): void => {
+    this.stopLayerPanelResize();
+  };
 
   @Input() properties: GoogleMapProperty[] = [];
   @Input() googleMapsApiKey: string | null = null;
   @Input() googleMapsMapId: string | null = null;
   @Input() selectedLanguage: SupportedLanguage = 'en';
   @Input() zoom = 14;
+  @Input() preserveViewportOnPropertiesChange = false;
 
   @ViewChild('mapLayout') private mapLayoutRef?: ElementRef<HTMLDivElement>;
   @ViewChild('mapContainer') private mapContainerRef?: ElementRef<HTMLDivElement>;
@@ -84,7 +101,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    void this.initializeMapIfReady();
+    setTimeout(() => {
+      void this.initializeMapIfReady();
+    }, 0);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -93,6 +112,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       || changes['googleMapsApiKey']
       || changes['googleMapsMapId']
       || changes['zoom']
+      || changes['preserveViewportOnPropertiesChange']
     ) {
       setTimeout(() => {
         void this.initializeMapIfReady();
@@ -101,27 +121,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.detachLayerPanelResizeListeners();
     this.clearPropertyMarkers();
     this.mapInstance = null;
-    this.isResizingLayerPanel = false;
-  }
-
-  @HostListener('document:mousemove', ['$event'])
-  onDocumentMouseMove(event: MouseEvent): void {
-    if (!this.isResizingLayerPanel || !this.mapLayoutRef) {
-      return;
-    }
-
-    const layoutRect = this.mapLayoutRef.nativeElement.getBoundingClientRect();
-    const deltaX = event.clientX - this.layerPanelStartX;
-    const maxPanelWidth = Math.max(220, layoutRect.width - 320);
-    const nextWidth = this.layerPanelStartWidth + deltaX;
-    this.layerPanelWidthPx = Math.min(Math.max(nextWidth, 180), maxPanelWidth);
-    this.refreshMapViewport();
-  }
-
-  @HostListener('document:mouseup')
-  onDocumentMouseUp(): void {
+    this.mapRenderSignature = null;
     this.isResizingLayerPanel = false;
   }
 
@@ -151,7 +154,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.isLayerPanelVisible = visible;
-    this.isResizingLayerPanel = false;
+    this.stopLayerPanelResize();
     setTimeout(() => this.refreshMapViewport(), 0);
     setTimeout(() => this.refreshMapViewport(), 75);
   }
@@ -164,6 +167,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.isResizingLayerPanel = true;
     this.layerPanelStartX = event.clientX;
     this.layerPanelStartWidth = this.layerPanelWidthPx;
+    this.attachLayerPanelResizeListeners();
     event.preventDefault();
   }
 
@@ -185,12 +189,38 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const mappableProperties = this.getMappableProperties();
     if (!mappableProperties.length) {
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_MISSING_COORDINATES');
+      this.mapRenderSignature = null;
+      this.propertiesRenderSignature = null;
       this.clearPropertyMarkers();
       return;
     }
 
     if (!this.googleMapsApiKey) {
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_NOT_CONFIGURED');
+      this.mapRenderSignature = null;
+      this.propertiesRenderSignature = null;
+      return;
+    }
+
+    const configSignature = this.buildConfigSignature();
+    const propertiesSignature = this.buildPropertiesSignature(mappableProperties);
+    if (this.mapInstance && this.mapRenderSignature === configSignature) {
+      if (this.propertiesRenderSignature === propertiesSignature) {
+        return;
+      }
+
+      const googleMaps = this.getGoogleMaps();
+      if (!googleMaps) {
+        this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+        return;
+      }
+
+      this.mapLoadError = null;
+      this.renderMarkers(mappableProperties, googleMaps);
+      if (!this.preserveViewportOnPropertiesChange) {
+        this.applyViewportToMap(this.resolveViewport(mappableProperties));
+      }
+      this.propertiesRenderSignature = propertiesSignature;
       return;
     }
 
@@ -198,9 +228,13 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       await this.loadGoogleMapsScript(this.googleMapsApiKey);
       await this.waitForGoogleMapsReady();
       await this.renderMap(mappableProperties);
+      this.mapRenderSignature = configSignature;
+      this.propertiesRenderSignature = propertiesSignature;
     } catch (error) {
       console.error('[GoogleMapComponent] Google Maps initialization failed.', error);
       this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+      this.mapRenderSignature = null;
+      this.propertiesRenderSignature = null;
     }
   }
 
@@ -273,10 +307,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.mapLoadError = null;
-    const center = { lat: properties[0].latitude, lng: properties[0].longitude };
+    const viewport = this.resolveViewport(properties);
     const mapOptions: Record<string, unknown> = {
-      center,
-      zoom: this.zoom,
+      center: viewport.center,
+      zoom: viewport.zoom,
       mapTypeId: this.resolveMapTypeId(this.selectedMapVisualStyle),
       mapTypeControl: false,
       streetViewControl: false,
@@ -289,18 +323,97 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.mapInstance = new googleMaps.Map(mapContainer, mapOptions);
+    this.renderMarkers(properties, googleMaps);
+    this.poiLayerManager.onMapReady(this.buildPoiLayerContext());
+  }
+
+  private renderMarkers(properties: GoogleMapProperty[], googleMaps: GoogleMapsApi): void {
+    if (!this.mapInstance) {
+      return;
+    }
+
     this.clearPropertyMarkers();
     this.propertyMarkerInstances = properties.map((property) => new googleMaps.Marker({
       map: this.mapInstance,
       position: { lat: property.latitude, lng: property.longitude },
       title: property.title,
       icon: {
-        url: this.buildHouseMarkerIconDataUrl(),
+        url: this.buildHouseMarkerIconDataUrl(property.unavailable === true),
         scaledSize: new googleMaps.Size(38, 38),
         anchor: new googleMaps.Point(19, 19)
       }
     }));
-    this.poiLayerManager.onMapReady(this.buildPoiLayerContext());
+  }
+
+  private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
+    if (!this.mapInstance) {
+      return;
+    }
+
+    this.mapInstance.setOptions({
+      center: viewport.center,
+      zoom: viewport.zoom
+    });
+  }
+
+  private resolveViewport(properties: GoogleMapProperty[]): { center: { lat: number; lng: number }; zoom: number } {
+    if (properties.length <= 1) {
+      return {
+        center: { lat: properties[0].latitude, lng: properties[0].longitude },
+        zoom: this.zoom
+      };
+    }
+
+    let minLat = Number.POSITIVE_INFINITY;
+    let maxLat = Number.NEGATIVE_INFINITY;
+    let minLng = Number.POSITIVE_INFINITY;
+    let maxLng = Number.NEGATIVE_INFINITY;
+
+    for (const property of properties) {
+      minLat = Math.min(minLat, property.latitude);
+      maxLat = Math.max(maxLat, property.latitude);
+      minLng = Math.min(minLng, property.longitude);
+      maxLng = Math.max(maxLng, property.longitude);
+    }
+
+    return {
+      center: {
+        lat: (minLat + maxLat) / 2,
+        lng: (minLng + maxLng) / 2
+      },
+      zoom: 10
+    };
+  }
+
+  private buildConfigSignature(): string {
+    return [
+      this.googleMapsApiKey ?? '',
+      this.googleMapsMapId ?? '',
+      String(this.zoom)
+    ].join('::');
+  }
+
+  private buildPropertiesSignature(properties: GoogleMapProperty[]): string {
+    return properties
+      .map((property) => (
+        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.unavailable === true ? 'closed' : 'open'}`
+      ))
+      .join('|');
+  }
+
+  private attachLayerPanelResizeListeners(): void {
+    document.addEventListener('mousemove', this.onLayerPanelResizeMove);
+    document.addEventListener('mouseup', this.onLayerPanelResizeEnd);
+  }
+
+  private detachLayerPanelResizeListeners(): void {
+    document.removeEventListener('mousemove', this.onLayerPanelResizeMove);
+    document.removeEventListener('mouseup', this.onLayerPanelResizeEnd);
+  }
+
+  private stopLayerPanelResize(): void {
+    this.isResizingLayerPanel = false;
+    this.detachLayerPanelResizeListeners();
   }
 
   private clearPropertyMarkers(): void {
@@ -310,14 +423,15 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.propertyMarkerInstances = [];
   }
 
-  private buildHouseMarkerIconDataUrl(): string {
+  private buildHouseMarkerIconDataUrl(isUnavailable: boolean): string {
+    const baseColor = isUnavailable ? '#d44343' : '#20a24a';
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">
-        <circle cx="19" cy="19" r="18" fill="#20a24a"/>
+        <circle cx="19" cy="19" r="18" fill="${baseColor}"/>
         <path fill="#ffffff" d="M8.5 17.5 19 9l10.5 8.5-1.9 2.3-1.6-1.3V29h-5.8v-6.6h-2.4V29H12V18.5l-1.6 1.3-1.9-2.3z"/>
-        <rect x="17" y="23" width="4" height="6" fill="#20a24a"/>
-        <rect x="13.8" y="18.4" width="3.2" height="3" fill="#20a24a"/>
-        <rect x="21" y="18.4" width="3.2" height="3" fill="#20a24a"/>
+        <rect x="17" y="23" width="4" height="6" fill="${baseColor}"/>
+        <rect x="13.8" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
+        <rect x="21" y="18.4" width="3.2" height="3" fill="${baseColor}"/>
       </svg>
     `.trim();
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;

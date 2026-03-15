@@ -1,4 +1,4 @@
-export type ListingTab = 'DASHBOARD' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB';
+export type ListingTab = 'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB';
 
 export type GeoLocationHint = {
   lat: number;

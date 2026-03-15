@@ -17,6 +17,7 @@ export class PropertyLocationComponent implements OnChanges {
   @Input() propertyTitle = '';
   @Input() latitude: number | null = null;
   @Input() longitude: number | null = null;
+  @Input() isUnavailable = false;
   @Input() googleMapsApiKey: string | null = null;
   @Input() googleMapsMapId: string | null = null;
   @Input() selectedLanguage: SupportedLanguage = 'en';
@@ -35,7 +36,7 @@ export class PropertyLocationComponent implements OnChanges {
       }, 0);
     }
 
-    if (changes['propertyTitle'] || changes['latitude'] || changes['longitude']) {
+    if (changes['propertyTitle'] || changes['latitude'] || changes['longitude'] || changes['isUnavailable']) {
       this.mapProperties = this.buildMapProperties();
     }
   }
@@ -78,7 +79,8 @@ export class PropertyLocationComponent implements OnChanges {
       id: this.propertyTitle || 'selected-property',
       title: this.propertyTitle || '-',
       latitude,
-      longitude
+      longitude,
+      unavailable: this.isUnavailable === true
     }];
   }
 

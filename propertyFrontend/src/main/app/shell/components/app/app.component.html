@@ -64,6 +64,17 @@
     </section>
   }
 
+  @if (activeTab() === 'MAP_TAB') {
+    <section class="listing-map-workspace">
+      <app-listing-map-tab
+        [properties]="properties()"
+        [selectedLanguage]="selectedLanguage()"
+        [googleMapsApiKey]="getGoogleMapsApiKey()"
+        [googleMapsMapId]="getGoogleMapsMapId()"
+      ></app-listing-map-tab>
+    </section>
+  }
+
   @if (activeTab() === 'DATABASE_MAINTENANCE_TAB' && canMaintainDatabase()) {
     <app-maintenance-panel
       [maintenanceOperations]="maintenanceOperations"

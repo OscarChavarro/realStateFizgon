@@ -9,8 +9,12 @@ type TranslationValue = {
 
 const TRANSLATIONS = {
   DASHBOARD: {
-    en: 'Property list',
-    sp: 'Listado de propiedades'
+    en: 'Listing',
+    sp: 'Listado'
+  },
+  MAP_TAB: {
+    en: 'Map',
+    sp: 'Mapa'
   },
   DATABASE_MAINTENANCE_TAB: {
     en: 'Database',

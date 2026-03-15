@@ -130,9 +130,10 @@ export class ListingDataService {
             )
           );
         } else {
+          effectiveRequestPageSize = 1;
           response = await firstValueFrom(
             http.get<PropertiesResponse>(
-              this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, false)
+              this.buildPropertiesEndpointUrl(sortCriteria, filters, 1, effectiveRequestPageSize, true)
             )
           );
         }

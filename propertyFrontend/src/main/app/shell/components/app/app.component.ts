@@ -3,6 +3,7 @@ import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, Vie
 import { UsersPanelComponent } from 'src/app/auth/components/users-panel/users-panel.component';
 import { MaintenancePanelComponent } from 'src/app/maintenance/components/maintenance-panel/maintenance-panel.component';
 import { ListingPropertiesTableComponent } from 'src/app/listing/components/listing-properties-table/listing-properties-table.component';
+import { ListingMapTabComponent } from 'src/app/listing/components/listing-map-tab/listing-map-tab.component';
 import { ListingTopBarComponent } from 'src/app/listing/components/listing-top-bar/listing-top-bar.component';
 import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import {
@@ -33,6 +34,7 @@ import { AppShellCommandsUseCaseService } from 'src/app/shell/services/app-shell
   imports: [
     ListingTopBarComponent,
     ListingPropertiesTableComponent,
+    ListingMapTabComponent,
     MaintenancePanelComponent,
     UsersPanelComponent,
     PropertyDetailPanelComponent

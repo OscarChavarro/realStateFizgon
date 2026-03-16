@@ -1,107 +1,32 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
-import { ListingPropertyRow, GeoLocationHint, SortCriterion } from 'src/app/listing/model/listing.types';
+import { GeoLocationHint, ListingPropertyRow, SortCriterion } from 'src/app/listing/model/listing.types';
 import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
-import { ListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
-
-type PropertiesCountResponse = {
-  count: number;
-};
-
-type FrontendSecrets = {
-  staticMedia?: string;
-  backend?: {
-    baseUrl?: string;
-  };
-  google?: {
-    maps?: {
-      'api-key'?: string;
-      'map-id'?: string;
-    };
-  };
-};
-
-type PropertiesResponse = {
-  error: string | null;
-  data: Array<{
-    publicationDate?: string | Date;
-    closedBy?: string | Date | null;
-    closedby?: string | Date | null;
-    closed_by?: string | Date | null;
-    isClosed?: boolean | string | number | null;
-    closedByExists?: boolean | string | number | null;
-    propertyId?: string | number;
-    title?: string;
-    location?: string;
-    description?: string;
-    advertiserComment?: string;
-    url?: string;
-    price?: number | string | null;
-    mainFeatures?: {
-      area?: string | number | null;
-      bedrooms?: string | number | null;
-    } | null;
-    images?: Array<string | {
-      url?: string;
-      localUrl?: string | null;
-      title?: string | null;
-    }>;
-    geoLocationHint?: {
-      lat?: number | string | null;
-      lon?: number | string | null;
-      latitude?: number | string | null;
-      longitude?: number | string | null;
-    } | null;
-  }>;
-  pagination: {
-    page: number;
-    pageSize: number;
-    totalElements: number;
-  };
-};
-
-type ListingDataResult = {
-  count: number;
-  properties: ListingPropertyRow[];
-  pagination: ListingPaginationState;
-};
-
-type ListingConfiguration = {
-  backendBaseUrl: string;
-  staticMediaBaseUrl: string;
-  googleMapsApiKey: string | null;
-  googleMapsMapId: string | null;
-};
+import {
+  ListingConfiguration,
+  ListingDataResult,
+  PropertiesCountResponse,
+  PropertiesResponse
+} from 'src/app/listing/model/listing-data.payload.types';
+import { ListingConfigurationPayloadMapperService } from 'src/app/listing/services/mappers/listing-configuration-payload-mapper.service';
+import { ListingPropertiesPayloadMapperService } from 'src/app/listing/services/mappers/listing-properties-payload-mapper.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ListingDataService {
+  constructor(
+    private readonly listingConfigurationPayloadMapperService: ListingConfigurationPayloadMapperService = new ListingConfigurationPayloadMapperService(),
+    private readonly listingPropertiesPayloadMapperService: ListingPropertiesPayloadMapperService = new ListingPropertiesPayloadMapperService()
+  ) {}
+
   async loadBackendConfiguration(http: HttpClient): Promise<ListingConfiguration> {
     try {
-      const secrets = await firstValueFrom(http.get<FrontendSecrets>('/secrets.json'));
-      const configuredBaseUrl = secrets.backend?.baseUrl?.trim();
-      const configuredStaticMedia = secrets.staticMedia?.trim();
-
-      return {
-        backendBaseUrl: configuredBaseUrl
-          ? this.normalizeBackendBaseUrl(configuredBaseUrl)
-          : ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
-        staticMediaBaseUrl: configuredStaticMedia
-          ? this.normalizeStaticMediaBaseUrl(configuredStaticMedia)
-          : ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
-        googleMapsApiKey: this.normalizeGoogleMapsApiKey(secrets.google?.maps?.['api-key']),
-        googleMapsMapId: this.normalizeGoogleMapsMapId(secrets.google?.maps?.['map-id'])
-      };
+      const secrets = await firstValueFrom(http.get('/secrets.json'));
+      return this.listingConfigurationPayloadMapperService.toListingConfiguration(secrets);
     } catch {
-      return {
-        backendBaseUrl: ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL,
-        staticMediaBaseUrl: ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL,
-        googleMapsApiKey: null,
-        googleMapsMapId: null
-      };
+      return this.listingConfigurationPayloadMapperService.toListingConfiguration(null);
     }
   }
 
@@ -181,64 +106,23 @@ export class ListingDataService {
   }
 
   private extractMaxAllowedPageSize(error: unknown): number | null {
-    if (!(error instanceof HttpErrorResponse)) {
-      return null;
-    }
-
-    const candidates: string[] = [];
-    if (typeof error.error === 'string') {
-      candidates.push(error.error);
-    } else if (typeof error.error === 'object' && error.error !== null) {
-      const nestedMessage = (error.error as { error?: unknown; message?: unknown }).error
-        ?? (error.error as { error?: unknown; message?: unknown }).message;
-      if (typeof nestedMessage === 'string') {
-        candidates.push(nestedMessage);
-      }
-    }
-    if (typeof error.message === 'string') {
-      candidates.push(error.message);
-    }
-
-    for (const message of candidates) {
-      const match = message.match(/pageSize\s+cannot\s+be\s+greater\s+than\s+total\s+properties\s+\((\d+)\)/i);
-      if (!match) {
-        continue;
-      }
-
-      const parsed = Number.parseInt(match[1], 10);
-      if (Number.isFinite(parsed) && parsed >= 1) {
-        return parsed;
-      }
-      return 1;
-    }
-
-    return null;
+    return this.listingPropertiesPayloadMapperService.extractMaxAllowedPageSize(error);
   }
 
   private normalizeBackendBaseUrl(value: string): string {
-    return value.endsWith('/') ? value.slice(0, -1) : value;
+    return this.listingConfigurationPayloadMapperService.normalizeBackendBaseUrl(value);
   }
 
   private normalizeStaticMediaBaseUrl(value: string): string {
-    return value.endsWith('/') ? value : `${value}/`;
+    return this.listingConfigurationPayloadMapperService.normalizeStaticMediaBaseUrl(value);
   }
 
   private normalizeGoogleMapsApiKey(value: unknown): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
+    return this.listingConfigurationPayloadMapperService.normalizeGoogleMapsApiKey(value);
   }
 
   private normalizeGoogleMapsMapId(value: unknown): string | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : null;
+    return this.listingConfigurationPayloadMapperService.normalizeGoogleMapsMapId(value);
   }
 
   private buildPropertiesEndpointUrl(
@@ -278,58 +162,7 @@ export class ListingDataService {
   }
 
   private mapPropertiesForListing(rawRows: PropertiesResponse['data']): ListingPropertyRow[] {
-    return rawRows.map((row) => {
-      const closedByValue = row.closedBy ?? row.closedby ?? row.closed_by;
-      const closedByExistsFromPayload = (
-        Object.prototype.hasOwnProperty.call(row, 'closedBy')
-        || Object.prototype.hasOwnProperty.call(row, 'closedby')
-        || Object.prototype.hasOwnProperty.call(row, 'closed_by')
-        || Object.prototype.hasOwnProperty.call(row, 'closedByExists')
-      );
-
-      const publicationDate = this.toDateTimeString(row.publicationDate);
-      const publicationDateShort = this.toDateOnlyString(row.publicationDate);
-      const propertyId = row.propertyId === undefined || row.propertyId === null
-        ? ''
-        : String(row.propertyId);
-
-      const title = typeof row.title === 'string' && row.title.trim().length > 0
-        ? row.title.trim()
-        : '-';
-      const url = typeof row.url === 'string' ? row.url.trim() : '';
-      const location = typeof row.location === 'string' && row.location.trim().length > 0
-        ? row.location.trim()
-        : '';
-      const advertiserComment = typeof row.advertiserComment === 'string' && row.advertiserComment.trim().length > 0
-        ? row.advertiserComment.trim()
-        : (typeof row.description === 'string' ? row.description.trim() : '');
-      const price = row.price === null || row.price === undefined
-        ? '-'
-        : String(row.price);
-      const area = this.normalizeMainFeatureValue(row.mainFeatures?.area);
-      const bedrooms = this.normalizeMainFeatureValue(row.mainFeatures?.bedrooms);
-      const geoLocationHint = this.parseGeoLocationHint(row.geoLocationHint);
-
-      return {
-        propertyId,
-        publicationDate,
-        publicationDateShort,
-        title,
-        url,
-        price,
-        ...(area.length > 0 ? { area } : {}),
-        ...(bedrooms.length > 0 ? { bedrooms } : {}),
-        location,
-        advertiserComment,
-        localImageUrls: this.extractLocalImageUrls(row.images),
-        unavailable: this.isUnavailable(
-          closedByValue,
-          row.isClosed,
-          row.closedByExists ?? closedByExistsFromPayload
-        ),
-        geoLocationHint
-      };
-    });
+    return this.listingPropertiesPayloadMapperService.mapPropertiesForListing(rawRows);
   }
 
   private async loadTotalCount(http: HttpClient, fallback: number): Promise<number> {
@@ -344,192 +177,34 @@ export class ListingDataService {
   }
 
   private toDateOnlyString(value: unknown): string {
-    if (typeof value === 'string') {
-      const raw = value.trim();
-      if (!raw) {
-        return '';
-      }
-
-      const isoDatePrefix = raw.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (isoDatePrefix) {
-        return isoDatePrefix[1];
-      }
-
-      const parsedFromString = new Date(raw);
-      if (!Number.isNaN(parsedFromString.getTime())) {
-        return this.formatLocalDate(parsedFromString);
-      }
-
-      return '';
-    }
-
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      return this.formatLocalDate(value);
-    }
-
-    return '';
+    return this.listingPropertiesPayloadMapperService.toDateOnlyString(value);
   }
 
   private normalizeMainFeatureValue(value: unknown): string {
-    if (typeof value === 'string') {
-      return value.trim();
-    }
-
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return String(value);
-    }
-
-    return '';
+    return this.listingPropertiesPayloadMapperService.normalizeMainFeatureValue(value);
   }
 
   private toDateTimeString(value: unknown): string {
-    if (typeof value === 'string') {
-      const raw = value.trim();
-      if (!raw) {
-        return '';
-      }
-
-      const parsedFromString = new Date(raw);
-      if (!Number.isNaN(parsedFromString.getTime())) {
-        return parsedFromString.toISOString();
-      }
-
-      return raw;
-    }
-
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      return value.toISOString();
-    }
-
-    return '';
-  }
-
-  private formatLocalDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return this.listingPropertiesPayloadMapperService.toDateTimeString(value);
   }
 
   private extractLocalImageUrls(images: PropertiesResponse['data'][number]['images']): string[] {
-    if (!Array.isArray(images)) {
-      return [];
-    }
-
-    const localUrls: string[] = [];
-    for (const imageItem of images) {
-      if (typeof imageItem !== 'object' || imageItem === null) {
-        continue;
-      }
-
-      const localUrl = typeof imageItem.localUrl === 'string' ? imageItem.localUrl.trim() : '';
-      if (localUrl.length > 0) {
-        localUrls.push(localUrl);
-      }
-    }
-
-    return localUrls;
+    return this.listingPropertiesPayloadMapperService.extractLocalImageUrls(images);
   }
 
   private parseGeoLocationHint(value: PropertiesResponse['data'][number]['geoLocationHint']): GeoLocationHint | null {
-    if (!value || typeof value !== 'object') {
-      return null;
-    }
-
-    const lat = this.toFiniteNumber(value.lat ?? value.latitude);
-    const lon = this.toFiniteNumber(value.lon ?? value.longitude);
-    if (lat === null || lon === null) {
-      return null;
-    }
-
-    return { lat, lon };
+    return this.listingPropertiesPayloadMapperService.parseGeoLocationHint(value);
   }
 
   private toFiniteNumber(value: unknown): number | null {
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : null;
-    }
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return null;
-      }
-
-      const parsed = Number.parseFloat(trimmed);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    if (value && typeof value === 'object') {
-      const numberDecimalCandidate = (value as { $numberDecimal?: unknown }).$numberDecimal;
-      if (typeof numberDecimalCandidate === 'string') {
-        const parsed = Number.parseFloat(numberDecimalCandidate.trim());
-        return Number.isFinite(parsed) ? parsed : null;
-      }
-
-      if (typeof (value as { valueOf?: unknown }).valueOf === 'function') {
-        const primitive = (value as { valueOf: () => unknown }).valueOf();
-        if (typeof primitive === 'number' && Number.isFinite(primitive)) {
-          return primitive;
-        }
-        if (typeof primitive === 'string') {
-          const parsed = Number.parseFloat(primitive.trim());
-          return Number.isFinite(parsed) ? parsed : null;
-        }
-      }
-    }
-
-    return null;
+    return this.listingPropertiesPayloadMapperService.toFiniteNumber(value);
   }
 
   private hasClosedByValue(value: unknown): boolean {
-    if (value === null || value === undefined) {
-      return false;
-    }
-
-    if (typeof value === 'string') {
-      return value.trim().length > 0;
-    }
-
-    if (value instanceof Date) {
-      return !Number.isNaN(value.getTime());
-    }
-
-    return true;
+    return this.listingPropertiesPayloadMapperService.hasClosedByValue(value);
   }
 
   private isUnavailable(closedBy: unknown, isClosed: unknown, closedByExists: unknown): boolean {
-    if (typeof closedByExists === 'boolean') {
-      if (closedByExists) {
-        return true;
-      }
-    } else if (typeof closedByExists === 'string') {
-      const normalized = closedByExists.trim().toLowerCase();
-      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-        return true;
-      }
-    } else if (typeof closedByExists === 'number' && closedByExists !== 0) {
-      return true;
-    }
-
-    if (typeof isClosed === 'boolean') {
-      return isClosed;
-    }
-
-    if (typeof isClosed === 'string') {
-      const normalized = isClosed.trim().toLowerCase();
-      if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-        return true;
-      }
-      if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === '') {
-        return false;
-      }
-    }
-
-    if (typeof isClosed === 'number') {
-      return isClosed !== 0;
-    }
-
-    return this.hasClosedByValue(closedBy);
+    return this.listingPropertiesPayloadMapperService.isUnavailable(closedBy, isClosed, closedByExists);
   }
 }

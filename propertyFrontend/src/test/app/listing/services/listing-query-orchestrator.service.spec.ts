@@ -1,7 +1,49 @@
 import { TestBed } from '@angular/core/testing';
+import { computed, signal } from '@angular/core';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
-import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
+import { ListingPropertyRow, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
+import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
+
+class ListingQueryOrchestratorMockFactory {
+  static createAppShellStateMock() {
+    const allProperties = signal<ListingPropertyRow[]>([]);
+    return {
+      loading: signal(false),
+      count: signal(0),
+      allProperties,
+      properties: computed(() => allProperties()),
+      filters: signal(createDefaultListingFilters()),
+      pagination: signal(createDefaultListingPaginationState()),
+      selectedLanguage: signal<'en' | 'sp'>('en'),
+      authenticatedUser: signal(null),
+      filteredTotalElements: signal(0),
+      propertyLabels: signal<PropertyLabelEntry[]>([]),
+      sortCriteria: signal<SortCriterion[]>([])
+    };
+  }
+
+  static createProperty(overrides: Partial<ListingPropertyRow> = {}): ListingPropertyRow {
+    return {
+      propertyId: 'property-1',
+      publicationDate: '2026-03-15T12:00:00.000Z',
+      publicationDateShort: '2026-03-15',
+      title: 'Sample Property',
+      url: 'https://example.com/property-1',
+      price: '1400',
+      location: 'Madrid',
+      advertiserComment: 'Comment',
+      localImageUrls: [],
+      unavailable: false,
+      geoLocationHint: { lat: 40.4, lon: -3.7 },
+      ...overrides
+    };
+  }
+}
 
 describe('ListingQueryOrchestratorService', () => {
   let service: ListingQueryOrchestratorService;
@@ -12,6 +54,13 @@ describe('ListingQueryOrchestratorService', () => {
     saveLanguagePreference: jasmine.Spy;
     loadUserPreferences: jasmine.Spy;
   };
+  let listingStateFacadeServiceMock: {
+    persistSelectedLanguage: jasmine.Spy;
+  };
+  let propertySelectionServiceMock: {
+    syncAfterRefresh: jasmine.Spy;
+  };
+  let appShellStateMock: ReturnType<typeof ListingQueryOrchestratorMockFactory.createAppShellStateMock>;
 
   beforeEach(() => {
     listingDataCoordinatorServiceMock = {
@@ -21,11 +70,21 @@ describe('ListingQueryOrchestratorService', () => {
       saveLanguagePreference: jasmine.createSpy('saveLanguagePreference').and.resolveTo(undefined),
       loadUserPreferences: jasmine.createSpy('loadUserPreferences').and.resolveTo(undefined)
     };
+    listingStateFacadeServiceMock = {
+      persistSelectedLanguage: jasmine.createSpy('persistSelectedLanguage')
+    };
+    propertySelectionServiceMock = {
+      syncAfterRefresh: jasmine.createSpy('syncAfterRefresh')
+    };
+    appShellStateMock = ListingQueryOrchestratorMockFactory.createAppShellStateMock();
 
     TestBed.configureTestingModule({
       providers: [
         ListingQueryOrchestratorService,
-        { provide: ListingDataCoordinatorService, useValue: listingDataCoordinatorServiceMock }
+        { provide: ListingDataCoordinatorService, useValue: listingDataCoordinatorServiceMock },
+        { provide: ListingStateFacadeService, useValue: listingStateFacadeServiceMock },
+        { provide: PropertySelectionService, useValue: propertySelectionServiceMock },
+        { provide: AppShellStateService, useValue: appShellStateMock }
       ]
     });
 
@@ -62,62 +121,48 @@ describe('ListingQueryOrchestratorService', () => {
   ].forEach(({ input, expected }) => {
     it(`persistFilteredTotalElementsInSession should normalize ${input} to ${expected}`, () => {
       // Arrange
-      const setFilteredTotalElements = jasmine.createSpy('setFilteredTotalElements');
+      appShellStateMock.filteredTotalElements.set(99);
 
       // Action
-      service.persistFilteredTotalElementsInSession(input, setFilteredTotalElements);
+      service.persistFilteredTotalElementsInSession(input);
 
       // Assert
-      expect(setFilteredTotalElements).toHaveBeenCalledOnceWith(expected);
+      expect(appShellStateMock.filteredTotalElements()).toBe(expected);
       expect(sessionStorage.getItem('filteredTotalElements')).toBe(String(expected));
     });
   });
 
   it('refreshListingData should delegate and persist filtered total elements from pagination callback', async () => {
     // Arrange
-    const setPagination = jasmine.createSpy('setPagination');
-    const setFilteredTotalElements = jasmine.createSpy('setFilteredTotalElements');
-    const params = {
-      http: {} as any,
-      getSortCriteria: () => [],
-      getFilters: () => createDefaultListingFilters(),
-      getPagination: () => ({ page: 2, pageSize: 100, totalElements: 0, totalPages: 0 }),
-      setLoading: jasmine.createSpy('setLoading'),
-      setCount: jasmine.createSpy('setCount'),
-      setAllProperties: jasmine.createSpy('setAllProperties'),
-      setPagination,
-      onAfterRefresh: jasmine.createSpy('onAfterRefresh'),
-      setFilteredTotalElements
-    };
+    const property = ListingQueryOrchestratorMockFactory.createProperty();
+    appShellStateMock.pagination.set({ page: 2, pageSize: 100, totalElements: 0, totalPages: 0 });
 
     // Action
-    await service.refreshListingData(params);
+    await service.refreshListingData({} as any);
     const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
+    delegatedParams.setLoading(true);
+    delegatedParams.setCount(3);
+    delegatedParams.setAllProperties([property]);
     delegatedParams.setPagination({ page: 1, pageSize: 100, totalElements: 23, totalPages: 1 });
+    delegatedParams.onAfterRefresh();
+    delegatedParams.setLoading(false);
 
     // Assert
     expect(listingDataCoordinatorServiceMock.refreshListingData).toHaveBeenCalled();
-    expect(setPagination).toHaveBeenCalledWith({ page: 1, pageSize: 100, totalElements: 23, totalPages: 1 });
-    expect(setFilteredTotalElements).toHaveBeenCalledWith(23);
+    expect(appShellStateMock.loading()).toBeFalse();
+    expect(appShellStateMock.count()).toBe(3);
+    expect(appShellStateMock.allProperties()).toEqual([property]);
+    expect(appShellStateMock.pagination()).toEqual({ page: 1, pageSize: 100, totalElements: 23, totalPages: 1 });
+    expect(appShellStateMock.filteredTotalElements()).toBe(23);
+    expect(propertySelectionServiceMock.syncAfterRefresh).toHaveBeenCalledWith([property]);
   });
 
   it('refreshListingData should fallback request page size when current page size is invalid', async () => {
     // Arrange
-    const params = {
-      http: {} as any,
-      getSortCriteria: () => [],
-      getFilters: () => createDefaultListingFilters(),
-      getPagination: () => ({ page: 3, pageSize: 0, totalElements: 0, totalPages: 0 }),
-      setLoading: jasmine.createSpy('setLoading'),
-      setCount: jasmine.createSpy('setCount'),
-      setAllProperties: jasmine.createSpy('setAllProperties'),
-      setPagination: jasmine.createSpy('setPagination'),
-      onAfterRefresh: jasmine.createSpy('onAfterRefresh'),
-      setFilteredTotalElements: jasmine.createSpy('setFilteredTotalElements')
-    };
+    appShellStateMock.pagination.set({ page: 3, pageSize: 0, totalElements: 0, totalPages: 0 });
 
     // Action
-    await service.refreshListingData(params);
+    await service.refreshListingData({} as any);
     const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
 
     // Assert
@@ -127,21 +172,10 @@ describe('ListingQueryOrchestratorService', () => {
   it('refreshListingData should use page 1 when resolved request page size is 0', async () => {
     // Arrange
     spyOn<any>(service, 'resolveRequestPageSize').and.returnValue(0);
-    const params = {
-      http: {} as any,
-      getSortCriteria: () => [],
-      getFilters: () => createDefaultListingFilters(),
-      getPagination: () => ({ page: 8, pageSize: 100, totalElements: 0, totalPages: 0 }),
-      setLoading: jasmine.createSpy('setLoading'),
-      setCount: jasmine.createSpy('setCount'),
-      setAllProperties: jasmine.createSpy('setAllProperties'),
-      setPagination: jasmine.createSpy('setPagination'),
-      onAfterRefresh: jasmine.createSpy('onAfterRefresh'),
-      setFilteredTotalElements: jasmine.createSpy('setFilteredTotalElements')
-    };
+    appShellStateMock.pagination.set({ page: 8, pageSize: 100, totalElements: 0, totalPages: 0 });
 
     // Action
-    await service.refreshListingData(params);
+    await service.refreshListingData({} as any);
     const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
 
     // Assert
@@ -149,49 +183,41 @@ describe('ListingQueryOrchestratorService', () => {
     expect(delegatedParams.pagination.pageSize).toBe(0);
   });
 
-  it('handleFiltersChange should delegate to listing data coordinator', async () => {
+  it('handleFiltersChange should delegate to listing data coordinator with state-backed callbacks', async () => {
     // Arrange
     const nextFilters = { ...createDefaultListingFilters(), showClosed: false };
+    appShellStateMock.pagination.set({ page: 4, pageSize: 100, totalElements: 0, totalPages: 0 });
+    const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({
-      http: {} as any,
-      getCurrentFilters: () => createDefaultListingFilters(),
-      nextFilters,
-      getSortCriteria: () => [],
-      getPageSize: () => 100,
-      getSelectedLanguage: () => 'en',
-      isAuthenticated: () => true,
-      setFilters: jasmine.createSpy('setFilters'),
-      onResetToFirstPage: jasmine.createSpy('onResetToFirstPage'),
-      onRefreshListingData: jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined)
-    });
+    await service.handleFiltersChange({} as any, nextFilters);
+    const delegatedParams = listingDataCoordinatorServiceMock.handleFiltersChange.calls.mostRecent().args[0];
+    delegatedParams.setFilters(nextFilters);
+    delegatedParams.onFiltersChanged();
+    await delegatedParams.onRefreshListingData();
 
     // Assert
     expect(listingDataCoordinatorServiceMock.handleFiltersChange).toHaveBeenCalled();
+    expect(appShellStateMock.filters()).toEqual(nextFilters);
+    expect(appShellStateMock.pagination().page).toBe(1);
+    expect(refreshSpy).toHaveBeenCalled();
   });
 
   it('toggleSort should reset page and delegate to listing data coordinator', async () => {
     // Arrange
-    const onResetToFirstPage = jasmine.createSpy('onResetToFirstPage');
+    appShellStateMock.pagination.set({ page: 7, pageSize: 100, totalElements: 0, totalPages: 0 });
+    const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.toggleSort({
-      http: {} as any,
-      sortBy: 'price',
-      getSortCriteria: () => [],
-      getFilters: () => createDefaultListingFilters(),
-      getPageSize: () => 100,
-      getSelectedLanguage: () => 'en',
-      isAuthenticated: () => true,
-      setSortCriteria: jasmine.createSpy('setSortCriteria'),
-      onResetToFirstPage,
-      onRefreshListingData: jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined)
-    });
+    await service.toggleSort({} as any, 'price');
+    const delegatedParams = listingDataCoordinatorServiceMock.toggleSortAndRefresh.calls.mostRecent().args[0];
+    delegatedParams.setSortCriteria([{ sortBy: 'price', sortOrder: 'desc' }]);
+    await delegatedParams.onRefreshListingData();
 
     // Assert
-    expect(onResetToFirstPage).toHaveBeenCalled();
-    expect(listingDataCoordinatorServiceMock.toggleSortAndRefresh).toHaveBeenCalled();
+    expect(appShellStateMock.pagination().page).toBe(1);
+    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'desc' }]);
+    expect(refreshSpy).toHaveBeenCalled();
   });
 
   [
@@ -199,52 +225,42 @@ describe('ListingQueryOrchestratorService', () => {
       title: 'ignore unchanged page',
       page: 2,
       current: { page: 2, pageSize: 100, totalElements: 30, totalPages: 5 },
-      expectedSetPageCall: false,
-      expectedPage: 2
+      expectedPage: 2,
+      expectedRefreshCalls: 0
     },
     {
       title: 'normalize to min page',
       page: 0,
       current: { page: 3, pageSize: 100, totalElements: 30, totalPages: 5 },
-      expectedSetPageCall: true,
-      expectedPage: 1
+      expectedPage: 1,
+      expectedRefreshCalls: 1
     },
     {
       title: 'normalize to max page',
       page: 9,
       current: { page: 1, pageSize: 100, totalElements: 30, totalPages: 4 },
-      expectedSetPageCall: true,
-      expectedPage: 4
+      expectedPage: 4,
+      expectedRefreshCalls: 1
     },
     {
       title: 'use current page for non-finite input',
       page: Number.NaN,
       current: { page: 2, pageSize: 100, totalElements: 30, totalPages: 4 },
-      expectedSetPageCall: false,
-      expectedPage: 2
+      expectedPage: 2,
+      expectedRefreshCalls: 0
     }
-  ].forEach(({ title, page, current, expectedSetPageCall, expectedPage }) => {
+  ].forEach(({ title, page, current, expectedPage, expectedRefreshCalls }) => {
     it(`changePage should ${title}`, async () => {
       // Arrange
-      const setPage = jasmine.createSpy('setPage');
-      const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
+      appShellStateMock.pagination.set(current);
+      const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
       // Action
-      await service.changePage({
-        page,
-        getPagination: () => current,
-        setPage,
-        onRefreshListingData
-      });
+      await service.changePage({} as any, page);
 
       // Assert
-      expect(setPage.calls.any()).toBe(expectedSetPageCall);
-      if (expectedSetPageCall) {
-        expect(setPage).toHaveBeenCalledWith(expectedPage);
-        expect(onRefreshListingData).toHaveBeenCalled();
-      } else {
-        expect(onRefreshListingData).not.toHaveBeenCalled();
-      }
+      expect(appShellStateMock.pagination().page).toBe(expectedPage);
+      expect(refreshSpy).toHaveBeenCalledTimes(expectedRefreshCalls);
     });
   });
 
@@ -256,54 +272,67 @@ describe('ListingQueryOrchestratorService', () => {
   ].forEach(({ pageSize, currentPageSize, shouldReturn }) => {
     it(`changePageSize should handle pageSize=${pageSize} and current=${currentPageSize}`, async () => {
       // Arrange
-      const setPagination = jasmine.createSpy('setPagination');
-      const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
+      appShellStateMock.pagination.set({ page: 3, pageSize: currentPageSize, totalElements: 0, totalPages: 0 });
+      const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
       // Action
-      await service.changePageSize({
-        http: {} as any,
-        pageSize,
-        getPagination: () => ({ page: 3, pageSize: currentPageSize, totalElements: 0, totalPages: 0 }),
-        setPagination,
-        getFilters: () => createDefaultListingFilters(),
-        getSortCriteria: () => [],
-        getSelectedLanguage: () => 'en',
-        isAuthenticated: () => true,
-        onRefreshListingData
-      });
+      await service.changePageSize({} as any, pageSize);
 
       // Assert
       if (shouldReturn) {
-        expect(setPagination).not.toHaveBeenCalled();
         expect(listingDataCoordinatorServiceMock.saveLanguagePreference).not.toHaveBeenCalled();
-        expect(onRefreshListingData).not.toHaveBeenCalled();
+        expect(refreshSpy).not.toHaveBeenCalled();
       } else {
-        expect(setPagination).toHaveBeenCalledWith({ page: 1, pageSize: 500, totalElements: 0, totalPages: 0 });
+        expect(appShellStateMock.pagination()).toEqual({ page: 1, pageSize: 500, totalElements: 0, totalPages: 0 });
         expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalled();
-        expect(onRefreshListingData).toHaveBeenCalled();
+        expect(refreshSpy).toHaveBeenCalled();
       }
     });
   });
 
-  it('loadUserPreferences should reset filtered total elements and delegate', async () => {
+  it('loadUserPreferences should reset filtered total elements and bridge state callbacks', async () => {
     // Arrange
-    const setFilteredTotalElements = jasmine.createSpy('setFilteredTotalElements');
-
-    // Action
-    await service.loadUserPreferences({
-      http: {} as any,
-      setSelectedLanguage: jasmine.createSpy('setSelectedLanguage'),
-      persistSelectedLanguage: jasmine.createSpy('persistSelectedLanguage'),
-      setFilters: jasmine.createSpy('setFilters'),
-      setSortCriteria: jasmine.createSpy('setSortCriteria'),
-      setPageSize: jasmine.createSpy('setPageSize'),
-      setPropertyLabels: jasmine.createSpy('setPropertyLabels'),
-      setFilteredTotalElements
+    const labels: PropertyLabelEntry[] = [{ propertyId: 'property-1', labels: { review: 'FAVOURITE' } }];
+    listingDataCoordinatorServiceMock.loadUserPreferences.and.callFake(async (params: any) => {
+      params.setSelectedLanguage('sp');
+      params.persistSelectedLanguage('sp');
+      params.setFilters({ ...createDefaultListingFilters(), showFavourite: false });
+      params.setSortCriteria([{ sortBy: 'title', sortOrder: 'asc' }]);
+      params.setPageSize(500);
+      params.setPropertyLabels(labels);
     });
 
+    // Action
+    await service.loadUserPreferences({} as any);
+
     // Assert
-    expect(setFilteredTotalElements).toHaveBeenCalledWith(0);
+    expect(appShellStateMock.filteredTotalElements()).toBe(0);
     expect(sessionStorage.getItem('filteredTotalElements')).toBe('0');
-    expect(listingDataCoordinatorServiceMock.loadUserPreferences).toHaveBeenCalled();
+    expect(appShellStateMock.selectedLanguage()).toBe('sp');
+    expect(appShellStateMock.filters().showFavourite).toBeFalse();
+    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'title', sortOrder: 'asc' }]);
+    expect(appShellStateMock.pagination().pageSize).toBe(500);
+    expect(appShellStateMock.propertyLabels()).toEqual(labels);
+    expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledWith('selectedLanguage', 'sp');
+  });
+
+  it('resetGuestListingState should reset listing state defaults and persist total elements to session', () => {
+    // Arrange
+    appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false, minPrice: '1000' });
+    appShellStateMock.pagination.set({ page: 9, pageSize: 500, totalElements: 30, totalPages: 3 });
+    appShellStateMock.filteredTotalElements.set(30);
+    appShellStateMock.sortCriteria.set([{ sortBy: 'price', sortOrder: 'desc' }]);
+    appShellStateMock.propertyLabels.set([{ propertyId: 'property-1', labels: { review: 'DISCHARGED' } }]);
+
+    // Action
+    service.resetGuestListingState();
+
+    // Assert
+    expect(appShellStateMock.filters()).toEqual(createDefaultListingFilters());
+    expect(appShellStateMock.pagination()).toEqual(createDefaultListingPaginationState());
+    expect(appShellStateMock.filteredTotalElements()).toBe(0);
+    expect(appShellStateMock.sortCriteria()).toEqual([]);
+    expect(appShellStateMock.propertyLabels()).toEqual([]);
+    expect(sessionStorage.getItem('filteredTotalElements')).toBe('0');
   });
 });

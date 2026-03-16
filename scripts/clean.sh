@@ -16,6 +16,7 @@ rm -rf idealistaPropertyScraper/output/logs/chrome_std*
 rm -rf idealistaPropertyScraper/coverage
 rm -rf propertyFrontend/coverage
 rm -rf propertyFrontend/.angular
-rm -rf out-tsc
+rm -rf propertyFrontend/.tmp
+rm -rf propertyFrontend/out-tsc
 
 echo "Clean completed."

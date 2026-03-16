@@ -5,14 +5,12 @@ import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthBootstrapUseCaseService } from 'src/app/auth/services/auth-bootstrap.use-case.service';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
-import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
 import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 import { ListingPropertyRow, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
 import { ListingBootstrapUseCaseService } from 'src/app/listing/services/listing-bootstrap.use-case.service';
 import { ListingInteractionUseCaseService } from 'src/app/listing/services/listing-interaction.use-case.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
-import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { WorkspaceInteractionCoordinatorService } from 'src/app/listing/services/workspace-interaction-coordinator.service';
 import { RemoveDanglingImagesOperation } from 'src/app/maintenance/model/remove-dangling-images.operation';
@@ -23,10 +21,6 @@ import { ShellInputInteractionUseCaseService } from 'src/app/shell/services/shel
 
 class AuthFacadeServiceMock {
   readonly buildGoogleLoginUrl = jasmine.createSpy('buildGoogleLoginUrl').and.returnValue('https://accounts.google.com/o/oauth2/v2/auth');
-}
-
-class ListingStateFacadeServiceMock {
-  readonly persistSelectedLanguage = jasmine.createSpy('persistSelectedLanguage');
 }
 
 class WorkspaceInteractionCoordinatorServiceMock {
@@ -45,10 +39,6 @@ class ListingBootstrapUseCaseServiceMock {
   readonly teardown = jasmine.createSpy('teardown');
 }
 
-class UserSessionManagementUseCaseServiceMock {
-  readonly loadUsers = jasmine.createSpy('loadUsers').and.resolveTo(undefined);
-}
-
 class PropertySelectionServiceMock {
   readonly onRowHover = jasmine.createSpy('onRowHover');
   readonly onRowClick = jasmine.createSpy('onRowClick');
@@ -63,7 +53,7 @@ class ListingQueryOrchestratorServiceMock {
   readonly toggleSort = jasmine.createSpy('toggleSort').and.resolveTo(undefined);
   readonly changePage = jasmine.createSpy('changePage').and.resolveTo(undefined);
   readonly changePageSize = jasmine.createSpy('changePageSize').and.resolveTo(undefined);
-  readonly persistFilteredTotalElementsInSession = jasmine.createSpy('persistFilteredTotalElementsInSession');
+  readonly resetGuestListingState = jasmine.createSpy('resetGuestListingState');
 }
 
 class ListingInteractionUseCaseServiceMock {
@@ -84,6 +74,7 @@ class AppShellCommandsUseCaseServiceMock {
   readonly onLogoutRequested = jasmine.createSpy('onLogoutRequested');
   readonly onDeleteUserRequested = jasmine.createSpy('onDeleteUserRequested');
   readonly onMaintenanceOperationRequested = jasmine.createSpy('onMaintenanceOperationRequested');
+  readonly loadUsersForManagement = jasmine.createSpy('loadUsersForManagement').and.resolveTo(undefined);
 }
 
 class AppShellStateServiceMock {
@@ -126,11 +117,9 @@ type AppComponentFixtureState = {
   fixture: ComponentFixture<AppComponent>;
   component: AppComponent;
   authFacade: AuthFacadeServiceMock;
-  listingStateFacade: ListingStateFacadeServiceMock;
   workspaceInteraction: WorkspaceInteractionCoordinatorServiceMock;
   authBootstrap: AuthBootstrapUseCaseServiceMock;
   listingBootstrap: ListingBootstrapUseCaseServiceMock;
-  userSessionManagement: UserSessionManagementUseCaseServiceMock;
   propertySelection: PropertySelectionServiceMock;
   listingQueryOrchestrator: ListingQueryOrchestratorServiceMock;
   listingInteractionUseCase: ListingInteractionUseCaseServiceMock;
@@ -184,11 +173,9 @@ class AppComponentMockFactory {
 
   static async createComponent(): Promise<AppComponentFixtureState> {
     const authFacade = new AuthFacadeServiceMock();
-    const listingStateFacade = new ListingStateFacadeServiceMock();
     const workspaceInteraction = new WorkspaceInteractionCoordinatorServiceMock();
     const authBootstrap = new AuthBootstrapUseCaseServiceMock();
     const listingBootstrap = new ListingBootstrapUseCaseServiceMock();
-    const userSessionManagement = new UserSessionManagementUseCaseServiceMock();
     const propertySelection = new PropertySelectionServiceMock();
     const listingQueryOrchestrator = new ListingQueryOrchestratorServiceMock();
     const listingInteractionUseCase = new ListingInteractionUseCaseServiceMock();
@@ -201,11 +188,9 @@ class AppComponentMockFactory {
       providers: [
         { provide: HttpClient, useValue: {} },
         { provide: AuthFacadeService, useValue: authFacade },
-        { provide: ListingStateFacadeService, useValue: listingStateFacade },
         { provide: WorkspaceInteractionCoordinatorService, useValue: workspaceInteraction },
         { provide: AuthBootstrapUseCaseService, useValue: authBootstrap },
         { provide: ListingBootstrapUseCaseService, useValue: listingBootstrap },
-        { provide: UserSessionManagementUseCaseService, useValue: userSessionManagement },
         { provide: PropertySelectionService, useValue: propertySelection },
         { provide: ListingQueryOrchestratorService, useValue: listingQueryOrchestrator },
         { provide: ListingInteractionUseCaseService, useValue: listingInteractionUseCase },
@@ -228,11 +213,9 @@ class AppComponentMockFactory {
       fixture,
       component,
       authFacade,
-      listingStateFacade,
       workspaceInteraction,
       authBootstrap,
       listingBootstrap,
-      userSessionManagement,
       propertySelection,
       listingQueryOrchestrator,
       listingInteractionUseCase,
@@ -272,14 +255,14 @@ describe('AppComponent', () => {
       appShellState,
       authBootstrap,
       listingBootstrap,
-      listingQueryOrchestrator
+      listingQueryOrchestrator,
+      appShellCommands
     } = await AppComponentMockFactory.createComponent();
     const user = AppComponentMockFactory.createAuthenticatedUser({
       roles: ['ADMIN'],
       permissions: ['canEditUsers', 'canMaintainDatabase']
     });
     const loadUserPreferencesSpy = spyOn<any>(component, 'loadUserPreferences').and.resolveTo(undefined);
-    const loadUsersSpy = spyOn<any>(component, 'loadUsersForManagement').and.resolveTo(undefined);
     const resetGuestStateSpy = spyOn<any>(component, 'resetGuestState');
     const refreshListingDataSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(undefined);
 
@@ -312,7 +295,7 @@ describe('AppComponent', () => {
     expect(authParams.isAuthenticated()).toBeTrue();
     expect(authParams.getActiveTab()).toBe('MAP_TAB');
     expect(loadUserPreferencesSpy).toHaveBeenCalled();
-    expect(loadUsersSpy).toHaveBeenCalled();
+    expect(appShellCommands.loadUsersForManagement).toHaveBeenCalled();
     expect(resetGuestStateSpy).toHaveBeenCalled();
     expect(refreshListingDataSpy).toHaveBeenCalledTimes(2);
     expect(appShellState.selectedLanguage()).toBe('sp');
@@ -435,49 +418,19 @@ describe('AppComponent', () => {
     const {
       component,
       appShellCommands,
-      appShellState,
-      userSessionManagement,
-      listingQueryOrchestrator
+      appShellState
     } = await AppComponentMockFactory.createComponent();
     appShellState.authenticatedUser.set(AppComponentMockFactory.createAuthenticatedUser({
       permissions: ['canEditUsers', 'canMaintainDatabase']
     }));
-    const managedUser = AppComponentMockFactory.createAuthUserListItem();
-    userSessionManagement.loadUsers.and.callFake(async (params: any) => {
-      params.setUsersLoading(true);
-      params.setUsers([managedUser]);
-      params.setUsersLoading(false);
-    });
-    listingQueryOrchestrator.refreshListingData.and.resolveTo(undefined);
     const operation = appShellState.maintenanceOperations[0];
 
     // Action
     component.onTabChange('USERS_TAB');
-    const tabParams = appShellCommands.onTabChange.calls.mostRecent().args[0];
-    tabParams.setActiveTab('MAP_TAB');
-    await tabParams.onLoadUsers();
-
     component.onLanguageChange('sp');
-    const languageParams = appShellCommands.onLanguageChange.calls.mostRecent().args[0];
-    languageParams.setSelectedLanguage('en');
-
     component.onDeleteUserRequested('managed-user-1');
-    const deleteParams = appShellCommands.onDeleteUserRequested.calls.mostRecent().args[0];
-    deleteParams.setUsersLoading(true);
-    await deleteParams.onLoadUsers();
-
     component.onMaintenanceOperationRequested(operation);
-    const maintenanceParams = appShellCommands.onMaintenanceOperationRequested.calls.mostRecent().args[0];
-    maintenanceParams.setMaintenanceRunning(true);
-    maintenanceParams.setMaintenanceResultText('done');
-
     component.onLogoutRequested();
-    const logoutParams = appShellCommands.onLogoutRequested.calls.mostRecent().args[0];
-    expect(logoutParams.getActiveTab()).toBe('MAP_TAB');
-    logoutParams.setActiveTab('DASHBOARD');
-    logoutParams.setAuthenticatedUser(null);
-    logoutParams.onResetGuestState();
-    await logoutParams.onRefreshListingData();
 
     // Assert
     expect(appShellCommands.onTabChange).toHaveBeenCalled();
@@ -485,22 +438,11 @@ describe('AppComponent', () => {
     expect(appShellCommands.onMaintenanceOperationRequested).toHaveBeenCalled();
     expect(appShellCommands.onLogoutRequested).toHaveBeenCalled();
     expect(appShellCommands.onDeleteUserRequested).toHaveBeenCalled();
-    expect(tabParams.canEditUsers).toBeTrue();
-    expect(tabParams.canMaintainDatabase).toBeTrue();
-    expect(tabParams.tabId).toBe('USERS_TAB');
-    expect(languageParams.pageSize).toBe(appShellState.pagination().pageSize);
-    expect(languageParams.isAuthenticated).toBeTrue();
-    expect(languageParams.language).toBe('sp');
-    expect(maintenanceParams.operation).toBe(operation);
-    expect(deleteParams.currentUser?.id).toBe('user-1');
-    expect(component.activeTab()).toBe('DASHBOARD');
-    expect(component.authenticatedUser()).toBeNull();
-    expect(userSessionManagement.loadUsers).toHaveBeenCalledTimes(2);
-    expect(component.usersLoading()).toBeFalse();
-    expect(component.users()).toEqual([]);
-    expect(component.selectedLanguage()).toBe('en');
-    expect(component.maintenanceRunning()).toBeTrue();
-    expect(component.maintenanceResultText()).toBe('done');
+    expect(appShellCommands.onTabChange.calls.mostRecent().args[1]).toBe('USERS_TAB');
+    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[1]).toBe('sp');
+    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[2]).toBe('selectedLanguage');
+    expect(appShellCommands.onDeleteUserRequested.calls.mostRecent().args[1]).toBe('managed-user-1');
+    expect(appShellCommands.onMaintenanceOperationRequested.calls.mostRecent().args[0]).toBe(operation);
   });
 
   it('onGoogleLoginRequested should build login URL and navigate browser', async () => {
@@ -580,142 +522,46 @@ describe('AppComponent', () => {
     expect(toggleLocationDialog).toHaveBeenCalledTimes(1);
   });
 
-  it('loadUsersForManagement should execute user loader callbacks', async () => {
+  it('refreshListingData should delegate to query orchestrator', async () => {
     // Arrange
     const {
       component,
-      appShellState,
-      userSessionManagement
-    } = await AppComponentMockFactory.createComponent();
-    const user = AppComponentMockFactory.createAuthUserListItem();
-    appShellState.authenticatedUser.set(AppComponentMockFactory.createAuthenticatedUser({ permissions: ['canEditUsers'] }));
-    userSessionManagement.loadUsers.and.callFake(async (params: any) => {
-      params.setUsersLoading(true);
-      params.setUsers([user]);
-      params.setUsersLoading(false);
-    });
-
-    // Action
-    await (component as any).loadUsersForManagement();
-
-    // Assert
-    expect(userSessionManagement.loadUsers).toHaveBeenCalled();
-    expect(appShellState.usersLoading()).toBeFalse();
-    expect(appShellState.users()).toEqual([user]);
-  });
-
-  it('refreshListingData should execute orchestrator callbacks including onAfterRefresh', async () => {
-    // Arrange
-    const {
-      component,
-      appShellState,
-      propertySelection,
       listingQueryOrchestrator
     } = await AppComponentMockFactory.createComponent();
-    const property = AppComponentMockFactory.createProperty();
-    listingQueryOrchestrator.refreshListingData.and.callFake(async (params: any) => {
-      params.getSortCriteria();
-      params.getFilters();
-      params.getPagination();
-      params.setLoading(true);
-      params.setCount(3);
-      params.setAllProperties([property]);
-      params.setPagination({
-        page: 2,
-        pageSize: 100,
-        totalElements: 3,
-        totalPages: 1
-      });
-      params.setFilteredTotalElements(3);
-      params.onAfterRefresh();
-      params.setLoading(false);
-    });
 
     // Action
     await (component as any).refreshListingData();
 
     // Assert
     expect(listingQueryOrchestrator.refreshListingData).toHaveBeenCalled();
-    expect(propertySelection.syncAfterRefresh).toHaveBeenCalledWith([property]);
-    expect(appShellState.loading()).toBeFalse();
-    expect(appShellState.count()).toBe(3);
-    expect(appShellState.allProperties()).toEqual([property]);
-    expect(appShellState.pagination().page).toBe(2);
-    expect(appShellState.filteredTotalElements()).toBe(3);
   });
 
-  it('handleFiltersChange should execute orchestrator callbacks', async () => {
+  it('handleFiltersChange should delegate to query orchestrator', async () => {
     // Arrange
-    const { component, appShellState, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
-    const refreshSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(undefined);
+    const { component, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
     const nextFilters = {
       ...createDefaultListingFilters(),
       showClosed: false,
       minPrice: '1000',
       maxPrice: '1800'
     };
-    appShellState.pagination.set({
-      ...appShellState.pagination(),
-      page: 7
-    });
-    listingQueryOrchestrator.handleFiltersChange.and.callFake(async (params: any) => {
-      params.getCurrentFilters();
-      params.getSortCriteria();
-      params.getPageSize();
-      params.getSelectedLanguage();
-      params.isAuthenticated();
-      params.setFilters(nextFilters);
-      params.onResetToFirstPage();
-      await params.onRefreshListingData();
-    });
 
     // Action
     await (component as any).handleFiltersChange(nextFilters);
 
     // Assert
-    expect(listingQueryOrchestrator.handleFiltersChange).toHaveBeenCalled();
-    expect(appShellState.filters()).toEqual(nextFilters);
-    expect(appShellState.pagination().page).toBe(1);
-    expect(refreshSpy).toHaveBeenCalled();
+    expect(listingQueryOrchestrator.handleFiltersChange).toHaveBeenCalledWith(jasmine.any(Object), nextFilters);
   });
 
-  it('loadUserPreferences should execute orchestrator callbacks', async () => {
+  it('loadUserPreferences should delegate to query orchestrator', async () => {
     // Arrange
-    const {
-      component,
-      appShellState,
-      listingStateFacade,
-      listingQueryOrchestrator
-    } = await AppComponentMockFactory.createComponent();
-    const filters = {
-      ...createDefaultListingFilters(),
-      showFavourite: false
-    };
-    const labels: PropertyLabelEntry[] = [
-      { propertyId: 'property-1', labels: { review: 'FAVOURITE', comment: 'hello' } }
-    ];
-    listingQueryOrchestrator.loadUserPreferences.and.callFake(async (params: any) => {
-      params.setSelectedLanguage('sp');
-      params.persistSelectedLanguage('sp');
-      params.setFilters(filters);
-      params.setSortCriteria([{ sortBy: 'price', sortOrder: 'asc' }]);
-      params.setPageSize(500);
-      params.setPropertyLabels(labels);
-      params.setFilteredTotalElements(25);
-    });
+    const { component, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
 
     // Action
     await (component as any).loadUserPreferences();
 
     // Assert
     expect(listingQueryOrchestrator.loadUserPreferences).toHaveBeenCalled();
-    expect(listingStateFacade.persistSelectedLanguage).toHaveBeenCalledWith('selectedLanguage', 'sp');
-    expect(appShellState.selectedLanguage()).toBe('sp');
-    expect(appShellState.filters()).toEqual(filters);
-    expect(appShellState.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
-    expect(appShellState.pagination().pageSize).toBe(500);
-    expect(appShellState.propertyLabels()).toEqual(labels);
-    expect(appShellState.filteredTotalElements()).toBe(25);
   });
 
   it('togglePropertyReview and savePropertyComment should execute interaction callbacks', async () => {
@@ -753,43 +599,9 @@ describe('AppComponent', () => {
     ]);
   });
 
-  it('toggleSort, changePage and changePageSize should execute orchestrator callbacks', async () => {
+  it('toggleSort, changePage and changePageSize should delegate to query orchestrator', async () => {
     // Arrange
-    const { component, appShellState, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
-    const refreshSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(undefined);
-    appShellState.pagination.set({
-      page: 4,
-      pageSize: 100,
-      totalElements: 1000,
-      totalPages: 10
-    });
-    listingQueryOrchestrator.toggleSort.and.callFake(async (params: any) => {
-      params.getSortCriteria();
-      params.getFilters();
-      params.getPageSize();
-      params.getSelectedLanguage();
-      params.isAuthenticated();
-      params.setSortCriteria([{ sortBy: params.sortBy, sortOrder: 'desc' }]);
-      params.onResetToFirstPage();
-      await params.onRefreshListingData();
-    });
-    listingQueryOrchestrator.changePage.and.callFake(async (params: any) => {
-      params.getPagination();
-      params.setPage(6);
-      await params.onRefreshListingData();
-    });
-    listingQueryOrchestrator.changePageSize.and.callFake(async (params: any) => {
-      params.getFilters();
-      params.getSortCriteria();
-      params.getSelectedLanguage();
-      params.isAuthenticated();
-      params.setPagination({
-        ...params.getPagination(),
-        page: 1,
-        pageSize: 500
-      });
-      await params.onRefreshListingData();
-    });
+    const { component, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
 
     // Action
     await (component as any).toggleSort('title');
@@ -800,43 +612,18 @@ describe('AppComponent', () => {
     expect(listingQueryOrchestrator.toggleSort).toHaveBeenCalled();
     expect(listingQueryOrchestrator.changePage).toHaveBeenCalled();
     expect(listingQueryOrchestrator.changePageSize).toHaveBeenCalled();
-    expect(appShellState.sortCriteria()).toEqual([{ sortBy: 'title', sortOrder: 'desc' }]);
-    expect(appShellState.pagination().page).toBe(1);
-    expect(appShellState.pagination().pageSize).toBe(500);
-    expect(refreshSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('resetGuestState should restore guest defaults and persist filtered total elements', async () => {
+  it('resetGuestState should clear users and delegate listing reset', async () => {
     // Arrange
     const { component, appShellState, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
     appShellState.users.set([AppComponentMockFactory.createAuthUserListItem()]);
-    appShellState.filters.set({
-      ...createDefaultListingFilters(),
-      showClosed: false,
-      minPrice: '1400'
-    });
-    appShellState.pagination.set({
-      page: 9,
-      pageSize: 500,
-      totalElements: 900,
-      totalPages: 9
-    });
-    appShellState.sortCriteria.set([{ sortBy: 'price', sortOrder: 'asc' }]);
-    appShellState.propertyLabels.set([{ propertyId: 'property-1', labels: { review: 'DISCHARGED' } }]);
-    listingQueryOrchestrator.persistFilteredTotalElementsInSession.and.callFake((totalElements: number, setFilteredTotalElements: (value: number) => void) => {
-      setFilteredTotalElements(totalElements);
-    });
 
     // Action
     (component as any).resetGuestState();
 
     // Assert
-    expect(listingQueryOrchestrator.persistFilteredTotalElementsInSession).toHaveBeenCalledWith(0, jasmine.any(Function));
+    expect(listingQueryOrchestrator.resetGuestListingState).toHaveBeenCalled();
     expect(appShellState.users()).toEqual([]);
-    expect(appShellState.filters()).toEqual(createDefaultListingFilters());
-    expect(appShellState.pagination()).toEqual(createDefaultListingPaginationState());
-    expect(appShellState.sortCriteria()).toEqual([]);
-    expect(appShellState.propertyLabels()).toEqual([]);
-    expect(appShellState.filteredTotalElements()).toBe(0);
   });
 });

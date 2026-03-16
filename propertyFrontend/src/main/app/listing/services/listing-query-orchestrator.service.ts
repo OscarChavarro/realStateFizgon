@@ -1,88 +1,30 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
-import { DASHBOARD_PAGE_SIZE_OPTIONS, ListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
-import { SortCriterion, SortToggleRequest, PropertyLabelEntry, ListingPropertyRow } from 'src/app/listing/model/listing.types';
+import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import {
+  DASHBOARD_PAGE_SIZE_OPTIONS,
+  ListingPaginationState,
+  createDefaultListingPaginationState
+} from 'src/app/listing/model/pagination/listing-pagination.model';
+import { SortToggleRequest } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
-
-type RefreshListingDataParams = {
-  http: HttpClient;
-  getSortCriteria: () => SortCriterion[];
-  getFilters: () => ListingFiltersState;
-  getPagination: () => ListingPaginationState;
-  setLoading: (loading: boolean) => void;
-  setCount: (count: number) => void;
-  setAllProperties: (properties: ListingPropertyRow[]) => void;
-  setPagination: (pagination: ListingPaginationState) => void;
-  onAfterRefresh: () => void;
-  setFilteredTotalElements: (totalElements: number) => void;
-};
-
-type HandleFiltersChangeParams = {
-  http: HttpClient;
-  getCurrentFilters: () => ListingFiltersState;
-  nextFilters: ListingFiltersState;
-  getSortCriteria: () => SortCriterion[];
-  getPageSize: () => number;
-  getSelectedLanguage: () => SupportedLanguage;
-  isAuthenticated: () => boolean;
-  setFilters: (filters: ListingFiltersState) => void;
-  onResetToFirstPage: () => void;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type ToggleSortParams = {
-  http: HttpClient;
-  sortBy: SortToggleRequest['sortBy'];
-  getSortCriteria: () => SortCriterion[];
-  getFilters: () => ListingFiltersState;
-  getPageSize: () => number;
-  getSelectedLanguage: () => SupportedLanguage;
-  isAuthenticated: () => boolean;
-  setSortCriteria: (criteria: SortCriterion[]) => void;
-  onResetToFirstPage: () => void;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type ChangePageParams = {
-  page: number;
-  getPagination: () => ListingPaginationState;
-  setPage: (page: number) => void;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type ChangePageSizeParams = {
-  http: HttpClient;
-  pageSize: number;
-  getPagination: () => ListingPaginationState;
-  setPagination: (pagination: ListingPaginationState) => void;
-  getFilters: () => ListingFiltersState;
-  getSortCriteria: () => SortCriterion[];
-  getSelectedLanguage: () => SupportedLanguage;
-  isAuthenticated: () => boolean;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type LoadUserPreferencesParams = {
-  http: HttpClient;
-  setSelectedLanguage: (language: SupportedLanguage) => void;
-  persistSelectedLanguage: (language: SupportedLanguage) => void;
-  setFilters: (filters: ListingFiltersState) => void;
-  setSortCriteria: (criteria: SortCriterion[]) => void;
-  setPageSize: (pageSize: number) => void;
-  setPropertyLabels: (labels: PropertyLabelEntry[]) => void;
-  setFilteredTotalElements: (totalElements: number) => void;
-};
+import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
+import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ListingQueryOrchestratorService {
   private static readonly FILTERED_TOTAL_ELEMENTS_KEY = 'filteredTotalElements';
+  private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
 
   constructor(
-    private readonly listingDataCoordinatorService: ListingDataCoordinatorService
+    private readonly listingDataCoordinatorService: ListingDataCoordinatorService,
+    private readonly listingStateFacadeService: ListingStateFacadeService,
+    private readonly propertySelectionService: PropertySelectionService,
+    private readonly appShellStateService: AppShellStateService
   ) {}
 
   readFilteredTotalElementsFromSession(): number {
@@ -95,19 +37,16 @@ export class ListingQueryOrchestratorService {
     return parsed;
   }
 
-  persistFilteredTotalElementsInSession(
-    totalElements: number,
-    setFilteredTotalElements: (totalElements: number) => void
-  ): void {
+  persistFilteredTotalElementsInSession(totalElements: number): void {
     const normalized = Number.isFinite(totalElements) && totalElements >= 0
       ? Math.floor(totalElements)
       : 0;
-    setFilteredTotalElements(normalized);
+    this.appShellStateService.filteredTotalElements.set(normalized);
     sessionStorage.setItem(ListingQueryOrchestratorService.FILTERED_TOTAL_ELEMENTS_KEY, String(normalized));
   }
 
-  async refreshListingData(params: RefreshListingDataParams): Promise<void> {
-    const currentPagination = params.getPagination();
+  async refreshListingData(http: HttpClient): Promise<void> {
+    const currentPagination = this.appShellStateService.pagination();
     const requestPageSize = this.resolveRequestPageSize(currentPagination.pageSize);
     const requestPage = requestPageSize > 0 ? currentPagination.page : 1;
     const requestPagination: ListingPaginationState = {
@@ -117,55 +56,63 @@ export class ListingQueryOrchestratorService {
     };
 
     await this.listingDataCoordinatorService.refreshListingData({
-      http: params.http,
-      sortCriteria: params.getSortCriteria(),
-      filters: params.getFilters(),
+      http,
+      sortCriteria: this.appShellStateService.sortCriteria(),
+      filters: this.appShellStateService.filters(),
       pagination: requestPagination,
-      setLoading: params.setLoading,
-      setCount: params.setCount,
-      setAllProperties: params.setAllProperties,
+      setLoading: (loading) => this.appShellStateService.loading.set(loading),
+      setCount: (count) => this.appShellStateService.count.set(count),
+      setAllProperties: (properties) => this.appShellStateService.allProperties.set(properties),
       setPagination: (pagination) => {
-        params.setPagination(pagination);
-        this.persistFilteredTotalElementsInSession(pagination.totalElements, params.setFilteredTotalElements);
+        this.appShellStateService.pagination.set(pagination);
+        this.persistFilteredTotalElementsInSession(pagination.totalElements);
       },
-      onAfterRefresh: params.onAfterRefresh
+      onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.appShellStateService.properties())
     });
   }
 
-  async handleFiltersChange(params: HandleFiltersChangeParams): Promise<void> {
+  async handleFiltersChange(http: HttpClient, nextFilters: ListingFiltersState): Promise<void> {
     await this.listingDataCoordinatorService.handleFiltersChange({
-      http: params.http,
-      currentFilters: params.getCurrentFilters(),
-      nextFilters: params.nextFilters,
-      sortCriteria: params.getSortCriteria(),
-      pageSize: params.getPageSize(),
-      selectedLanguage: params.getSelectedLanguage(),
-      isAuthenticated: params.isAuthenticated(),
-      setFilters: params.setFilters,
-      onFiltersChanged: params.onResetToFirstPage,
-      onRefreshListingData: params.onRefreshListingData
+      http,
+      currentFilters: this.appShellStateService.filters(),
+      nextFilters,
+      sortCriteria: this.appShellStateService.sortCriteria(),
+      pageSize: this.appShellStateService.pagination().pageSize,
+      selectedLanguage: this.appShellStateService.selectedLanguage(),
+      isAuthenticated: this.appShellStateService.authenticatedUser() !== null,
+      setFilters: (filters) => this.appShellStateService.filters.set(filters),
+      onFiltersChanged: () => {
+        this.appShellStateService.pagination.update((current) => ({
+          ...current,
+          page: 1
+        }));
+      },
+      onRefreshListingData: () => this.refreshListingData(http)
     });
   }
 
-  async toggleSort(params: ToggleSortParams): Promise<void> {
-    params.onResetToFirstPage();
+  async toggleSort(http: HttpClient, sortBy: SortToggleRequest['sortBy']): Promise<void> {
+    this.appShellStateService.pagination.update((current) => ({
+      ...current,
+      page: 1
+    }));
     await this.listingDataCoordinatorService.toggleSortAndRefresh({
-      http: params.http,
-      currentSortCriteria: params.getSortCriteria(),
-      sortBy: params.sortBy,
-      filters: params.getFilters(),
-      pageSize: params.getPageSize(),
-      selectedLanguage: params.getSelectedLanguage(),
-      isAuthenticated: params.isAuthenticated(),
-      setSortCriteria: params.setSortCriteria,
-      onRefreshListingData: params.onRefreshListingData
+      http,
+      currentSortCriteria: this.appShellStateService.sortCriteria(),
+      sortBy,
+      filters: this.appShellStateService.filters(),
+      pageSize: this.appShellStateService.pagination().pageSize,
+      selectedLanguage: this.appShellStateService.selectedLanguage(),
+      isAuthenticated: this.appShellStateService.authenticatedUser() !== null,
+      setSortCriteria: (criteria) => this.appShellStateService.sortCriteria.set(criteria),
+      onRefreshListingData: () => this.refreshListingData(http)
     });
   }
 
-  async changePage(params: ChangePageParams): Promise<void> {
-    const current = params.getPagination();
+  async changePage(http: HttpClient, page: number): Promise<void> {
+    const current = this.appShellStateService.pagination();
     const totalPages = current.totalPages;
-    let normalized = Number.isFinite(params.page) ? Math.floor(params.page) : current.page;
+    let normalized = Number.isFinite(page) ? Math.floor(page) : current.page;
     if (normalized < 1) {
       normalized = 1;
     }
@@ -176,48 +123,69 @@ export class ListingQueryOrchestratorService {
       return;
     }
 
-    params.setPage(normalized);
-    await params.onRefreshListingData();
+    this.appShellStateService.pagination.update((state) => ({
+      ...state,
+      page: normalized
+    }));
+    await this.refreshListingData(http);
   }
 
-  async changePageSize(params: ChangePageSizeParams): Promise<void> {
-    if (!Number.isFinite(params.pageSize) || params.pageSize < 1) {
+  async changePageSize(http: HttpClient, pageSize: number): Promise<void> {
+    if (!Number.isFinite(pageSize) || pageSize < 1) {
       return;
     }
 
-    const current = params.getPagination();
-    const normalized = Math.floor(params.pageSize);
+    const current = this.appShellStateService.pagination();
+    const normalized = Math.floor(pageSize);
     if (current.pageSize === normalized) {
       return;
     }
 
-    params.setPagination({
+    this.appShellStateService.pagination.set({
       ...current,
       page: 1,
       pageSize: normalized
     });
     await this.listingDataCoordinatorService.saveLanguagePreference(
-      params.http,
-      params.isAuthenticated(),
-      params.getFilters(),
-      params.getSortCriteria(),
+      http,
+      this.appShellStateService.authenticatedUser() !== null,
+      this.appShellStateService.filters(),
+      this.appShellStateService.sortCriteria(),
       normalized,
-      params.getSelectedLanguage()
+      this.appShellStateService.selectedLanguage()
     );
-    await params.onRefreshListingData();
+    await this.refreshListingData(http);
   }
 
-  async loadUserPreferences(params: LoadUserPreferencesParams): Promise<void> {
-    this.persistFilteredTotalElementsInSession(0, params.setFilteredTotalElements);
+  async loadUserPreferences(http: HttpClient): Promise<void> {
+    this.persistFilteredTotalElementsInSession(0);
     await this.listingDataCoordinatorService.loadUserPreferences({
-      http: params.http,
-      setSelectedLanguage: params.setSelectedLanguage,
-      persistSelectedLanguage: params.persistSelectedLanguage,
-      setFilters: params.setFilters,
-      setSortCriteria: params.setSortCriteria,
-      setPageSize: params.setPageSize,
-      setPropertyLabels: params.setPropertyLabels
+      http,
+      setSelectedLanguage: (language) => this.appShellStateService.selectedLanguage.set(language),
+      persistSelectedLanguage: (language: SupportedLanguage) => {
+        this.listingStateFacadeService.persistSelectedLanguage(
+          ListingQueryOrchestratorService.SELECTED_LANGUAGE_KEY,
+          language
+        );
+      },
+      setFilters: (filters) => this.appShellStateService.filters.set(filters),
+      setSortCriteria: (criteria) => this.appShellStateService.sortCriteria.set(criteria),
+      setPageSize: (normalizedPageSize) => {
+        this.appShellStateService.pagination.update((current) => ({
+          ...current,
+          pageSize: normalizedPageSize
+        }));
+      },
+      setPropertyLabels: (labels) => this.appShellStateService.propertyLabels.set(labels)
     });
+  }
+
+  resetGuestListingState(): void {
+    this.appShellStateService.filters.set(createDefaultListingFilters());
+    this.appShellStateService.pagination.set(createDefaultListingPaginationState());
+    this.persistFilteredTotalElementsInSession(0);
+    this.appShellStateService.sortCriteria.set([]);
+    this.appShellStateService.propertyLabels.set([]);
   }
 
   private resolveRequestPageSize(currentPageSize: number): number {

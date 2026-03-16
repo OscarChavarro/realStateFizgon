@@ -5,20 +5,17 @@ import { MaintenancePanelComponent } from 'src/app/maintenance/components/mainte
 import { ListingPropertiesTableComponent } from 'src/app/listing/components/listing-properties-table/listing-properties-table.component';
 import { ListingMapTabComponent } from 'src/app/listing/components/listing-map-tab/listing-map-tab.component';
 import { ListingTopBarComponent } from 'src/app/listing/components/listing-top-bar/listing-top-bar.component';
-import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
 import {
   ListingPropertyRow,
   ListingTab,
   SortToggleRequest
 } from 'src/app/listing/model/listing.types';
-import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
-import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { WorkspaceInteractionCoordinatorService } from 'src/app/listing/services/workspace-interaction-coordinator.service';
 import { AuthBootstrapUseCaseService } from 'src/app/auth/services/auth-bootstrap.use-case.service';
 import { ListingBootstrapUseCaseService } from 'src/app/listing/services/listing-bootstrap.use-case.service';
-import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
 import { ListingInteractionUseCaseService } from 'src/app/listing/services/listing-interaction.use-case.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
@@ -49,11 +46,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private readonly listingAuthFacadeService = inject(AuthFacadeService);
-  private readonly listingStateFacadeService = inject(ListingStateFacadeService);
   private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
   private readonly authBootstrapUseCaseService = inject(AuthBootstrapUseCaseService);
   private readonly listingBootstrapUseCaseService = inject(ListingBootstrapUseCaseService);
-  private readonly userSessionManagementUseCaseService = inject(UserSessionManagementUseCaseService);
   private readonly propertySelectionService = inject(PropertySelectionService);
   private readonly listingQueryOrchestratorService = inject(ListingQueryOrchestratorService);
   private readonly listingInteractionUseCaseService = inject(ListingInteractionUseCaseService);
@@ -120,7 +115,7 @@ export class AppComponent implements OnInit, OnDestroy {
       setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
       setActiveTab: (tab) => this.activeTab.set(tab),
       onLoadUserPreferences: () => this.loadUserPreferences(),
-      onLoadUsers: () => this.loadUsersForManagement(),
+      onLoadUsers: () => this.appShellCommandsUseCaseService.loadUsersForManagement(this.http),
       onResetGuestState: () => this.resetGuestState(),
       isAuthenticated: () => this.authenticatedUser() !== null,
       getActiveTab: () => this.activeTab(),
@@ -137,26 +132,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: ListingTab): void {
-    this.appShellCommandsUseCaseService.onTabChange({
-      tabId,
-      canEditUsers: this.canEditUsers(),
-      canMaintainDatabase: this.canMaintainDatabase(),
-      setActiveTab: (tab) => this.activeTab.set(tab),
-      onLoadUsers: () => this.loadUsersForManagement()
-    });
+    this.appShellCommandsUseCaseService.onTabChange(this.http, tabId);
   }
 
   onLanguageChange(language: SupportedLanguage): void {
-    this.appShellCommandsUseCaseService.onLanguageChange({
-      http: this.http,
-      language,
-      selectedLanguageKey: AppComponent.SELECTED_LANGUAGE_KEY,
-      isAuthenticated: this.authenticatedUser() !== null,
-      filters: this.filters(),
-      sortCriteria: this.sortCriteria(),
-      pageSize: this.pagination().pageSize,
-      setSelectedLanguage: (nextLanguage) => this.selectedLanguage.set(nextLanguage)
-    });
+    this.appShellCommandsUseCaseService.onLanguageChange(this.http, language, AppComponent.SELECTED_LANGUAGE_KEY);
   }
 
   onFiltersChange(filters: ListingFiltersState): void {
@@ -208,12 +188,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
-    this.appShellCommandsUseCaseService.onMaintenanceOperationRequested({
-      operation,
-      http: this.http,
-      setMaintenanceRunning: (running) => this.maintenanceRunning.set(running),
-      setMaintenanceResultText: (text) => this.maintenanceResultText.set(text)
-    });
+    this.appShellCommandsUseCaseService.onMaintenanceOperationRequested(operation, this.http);
   }
 
   getStaticMediaBaseUrl(): string {
@@ -238,25 +213,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onLogoutRequested(): void {
-    this.appShellCommandsUseCaseService.onLogoutRequested({
-      http: this.http,
-      getActiveTab: () => this.activeTab(),
-      setActiveTab: (tab) => this.activeTab.set(tab),
-      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
-      onResetGuestState: () => this.resetGuestState(),
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    this.appShellCommandsUseCaseService.onLogoutRequested(this.http);
   }
 
   onDeleteUserRequested(userId: string): void {
-    this.appShellCommandsUseCaseService.onDeleteUserRequested({
-      http: this.http,
-      userId,
-      canEditUsers: this.canEditUsers(),
-      currentUser: this.authenticatedUser(),
-      setUsersLoading: (loading) => this.usersLoading.set(loading),
-      onLoadUsers: () => this.loadUsersForManagement()
-    });
+    this.appShellCommandsUseCaseService.onDeleteUserRequested(this.http, userId);
   }
 
   @HostListener('window:mousemove', ['$event'])
@@ -287,69 +248,16 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async loadUsersForManagement(): Promise<void> {
-    await this.userSessionManagementUseCaseService.loadUsers({
-      http: this.http,
-      canEditUsers: this.canEditUsers(),
-      setUsersLoading: (loading) => this.usersLoading.set(loading),
-      setUsers: (users) => this.users.set(users)
-    });
-  }
-
   private async refreshListingData(): Promise<void> {
-    await this.listingQueryOrchestratorService.refreshListingData({
-      http: this.http,
-      getSortCriteria: () => this.sortCriteria(),
-      getFilters: () => this.filters(),
-      getPagination: () => this.pagination(),
-      setLoading: (loading) => this.loading.set(loading),
-      setCount: (count) => this.count.set(count),
-      setAllProperties: (properties) => this.allProperties.set(properties),
-      setPagination: (pagination) => this.pagination.set(pagination),
-      onAfterRefresh: () => this.propertySelectionService.syncAfterRefresh(this.properties()),
-      setFilteredTotalElements: (totalElements) => this.filteredTotalElements.set(totalElements)
-    });
+    await this.listingQueryOrchestratorService.refreshListingData(this.http);
   }
 
   private async handleFiltersChange(filters: ListingFiltersState): Promise<void> {
-    await this.listingQueryOrchestratorService.handleFiltersChange({
-      http: this.http,
-      getCurrentFilters: () => this.filters(),
-      nextFilters: filters,
-      getSortCriteria: () => this.sortCriteria(),
-      getPageSize: () => this.pagination().pageSize,
-      getSelectedLanguage: () => this.selectedLanguage(),
-      isAuthenticated: () => this.authenticatedUser() !== null,
-      setFilters: (nextFilters) => this.filters.set(nextFilters),
-      onResetToFirstPage: () => {
-        this.pagination.update((current) => ({
-          ...current,
-          page: 1
-        }));
-      },
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    await this.listingQueryOrchestratorService.handleFiltersChange(this.http, filters);
   }
 
   private async loadUserPreferences(): Promise<void> {
-    await this.listingQueryOrchestratorService.loadUserPreferences({
-      http: this.http,
-      setSelectedLanguage: (language) => this.selectedLanguage.set(language),
-      persistSelectedLanguage: (language) => this.listingStateFacadeService.persistSelectedLanguage(
-        AppComponent.SELECTED_LANGUAGE_KEY,
-        language
-      ),
-      setFilters: (filters) => this.filters.set(filters),
-      setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
-      setPageSize: (pageSize) => {
-        this.pagination.update((current) => ({
-          ...current,
-          pageSize
-        }));
-      },
-      setPropertyLabels: (labels) => this.propertyLabels.set(labels),
-      setFilteredTotalElements: (totalElements) => this.filteredTotalElements.set(totalElements)
-    });
+    await this.listingQueryOrchestratorService.loadUserPreferences(this.http);
   }
 
   private async togglePropertyReview(property: ListingPropertyRow): Promise<void> {
@@ -374,63 +282,20 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
-    await this.listingQueryOrchestratorService.toggleSort({
-      http: this.http,
-      sortBy,
-      getSortCriteria: () => this.sortCriteria(),
-      getFilters: () => this.filters(),
-      getPageSize: () => this.pagination().pageSize,
-      getSelectedLanguage: () => this.selectedLanguage(),
-      isAuthenticated: () => this.authenticatedUser() !== null,
-      setSortCriteria: (criteria) => this.sortCriteria.set(criteria),
-      onResetToFirstPage: () => {
-        this.pagination.update((current) => ({
-          ...current,
-          page: 1
-        }));
-      },
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    await this.listingQueryOrchestratorService.toggleSort(this.http, sortBy);
   }
 
   private async changePage(page: number): Promise<void> {
-    await this.listingQueryOrchestratorService.changePage({
-      page,
-      getPagination: () => this.pagination(),
-      setPage: (normalizedPage) => {
-        this.pagination.update((state) => ({
-          ...state,
-          page: normalizedPage
-        }));
-      },
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    await this.listingQueryOrchestratorService.changePage(this.http, page);
   }
 
   private async changePageSize(pageSize: number): Promise<void> {
-    await this.listingQueryOrchestratorService.changePageSize({
-      http: this.http,
-      pageSize,
-      getPagination: () => this.pagination(),
-      setPagination: (pagination) => this.pagination.set(pagination),
-      getFilters: () => this.filters(),
-      getSortCriteria: () => this.sortCriteria(),
-      getSelectedLanguage: () => this.selectedLanguage(),
-      isAuthenticated: () => this.authenticatedUser() !== null,
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    await this.listingQueryOrchestratorService.changePageSize(this.http, pageSize);
   }
 
   private resetGuestState(): void {
     this.users.set([]);
-    this.filters.set(createDefaultListingFilters());
-    this.pagination.set(createDefaultListingPaginationState());
-    this.listingQueryOrchestratorService.persistFilteredTotalElementsInSession(
-      0,
-      (totalElements) => this.filteredTotalElements.set(totalElements)
-    );
-    this.sortCriteria.set([]);
-    this.propertyLabels.set([]);
+    this.listingQueryOrchestratorService.resetGuestListingState();
   }
 
   private navigateTo(url: string): void {

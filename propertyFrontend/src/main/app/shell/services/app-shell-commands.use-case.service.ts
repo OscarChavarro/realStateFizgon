@@ -1,57 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
-import { SortCriterion, ListingTab } from 'src/app/listing/model/listing.types';
+import { ListingTab } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
-
-type TabChangeParams = {
-  tabId: ListingTab;
-  canEditUsers: boolean;
-  canMaintainDatabase: boolean;
-  setActiveTab: (tab: ListingTab) => void;
-  onLoadUsers: () => Promise<void>;
-};
-
-type LanguageChangeParams = {
-  http: HttpClient;
-  language: SupportedLanguage;
-  selectedLanguageKey: string;
-  isAuthenticated: boolean;
-  filters: ListingFiltersState;
-  sortCriteria: SortCriterion[];
-  pageSize: number;
-  setSelectedLanguage: (language: SupportedLanguage) => void;
-};
-
-type LogoutParams = {
-  http: HttpClient;
-  getActiveTab: () => ListingTab;
-  setActiveTab: (tab: ListingTab) => void;
-  setAuthenticatedUser: (user: AuthenticatedUser | null) => void;
-  onResetGuestState: () => void;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type DeleteUserParams = {
-  http: HttpClient;
-  userId: string;
-  canEditUsers: boolean;
-  currentUser: AuthenticatedUser | null;
-  setUsersLoading: (loading: boolean) => void;
-  onLoadUsers: () => Promise<void>;
-};
-
-type MaintenanceCommandParams = {
-  operation: DatabaseMaintenanceOperation;
-  http: HttpClient;
-  setMaintenanceRunning: (running: boolean) => void;
-  setMaintenanceResultText: (text: string) => void;
-};
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -60,66 +16,82 @@ export class AppShellCommandsUseCaseService {
   constructor(
     private readonly listingStateFacadeService: ListingStateFacadeService,
     private readonly listingDataCoordinatorService: ListingDataCoordinatorService,
-    private readonly userSessionManagementUseCaseService: UserSessionManagementUseCaseService
+    private readonly userSessionManagementUseCaseService: UserSessionManagementUseCaseService,
+    private readonly listingQueryOrchestratorService: ListingQueryOrchestratorService,
+    private readonly appShellStateService: AppShellStateService
   ) {}
 
-  onTabChange(params: TabChangeParams): void {
-    if (params.tabId === 'USERS_TAB' && !params.canEditUsers) {
-      params.setActiveTab('DASHBOARD');
+  onTabChange(http: HttpClient, tabId: ListingTab): void {
+    if (tabId === 'USERS_TAB' && !this.appShellStateService.canEditUsers()) {
+      this.appShellStateService.activeTab.set('DASHBOARD');
       return;
     }
-    if (params.tabId === 'DATABASE_MAINTENANCE_TAB' && !params.canMaintainDatabase) {
-      params.setActiveTab('DASHBOARD');
+    if (tabId === 'DATABASE_MAINTENANCE_TAB' && !this.appShellStateService.canMaintainDatabase()) {
+      this.appShellStateService.activeTab.set('DASHBOARD');
       return;
     }
 
-    params.setActiveTab(params.tabId);
-    if (params.tabId === 'USERS_TAB') {
-      void params.onLoadUsers();
+    this.appShellStateService.activeTab.set(tabId);
+    if (tabId === 'USERS_TAB') {
+      void this.loadUsersForManagement(http);
     }
   }
 
-  onLanguageChange(params: LanguageChangeParams): void {
-    params.setSelectedLanguage(params.language);
-    this.listingStateFacadeService.persistSelectedLanguage(params.selectedLanguageKey, params.language);
+  onLanguageChange(http: HttpClient, language: SupportedLanguage, selectedLanguageKey: string): void {
+    this.appShellStateService.selectedLanguage.set(language);
+    this.listingStateFacadeService.persistSelectedLanguage(selectedLanguageKey, language);
     void this.listingDataCoordinatorService.saveLanguagePreference(
-      params.http,
-      params.isAuthenticated,
-      params.filters,
-      params.sortCriteria,
-      params.pageSize,
-      params.language
+      http,
+      this.appShellStateService.authenticatedUser() !== null,
+      this.appShellStateService.filters(),
+      this.appShellStateService.sortCriteria(),
+      this.appShellStateService.pagination().pageSize,
+      language
     );
   }
 
-  onLogoutRequested(params: LogoutParams): void {
+  onLogoutRequested(http: HttpClient): void {
     void this.userSessionManagementUseCaseService.logoutCurrentUser({
-      http: params.http,
-      getActiveTab: params.getActiveTab,
-      setActiveTab: params.setActiveTab,
-      setAuthenticatedUser: params.setAuthenticatedUser,
-      onResetGuestState: params.onResetGuestState,
-      onRefreshListingData: params.onRefreshListingData
+      http,
+      getActiveTab: () => this.appShellStateService.activeTab(),
+      setActiveTab: (tab) => this.appShellStateService.activeTab.set(tab),
+      setAuthenticatedUser: (user) => this.appShellStateService.authenticatedUser.set(user),
+      onResetGuestState: () => this.resetGuestState(),
+      onRefreshListingData: () => this.listingQueryOrchestratorService.refreshListingData(http)
     });
   }
 
-  onDeleteUserRequested(params: DeleteUserParams): void {
+  onDeleteUserRequested(http: HttpClient, userId: string): void {
     void this.userSessionManagementUseCaseService.deleteUserAndRefresh({
-      http: params.http,
-      userId: params.userId,
-      canEditUsers: params.canEditUsers,
-      currentUser: params.currentUser,
-      setUsersLoading: params.setUsersLoading,
-      onLoadUsers: params.onLoadUsers
+      http,
+      userId,
+      canEditUsers: this.appShellStateService.canEditUsers(),
+      currentUser: this.appShellStateService.authenticatedUser(),
+      setUsersLoading: (loading) => this.appShellStateService.usersLoading.set(loading),
+      onLoadUsers: () => this.loadUsersForManagement(http)
     });
   }
 
-  onMaintenanceOperationRequested(params: MaintenanceCommandParams): void {
+  onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation, http: HttpClient): void {
     void this.listingDataCoordinatorService.runMaintenanceOperation({
-      operation: params.operation,
-      http: params.http,
-      setMaintenanceRunning: params.setMaintenanceRunning,
-      setMaintenanceResultText: params.setMaintenanceResultText
+      operation,
+      http,
+      setMaintenanceRunning: (running) => this.appShellStateService.maintenanceRunning.set(running),
+      setMaintenanceResultText: (text) => this.appShellStateService.maintenanceResultText.set(text)
     });
+  }
+
+  async loadUsersForManagement(http: HttpClient): Promise<void> {
+    await this.userSessionManagementUseCaseService.loadUsers({
+      http,
+      canEditUsers: this.appShellStateService.canEditUsers(),
+      setUsersLoading: (loading) => this.appShellStateService.usersLoading.set(loading),
+      setUsers: (users) => this.appShellStateService.users.set(users)
+    });
+  }
+
+  private resetGuestState(): void {
+    this.appShellStateService.users.set([]);
+    this.listingQueryOrchestratorService.resetGuestListingState();
   }
 }

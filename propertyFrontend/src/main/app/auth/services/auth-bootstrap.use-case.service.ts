@@ -3,36 +3,11 @@ import { DestroyRef, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
 import { ApiSessionEventsService } from 'src/app/core/api/services/api-session-events.service';
-import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
-import { ListingTab } from 'src/app/listing/model/listing.types';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
 import { SessionCoordinatorService } from 'src/app/auth/services/session-coordinator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-
-type AuthBootstrapParams = {
-  http: HttpClient;
-  destroyRef: DestroyRef;
-  frontendHost: string;
-  selectedLanguageKey: string;
-  setSelectedLanguage: (language: SupportedLanguage) => void;
-  setBackendBaseUrl: (backendBaseUrl: string) => void;
-  setStaticMediaBaseUrl: (staticMediaBaseUrl: string) => void;
-  setGoogleMapsApiKey: (googleMapsApiKey: string | null) => void;
-  setGoogleMapsMapId: (googleMapsMapId: string | null) => void;
-  setGoogleLoginEnabled: (enabled: boolean) => void;
-  activeTab: ListingTab;
-  canMaintainDatabase: () => boolean;
-  canEditUsers: () => boolean;
-  setAuthenticatedUser: (user: AuthenticatedUser | null) => void;
-  setActiveTab: (tab: ListingTab) => void;
-  onLoadUserPreferences: () => Promise<void>;
-  onLoadUsers: () => Promise<void>;
-  onResetGuestState: () => void;
-  isAuthenticated: () => boolean;
-  getActiveTab: () => ListingTab;
-  onRefreshListingData: () => Promise<void>;
-};
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -43,54 +18,55 @@ export class AuthBootstrapUseCaseService {
     private readonly apiRuntimeConfigService: ApiRuntimeConfigService,
     private readonly listingAuthFacadeService: AuthFacadeService,
     private readonly listingSessionCoordinatorService: SessionCoordinatorService,
-    private readonly apiSessionEventsService: ApiSessionEventsService
+    private readonly apiSessionEventsService: ApiSessionEventsService,
+    private readonly listingQueryOrchestratorService: ListingQueryOrchestratorService,
+    private readonly appShellStateService: AppShellStateService
   ) {}
 
-  async initialize(params: AuthBootstrapParams): Promise<void> {
-    params.setSelectedLanguage(
-      this.listingStateFacadeService.loadSelectedLanguageFromSession(params.selectedLanguageKey)
+  async initialize(
+    http: HttpClient,
+    destroyRef: DestroyRef,
+    frontendHost: string,
+    selectedLanguageKey: string
+  ): Promise<void> {
+    this.appShellStateService.selectedLanguage.set(
+      this.listingStateFacadeService.loadSelectedLanguageFromSession(selectedLanguageKey)
     );
 
-    this.bindUnauthorizedSessionReset(params);
+    this.bindUnauthorizedSessionReset(http, destroyRef);
 
-    const config = await this.listingStateFacadeService.loadBackendConfiguration(params.http);
+    const config = await this.listingStateFacadeService.loadBackendConfiguration(http);
     this.apiRuntimeConfigService.setConfiguration(config);
-    params.setBackendBaseUrl(this.apiRuntimeConfigService.getBackendBaseUrl());
-    params.setStaticMediaBaseUrl(this.apiRuntimeConfigService.getStaticMediaBaseUrl());
-    params.setGoogleMapsApiKey(config.googleMapsApiKey);
-    params.setGoogleMapsMapId(config.googleMapsMapId);
-    this.listingAuthFacadeService.warnIfAuthHostMismatch(params.frontendHost);
+    this.appShellStateService.backendBaseUrl.set(this.apiRuntimeConfigService.getBackendBaseUrl());
+    this.appShellStateService.staticMediaBaseUrl.set(this.apiRuntimeConfigService.getStaticMediaBaseUrl());
+    this.appShellStateService.googleMapsApiKey.set(config.googleMapsApiKey);
+    this.appShellStateService.googleMapsMapId.set(config.googleMapsMapId);
+    this.listingAuthFacadeService.warnIfAuthHostMismatch(frontendHost);
 
-    const googleLoginEnabled = await this.listingAuthFacadeService.loadGoogleLoginAvailability(params.http);
-    params.setGoogleLoginEnabled(googleLoginEnabled);
+    const googleLoginEnabled = await this.listingAuthFacadeService.loadGoogleLoginAvailability(http);
+    this.appShellStateService.googleLoginEnabled.set(googleLoginEnabled);
 
-    await this.listingSessionCoordinatorService.loadCurrentUserAndApplyState({
-      http: params.http,
-      activeTab: params.activeTab,
-      canMaintainDatabase: params.canMaintainDatabase,
-      canEditUsers: params.canEditUsers,
-      setAuthenticatedUser: params.setAuthenticatedUser,
-      setActiveTab: params.setActiveTab,
-      onLoadUserPreferences: params.onLoadUserPreferences,
-      onLoadUsers: params.onLoadUsers,
-      onResetGuestState: params.onResetGuestState
-    });
+    await this.listingSessionCoordinatorService.loadCurrentUserAndApplyState(http);
   }
 
-  private bindUnauthorizedSessionReset(params: AuthBootstrapParams): void {
+  private bindUnauthorizedSessionReset(http: HttpClient, destroyRef: DestroyRef): void {
     this.apiSessionEventsService.unauthorized$
-      .pipe(takeUntilDestroyed(params.destroyRef))
+      .pipe(takeUntilDestroyed(destroyRef))
       .subscribe(() => {
-        if (!params.isAuthenticated()) {
+        if (this.appShellStateService.authenticatedUser() === null) {
           return;
         }
 
-        params.setAuthenticatedUser(null);
-        params.onResetGuestState();
-        if (params.getActiveTab() === 'USERS_TAB' || params.getActiveTab() === 'DATABASE_MAINTENANCE_TAB') {
-          params.setActiveTab('DASHBOARD');
+        this.appShellStateService.authenticatedUser.set(null);
+        this.appShellStateService.users.set([]);
+        this.listingQueryOrchestratorService.resetGuestListingState();
+        if (
+          this.appShellStateService.activeTab() === 'USERS_TAB' ||
+          this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB'
+        ) {
+          this.appShellStateService.activeTab.set('DASHBOARD');
         }
-        void params.onRefreshListingData();
+        void this.listingQueryOrchestratorService.refreshListingData(http);
       });
   }
 }

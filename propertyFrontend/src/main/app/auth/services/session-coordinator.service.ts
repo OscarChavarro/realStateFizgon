@@ -1,115 +1,88 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
-import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
-import { ListingTab } from 'src/app/listing/model/listing.types';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
-
-type LoadCurrentUserParams = {
-  http: HttpClient;
-  activeTab: ListingTab;
-  canMaintainDatabase: () => boolean;
-  canEditUsers: () => boolean;
-  setAuthenticatedUser: (user: AuthenticatedUser | null) => void;
-  setActiveTab: (tab: ListingTab) => void;
-  onLoadUserPreferences: () => Promise<void>;
-  onLoadUsers: () => Promise<void>;
-  onResetGuestState: () => void;
-};
-
-type LogoutParams = {
-  http: HttpClient;
-  setAuthenticatedUser: (user: AuthenticatedUser | null) => void;
-  onResetGuestState: () => void;
-  onRefreshListingData: () => Promise<void>;
-};
-
-type LoadUsersParams = {
-  http: HttpClient;
-  canEditUsers: boolean;
-  setUsersLoading: (loading: boolean) => void;
-  setUsers: (users: AuthUserListItem[]) => void;
-};
-
-type DeleteUserParams = {
-  http: HttpClient;
-  userId: string;
-  canEditUsers: boolean;
-  currentUser: AuthenticatedUser | null;
-  setUsersLoading: (loading: boolean) => void;
-  onLoadUsers: () => Promise<void>;
-};
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SessionCoordinatorService {
   constructor(
-    private readonly listingAuthFacadeService: AuthFacadeService
+    private readonly listingAuthFacadeService: AuthFacadeService,
+    private readonly listingQueryOrchestratorService: ListingQueryOrchestratorService,
+    private readonly appShellStateService: AppShellStateService
   ) {}
 
-  async loadCurrentUserAndApplyState(params: LoadCurrentUserParams): Promise<void> {
-    const user = await this.listingAuthFacadeService.loadCurrentUser(
-      params.http
-    );
-    params.setAuthenticatedUser(user);
+  async loadCurrentUserAndApplyState(http: HttpClient): Promise<void> {
+    const user = await this.listingAuthFacadeService.loadCurrentUser(http);
+    this.appShellStateService.authenticatedUser.set(user);
 
     if (!user) {
-      params.onResetGuestState();
-      if (params.activeTab === 'USERS_TAB' || params.activeTab === 'DATABASE_MAINTENANCE_TAB') {
-        params.setActiveTab('DASHBOARD');
-      }
+      this.resetGuestState();
       return;
     }
 
-    await params.onLoadUserPreferences();
+    await this.listingQueryOrchestratorService.loadUserPreferences(http);
 
-    if (params.activeTab === 'DATABASE_MAINTENANCE_TAB' && !params.canMaintainDatabase()) {
-      params.setActiveTab('DASHBOARD');
+    if (this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.appShellStateService.canMaintainDatabase()) {
+      this.appShellStateService.activeTab.set('DASHBOARD');
     }
-    if (params.activeTab === 'USERS_TAB' && params.canEditUsers()) {
-      await params.onLoadUsers();
+    if (this.appShellStateService.activeTab() === 'USERS_TAB' && this.appShellStateService.canEditUsers()) {
+      await this.loadUsers(http);
     }
   }
 
-  async logoutAndReset(params: LogoutParams): Promise<void> {
-    await this.listingAuthFacadeService.logout(params.http);
-    params.setAuthenticatedUser(null);
-    params.onResetGuestState();
-    await params.onRefreshListingData();
+  async logoutAndReset(http: HttpClient): Promise<void> {
+    await this.listingAuthFacadeService.logout(http);
+    this.appShellStateService.authenticatedUser.set(null);
+    this.resetGuestState();
+    await this.listingQueryOrchestratorService.refreshListingData(http);
   }
 
-  async loadUsers(params: LoadUsersParams): Promise<void> {
-    if (!params.canEditUsers) {
-      params.setUsers([]);
+  async loadUsers(http: HttpClient): Promise<void> {
+    if (!this.appShellStateService.canEditUsers()) {
+      this.appShellStateService.users.set([]);
       return;
     }
 
-    params.setUsersLoading(true);
-    const users = await this.listingAuthFacadeService.loadUsers(params.http);
-    params.setUsers(users);
-    params.setUsersLoading(false);
+    this.appShellStateService.usersLoading.set(true);
+    const users = await this.listingAuthFacadeService.loadUsers(http);
+    this.appShellStateService.users.set(users);
+    this.appShellStateService.usersLoading.set(false);
   }
 
-  async deleteUserAndRefresh(params: DeleteUserParams): Promise<void> {
-    if (!params.canEditUsers || !params.userId) {
+  async deleteUserAndRefresh(http: HttpClient, userId: string): Promise<void> {
+    if (!this.appShellStateService.canEditUsers() || !userId) {
       return;
     }
 
-    if (params.currentUser && params.currentUser.id === params.userId) {
+    const currentUser = this.appShellStateService.authenticatedUser();
+    if (currentUser && currentUser.id === userId) {
       return;
     }
 
-    params.setUsersLoading(true);
+    this.appShellStateService.usersLoading.set(true);
     const deleted = await this.listingAuthFacadeService.deleteUser(
-      params.http,
-      params.userId
+      http,
+      userId
     );
     if (deleted) {
-      await params.onLoadUsers();
+      await this.loadUsers(http);
       return;
     }
 
-    params.setUsersLoading(false);
+    this.appShellStateService.usersLoading.set(false);
+  }
+
+  private resetGuestState(): void {
+    this.appShellStateService.users.set([]);
+    this.listingQueryOrchestratorService.resetGuestListingState();
+    if (
+      this.appShellStateService.activeTab() === 'USERS_TAB' ||
+      this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB'
+    ) {
+      this.appShellStateService.activeTab.set('DASHBOARD');
+    }
   }
 }

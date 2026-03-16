@@ -90,37 +90,12 @@ export class AppComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.filteredTotalElements.set(this.listingQueryOrchestratorService.readFilteredTotalElementsFromSession());
 
-    await this.authBootstrapUseCaseService.initialize({
-      http: this.http,
-      destroyRef: this.destroyRef,
-      frontendHost: window.location.hostname,
-      selectedLanguageKey: AppComponent.SELECTED_LANGUAGE_KEY,
-      setSelectedLanguage: (language) => this.selectedLanguage.set(language),
-      setBackendBaseUrl: (backendBaseUrl) => {
-        this.appShellStateService.backendBaseUrl.set(backendBaseUrl);
-      },
-      setStaticMediaBaseUrl: (staticMediaBaseUrl) => {
-        this.appShellStateService.staticMediaBaseUrl.set(staticMediaBaseUrl);
-      },
-      setGoogleMapsApiKey: (googleMapsApiKey) => {
-        this.appShellStateService.googleMapsApiKey.set(googleMapsApiKey);
-      },
-      setGoogleMapsMapId: (googleMapsMapId) => {
-        this.appShellStateService.googleMapsMapId.set(googleMapsMapId);
-      },
-      setGoogleLoginEnabled: (enabled) => this.googleLoginEnabled.set(enabled),
-      activeTab: this.activeTab(),
-      canMaintainDatabase: () => this.canMaintainDatabase(),
-      canEditUsers: () => this.canEditUsers(),
-      setAuthenticatedUser: (user) => this.authenticatedUser.set(user),
-      setActiveTab: (tab) => this.activeTab.set(tab),
-      onLoadUserPreferences: () => this.loadUserPreferences(),
-      onLoadUsers: () => this.appShellCommandsUseCaseService.loadUsersForManagement(this.http),
-      onResetGuestState: () => this.resetGuestState(),
-      isAuthenticated: () => this.authenticatedUser() !== null,
-      getActiveTab: () => this.activeTab(),
-      onRefreshListingData: () => this.refreshListingData()
-    });
+    await this.authBootstrapUseCaseService.initialize(
+      this.http,
+      this.destroyRef,
+      window.location.hostname,
+      AppComponent.SELECTED_LANGUAGE_KEY
+    );
 
     await this.listingBootstrapUseCaseService.initialize({
       onRefreshListingData: () => this.refreshListingData()
@@ -291,11 +266,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async changePageSize(pageSize: number): Promise<void> {
     await this.listingQueryOrchestratorService.changePageSize(this.http, pageSize);
-  }
-
-  private resetGuestState(): void {
-    this.users.set([]);
-    this.listingQueryOrchestratorService.resetGuestListingState();
   }
 
   private navigateTo(url: string): void {

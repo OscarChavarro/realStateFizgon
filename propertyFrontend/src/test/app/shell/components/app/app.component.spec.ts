@@ -248,64 +248,32 @@ describe('AppComponent', () => {
     expect(component.activeTab()).toBe('DASHBOARD');
   });
 
-  it('ngOnInit should call bootstrap services and expose callback contracts', async () => {
+  it('ngOnInit should call bootstrap services with compact contracts', async () => {
     // Arrange
     const {
       component,
       appShellState,
       authBootstrap,
       listingBootstrap,
-      listingQueryOrchestrator,
-      appShellCommands
+      listingQueryOrchestrator
     } = await AppComponentMockFactory.createComponent();
-    const user = AppComponentMockFactory.createAuthenticatedUser({
-      roles: ['ADMIN'],
-      permissions: ['canEditUsers', 'canMaintainDatabase']
-    });
-    const loadUserPreferencesSpy = spyOn<any>(component, 'loadUserPreferences').and.resolveTo(undefined);
-    const resetGuestStateSpy = spyOn<any>(component, 'resetGuestState');
     const refreshListingDataSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
     await component.ngOnInit();
-    const authParams = authBootstrap.initialize.calls.mostRecent().args[0];
-    authParams.setSelectedLanguage('sp');
-    authParams.setBackendBaseUrl('http://backend.internal');
-    authParams.setStaticMediaBaseUrl('http://backend.internal/static/images');
-    authParams.setGoogleMapsApiKey('maps-key-2');
-    authParams.setGoogleMapsMapId('maps-id-2');
-    authParams.setGoogleLoginEnabled(false);
-    authParams.setAuthenticatedUser(user);
-    authParams.setActiveTab('MAP_TAB');
-    await authParams.onLoadUserPreferences();
-    await authParams.onLoadUsers();
-    authParams.onResetGuestState();
-    await authParams.onRefreshListingData();
+    const authArgs = authBootstrap.initialize.calls.mostRecent().args;
     const bootstrapParams = listingBootstrap.initialize.calls.mostRecent().args[0];
     await bootstrapParams.onRefreshListingData();
 
     // Assert
     expect(listingQueryOrchestrator.readFilteredTotalElementsFromSession).toHaveBeenCalled();
-    expect(authBootstrap.initialize).toHaveBeenCalled();
+    expect(authBootstrap.initialize).toHaveBeenCalledTimes(1);
     expect(listingBootstrap.initialize).toHaveBeenCalled();
-    expect(authParams.frontendHost).toBe(window.location.hostname);
-    expect(authParams.selectedLanguageKey).toBe('selectedLanguage');
-    expect(authParams.canEditUsers()).toBeTrue();
-    expect(authParams.canMaintainDatabase()).toBeTrue();
-    expect(authParams.isAuthenticated()).toBeTrue();
-    expect(authParams.getActiveTab()).toBe('MAP_TAB');
-    expect(loadUserPreferencesSpy).toHaveBeenCalled();
-    expect(appShellCommands.loadUsersForManagement).toHaveBeenCalled();
-    expect(resetGuestStateSpy).toHaveBeenCalled();
-    expect(refreshListingDataSpy).toHaveBeenCalledTimes(2);
-    expect(appShellState.selectedLanguage()).toBe('sp');
-    expect(appShellState.backendBaseUrl()).toBe('http://backend.internal');
-    expect(appShellState.staticMediaBaseUrl()).toBe('http://backend.internal/static/images');
-    expect(appShellState.googleMapsApiKey()).toBe('maps-key-2');
-    expect(appShellState.googleMapsMapId()).toBe('maps-id-2');
-    expect(appShellState.googleLoginEnabled()).toBeFalse();
-    expect(appShellState.authenticatedUser()).toEqual(user);
-    expect(appShellState.activeTab()).toBe('MAP_TAB');
+    expect(authArgs[0]).toEqual(jasmine.any(Object));
+    expect(authArgs[1]).toEqual(jasmine.any(Object));
+    expect(authArgs[2]).toBe(window.location.hostname);
+    expect(authArgs[3]).toBe('selectedLanguage');
+    expect(refreshListingDataSpy).toHaveBeenCalledTimes(1);
     expect(appShellState.filteredTotalElements()).toBe(17);
   });
 
@@ -614,16 +582,4 @@ describe('AppComponent', () => {
     expect(listingQueryOrchestrator.changePageSize).toHaveBeenCalled();
   });
 
-  it('resetGuestState should clear users and delegate listing reset', async () => {
-    // Arrange
-    const { component, appShellState, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
-    appShellState.users.set([AppComponentMockFactory.createAuthUserListItem()]);
-
-    // Action
-    (component as any).resetGuestState();
-
-    // Assert
-    expect(listingQueryOrchestrator.resetGuestListingState).toHaveBeenCalled();
-    expect(appShellState.users()).toEqual([]);
-  });
 });

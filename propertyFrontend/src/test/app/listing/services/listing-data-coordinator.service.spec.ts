@@ -1,21 +1,15 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
+import { PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
-describe('ListingDataCoordinatorService', () => {
-  let service: ListingDataCoordinatorService;
-  let listingStateFacadeServiceMock: {
-    refreshListingData: jasmine.Spy;
-    areFiltersChanged: jasmine.Spy;
-    saveFiltersPreference: jasmine.Spy;
-    loadUserPreferences: jasmine.Spy;
-    toggleSortCriteria: jasmine.Spy;
-    runMaintenanceOperation: jasmine.Spy;
-  };
-
-  beforeEach(() => {
-    listingStateFacadeServiceMock = {
+class ListingDataCoordinatorServiceMockFactory {
+  static createListingStateFacadeMock() {
+    return {
       refreshListingData: jasmine.createSpy('refreshListingData').and.resolveTo({
         count: 15,
         properties: [{ propertyId: 'p1' }],
@@ -24,185 +18,134 @@ describe('ListingDataCoordinatorService', () => {
       areFiltersChanged: jasmine.createSpy('areFiltersChanged').and.returnValue(true),
       saveFiltersPreference: jasmine.createSpy('saveFiltersPreference').and.resolveTo(undefined),
       loadUserPreferences: jasmine.createSpy('loadUserPreferences').and.resolveTo(null),
+      persistSelectedLanguage: jasmine.createSpy('persistSelectedLanguage'),
       toggleSortCriteria: jasmine.createSpy('toggleSortCriteria').and.returnValue([{ sortBy: 'price', sortOrder: 'asc' }]),
       runMaintenanceOperation: jasmine.createSpy('runMaintenanceOperation').and.resolveTo('operation-result')
     };
+  }
+
+  static createAppShellStateMock() {
+    return {
+      loading: signal(false),
+      count: signal(0),
+      allProperties: signal<Array<{ propertyId: string }>>([]),
+      pagination: signal(createDefaultListingPaginationState()),
+      filters: signal(createDefaultListingFilters()),
+      selectedLanguage: signal<'en' | 'sp'>('en'),
+      sortCriteria: signal<SortCriterion[]>([]),
+      propertyLabels: signal<PropertyLabelEntry[]>([]),
+      authenticatedUser: signal<any>(null),
+      maintenanceRunning: signal(false),
+      maintenanceResultText: signal('')
+    };
+  }
+}
+
+describe('ListingDataCoordinatorService', () => {
+  let service: ListingDataCoordinatorService;
+  let listingStateFacadeServiceMock: ReturnType<typeof ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock>;
+  let appShellStateMock: ReturnType<typeof ListingDataCoordinatorServiceMockFactory.createAppShellStateMock>;
+
+  beforeEach(() => {
+    listingStateFacadeServiceMock = ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock();
+    appShellStateMock = ListingDataCoordinatorServiceMockFactory.createAppShellStateMock();
 
     TestBed.configureTestingModule({
       providers: [
         ListingDataCoordinatorService,
-        { provide: ListingStateFacadeService, useValue: listingStateFacadeServiceMock }
+        { provide: ListingStateFacadeService, useValue: listingStateFacadeServiceMock },
+        { provide: AppShellStateService, useValue: appShellStateMock }
       ]
     });
 
     service = TestBed.inject(ListingDataCoordinatorService);
   });
 
-  it('refreshListingData should update state and call callbacks', async () => {
+  it('whenRefreshListingData_refreshListingData_shouldUpdateStoreAndInvokeAfterRefresh', async () => {
     // Arrange
-    const setLoading = jasmine.createSpy('setLoading');
-    const setCount = jasmine.createSpy('setCount');
-    const setAllProperties = jasmine.createSpy('setAllProperties');
-    const setPagination = jasmine.createSpy('setPagination');
     const onAfterRefresh = jasmine.createSpy('onAfterRefresh');
-    const filters = createDefaultListingFilters();
-    const sortCriteria: any[] = [{ sortBy: 'title', sortOrder: 'asc' }];
     const pagination = { page: 1, pageSize: 100, totalElements: 0, totalPages: 0 };
 
     // Action
-    await service.refreshListingData({
-      http: {} as any,
-      sortCriteria: sortCriteria as any,
-      filters,
-      pagination,
-      setLoading,
-      setCount,
-      setAllProperties,
-      setPagination,
-      onAfterRefresh
-    });
+    await service.refreshListingData({} as any, pagination, onAfterRefresh);
 
     // Assert
-    expect(setLoading.calls.allArgs()).toEqual([[true], [false]]);
-    expect(setCount).toHaveBeenCalledWith(15);
-    expect(setAllProperties).toHaveBeenCalledWith([{ propertyId: 'p1' }]);
-    expect(setPagination).toHaveBeenCalledWith({ page: 2, pageSize: 100, totalElements: 33, totalPages: 1 });
-    expect(onAfterRefresh).toHaveBeenCalled();
+    expect(appShellStateMock.loading()).toBeFalse();
+    expect(appShellStateMock.count()).toBe(15);
+    expect(appShellStateMock.allProperties()).toEqual([{ propertyId: 'p1' }]);
+    expect(appShellStateMock.pagination()).toEqual({ page: 2, pageSize: 100, totalElements: 33, totalPages: 1 });
+    expect(onAfterRefresh).toHaveBeenCalledTimes(1);
   });
 
-  it('handleFiltersChange should return early when filters are unchanged', async () => {
+  it('whenFiltersAreUnchanged_handleFiltersChange_shouldReturnFalseAndSkipSave', async () => {
     // Arrange
     listingStateFacadeServiceMock.areFiltersChanged.and.returnValue(false);
-    const setFilters = jasmine.createSpy('setFilters');
-    const onFiltersChanged = jasmine.createSpy('onFiltersChanged');
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
     const filters = createDefaultListingFilters();
+    appShellStateMock.filters.set(filters);
 
     // Action
-    await service.handleFiltersChange({
-      http: {} as any,
-      currentFilters: filters,
-      nextFilters: filters,
-      sortCriteria: [],
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: true,
-      setFilters,
-      onFiltersChanged,
-      onRefreshListingData
-    });
+    const changed = await service.handleFiltersChange({} as any, filters);
 
     // Assert
-    expect(setFilters).toHaveBeenCalled();
-    expect(onFiltersChanged).not.toHaveBeenCalled();
-    expect(onRefreshListingData).not.toHaveBeenCalled();
+    expect(changed).toBeFalse();
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).not.toHaveBeenCalled();
   });
 
-  it('handleFiltersChange should persist preferences and refresh when filters changed and authenticated', async () => {
+  it('whenFiltersChangeAndUserIsAuthenticated_handleFiltersChange_shouldResetPageAndPersist', async () => {
     // Arrange
-    const setFilters = jasmine.createSpy('setFilters');
-    const onFiltersChanged = jasmine.createSpy('onFiltersChanged');
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
     const currentFilters = createDefaultListingFilters();
     const nextFilters = { ...currentFilters, showClosed: false };
+    appShellStateMock.filters.set(currentFilters);
+    appShellStateMock.pagination.update((state) => ({ ...state, page: 7, pageSize: 500 }));
+    appShellStateMock.sortCriteria.set([{ sortBy: 'title', sortOrder: 'asc' }]);
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
 
     // Action
-    await service.handleFiltersChange({
-      http: {} as any,
-      currentFilters,
-      nextFilters,
-      sortCriteria: [],
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: true,
-      setFilters,
-      onFiltersChanged,
-      onRefreshListingData
-    });
+    const changed = await service.handleFiltersChange({} as any, nextFilters);
 
     // Assert
-    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalled();
-    expect(onRefreshListingData).toHaveBeenCalled();
+    expect(changed).toBeTrue();
+    expect(appShellStateMock.filters()).toEqual(nextFilters);
+    expect(appShellStateMock.pagination().page).toBe(1);
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledOnceWith(
+      {} as any,
+      nextFilters,
+      'en',
+      [{ sortBy: 'title', sortOrder: 'asc' }],
+      500
+    );
   });
 
-  it('handleFiltersChange should ignore save errors and still refresh', async () => {
+  it('whenFiltersChangeAndPreferenceSaveFails_handleFiltersChange_shouldStillReturnTrue', async () => {
     // Arrange
     listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-error'));
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
-    const filters = createDefaultListingFilters();
+    const currentFilters = createDefaultListingFilters();
+    appShellStateMock.filters.set(currentFilters);
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
 
     // Action
-    await service.handleFiltersChange({
-      http: {} as any,
-      currentFilters: filters,
-      nextFilters: { ...filters, minPrice: '1200' },
-      sortCriteria: [],
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: true,
-      setFilters: jasmine.createSpy('setFilters'),
-      onFiltersChanged: jasmine.createSpy('onFiltersChanged'),
-      onRefreshListingData
-    });
+    const changed = await service.handleFiltersChange({} as any, { ...currentFilters, minPrice: '1200' });
 
     // Assert
-    expect(onRefreshListingData).toHaveBeenCalled();
+    expect(changed).toBeTrue();
   });
 
-  it('handleFiltersChange should refresh without saving when unauthenticated', async () => {
+  it('whenNoStoredPreferences_loadUserPreferences_shouldApplyDefaults', async () => {
     // Arrange
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
-    const filters = createDefaultListingFilters();
+    appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false });
+    appShellStateMock.sortCriteria.set([{ sortBy: 'price', sortOrder: 'asc' }]);
+    appShellStateMock.propertyLabels.set([{ propertyId: 'p1', labels: { review: 'NEW' } }]);
 
     // Action
-    await service.handleFiltersChange({
-      http: {} as any,
-      currentFilters: filters,
-      nextFilters: { ...filters, maxPrice: '1500' },
-      sortCriteria: [],
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: false,
-      setFilters: jasmine.createSpy('setFilters'),
-      onFiltersChanged: jasmine.createSpy('onFiltersChanged'),
-      onRefreshListingData
-    });
+    await service.loadUserPreferences({} as any, 'selected-language');
 
     // Assert
-    expect(listingStateFacadeServiceMock.saveFiltersPreference).not.toHaveBeenCalled();
-    expect(onRefreshListingData).toHaveBeenCalled();
+    expect(appShellStateMock.filters()).toEqual(createDefaultListingFilters());
+    expect(appShellStateMock.sortCriteria()).toEqual([]);
+    expect(appShellStateMock.propertyLabels()).toEqual([]);
   });
 
-  it('loadUserPreferences should reset defaults when no preferences exist', async () => {
-    // Arrange
-    const setFilters = jasmine.createSpy('setFilters');
-    const setSortCriteria = jasmine.createSpy('setSortCriteria');
-    const setPageSize = jasmine.createSpy('setPageSize');
-    const setSelectedLanguage = jasmine.createSpy('setSelectedLanguage');
-    const persistSelectedLanguage = jasmine.createSpy('persistSelectedLanguage');
-    const setPropertyLabels = jasmine.createSpy('setPropertyLabels');
-
-    // Action
-    await service.loadUserPreferences({
-      http: {} as any,
-      setFilters,
-      setSortCriteria,
-      setPageSize,
-      setSelectedLanguage,
-      persistSelectedLanguage,
-      setPropertyLabels
-    });
-
-    // Assert
-    expect(setFilters).toHaveBeenCalledWith(createDefaultListingFilters());
-    expect(setSortCriteria).toHaveBeenCalledWith([]);
-    expect(setPropertyLabels).toHaveBeenCalledWith([]);
-    expect(setSelectedLanguage).not.toHaveBeenCalled();
-    expect(persistSelectedLanguage).not.toHaveBeenCalled();
-    expect(setPageSize).not.toHaveBeenCalled();
-  });
-
-  it('loadUserPreferences should apply loaded preferences', async () => {
+  it('whenStoredPreferencesExist_loadUserPreferences_shouldApplyPreferencesToStore', async () => {
     // Arrange
     listingStateFacadeServiceMock.loadUserPreferences.and.resolveTo({
       language: 'sp',
@@ -211,147 +154,74 @@ describe('ListingDataCoordinatorService', () => {
       sortCriteria: [{ sortBy: 'price', sortOrder: 'asc' }],
       propertyLabels: [{ propertyId: 'p-1', labels: { review: 'NEW' } }]
     });
-    const setFilters = jasmine.createSpy('setFilters');
-    const setSortCriteria = jasmine.createSpy('setSortCriteria');
-    const setPageSize = jasmine.createSpy('setPageSize');
-    const setSelectedLanguage = jasmine.createSpy('setSelectedLanguage');
-    const persistSelectedLanguage = jasmine.createSpy('persistSelectedLanguage');
-    const setPropertyLabels = jasmine.createSpy('setPropertyLabels');
 
     // Action
-    await service.loadUserPreferences({
-      http: {} as any,
-      setFilters,
-      setSortCriteria,
-      setPageSize,
-      setSelectedLanguage,
-      persistSelectedLanguage,
-      setPropertyLabels
-    });
+    await service.loadUserPreferences({} as any, 'selected-language');
 
     // Assert
-    expect(setSelectedLanguage).toHaveBeenCalledWith('sp');
-    expect(persistSelectedLanguage).toHaveBeenCalledWith('sp');
-    expect(setPageSize).toHaveBeenCalledWith(500);
-    expect(setFilters).toHaveBeenCalled();
-    expect(setSortCriteria).toHaveBeenCalled();
-    expect(setPropertyLabels).toHaveBeenCalled();
+    expect(appShellStateMock.selectedLanguage()).toBe('sp');
+    expect(appShellStateMock.pagination().pageSize).toBe(500);
+    expect(appShellStateMock.filters().showClosed).toBeFalse();
+    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
+    expect(appShellStateMock.propertyLabels()).toEqual([{ propertyId: 'p-1', labels: { review: 'NEW' } }]);
+    expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledOnceWith('selected-language', 'sp');
   });
 
-  it('saveLanguagePreference should return when unauthenticated', async () => {
+  it('whenLanguageChangesWhileUnauthenticated_saveLanguagePreference_shouldSkipPersistence', async () => {
     // Arrange
+    appShellStateMock.authenticatedUser.set(null);
 
     // Action
-    await service.saveLanguagePreference({} as any, false, createDefaultListingFilters(), [], 100, 'en');
+    await service.saveLanguagePreference({} as any, 'sp');
 
     // Assert
     expect(listingStateFacadeServiceMock.saveFiltersPreference).not.toHaveBeenCalled();
   });
 
-  it('saveLanguagePreference should save preference when authenticated', async () => {
+  it('whenLanguageChangesWhileAuthenticated_saveLanguagePreference_shouldPersistPreferences', async () => {
     // Arrange
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
+    appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false });
+    appShellStateMock.sortCriteria.set([{ sortBy: 'price', sortOrder: 'desc' }]);
+    appShellStateMock.pagination.update((state) => ({ ...state, pageSize: 500 }));
 
     // Action
-    await service.saveLanguagePreference({} as any, true, createDefaultListingFilters(), [], 100, 'en');
+    await service.saveLanguagePreference({} as any, 'sp');
 
     // Assert
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledOnceWith(
+      {} as any,
+      { ...createDefaultListingFilters(), showClosed: false },
+      'sp',
+      [{ sortBy: 'price', sortOrder: 'desc' }],
+      500
+    );
+  });
+
+  it('whenSortChanges_toggleSortAndRefresh_shouldUpdateSortAndPersistForAuthenticatedUser', async () => {
+    // Arrange
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
+    appShellStateMock.sortCriteria.set([]);
+
+    // Action
+    await service.toggleSortAndRefresh({} as any, 'price');
+
+    // Assert
+    expect(listingStateFacadeServiceMock.toggleSortCriteria).toHaveBeenCalledOnceWith([], 'price');
+    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalled();
   });
 
-  it('saveLanguagePreference should swallow save errors', async () => {
+  it('whenMaintenanceRuns_runMaintenanceOperation_shouldSetRunningAndResult', async () => {
     // Arrange
-    listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-error'));
+    appShellStateMock.maintenanceRunning.set(false);
+    appShellStateMock.maintenanceResultText.set('old');
 
     // Action
-    await service.saveLanguagePreference({} as any, true, createDefaultListingFilters(), [], 100, 'en');
+    await service.runMaintenanceOperation({} as any, {} as any);
 
     // Assert
-    expect().nothing();
-  });
-
-  it('toggleSortAndRefresh should save and refresh for authenticated user', async () => {
-    // Arrange
-    const setSortCriteria = jasmine.createSpy('setSortCriteria');
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
-
-    // Action
-    await service.toggleSortAndRefresh({
-      http: {} as any,
-      currentSortCriteria: [],
-      sortBy: 'price',
-      filters: createDefaultListingFilters(),
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: true,
-      setSortCriteria,
-      onRefreshListingData
-    });
-
-    // Assert
-    expect(setSortCriteria).toHaveBeenCalledWith([{ sortBy: 'price', sortOrder: 'asc' }]);
-    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalled();
-    expect(onRefreshListingData).toHaveBeenCalled();
-  });
-
-  it('toggleSortAndRefresh should refresh when unauthenticated without saving', async () => {
-    // Arrange
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
-
-    // Action
-    await service.toggleSortAndRefresh({
-      http: {} as any,
-      currentSortCriteria: [],
-      sortBy: 'price',
-      filters: createDefaultListingFilters(),
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: false,
-      setSortCriteria: jasmine.createSpy('setSortCriteria'),
-      onRefreshListingData
-    });
-
-    // Assert
-    expect(listingStateFacadeServiceMock.saveFiltersPreference).not.toHaveBeenCalled();
-    expect(onRefreshListingData).toHaveBeenCalled();
-  });
-
-  it('toggleSortAndRefresh should swallow save errors and still refresh', async () => {
-    // Arrange
-    listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-error'));
-    const onRefreshListingData = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
-
-    // Action
-    await service.toggleSortAndRefresh({
-      http: {} as any,
-      currentSortCriteria: [],
-      sortBy: 'price',
-      filters: createDefaultListingFilters(),
-      pageSize: 100,
-      selectedLanguage: 'en',
-      isAuthenticated: true,
-      setSortCriteria: jasmine.createSpy('setSortCriteria'),
-      onRefreshListingData
-    });
-
-    // Assert
-    expect(onRefreshListingData).toHaveBeenCalled();
-  });
-
-  it('runMaintenanceOperation should set running flags and operation result', async () => {
-    // Arrange
-    const setMaintenanceRunning = jasmine.createSpy('setMaintenanceRunning');
-    const setMaintenanceResultText = jasmine.createSpy('setMaintenanceResultText');
-
-    // Action
-    await service.runMaintenanceOperation({
-      operation: {} as any,
-      http: {} as any,
-      setMaintenanceRunning,
-      setMaintenanceResultText
-    });
-
-    // Assert
-    expect(setMaintenanceRunning.calls.allArgs()).toEqual([[true], [false]]);
-    expect(setMaintenanceResultText.calls.allArgs()).toEqual([[''], ['operation-result']]);
+    expect(appShellStateMock.maintenanceRunning()).toBeFalse();
+    expect(appShellStateMock.maintenanceResultText()).toBe('operation-result');
   });
 });

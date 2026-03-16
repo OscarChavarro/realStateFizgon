@@ -1,6 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
+import { computed, signal } from '@angular/core';
+import { AuthenticatedUser, UserPermission } from 'src/app/auth/model/authenticated-user.model';
 import { SessionCoordinatorService } from 'src/app/auth/services/session-coordinator.service';
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 class SessionCoordinatorServiceMockFactory {
   static createHttpClientMock() {
@@ -13,6 +16,26 @@ class SessionCoordinatorServiceMockFactory {
       logout: jasmine.createSpy('logout').and.resolveTo(undefined),
       loadUsers: jasmine.createSpy('loadUsers').and.resolveTo([]),
       deleteUser: jasmine.createSpy('deleteUser').and.resolveTo(false)
+    };
+  }
+
+  static createListingQueryOrchestratorMock() {
+    return {
+      loadUserPreferences: jasmine.createSpy('loadUserPreferences').and.resolveTo(undefined),
+      refreshListingData: jasmine.createSpy('refreshListingData').and.resolveTo(undefined),
+      resetGuestListingState: jasmine.createSpy('resetGuestListingState')
+    };
+  }
+
+  static createAppShellStateMock() {
+    const authenticatedUser = signal<AuthenticatedUser | null>(null);
+    return {
+      authenticatedUser,
+      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD'),
+      usersLoading: signal(false),
+      users: signal<any[]>([]),
+      canMaintainDatabase: computed(() => authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true),
+      canEditUsers: computed(() => authenticatedUser()?.permissions?.includes('canEditUsers') === true)
     };
   }
 
@@ -30,258 +53,193 @@ class SessionCoordinatorServiceMockFactory {
 }
 
 describe('SessionCoordinatorService', () => {
-  it('loadCurrentUserAndApplyState should reset guest state when user is not authenticated', async () => {
+  it('whenCurrentUserIsMissing_loadCurrentUserAndApplyState_shouldResetGuestState', async () => {
     // Arrange
     const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const service = new SessionCoordinatorService(authFacade as any);
+    const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+    appShellState.activeTab.set('USERS_TAB');
+    appShellState.users.set([{ id: 'managed-user-1' }]);
+    const service = new SessionCoordinatorService(
+      authFacade as any,
+      listingQuery as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
+    );
+
+    // Action
+    await service.loadCurrentUserAndApplyState(SessionCoordinatorServiceMockFactory.createHttpClientMock());
+
+    // Assert
+    expect(appShellState.authenticatedUser()).toBeNull();
+    expect(appShellState.users()).toEqual([]);
+    expect(appShellState.activeTab()).toBe('DASHBOARD');
+    expect(listingQuery.resetGuestListingState).toHaveBeenCalledTimes(1);
+    expect(listingQuery.loadUserPreferences).not.toHaveBeenCalled();
+  });
+
+  it('whenCurrentUserExists_loadCurrentUserAndApplyState_shouldLoadPreferencesAndApplyTabPermissions', async () => {
+    // Arrange
+    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
+    authFacade.loadCurrentUser.and.resolveTo(
+      SessionCoordinatorServiceMockFactory.createUser({ permissions: [] })
+    );
+    const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+    appShellState.activeTab.set('DATABASE_MAINTENANCE_TAB');
+    const service = new SessionCoordinatorService(
+      authFacade as any,
+      listingQuery as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
+    );
+
+    // Action
+    await service.loadCurrentUserAndApplyState(SessionCoordinatorServiceMockFactory.createHttpClientMock());
+
+    // Assert
+    expect(listingQuery.loadUserPreferences).toHaveBeenCalledTimes(1);
+    expect(appShellState.activeTab()).toBe('DASHBOARD');
+  });
+
+  it('whenUsersTabAndUserCanEdit_loadCurrentUserAndApplyState_shouldLoadUsers', async () => {
+    // Arrange
+    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
+    authFacade.loadCurrentUser.and.resolveTo(
+      SessionCoordinatorServiceMockFactory.createUser({ permissions: ['canEditUsers'] })
+    );
+    authFacade.loadUsers.and.resolveTo([{ id: 'managed-user-1' }]);
+    const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+    appShellState.activeTab.set('USERS_TAB');
+    const service = new SessionCoordinatorService(
+      authFacade as any,
+      listingQuery as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
+    );
     const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
-    const setAuthenticatedUserSpy = jasmine.createSpy('setAuthenticatedUser');
-    const setActiveTabSpy = jasmine.createSpy('setActiveTab');
-    const loadPreferencesSpy = jasmine.createSpy('onLoadUserPreferences').and.resolveTo(undefined);
-    const loadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
-    const resetGuestStateSpy = jasmine.createSpy('onResetGuestState');
 
     // Action
-    await service.loadCurrentUserAndApplyState({
-      http,
-      activeTab: 'USERS_TAB',
-      canMaintainDatabase: () => false,
-      canEditUsers: () => false,
-      setAuthenticatedUser: setAuthenticatedUserSpy,
-      setActiveTab: setActiveTabSpy,
-      onLoadUserPreferences: loadPreferencesSpy,
-      onLoadUsers: loadUsersSpy,
-      onResetGuestState: resetGuestStateSpy
-    });
+    await service.loadCurrentUserAndApplyState(http);
 
     // Assert
-    expect(authFacade.loadCurrentUser).toHaveBeenCalledOnceWith(http);
-    expect(setAuthenticatedUserSpy).toHaveBeenCalledWith(null);
-    expect(resetGuestStateSpy).toHaveBeenCalled();
-    expect(setActiveTabSpy).toHaveBeenCalledWith('DASHBOARD');
-    expect(loadPreferencesSpy).not.toHaveBeenCalled();
-    expect(loadUsersSpy).not.toHaveBeenCalled();
+    expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+    expect(appShellState.users()).toEqual([{ id: 'managed-user-1' }]);
+    expect(appShellState.usersLoading()).toBeFalse();
   });
 
-  it('loadCurrentUserAndApplyState should keep dashboard tab when user is not authenticated on dashboard', async () => {
+  it('whenLoggingOut_logoutAndReset_shouldClearStateAndRefreshListing', async () => {
     // Arrange
     const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setActiveTabSpy = jasmine.createSpy('setActiveTab');
-
-    // Action
-    await service.loadCurrentUserAndApplyState({
-      http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      activeTab: 'DASHBOARD',
-      canMaintainDatabase: () => false,
-      canEditUsers: () => false,
-      setAuthenticatedUser: jasmine.createSpy('setAuthenticatedUser'),
-      setActiveTab: setActiveTabSpy,
-      onLoadUserPreferences: jasmine.createSpy('onLoadUserPreferences').and.resolveTo(undefined),
-      onLoadUsers: jasmine.createSpy('onLoadUsers').and.resolveTo(undefined),
-      onResetGuestState: jasmine.createSpy('onResetGuestState')
-    });
-
-    // Assert
-    expect(setActiveTabSpy).not.toHaveBeenCalled();
-  });
-
-  it('loadCurrentUserAndApplyState should load preferences and enforce permissions for authenticated user', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const user = SessionCoordinatorServiceMockFactory.createUser();
-    authFacade.loadCurrentUser.and.resolveTo(user);
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setActiveTabSpy = jasmine.createSpy('setActiveTab');
-    const loadPreferencesSpy = jasmine.createSpy('onLoadUserPreferences').and.resolveTo(undefined);
-    const loadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
-
-    // Action
-    await service.loadCurrentUserAndApplyState({
-      http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      activeTab: 'DATABASE_MAINTENANCE_TAB',
-      canMaintainDatabase: () => false,
-      canEditUsers: () => false,
-      setAuthenticatedUser: jasmine.createSpy('setAuthenticatedUser'),
-      setActiveTab: setActiveTabSpy,
-      onLoadUserPreferences: loadPreferencesSpy,
-      onLoadUsers: loadUsersSpy,
-      onResetGuestState: jasmine.createSpy('onResetGuestState')
-    });
-
-    // Assert
-    expect(loadPreferencesSpy).toHaveBeenCalled();
-    expect(setActiveTabSpy).toHaveBeenCalledWith('DASHBOARD');
-    expect(loadUsersSpy).not.toHaveBeenCalled();
-  });
-
-  it('loadCurrentUserAndApplyState should load users in users tab when user can edit users', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    authFacade.loadCurrentUser.and.resolveTo(SessionCoordinatorServiceMockFactory.createUser());
-    const service = new SessionCoordinatorService(authFacade as any);
-    const loadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
-
-    // Action
-    await service.loadCurrentUserAndApplyState({
-      http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      activeTab: 'USERS_TAB',
-      canMaintainDatabase: () => true,
-      canEditUsers: () => true,
-      setAuthenticatedUser: jasmine.createSpy('setAuthenticatedUser'),
-      setActiveTab: jasmine.createSpy('setActiveTab'),
-      onLoadUserPreferences: jasmine.createSpy('onLoadUserPreferences').and.resolveTo(undefined),
-      onLoadUsers: loadUsersSpy,
-      onResetGuestState: jasmine.createSpy('onResetGuestState')
-    });
-
-    // Assert
-    expect(loadUsersSpy).toHaveBeenCalled();
-  });
-
-  it('logoutAndReset should logout, clear user and refresh data', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const service = new SessionCoordinatorService(authFacade as any);
+    const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+    appShellState.authenticatedUser.set(SessionCoordinatorServiceMockFactory.createUser());
+    appShellState.activeTab.set('DATABASE_MAINTENANCE_TAB');
+    appShellState.users.set([{ id: 'managed-user-1' }]);
+    const service = new SessionCoordinatorService(
+      authFacade as any,
+      listingQuery as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
+    );
     const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
-    const setAuthenticatedUserSpy = jasmine.createSpy('setAuthenticatedUser');
-    const resetGuestStateSpy = jasmine.createSpy('onResetGuestState');
-    const refreshListingSpy = jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.logoutAndReset({
-      http,
-      setAuthenticatedUser: setAuthenticatedUserSpy,
-      onResetGuestState: resetGuestStateSpy,
-      onRefreshListingData: refreshListingSpy
-    });
+    await service.logoutAndReset(http);
 
     // Assert
     expect(authFacade.logout).toHaveBeenCalledOnceWith(http);
-    expect(setAuthenticatedUserSpy).toHaveBeenCalledOnceWith(null);
-    expect(resetGuestStateSpy).toHaveBeenCalled();
-    expect(refreshListingSpy).toHaveBeenCalled();
-  });
-
-  it('loadUsers should return empty users list when cannot edit users', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setUsersSpy = jasmine.createSpy('setUsers');
-    const setUsersLoadingSpy = jasmine.createSpy('setUsersLoading');
-
-    // Action
-    await service.loadUsers({
-      http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      canEditUsers: false,
-      setUsersLoading: setUsersLoadingSpy,
-      setUsers: setUsersSpy
-    });
-
-    // Assert
-    expect(setUsersSpy).toHaveBeenCalledOnceWith([]);
-    expect(setUsersLoadingSpy).not.toHaveBeenCalled();
-    expect(authFacade.loadUsers).not.toHaveBeenCalled();
-  });
-
-  it('loadUsers should fetch users when can edit users', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    const users = [{ id: 'managed-1' }];
-    authFacade.loadUsers.and.resolveTo(users);
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setUsersSpy = jasmine.createSpy('setUsers');
-    const setUsersLoadingSpy = jasmine.createSpy('setUsersLoading');
-    const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
-
-    // Action
-    await service.loadUsers({
-      http,
-      canEditUsers: true,
-      setUsersLoading: setUsersLoadingSpy,
-      setUsers: setUsersSpy
-    });
-
-    // Assert
-    expect(setUsersLoadingSpy.calls.allArgs()).toEqual([[true], [false]]);
-    expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
-    expect(setUsersSpy).toHaveBeenCalledOnceWith(users);
+    expect(appShellState.authenticatedUser()).toBeNull();
+    expect(appShellState.users()).toEqual([]);
+    expect(appShellState.activeTab()).toBe('DASHBOARD');
+    expect(listingQuery.resetGuestListingState).toHaveBeenCalledTimes(1);
+    expect(listingQuery.refreshListingData).toHaveBeenCalledOnceWith(http);
   });
 
   [
-    { label: 'cannot edit users', canEditUsers: false, userId: 'u1', currentUser: null as AuthenticatedUser | null },
-    { label: 'empty user id', canEditUsers: true, userId: '', currentUser: null as AuthenticatedUser | null },
-    { label: 'self deletion', canEditUsers: true, userId: 'u1', currentUser: SessionCoordinatorServiceMockFactory.createUser({ id: 'u1' }) }
-  ].forEach(({ label, canEditUsers, userId, currentUser }) => {
-    it(`deleteUserAndRefresh should return early for ${label}`, async () => {
+    { label: 'cannot edit users', user: SessionCoordinatorServiceMockFactory.createUser({ permissions: [] }), expectedUsers: [] },
+    { label: 'can edit users', user: SessionCoordinatorServiceMockFactory.createUser({ permissions: ['canEditUsers'] }), expectedUsers: [{ id: 'managed-user-1' }] }
+  ].forEach(({ label, user, expectedUsers }) => {
+    it(`whenLoadingUsers_loadUsers_shouldHandle${label.replace(/\s/g, '')}`, async () => {
       // Arrange
       const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-      const service = new SessionCoordinatorService(authFacade as any);
-      const setUsersLoadingSpy = jasmine.createSpy('setUsersLoading');
-      const onLoadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
+      authFacade.loadUsers.and.resolveTo([{ id: 'managed-user-1' }]);
+      const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+      const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+      appShellState.authenticatedUser.set(user);
+      const service = new SessionCoordinatorService(
+        authFacade as any,
+        listingQuery as unknown as ListingQueryOrchestratorService,
+        appShellState as unknown as AppShellStateService
+      );
+      const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
       // Action
-      await service.deleteUserAndRefresh({
-        http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-        userId,
-        canEditUsers,
-        currentUser,
-        setUsersLoading: setUsersLoadingSpy,
-        onLoadUsers: onLoadUsersSpy
-      });
+      await service.loadUsers(http);
 
       // Assert
-      expect(setUsersLoadingSpy).not.toHaveBeenCalled();
-      expect(authFacade.deleteUser).not.toHaveBeenCalled();
-      expect(onLoadUsersSpy).not.toHaveBeenCalled();
+      expect(appShellState.users()).toEqual(expectedUsers as any[]);
+      if (user.permissions.includes('canEditUsers')) {
+        expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+      } else {
+        expect(authFacade.loadUsers).not.toHaveBeenCalled();
+      }
     });
   });
 
-  it('deleteUserAndRefresh should refresh users when deletion succeeds', async () => {
-    // Arrange
-    const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
-    authFacade.deleteUser.and.resolveTo(true);
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setUsersLoadingSpy = jasmine.createSpy('setUsersLoading');
-    const onLoadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
-    const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
+  [
+    { label: 'without permissions', permissions: [] as UserPermission[], userId: 'u1', currentUserId: 'u0', shouldDelete: false },
+    { label: 'with empty id', permissions: ['canEditUsers'] as UserPermission[], userId: '', currentUserId: 'u0', shouldDelete: false },
+    { label: 'self delete', permissions: ['canEditUsers'] as UserPermission[], userId: 'u1', currentUserId: 'u1', shouldDelete: false },
+    { label: 'with valid target', permissions: ['canEditUsers'] as UserPermission[], userId: 'u2', currentUserId: 'u1', shouldDelete: true }
+  ].forEach(({ label, permissions, userId, currentUserId, shouldDelete }) => {
+    it(`whenDeletingUser_deleteUserAndRefresh_shouldHandle${label.replace(/\s/g, '')}`, async () => {
+      // Arrange
+      const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
+      authFacade.deleteUser.and.resolveTo(true);
+      authFacade.loadUsers.and.resolveTo([{ id: 'managed-user-2' }]);
+      const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+      const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+      appShellState.authenticatedUser.set(
+        SessionCoordinatorServiceMockFactory.createUser({ id: currentUserId, permissions })
+      );
+      const service = new SessionCoordinatorService(
+        authFacade as any,
+        listingQuery as unknown as ListingQueryOrchestratorService,
+        appShellState as unknown as AppShellStateService
+      );
+      const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
-    // Action
-    await service.deleteUserAndRefresh({
-      http,
-      userId: 'u2',
-      canEditUsers: true,
-      currentUser: SessionCoordinatorServiceMockFactory.createUser({ id: 'u1' }),
-      setUsersLoading: setUsersLoadingSpy,
-      onLoadUsers: onLoadUsersSpy
+      // Action
+      await service.deleteUserAndRefresh(http, userId);
+
+      // Assert
+      if (shouldDelete) {
+        expect(authFacade.deleteUser).toHaveBeenCalledOnceWith(http, userId);
+        expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+        expect(appShellState.users()).toEqual([{ id: 'managed-user-2' }]);
+      } else {
+        expect(authFacade.deleteUser).not.toHaveBeenCalled();
+      }
     });
-
-    // Assert
-    expect(setUsersLoadingSpy).toHaveBeenCalledOnceWith(true);
-    expect(authFacade.deleteUser).toHaveBeenCalledOnceWith(http, 'u2');
-    expect(onLoadUsersSpy).toHaveBeenCalled();
   });
 
-  it('deleteUserAndRefresh should stop loading when deletion fails', async () => {
+  it('whenDeleteFails_deleteUserAndRefresh_shouldStopLoading', async () => {
     // Arrange
     const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
     authFacade.deleteUser.and.resolveTo(false);
-    const service = new SessionCoordinatorService(authFacade as any);
-    const setUsersLoadingSpy = jasmine.createSpy('setUsersLoading');
-    const onLoadUsersSpy = jasmine.createSpy('onLoadUsers').and.resolveTo(undefined);
+    const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
+    appShellState.authenticatedUser.set(
+      SessionCoordinatorServiceMockFactory.createUser({ permissions: ['canEditUsers'] })
+    );
+    const service = new SessionCoordinatorService(
+      authFacade as any,
+      listingQuery as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
+    );
 
     // Action
-    await service.deleteUserAndRefresh({
-      http: SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      userId: 'u2',
-      canEditUsers: true,
-      currentUser: SessionCoordinatorServiceMockFactory.createUser({ id: 'u1' }),
-      setUsersLoading: setUsersLoadingSpy,
-      onLoadUsers: onLoadUsersSpy
-    });
+    await service.deleteUserAndRefresh(SessionCoordinatorServiceMockFactory.createHttpClientMock(), 'u2');
 
     // Assert
-    expect(setUsersLoadingSpy.calls.allArgs()).toEqual([[true], [false]]);
-    expect(onLoadUsersSpy).not.toHaveBeenCalled();
+    expect(appShellState.usersLoading()).toBeFalse();
   });
 });

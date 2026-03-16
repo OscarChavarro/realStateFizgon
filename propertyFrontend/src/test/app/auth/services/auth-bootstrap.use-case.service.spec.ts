@@ -1,11 +1,13 @@
-import { DestroyRef } from '@angular/core';
+import { DestroyRef, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { AuthBootstrapUseCaseService } from 'src/app/auth/services/auth-bootstrap.use-case.service';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
 import { SessionCoordinatorService } from 'src/app/auth/services/session-coordinator.service';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
 import { ApiSessionEventsService } from 'src/app/core/api/services/api-session-events.service';
+import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
+import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 class FakeDestroyRef implements DestroyRef {
   private callbacks: Array<() => void> = [];
@@ -72,112 +74,94 @@ class AuthBootstrapUseCaseServiceMockFactory {
     };
   }
 
-  static createHttpClientMock() {
-    return {} as any;
+  static createListingQueryOrchestratorMock() {
+    return {
+      resetGuestListingState: jasmine.createSpy('resetGuestListingState'),
+      refreshListingData: jasmine.createSpy('refreshListingData').and.resolveTo(undefined)
+    };
   }
 
-  static createParams(overrides: Partial<any> = {}) {
+  static createAppShellStateMock() {
     return {
-      http: AuthBootstrapUseCaseServiceMockFactory.createHttpClientMock(),
-      destroyRef: new FakeDestroyRef() as unknown as DestroyRef,
-      frontendHost: 'localhost',
-      selectedLanguageKey: 'selected-language',
-      setSelectedLanguage: jasmine.createSpy('setSelectedLanguage'),
-      setBackendBaseUrl: jasmine.createSpy('setBackendBaseUrl'),
-      setStaticMediaBaseUrl: jasmine.createSpy('setStaticMediaBaseUrl'),
-      setGoogleMapsApiKey: jasmine.createSpy('setGoogleMapsApiKey'),
-      setGoogleMapsMapId: jasmine.createSpy('setGoogleMapsMapId'),
-      setGoogleLoginEnabled: jasmine.createSpy('setGoogleLoginEnabled'),
-      activeTab: 'USERS_TAB',
-      canMaintainDatabase: () => true,
-      canEditUsers: () => true,
-      setAuthenticatedUser: jasmine.createSpy('setAuthenticatedUser'),
-      setActiveTab: jasmine.createSpy('setActiveTab'),
-      onLoadUserPreferences: jasmine.createSpy('onLoadUserPreferences').and.resolveTo(undefined),
-      onLoadUsers: jasmine.createSpy('onLoadUsers').and.resolveTo(undefined),
-      onResetGuestState: jasmine.createSpy('onResetGuestState'),
-      isAuthenticated: () => false,
-      getActiveTab: () => 'DASHBOARD',
-      onRefreshListingData: jasmine.createSpy('onRefreshListingData').and.resolveTo(undefined),
-      ...overrides
+      selectedLanguage: signal<'en' | 'sp'>('en'),
+      backendBaseUrl: signal(''),
+      staticMediaBaseUrl: signal(''),
+      googleMapsApiKey: signal<string | null>(null),
+      googleMapsMapId: signal<string | null>(null),
+      googleLoginEnabled: signal(false),
+      authenticatedUser: signal<any>(null),
+      users: signal<any[]>([]),
+      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD')
     };
   }
 }
 
 describe('AuthBootstrapUseCaseService', () => {
-  it('initialize should configure runtime, auth options and session loading', async () => {
+  it('whenInitializing_initialize_shouldConfigureRuntimeAndLoadSession', async () => {
     // Arrange
     const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
     const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
+    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
     const service = new AuthBootstrapUseCaseService(
       listingStateFacade as unknown as ListingStateFacadeService,
       runtimeConfig as unknown as ApiRuntimeConfigService,
       authFacade as unknown as AuthFacadeService,
       sessionCoordinator as unknown as SessionCoordinatorService,
-      sessionEvents.sessionEvents as unknown as ApiSessionEventsService
+      sessionEvents.sessionEvents as unknown as ApiSessionEventsService,
+      listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
     );
-    const params = AuthBootstrapUseCaseServiceMockFactory.createParams({
-      activeTab: 'DATABASE_MAINTENANCE_TAB'
-    });
+    const http = {} as any;
+    const destroyRef = new FakeDestroyRef() as unknown as DestroyRef;
 
     // Action
-    await service.initialize(params as any);
+    await service.initialize(http, destroyRef, 'localhost', 'selected-language');
 
     // Assert
     expect(listingStateFacade.loadSelectedLanguageFromSession).toHaveBeenCalledOnceWith('selected-language');
-    expect(params.setSelectedLanguage).toHaveBeenCalledOnceWith('sp');
-    expect(listingStateFacade.loadBackendConfiguration).toHaveBeenCalledOnceWith(params.http);
+    expect(appShellState.selectedLanguage()).toBe('sp');
+    expect(listingStateFacade.loadBackendConfiguration).toHaveBeenCalledOnceWith(http);
     expect(runtimeConfig.setConfiguration).toHaveBeenCalledTimes(1);
-    expect(params.setBackendBaseUrl).toHaveBeenCalledOnceWith('http://api.local:8081');
-    expect(params.setStaticMediaBaseUrl).toHaveBeenCalledOnceWith('http://static.local/');
-    expect(params.setGoogleMapsApiKey).toHaveBeenCalledOnceWith('maps-key');
-    expect(params.setGoogleMapsMapId).toHaveBeenCalledOnceWith('maps-id');
+    expect(appShellState.backendBaseUrl()).toBe('http://api.local:8081');
+    expect(appShellState.staticMediaBaseUrl()).toBe('http://static.local/');
+    expect(appShellState.googleMapsApiKey()).toBe('maps-key');
+    expect(appShellState.googleMapsMapId()).toBe('maps-id');
     expect(authFacade.warnIfAuthHostMismatch).toHaveBeenCalledOnceWith('localhost');
-    expect(authFacade.loadGoogleLoginAvailability).toHaveBeenCalledOnceWith(params.http);
-    expect(params.setGoogleLoginEnabled).toHaveBeenCalledOnceWith(true);
-    expect(sessionCoordinator.loadCurrentUserAndApplyState).toHaveBeenCalledOnceWith({
-      http: params.http,
-      activeTab: 'DATABASE_MAINTENANCE_TAB',
-      canMaintainDatabase: params.canMaintainDatabase,
-      canEditUsers: params.canEditUsers,
-      setAuthenticatedUser: params.setAuthenticatedUser,
-      setActiveTab: params.setActiveTab,
-      onLoadUserPreferences: params.onLoadUserPreferences,
-      onLoadUsers: params.onLoadUsers,
-      onResetGuestState: params.onResetGuestState
-    });
+    expect(authFacade.loadGoogleLoginAvailability).toHaveBeenCalledOnceWith(http);
+    expect(appShellState.googleLoginEnabled()).toBeTrue();
+    expect(sessionCoordinator.loadCurrentUserAndApplyState).toHaveBeenCalledOnceWith(http);
   });
 
-  it('initialize should ignore unauthorized events while user is already unauthenticated', async () => {
+  it('whenUnauthorizedArrivesAndUserIsUnauthenticated_initialize_shouldIgnoreEvent', async () => {
     // Arrange
     const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
     const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
+    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
     const service = new AuthBootstrapUseCaseService(
       listingStateFacade as unknown as ListingStateFacadeService,
       runtimeConfig as unknown as ApiRuntimeConfigService,
       authFacade as unknown as AuthFacadeService,
       sessionCoordinator as unknown as SessionCoordinatorService,
-      sessionEvents.sessionEvents as unknown as ApiSessionEventsService
+      sessionEvents.sessionEvents as unknown as ApiSessionEventsService,
+      listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
     );
-    const params = AuthBootstrapUseCaseServiceMockFactory.createParams({
-      isAuthenticated: () => false
-    });
 
     // Action
-    await service.initialize(params as any);
+    await service.initialize({} as any, new FakeDestroyRef() as unknown as DestroyRef, 'localhost', 'selected-language');
     sessionEvents.unauthorizedSubject.next();
 
     // Assert
-    expect(params.setAuthenticatedUser).not.toHaveBeenCalled();
-    expect(params.onResetGuestState).not.toHaveBeenCalled();
-    expect(params.setActiveTab).not.toHaveBeenCalled();
-    expect(params.onRefreshListingData).not.toHaveBeenCalled();
+    expect(listingQueryOrchestrator.resetGuestListingState).not.toHaveBeenCalled();
+    expect(listingQueryOrchestrator.refreshListingData).not.toHaveBeenCalled();
   });
 
   [
@@ -186,70 +170,74 @@ describe('AuthBootstrapUseCaseService', () => {
     { tab: 'DASHBOARD', shouldSetDashboard: false },
     { tab: 'MAP_TAB', shouldSetDashboard: false }
   ].forEach(({ tab, shouldSetDashboard }) => {
-    it(`initialize should reset session on unauthorized for active tab ${tab}`, async () => {
+    it(`whenUnauthorizedArrivesOn${tab}_initialize_shouldResetSessionState`, async () => {
       // Arrange
       const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
       const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
       const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
       const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
       const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
+      const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+      const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
+      appShellState.activeTab.set(tab as any);
+      appShellState.authenticatedUser.set({ id: 'user-1' });
+      appShellState.users.set([{ id: 'managed-user-1' }]);
       const service = new AuthBootstrapUseCaseService(
         listingStateFacade as unknown as ListingStateFacadeService,
         runtimeConfig as unknown as ApiRuntimeConfigService,
         authFacade as unknown as AuthFacadeService,
         sessionCoordinator as unknown as SessionCoordinatorService,
-        sessionEvents.sessionEvents as unknown as ApiSessionEventsService
+        sessionEvents.sessionEvents as unknown as ApiSessionEventsService,
+        listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
+        appShellState as unknown as AppShellStateService
       );
-      const params = AuthBootstrapUseCaseServiceMockFactory.createParams({
-        isAuthenticated: () => true,
-        getActiveTab: () => tab as any
-      });
+      const http = {} as any;
 
       // Action
-      await service.initialize(params as any);
+      await service.initialize(http, new FakeDestroyRef() as unknown as DestroyRef, 'localhost', 'selected-language');
       sessionEvents.unauthorizedSubject.next();
 
       // Assert
-      expect(params.setAuthenticatedUser).toHaveBeenCalledOnceWith(null);
-      expect(params.onResetGuestState).toHaveBeenCalledTimes(1);
+      expect(appShellState.authenticatedUser()).toBeNull();
+      expect(appShellState.users()).toEqual([]);
+      expect(listingQueryOrchestrator.resetGuestListingState).toHaveBeenCalledTimes(1);
       if (shouldSetDashboard) {
-        expect(params.setActiveTab).toHaveBeenCalledOnceWith('DASHBOARD');
+        expect(appShellState.activeTab()).toBe('DASHBOARD');
       } else {
-        expect(params.setActiveTab).not.toHaveBeenCalled();
+        expect(appShellState.activeTab()).toBe(tab as any);
       }
-      expect(params.onRefreshListingData).toHaveBeenCalledTimes(1);
+      expect(listingQueryOrchestrator.refreshListingData).toHaveBeenCalledOnceWith(http);
     });
   });
 
-  it('initialize should unsubscribe unauthorized listener when destroyRef is destroyed', async () => {
+  it('whenDestroyRefIsDestroyed_initialize_shouldUnsubscribeUnauthorizedListener', async () => {
     // Arrange
     const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
     const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
+    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
+    appShellState.authenticatedUser.set({ id: 'user-1' });
     const service = new AuthBootstrapUseCaseService(
       listingStateFacade as unknown as ListingStateFacadeService,
       runtimeConfig as unknown as ApiRuntimeConfigService,
       authFacade as unknown as AuthFacadeService,
       sessionCoordinator as unknown as SessionCoordinatorService,
-      sessionEvents.sessionEvents as unknown as ApiSessionEventsService
+      sessionEvents.sessionEvents as unknown as ApiSessionEventsService,
+      listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
+      appShellState as unknown as AppShellStateService
     );
     const destroyRef = new FakeDestroyRef();
-    const params = AuthBootstrapUseCaseServiceMockFactory.createParams({
-      destroyRef: destroyRef as unknown as DestroyRef,
-      isAuthenticated: () => true
-    });
 
     // Action
-    await service.initialize(params as any);
+    await service.initialize({} as any, destroyRef as unknown as DestroyRef, 'localhost', 'selected-language');
     destroyRef.destroy();
     sessionEvents.unauthorizedSubject.next();
 
     // Assert
-    expect(params.setAuthenticatedUser).not.toHaveBeenCalled();
-    expect(params.onResetGuestState).not.toHaveBeenCalled();
-    expect(params.setActiveTab).not.toHaveBeenCalled();
-    expect(params.onRefreshListingData).not.toHaveBeenCalled();
+    expect(listingQueryOrchestrator.resetGuestListingState).not.toHaveBeenCalled();
+    expect(listingQueryOrchestrator.refreshListingData).not.toHaveBeenCalled();
   });
 });

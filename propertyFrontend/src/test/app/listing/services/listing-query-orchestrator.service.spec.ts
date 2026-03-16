@@ -5,7 +5,6 @@ import { createDefaultListingPaginationState } from 'src/app/listing/model/pagin
 import { ListingPropertyRow, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
-import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
@@ -54,9 +53,6 @@ describe('ListingQueryOrchestratorService', () => {
     saveLanguagePreference: jasmine.Spy;
     loadUserPreferences: jasmine.Spy;
   };
-  let listingStateFacadeServiceMock: {
-    persistSelectedLanguage: jasmine.Spy;
-  };
   let propertySelectionServiceMock: {
     syncAfterRefresh: jasmine.Spy;
   };
@@ -65,13 +61,10 @@ describe('ListingQueryOrchestratorService', () => {
   beforeEach(() => {
     listingDataCoordinatorServiceMock = {
       refreshListingData: jasmine.createSpy('refreshListingData').and.resolveTo(undefined),
-      handleFiltersChange: jasmine.createSpy('handleFiltersChange').and.resolveTo(undefined),
+      handleFiltersChange: jasmine.createSpy('handleFiltersChange').and.resolveTo(false),
       toggleSortAndRefresh: jasmine.createSpy('toggleSortAndRefresh').and.resolveTo(undefined),
       saveLanguagePreference: jasmine.createSpy('saveLanguagePreference').and.resolveTo(undefined),
       loadUserPreferences: jasmine.createSpy('loadUserPreferences').and.resolveTo(undefined)
-    };
-    listingStateFacadeServiceMock = {
-      persistSelectedLanguage: jasmine.createSpy('persistSelectedLanguage')
     };
     propertySelectionServiceMock = {
       syncAfterRefresh: jasmine.createSpy('syncAfterRefresh')
@@ -82,7 +75,6 @@ describe('ListingQueryOrchestratorService', () => {
       providers: [
         ListingQueryOrchestratorService,
         { provide: ListingDataCoordinatorService, useValue: listingDataCoordinatorServiceMock },
-        { provide: ListingStateFacadeService, useValue: listingStateFacadeServiceMock },
         { provide: PropertySelectionService, useValue: propertySelectionServiceMock },
         { provide: AppShellStateService, useValue: appShellStateMock }
       ]
@@ -98,7 +90,7 @@ describe('ListingQueryOrchestratorService', () => {
     { stored: 'abc', expected: 0 },
     { stored: null, expected: 0 }
   ].forEach(({ stored, expected }) => {
-    it(`readFilteredTotalElementsFromSession should return ${expected} for "${String(stored)}"`, () => {
+    it(`whenReadingStoredTotal_readFilteredTotalElementsFromSession_shouldReturn${expected}`, () => {
       // Arrange
       if (stored === null) {
         sessionStorage.removeItem('filteredTotalElements');
@@ -119,7 +111,7 @@ describe('ListingQueryOrchestratorService', () => {
     { input: -1, expected: 0 },
     { input: Number.NaN, expected: 0 }
   ].forEach(({ input, expected }) => {
-    it(`persistFilteredTotalElementsInSession should normalize ${input} to ${expected}`, () => {
+    it(`whenPersistingFilteredTotal_persistFilteredTotalElementsInSession_shouldNormalizeTo${expected}`, () => {
       // Arrange
       appShellStateMock.filteredTotalElements.set(99);
 
@@ -132,91 +124,89 @@ describe('ListingQueryOrchestratorService', () => {
     });
   });
 
-  it('refreshListingData should delegate and persist filtered total elements from pagination callback', async () => {
+  it('whenRefreshingListing_refreshListingData_shouldDelegateAndPersistFilteredTotal', async () => {
     // Arrange
     const property = ListingQueryOrchestratorMockFactory.createProperty();
     appShellStateMock.pagination.set({ page: 2, pageSize: 100, totalElements: 0, totalPages: 0 });
+    listingDataCoordinatorServiceMock.refreshListingData.and.callFake(
+      async (_http: unknown, _pagination: unknown, onAfterRefresh?: () => void) => {
+        appShellStateMock.allProperties.set([property]);
+        appShellStateMock.pagination.set({ page: 2, pageSize: 100, totalElements: 23, totalPages: 1 });
+        onAfterRefresh?.();
+      }
+    );
 
     // Action
     await service.refreshListingData({} as any);
-    const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
-    delegatedParams.setLoading(true);
-    delegatedParams.setCount(3);
-    delegatedParams.setAllProperties([property]);
-    delegatedParams.setPagination({ page: 1, pageSize: 100, totalElements: 23, totalPages: 1 });
-    delegatedParams.onAfterRefresh();
-    delegatedParams.setLoading(false);
 
     // Assert
     expect(listingDataCoordinatorServiceMock.refreshListingData).toHaveBeenCalled();
-    expect(appShellStateMock.loading()).toBeFalse();
-    expect(appShellStateMock.count()).toBe(3);
-    expect(appShellStateMock.allProperties()).toEqual([property]);
-    expect(appShellStateMock.pagination()).toEqual({ page: 1, pageSize: 100, totalElements: 23, totalPages: 1 });
-    expect(appShellStateMock.filteredTotalElements()).toBe(23);
     expect(propertySelectionServiceMock.syncAfterRefresh).toHaveBeenCalledWith([property]);
+    expect(appShellStateMock.filteredTotalElements()).toBe(23);
+    expect(sessionStorage.getItem('filteredTotalElements')).toBe('23');
   });
 
-  it('refreshListingData should fallback request page size when current page size is invalid', async () => {
+  it('whenPageSizeIsInvalid_refreshListingData_shouldFallbackToDefaultRequestPageSize', async () => {
     // Arrange
     appShellStateMock.pagination.set({ page: 3, pageSize: 0, totalElements: 0, totalPages: 0 });
 
     // Action
     await service.refreshListingData({} as any);
-    const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
 
     // Assert
-    expect(delegatedParams.pagination.pageSize).toBe(100);
+    const args = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args;
+    expect(args[1]).toEqual({ page: 3, pageSize: 100, totalElements: 0, totalPages: 0 });
   });
 
-  it('refreshListingData should use page 1 when resolved request page size is 0', async () => {
+  it('whenResolvedPageSizeIsZero_refreshListingData_shouldForceRequestPageOne', async () => {
     // Arrange
     spyOn<any>(service, 'resolveRequestPageSize').and.returnValue(0);
     appShellStateMock.pagination.set({ page: 8, pageSize: 100, totalElements: 0, totalPages: 0 });
 
     // Action
     await service.refreshListingData({} as any);
-    const delegatedParams = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args[0];
 
     // Assert
-    expect(delegatedParams.pagination.page).toBe(1);
-    expect(delegatedParams.pagination.pageSize).toBe(0);
+    const args = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args;
+    expect(args[1]).toEqual({ page: 1, pageSize: 0, totalElements: 0, totalPages: 0 });
   });
 
-  it('handleFiltersChange should delegate to listing data coordinator with state-backed callbacks', async () => {
+  it('whenFiltersDoNotChange_handleFiltersChange_shouldSkipRefresh', async () => {
     // Arrange
-    const nextFilters = { ...createDefaultListingFilters(), showClosed: false };
-    appShellStateMock.pagination.set({ page: 4, pageSize: 100, totalElements: 0, totalPages: 0 });
+    listingDataCoordinatorServiceMock.handleFiltersChange.and.resolveTo(false);
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({} as any, nextFilters);
-    const delegatedParams = listingDataCoordinatorServiceMock.handleFiltersChange.calls.mostRecent().args[0];
-    delegatedParams.setFilters(nextFilters);
-    delegatedParams.onFiltersChanged();
-    await delegatedParams.onRefreshListingData();
+    await service.handleFiltersChange({} as any, { ...createDefaultListingFilters(), showClosed: false });
+
+    // Assert
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+
+  it('whenFiltersChange_handleFiltersChange_shouldRefresh', async () => {
+    // Arrange
+    listingDataCoordinatorServiceMock.handleFiltersChange.and.resolveTo(true);
+    const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
+
+    // Action
+    await service.handleFiltersChange({} as any, { ...createDefaultListingFilters(), showClosed: false });
 
     // Assert
     expect(listingDataCoordinatorServiceMock.handleFiltersChange).toHaveBeenCalled();
-    expect(appShellStateMock.filters()).toEqual(nextFilters);
-    expect(appShellStateMock.pagination().page).toBe(1);
     expect(refreshSpy).toHaveBeenCalled();
   });
 
-  it('toggleSort should reset page and delegate to listing data coordinator', async () => {
+  it('whenSortChanges_toggleSort_shouldResetPageAndRefresh', async () => {
     // Arrange
     appShellStateMock.pagination.set({ page: 7, pageSize: 100, totalElements: 0, totalPages: 0 });
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
     await service.toggleSort({} as any, 'price');
-    const delegatedParams = listingDataCoordinatorServiceMock.toggleSortAndRefresh.calls.mostRecent().args[0];
-    delegatedParams.setSortCriteria([{ sortBy: 'price', sortOrder: 'desc' }]);
-    await delegatedParams.onRefreshListingData();
 
     // Assert
     expect(appShellStateMock.pagination().page).toBe(1);
-    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'desc' }]);
+    expect(listingDataCoordinatorServiceMock.toggleSortAndRefresh).toHaveBeenCalledOnceWith({} as any, 'price');
     expect(refreshSpy).toHaveBeenCalled();
   });
 
@@ -250,7 +240,7 @@ describe('ListingQueryOrchestratorService', () => {
       expectedRefreshCalls: 0
     }
   ].forEach(({ title, page, current, expectedPage, expectedRefreshCalls }) => {
-    it(`changePage should ${title}`, async () => {
+    it(`whenChangingPage_changePage_should${title.replace(/\s/g, '')}`, async () => {
       // Arrange
       appShellStateMock.pagination.set(current);
       const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
@@ -270,7 +260,7 @@ describe('ListingQueryOrchestratorService', () => {
     { pageSize: 100, currentPageSize: 100, shouldReturn: true },
     { pageSize: 500.8, currentPageSize: 100, shouldReturn: false }
   ].forEach(({ pageSize, currentPageSize, shouldReturn }) => {
-    it(`changePageSize should handle pageSize=${pageSize} and current=${currentPageSize}`, async () => {
+    it(`whenChangingPageSize_changePageSize_shouldHandleValue${String(pageSize)}`, async () => {
       // Arrange
       appShellStateMock.pagination.set({ page: 3, pageSize: currentPageSize, totalElements: 0, totalPages: 0 });
       const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
@@ -284,23 +274,15 @@ describe('ListingQueryOrchestratorService', () => {
         expect(refreshSpy).not.toHaveBeenCalled();
       } else {
         expect(appShellStateMock.pagination()).toEqual({ page: 1, pageSize: 500, totalElements: 0, totalPages: 0 });
-        expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalled();
+        expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalledOnceWith({} as any, 'en');
         expect(refreshSpy).toHaveBeenCalled();
       }
     });
   });
 
-  it('loadUserPreferences should reset filtered total elements and bridge state callbacks', async () => {
+  it('whenLoadingUserPreferences_loadUserPreferences_shouldResetFilteredTotalAndDelegate', async () => {
     // Arrange
-    const labels: PropertyLabelEntry[] = [{ propertyId: 'property-1', labels: { review: 'FAVOURITE' } }];
-    listingDataCoordinatorServiceMock.loadUserPreferences.and.callFake(async (params: any) => {
-      params.setSelectedLanguage('sp');
-      params.persistSelectedLanguage('sp');
-      params.setFilters({ ...createDefaultListingFilters(), showFavourite: false });
-      params.setSortCriteria([{ sortBy: 'title', sortOrder: 'asc' }]);
-      params.setPageSize(500);
-      params.setPropertyLabels(labels);
-    });
+    appShellStateMock.filteredTotalElements.set(32);
 
     // Action
     await service.loadUserPreferences({} as any);
@@ -308,15 +290,10 @@ describe('ListingQueryOrchestratorService', () => {
     // Assert
     expect(appShellStateMock.filteredTotalElements()).toBe(0);
     expect(sessionStorage.getItem('filteredTotalElements')).toBe('0');
-    expect(appShellStateMock.selectedLanguage()).toBe('sp');
-    expect(appShellStateMock.filters().showFavourite).toBeFalse();
-    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'title', sortOrder: 'asc' }]);
-    expect(appShellStateMock.pagination().pageSize).toBe(500);
-    expect(appShellStateMock.propertyLabels()).toEqual(labels);
-    expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledWith('selectedLanguage', 'sp');
+    expect(listingDataCoordinatorServiceMock.loadUserPreferences).toHaveBeenCalledOnceWith({} as any, 'selectedLanguage');
   });
 
-  it('resetGuestListingState should reset listing state defaults and persist total elements to session', () => {
+  it('whenResettingGuestState_resetGuestListingState_shouldRestoreDefaultsAndPersistTotal', () => {
     // Arrange
     appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false, minPrice: '1000' });
     appShellStateMock.pagination.set({ page: 9, pageSize: 500, totalElements: 30, totalPages: 3 });

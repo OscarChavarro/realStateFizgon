@@ -21,7 +21,8 @@ import {
   GoogleMapVisualStyleId,
   GoogleMapVisualStyleOption
 } from 'src/app/core/maps/model/google-map-layers.model';
-import { PropertyMiniSummaryComponent } from 'src/app/core/maps/components/property-mini-summary/property-mini-summary.component';
+import { GoogleMapLayerPanelComponent } from 'src/app/core/maps/components/google-map-layer-panel/google-map-layer-panel.component';
+import { GoogleMapSelectionOverlayComponent } from 'src/app/core/maps/components/google-map-selection-overlay/google-map-selection-overlay.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 import { GoogleMapPoiLayerManager } from 'src/app/core/maps/services/google-map-poi-layer-manager';
 import {
@@ -36,11 +37,16 @@ import {
   GoogleMapKeyboardSelectionResult,
   GoogleMapSelectionController
 } from 'src/app/core/maps/services/google-map-selection-controller';
+import { GoogleMapRenderUseCaseService } from 'src/app/core/maps/services/google-map-render.use-case.service';
+import { GoogleMapRuntimeUseCaseService } from 'src/app/core/maps/services/google-map-runtime.use-case.service';
+import { GoogleMapSelectionUseCaseService } from 'src/app/core/maps/services/google-map-selection.use-case.service';
+import { GoogleMapLayerPanelUseCaseService } from 'src/app/core/maps/services/google-map-layer-panel.use-case.service';
+import { GoogleMapMarkerRenderingPresenterService } from 'src/app/core/maps/services/google-map-marker-rendering.presenter.service';
 
 @Component({
   selector: 'app-google-map',
   standalone: true,
-  imports: [PropertyMiniSummaryComponent],
+  imports: [GoogleMapLayerPanelComponent, GoogleMapSelectionOverlayComponent],
   templateUrl: './google-map.component.html',
   styleUrl: './google-map.component.scss'
 })
@@ -48,6 +54,13 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly i18nService = inject(I18nService);
   private readonly ngZone = inject(NgZone);
+  private readonly layerPanelUseCaseService = inject(GoogleMapLayerPanelUseCaseService);
+  private readonly mapRenderUseCaseService = inject(GoogleMapRenderUseCaseService);
+  private readonly mapRuntimeUseCaseService = inject(GoogleMapRuntimeUseCaseService);
+  private readonly mapSelectionUseCaseService = inject(GoogleMapSelectionUseCaseService);
+  private readonly markerRenderingPresenterService = inject(
+    GoogleMapMarkerRenderingPresenterService
+  );
   private readonly runtimeLoader = new GoogleMapsRuntimeLoader();
   private readonly viewportManager = new GoogleMapViewportManager();
   private readonly markerIconFactory = new GoogleMapMarkerIconFactory();
@@ -64,15 +77,23 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private layerPanelStartX = 0;
   private layerPanelStartWidth = 0;
   private readonly onLayerPanelResizeMove = (event: MouseEvent): void => {
-    if (!this.isResizingLayerPanel || !this.mapLayoutRef) {
+    if (!this.mapLayoutRef) {
       return;
     }
 
     const layoutRect = this.mapLayoutRef.nativeElement.getBoundingClientRect();
-    const deltaX = event.clientX - this.layerPanelStartX;
-    const maxPanelWidth = Math.max(220, layoutRect.width - 320);
-    const nextWidth = this.layerPanelStartWidth + deltaX;
-    this.layerPanelWidthPx = Math.min(Math.max(nextWidth, 180), maxPanelWidth);
+    const updatedWidth = this.layerPanelUseCaseService.calculateResizedPanelWidth({
+      isResizingLayerPanel: this.isResizingLayerPanel,
+      layoutWidth: layoutRect.width,
+      clientX: event.clientX,
+      layerPanelStartX: this.layerPanelStartX,
+      layerPanelStartWidth: this.layerPanelStartWidth
+    });
+    if (updatedWidth === null) {
+      return;
+    }
+
+    this.layerPanelWidthPx = updatedWidth;
     this.refreshMapViewport();
   };
   private readonly onLayerPanelResizeEnd = (): void => {
@@ -167,7 +188,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   setLayerPanelVisibility(visible: boolean): void {
-    if (this.isLayerPanelVisible === visible) {
+    if (
+      !this.layerPanelUseCaseService.shouldApplyVisibilityChange(this.isLayerPanelVisible, visible)
+    ) {
       return;
     }
 
@@ -178,7 +201,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   onLayerPanelSplitterMouseDown(event: MouseEvent): void {
-    if (!this.isLayerPanelVisible) {
+    if (!this.layerPanelUseCaseService.shouldStartResize(this.isLayerPanelVisible)) {
       return;
     }
 
@@ -191,6 +214,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   onLayerToggle(id: GoogleMapLayerId, event: Event): void {
     const checked = (event.target as HTMLInputElement | null)?.checked === true;
+    this.onLayerToggleChange(id, checked);
+  }
+
+  onLayerToggleChange(id: GoogleMapLayerId, checked: boolean): void {
     this.poiLayerManager.toggleLayer(id, checked, this.buildPoiLayerContext());
   }
 
@@ -271,8 +298,10 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     try {
-      await this.runtimeLoader.loadGoogleMapsScript(this.googleMapsApiKey);
-      await this.runtimeLoader.waitForGoogleMapsReady();
+      await this.mapRuntimeUseCaseService.ensureRuntimeReady(
+        this.runtimeLoader,
+        this.googleMapsApiKey
+      );
       await this.renderMap(mappableProperties);
       this.mapRenderSignature = configSignature;
       this.propertiesRenderSignature = propertiesSignature;
@@ -293,9 +322,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private getMappableProperties(): GoogleMapProperty[] {
-    return this.properties.filter(
-      (property) => Number.isFinite(property.latitude) && Number.isFinite(property.longitude)
-    );
+    return this.mapRenderUseCaseService.getMappableProperties(this.properties);
   }
 
   private async renderMap(properties: GoogleMapProperty[]): Promise<void> {
@@ -308,19 +335,12 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     this.mapLoadError = null;
     const viewport = this.viewportManager.resolveViewport(properties, this.zoom);
-    const mapOptions: Record<string, unknown> = {
-      center: viewport.center,
-      zoom: viewport.zoom,
-      mapTypeId: this.resolveMapTypeId(this.selectedMapVisualStyle),
-      mapTypeControl: false,
-      streetViewControl: false,
-      fullscreenControl: false,
-      keyboardShortcuts: false,
-      styles: this.poiLayerManager.buildMapStyles()
-    };
-    if (this.googleMapsMapId) {
-      mapOptions['mapId'] = this.googleMapsMapId;
-    }
+    const mapOptions = this.mapRenderUseCaseService.buildMapOptions({
+      viewport,
+      selectedMapVisualStyle: this.selectedMapVisualStyle,
+      styles: this.poiLayerManager.buildMapStyles(),
+      googleMapsMapId: this.googleMapsMapId
+    });
 
     this.mapInstance = new googleMaps.Map(mapContainer, mapOptions);
     this.renderMarkers(properties, googleMaps);
@@ -334,31 +354,20 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     this.clearMarkerClusterer();
     this.clearPropertyMarkers();
-    this.propertyMarkerInstances = properties.map((property) => {
-      const marker = new googleMaps.Marker({
-        position: { lat: property.latitude, lng: property.longitude },
-        title: property.title,
-        icon: {
-          url: this.markerIconFactory.buildPropertyMarkerIconDataUrl(property),
-          scaledSize: new googleMaps.Size(38, 38),
-          anchor: new googleMaps.Point(19, 19)
-        }
-      });
-
-      if (this.interactionEnabled && typeof marker.addListener === 'function') {
-        marker.addListener('click', () => {
-          this.ngZone.run(() => {
-            this.openPropertyMiniSummary(property, { focus: true });
-          });
+    const renderResult = this.markerRenderingPresenterService.renderPropertyMarkers({
+      mapInstance: this.mapInstance,
+      properties,
+      googleMaps,
+      interactionEnabled: this.interactionEnabled,
+      markerIconFactory: this.markerIconFactory,
+      onMarkerClick: (property) => {
+        this.ngZone.run(() => {
+          this.openPropertyMiniSummary(property, { focus: true });
         });
       }
-
-      return marker;
     });
-    this.markerClusterer = new MarkerClusterer({
-      map: this.mapInstance as unknown as never,
-      markers: this.propertyMarkerInstances as unknown as never[]
-    });
+    this.propertyMarkerInstances = renderResult.propertyMarkerInstances;
+    this.markerClusterer = renderResult.markerClusterer;
     this.markerInteractionEnabledSnapshot = this.interactionEnabled;
     this.updateSelectedTargetMarker();
   }
@@ -371,16 +380,15 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private buildConfigSignature(): string {
-    return [this.googleMapsApiKey ?? '', this.googleMapsMapId ?? '', String(this.zoom)].join('::');
+    return this.mapRenderUseCaseService.buildConfigSignature(
+      this.googleMapsApiKey,
+      this.googleMapsMapId,
+      this.zoom
+    );
   }
 
   private buildPropertiesSignature(properties: GoogleMapProperty[]): string {
-    return properties
-      .map(
-        (property) =>
-          `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}:${property.review ?? 'NEW'}`
-      )
-      .join('|');
+    return this.mapRenderUseCaseService.buildPropertiesSignature(properties);
   }
 
   onPropertyMiniSummaryCloseRequested(): void {
@@ -432,9 +440,12 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    if (result.type === 'closed') {
+    if (this.mapSelectionUseCaseService.isKeyboardSelectionClosed(result)) {
       this.clearSelectedTargetMarker();
       this.cdr.markForCheck();
+      return;
+    }
+    if (!this.mapSelectionUseCaseService.isKeyboardSelectionSelected(result)) {
       return;
     }
 
@@ -456,8 +467,19 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private updateSelectedTargetMarker(): void {
-    if (!this.interactionEnabled || !this.mapInstance || this.selectedPropertySummary === null) {
+    const selectedPropertySummary = this.selectedPropertySummary;
+    const mapInstance = this.mapInstance;
+    if (
+      this.mapSelectionUseCaseService.shouldClearSelectedTargetMarker(
+        this.interactionEnabled,
+        mapInstance,
+        selectedPropertySummary
+      )
+    ) {
       this.clearSelectedTargetMarker();
+      return;
+    }
+    if (!selectedPropertySummary || !mapInstance) {
       return;
     }
 
@@ -467,18 +489,11 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.clearSelectedTargetMarker();
-    this.selectedTargetMarker = new googleMaps.Marker({
-      map: this.mapInstance,
-      position: {
-        lat: this.selectedPropertySummary.latitude,
-        lng: this.selectedPropertySummary.longitude
-      },
-      zIndex: 3000,
-      icon: {
-        url: this.markerIconFactory.buildSelectedTargetMarkerIconDataUrl(),
-        scaledSize: new googleMaps.Size(56, 56),
-        anchor: new googleMaps.Point(28, 28)
-      }
+    this.selectedTargetMarker = this.markerRenderingPresenterService.createSelectedTargetMarker({
+      mapInstance,
+      selectedProperty: selectedPropertySummary,
+      googleMaps,
+      markerIconFactory: this.markerIconFactory
     });
   }
 
@@ -542,14 +557,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private resolveMapTypeId(style: GoogleMapVisualStyleId): 'roadmap' | 'satellite' | 'hybrid' {
-    switch (style) {
-      case 'satellite':
-        return 'satellite';
-      case 'hybrid':
-        return 'hybrid';
-      default:
-        return 'roadmap';
-    }
+    return this.mapRenderUseCaseService.resolveMapTypeId(style);
   }
 
   private buildPoiLayerContext() {

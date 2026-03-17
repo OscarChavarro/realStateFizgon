@@ -473,6 +473,22 @@ describe('GoogleMapComponent', () => {
     expect(refreshSpy).not.toHaveBeenCalled();
   });
 
+  it('onLayerPanelResizeMove should return when map layout ref is missing', () => {
+    // Arrange
+    const { component } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const refreshSpy = spyOn<any>(component, 'refreshMapViewport');
+    component.layerPanelWidthPx = 240;
+    (component as any).isResizingLayerPanel = true;
+    (component as any).mapLayoutRef = undefined;
+
+    // Action
+    (component as any).onLayerPanelResizeMove({ clientX: 500 } as MouseEvent);
+
+    // Assert
+    expect(component.layerPanelWidthPx).toBe(240);
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+
   it('onLayerPanelResizeEnd should stop resize operation', () => {
     // Arrange
     const { component } = GoogleMapComponentMockFactory.createComponentWithMocks();
@@ -1054,6 +1070,26 @@ describe('GoogleMapComponent', () => {
     });
   });
 
+  it('applyKeyboardSelectionResult should ignore unknown keyboard result types', () => {
+    // Arrange
+    const { component } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const updateSelectedSpy = spyOn<any>(component, 'updateSelectedTargetMarker');
+    const centerSpy = spyOn<any>(component, 'centerMapOnProperty');
+    const focusSpy = spyOn<any>(component, 'focusMiniSummary');
+    const markForCheckSpy = spyOn((component as any).cdr, 'markForCheck');
+
+    // Action
+    (component as any).applyKeyboardSelectionResult({
+      type: 'mystery'
+    } as unknown as GoogleMapKeyboardSelectionResult);
+
+    // Assert
+    expect(updateSelectedSpy).not.toHaveBeenCalled();
+    expect(centerSpy).not.toHaveBeenCalled();
+    expect(focusSpy).not.toHaveBeenCalled();
+    expect(markForCheckSpy).not.toHaveBeenCalled();
+  });
+
   it('syncSelectedSummaryAgainstProperties should clear target marker when selection disappears', () => {
     // Arrange
     const { component, selectionControllerMock } =
@@ -1138,6 +1174,25 @@ describe('GoogleMapComponent', () => {
       GoogleMapComponentMockFactory.createProperty()
     );
     const clearSelectedSpy = spyOn<any>(component, 'clearSelectedTargetMarker').and.callThrough();
+
+    // Action
+    (component as any).updateSelectedTargetMarker();
+
+    // Assert
+    expect(clearSelectedSpy).not.toHaveBeenCalled();
+    expect((component as any).selectedTargetMarker).toBeNull();
+  });
+
+  it('updateSelectedTargetMarker should return when selection is null after shouldClear returns false', () => {
+    // Arrange
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
+    (component as any).mapInstance = new MockGoogleMap(document.createElement('div'), {});
+    selectionControllerMock.getSelectedPropertySummary.and.returnValue(null);
+    spyOn((component as any).mapSelectionUseCaseService, 'shouldClearSelectedTargetMarker').and.returnValue(
+      false
+    );
+    const clearSelectedSpy = spyOn<any>(component, 'clearSelectedTargetMarker');
 
     // Action
     (component as any).updateSelectedTargetMarker();

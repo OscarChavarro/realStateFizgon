@@ -1,0 +1,36 @@
+<div class="google-map-layer-group">
+  <header class="google-map-layer-panel-header">
+    <h3>{{ t('map.PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
+  </header>
+  <div class="google-map-layer-list">
+    @for (layer of layerOptions; track layer.id) {
+      <label class="google-map-layer-item">
+        <input
+          type="checkbox"
+          [checked]="isLayerEnabled(layer.id)"
+          (change)="onLayerToggleChange(layer.id, $event)"
+        />
+        <span>{{ t(layer.label) }}</span>
+      </label>
+    }
+  </div>
+</div>
+
+<div class="google-map-layer-group">
+  <header class="google-map-layer-panel-header">
+    <h3>{{ t('map.PROPERTY_LOCATION_STYLES_TITLE') }}</h3>
+  </header>
+  <div class="google-map-style-list">
+    @for (styleOption of mapVisualStyleOptions; track styleOption.id) {
+      <label class="google-map-layer-item">
+        <input
+          type="radio"
+          name="location-map-style"
+          [checked]="selectedMapVisualStyle === styleOption.id"
+          (change)="onMapVisualStyleOptionChange(styleOption.id)"
+        />
+        <span>{{ t(styleOption.label) }}</span>
+      </label>
+    }
+  </div>
+</div>

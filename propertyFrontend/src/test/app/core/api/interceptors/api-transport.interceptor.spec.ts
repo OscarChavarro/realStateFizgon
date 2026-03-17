@@ -95,43 +95,28 @@ describe('apiTransportInterceptor', () => {
     expect((capturedRequest as HttpRequest<unknown>).headers.get('X-Client-Timezone')).toBe('UTC');
   });
 
-  it('whenGetRequestFailsWithTransientStatus_shouldRetryAndSucceed', (done) => {
+  it('whenGetRequestFailsWithTransientStatus_shouldNotRetryAndShouldPropagateError', () => {
     runtimeConfig.shouldRouteToBackend.and.returnValue(false);
 
     const request = new HttpRequest('GET', '/properties');
     let attempts = 0;
-    let completed = false;
+    let emittedError: unknown;
 
     runInterceptor(request, () =>
       defer(() => {
         attempts += 1;
-        if (attempts === 1) {
-          return throwError(
-            () => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' })
-          );
-        }
-
-        return of(new HttpResponse({ status: 200 }));
+        return throwError(
+          () => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' })
+        );
       })
     ).subscribe({
-      next: (event) => {
-        if (event instanceof HttpResponse) {
-          expect(attempts).toBe(2);
-          expect(event.status).toBe(200);
-          completed = true;
-          done();
-        }
-      },
       error: (error) => {
-        done.fail(error);
+        emittedError = error;
       }
     });
 
-    setTimeout(() => {
-      if (!completed) {
-        done.fail(`Expected retry to complete successfully. Attempts=${attempts}`);
-      }
-    }, 1200);
+    expect(attempts).toBe(1);
+    expect((emittedError as HttpErrorResponse).status).toBe(503);
   });
 
   it('whenErrorIsNotHttpErrorResponse_shouldNotRetry', () => {

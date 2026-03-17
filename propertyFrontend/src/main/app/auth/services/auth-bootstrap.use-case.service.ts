@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { DestroyRef, Injectable } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
@@ -24,7 +23,6 @@ export class AuthBootstrapUseCaseService {
   ) {}
 
   async initialize(
-    http: HttpClient,
     destroyRef: DestroyRef,
     frontendHost: string,
     selectedLanguageKey: string
@@ -33,9 +31,9 @@ export class AuthBootstrapUseCaseService {
       this.listingStateFacadeService.loadSelectedLanguageFromSession(selectedLanguageKey)
     );
 
-    this.bindUnauthorizedSessionReset(http, destroyRef);
+    this.bindUnauthorizedSessionReset(destroyRef);
 
-    const config = await this.listingStateFacadeService.loadBackendConfiguration(http);
+    const config = await this.listingStateFacadeService.loadBackendConfiguration();
     this.apiRuntimeConfigService.setConfiguration(config);
     this.appShellStateService.backendBaseUrl.set(this.apiRuntimeConfigService.getBackendBaseUrl());
     this.appShellStateService.staticMediaBaseUrl.set(
@@ -46,13 +44,13 @@ export class AuthBootstrapUseCaseService {
     this.listingAuthFacadeService.warnIfAuthHostMismatch(frontendHost);
 
     const googleLoginEnabled =
-      await this.listingAuthFacadeService.loadGoogleLoginAvailability(http);
+      await this.listingAuthFacadeService.loadGoogleLoginAvailability();
     this.appShellStateService.googleLoginEnabled.set(googleLoginEnabled);
 
-    await this.listingSessionCoordinatorService.loadCurrentUserAndApplyState(http);
+    await this.listingSessionCoordinatorService.loadCurrentUserAndApplyState();
   }
 
-  private bindUnauthorizedSessionReset(http: HttpClient, destroyRef: DestroyRef): void {
+  private bindUnauthorizedSessionReset(destroyRef: DestroyRef): void {
     this.apiSessionEventsService.unauthorized$
       .pipe(takeUntilDestroyed(destroyRef))
       .subscribe(() => {
@@ -69,7 +67,7 @@ export class AuthBootstrapUseCaseService {
         ) {
           this.appShellStateService.activeTab.set('DASHBOARD');
         }
-        void this.listingQueryOrchestratorService.refreshListingData(http);
+        void this.listingQueryOrchestratorService.refreshListingData();
       });
   }
 }

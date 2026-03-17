@@ -27,18 +27,15 @@ class AuthUsersServiceMockFactory {
 }
 
 describe('AuthUsersService', () => {
-  const createService = (): AuthUsersService =>
-    new AuthUsersService(new RequestErrorPolicyService());
-
   it('loadUsers should return users when response contains an array', async () => {
     // Arrange
-    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
+    const service = new AuthUsersService(http, new RequestErrorPolicyService());
     const users = [AuthUsersServiceMockFactory.createUser()];
     (http.get as jasmine.Spy).and.returnValue(of({ users }));
 
     // Action
-    const result = await service.loadUsers(http);
+    const result = await service.loadUsers();
 
     // Assert
     expect(http.get).toHaveBeenCalledOnceWith('/auth/users');
@@ -52,12 +49,12 @@ describe('AuthUsersService', () => {
   ].forEach(({ response, label }) => {
     it(`loadUsers should return empty array for ${label}`, async () => {
       // Arrange
-      const service = createService();
       const http = AuthUsersServiceMockFactory.createHttpClientMock();
+      const service = new AuthUsersService(http, new RequestErrorPolicyService());
       (http.get as jasmine.Spy).and.returnValue(of(response));
 
       // Action
-      const result = await service.loadUsers(http);
+      const result = await service.loadUsers();
 
       // Assert
       expect(result).toEqual([]);
@@ -66,12 +63,12 @@ describe('AuthUsersService', () => {
 
   it('loadUsers should return empty array on request error', async () => {
     // Arrange
-    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
+    const service = new AuthUsersService(http, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
-    const result = await service.loadUsers(http);
+    const result = await service.loadUsers();
 
     // Assert
     expect(result).toEqual([]);
@@ -79,12 +76,12 @@ describe('AuthUsersService', () => {
 
   it('deleteUser should call encoded endpoint and return true on success', async () => {
     // Arrange
-    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
+    const service = new AuthUsersService(http, new RequestErrorPolicyService());
     (http.delete as jasmine.Spy).and.returnValue(of({}));
 
     // Action
-    const result = await service.deleteUser(http, 'user/with spaces');
+    const result = await service.deleteUser('user/with spaces');
 
     // Assert
     expect(http.delete).toHaveBeenCalledOnceWith('/auth/users/user%2Fwith%20spaces');
@@ -93,12 +90,12 @@ describe('AuthUsersService', () => {
 
   it('deleteUser should return false on request error', async () => {
     // Arrange
-    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
+    const service = new AuthUsersService(http, new RequestErrorPolicyService());
     (http.delete as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
-    const result = await service.deleteUser(http, 'user-1');
+    const result = await service.deleteUser('user-1');
 
     // Assert
     expect(result).toBeFalse();

@@ -32,7 +32,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.togglePropertyReview({
-      http: {} as any,
       propertyId: 'p-1',
       isAuthenticated: false,
       getPropertyLabels: () => [],
@@ -52,7 +51,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.togglePropertyReview({
-      http: {} as any,
       propertyId: 'p-1',
       isAuthenticated: true,
       getPropertyLabels: () => [],
@@ -70,7 +68,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.togglePropertyReview({
-      http: {} as any,
       propertyId: 'p-1',
       isAuthenticated: true,
       getPropertyLabels: () => [],
@@ -87,7 +84,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.savePropertyComment({
-      http: {} as any,
       propertyId: 'p-1',
       commentRaw: 'test',
       isAuthenticated: false,
@@ -108,7 +104,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.savePropertyComment({
-      http: {} as any,
       propertyId: 'p-1',
       commentRaw: 'note',
       isAuthenticated: true,
@@ -127,7 +122,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.savePropertyComment({
-      http: {} as any,
       propertyId: 'p-1',
       commentRaw: 'same',
       isAuthenticated: true,
@@ -146,7 +140,6 @@ describe('ListingInteractionUseCaseService', () => {
 
     // Action
     await service.savePropertyComment({
-      http: {} as any,
       propertyId: 'p-1',
       commentRaw: 'note',
       isAuthenticated: true,

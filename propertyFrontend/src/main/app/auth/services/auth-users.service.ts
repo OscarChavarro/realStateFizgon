@@ -12,11 +12,14 @@ type AuthUsersResponse = {
   providedIn: 'root'
 })
 export class AuthUsersService {
-  constructor(private readonly requestErrorPolicyService: RequestErrorPolicyService) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
+  ) {}
 
-  async loadUsers(http: HttpClient): Promise<AuthUserListItem[]> {
+  async loadUsers(): Promise<AuthUserListItem[]> {
     try {
-      const response = await firstValueFrom(http.get<AuthUsersResponse>('/auth/users'));
+      const response = await firstValueFrom(this.http.get<AuthUsersResponse>('/auth/users'));
       return Array.isArray(response.users) ? response.users : [];
     } catch (error) {
       this.requestErrorPolicyService.notifyFallback(
@@ -27,9 +30,9 @@ export class AuthUsersService {
     }
   }
 
-  async deleteUser(http: HttpClient, userId: string): Promise<boolean> {
+  async deleteUser(userId: string): Promise<boolean> {
     try {
-      await firstValueFrom(http.delete(`/auth/users/${encodeURIComponent(userId)}`));
+      await firstValueFrom(this.http.delete(`/auth/users/${encodeURIComponent(userId)}`));
       return true;
     } catch (error) {
       this.requestErrorPolicyService.notifyFallback(

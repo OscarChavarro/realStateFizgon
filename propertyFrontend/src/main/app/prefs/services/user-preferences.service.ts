@@ -19,11 +19,12 @@ import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-
 })
 export class UserPreferencesService {
   constructor(
+    private readonly http: HttpClient,
     private readonly userPreferencesPayloadMapperService: UserPreferencesPayloadMapperService,
     private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
-  async loadPreferences(http: HttpClient): Promise<{
+  async loadPreferences(): Promise<{
     language: SupportedLanguage;
     pageSize: number;
     filters: ListingFiltersState;
@@ -34,7 +35,7 @@ export class UserPreferencesService {
       operation: 'prefs.loadPreferences',
       request: async () => {
         const response = await firstValueFrom(
-          http.get<UserPreferencesPayload>('/auth/preferences')
+          this.http.get<UserPreferencesPayload>('/auth/preferences')
         );
         return this.userPreferencesPayloadMapperService.normalizePreferencesPayload(response);
       },
@@ -44,7 +45,6 @@ export class UserPreferencesService {
   }
 
   async saveFilters(
-    http: HttpClient,
     filters: ListingFiltersState,
     language: SupportedLanguage,
     sortCriteria: SortCriterion[],
@@ -54,7 +54,7 @@ export class UserPreferencesService {
       operation: 'prefs.saveFilters',
       request: async () => {
         await firstValueFrom(
-          http.post(
+          this.http.post(
             '/auth/preferences',
             this.userPreferencesPayloadMapperService.buildSaveFiltersPayload(
               filters,
@@ -69,23 +69,20 @@ export class UserPreferencesService {
   }
 
   async setPropertyReview(
-    http: HttpClient,
     propertyId: string,
     review: PropertyReviewLabel
   ): Promise<PropertyLabelEntry[]> {
-    return this.setPropertyLabels(http, propertyId, { review });
+    return this.setPropertyLabels(propertyId, { review });
   }
 
   async setPropertyComment(
-    http: HttpClient,
     propertyId: string,
     comment: string
   ): Promise<PropertyLabelEntry[]> {
-    return this.setPropertyLabels(http, propertyId, { comment });
+    return this.setPropertyLabels(propertyId, { comment });
   }
 
   private async setPropertyLabels(
-    http: HttpClient,
     propertyId: string,
     labels: Partial<PropertyLabels>
   ): Promise<PropertyLabelEntry[]> {
@@ -93,7 +90,7 @@ export class UserPreferencesService {
       operation: 'prefs.setPropertyLabels',
       request: async () =>
         firstValueFrom(
-          http.post<UserPreferencesPayload>('/auth/preferences/setPropertyLabels', {
+          this.http.post<UserPreferencesPayload>('/auth/preferences/setPropertyLabels', {
             propertyId,
             labels
           })

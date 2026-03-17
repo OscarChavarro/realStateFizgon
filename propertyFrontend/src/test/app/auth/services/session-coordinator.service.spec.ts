@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { computed, signal } from '@angular/core';
 import { AuthenticatedUser, UserPermission } from 'src/app/auth/model/authenticated-user.model';
 import { SessionCoordinatorService } from 'src/app/auth/services/session-coordinator.service';
@@ -6,10 +5,6 @@ import { ListingQueryOrchestratorService } from 'src/app/listing/services/listin
 import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 class SessionCoordinatorServiceMockFactory {
-  static createHttpClientMock() {
-    return {} as HttpClient;
-  }
-
   static createAuthFacadeMock() {
     return {
       loadCurrentUser: jasmine.createSpy('loadCurrentUser').and.resolveTo(null),
@@ -73,9 +68,7 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.loadCurrentUserAndApplyState(
-      SessionCoordinatorServiceMockFactory.createHttpClientMock()
-    );
+    await service.loadCurrentUserAndApplyState();
 
     // Assert
     expect(appShellState.authenticatedUser()).toBeNull();
@@ -101,9 +94,7 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.loadCurrentUserAndApplyState(
-      SessionCoordinatorServiceMockFactory.createHttpClientMock()
-    );
+    await service.loadCurrentUserAndApplyState();
 
     // Assert
     expect(listingQuery.loadUserPreferences).toHaveBeenCalledTimes(1);
@@ -125,13 +116,12 @@ describe('SessionCoordinatorService', () => {
       listingQuery as unknown as ListingQueryOrchestratorService,
       appShellState as unknown as AppShellStateService
     );
-    const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
     // Action
-    await service.loadCurrentUserAndApplyState(http);
+    await service.loadCurrentUserAndApplyState();
 
     // Assert
-    expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+    expect(authFacade.loadUsers).toHaveBeenCalledTimes(1);
     expect(appShellState.users()).toEqual([{ id: 'managed-user-1' }]);
     expect(appShellState.usersLoading()).toBeFalse();
   });
@@ -149,18 +139,17 @@ describe('SessionCoordinatorService', () => {
       listingQuery as unknown as ListingQueryOrchestratorService,
       appShellState as unknown as AppShellStateService
     );
-    const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
     // Action
-    await service.logoutAndReset(http);
+    await service.logoutAndReset();
 
     // Assert
-    expect(authFacade.logout).toHaveBeenCalledOnceWith(http);
+    expect(authFacade.logout).toHaveBeenCalledTimes(1);
     expect(appShellState.authenticatedUser()).toBeNull();
     expect(appShellState.users()).toEqual([]);
     expect(appShellState.activeTab()).toBe('DASHBOARD');
     expect(listingQuery.resetGuestListingState).toHaveBeenCalledTimes(1);
-    expect(listingQuery.refreshListingData).toHaveBeenCalledOnceWith(http);
+    expect(listingQuery.refreshListingData).toHaveBeenCalledTimes(1);
   });
 
   [
@@ -188,15 +177,14 @@ describe('SessionCoordinatorService', () => {
         listingQuery as unknown as ListingQueryOrchestratorService,
         appShellState as unknown as AppShellStateService
       );
-      const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
       // Action
-      await service.loadUsers(http);
+      await service.loadUsers();
 
       // Assert
       expect(appShellState.users()).toEqual(expectedUsers as any[]);
       if (user.permissions.includes('canEditUsers')) {
-        expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+        expect(authFacade.loadUsers).toHaveBeenCalledTimes(1);
       } else {
         expect(authFacade.loadUsers).not.toHaveBeenCalled();
       }
@@ -249,15 +237,14 @@ describe('SessionCoordinatorService', () => {
         listingQuery as unknown as ListingQueryOrchestratorService,
         appShellState as unknown as AppShellStateService
       );
-      const http = SessionCoordinatorServiceMockFactory.createHttpClientMock();
 
       // Action
-      await service.deleteUserAndRefresh(http, userId);
+      await service.deleteUserAndRefresh(userId);
 
       // Assert
       if (shouldDelete) {
-        expect(authFacade.deleteUser).toHaveBeenCalledOnceWith(http, userId);
-        expect(authFacade.loadUsers).toHaveBeenCalledOnceWith(http);
+        expect(authFacade.deleteUser).toHaveBeenCalledOnceWith(userId);
+        expect(authFacade.loadUsers).toHaveBeenCalledTimes(1);
         expect(appShellState.users()).toEqual([{ id: 'managed-user-2' }]);
       } else {
         expect(authFacade.deleteUser).not.toHaveBeenCalled();
@@ -281,10 +268,7 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.deleteUserAndRefresh(
-      SessionCoordinatorServiceMockFactory.createHttpClientMock(),
-      'u2'
-    );
+    await service.deleteUserAndRefresh('u2');
 
     // Assert
     expect(appShellState.usersLoading()).toBeFalse();

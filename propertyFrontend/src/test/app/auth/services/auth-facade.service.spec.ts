@@ -1,14 +1,9 @@
-import { HttpClient } from '@angular/common/http';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
 import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 class AuthFacadeServiceMockFactory {
-  static createHttpClientMock() {
-    return {} as HttpClient;
-  }
-
   static createSessionApiMock() {
     return {
       loadGoogleLoginAvailability: jasmine
@@ -73,7 +68,6 @@ describe('AuthFacadeService', () => {
       runtimeConfig as any,
       new RequestErrorPolicyService()
     );
-    const http = AuthFacadeServiceMockFactory.createHttpClientMock();
     const authUser = AuthFacadeServiceMockFactory.createAuthenticatedUser();
     const managedUsers = [AuthFacadeServiceMockFactory.createManagedUser()];
     sessionApi.loadCurrentUser.and.resolveTo(authUser);
@@ -81,20 +75,20 @@ describe('AuthFacadeService', () => {
     usersApi.deleteUser.and.resolveTo(false);
 
     // Action
-    const googleAvailability = await facade.loadGoogleLoginAvailability(http);
+    const googleAvailability = await facade.loadGoogleLoginAvailability();
     const loginUrl = facade.buildGoogleLoginUrl('http://localhost:4200');
-    const currentUser = await facade.loadCurrentUser(http);
-    await facade.logout(http);
-    const users = await facade.loadUsers(http);
-    const deleted = await facade.deleteUser(http, 'managed-1');
+    const currentUser = await facade.loadCurrentUser();
+    await facade.logout();
+    const users = await facade.loadUsers();
+    const deleted = await facade.deleteUser('managed-1');
 
     // Assert
-    expect(sessionApi.loadGoogleLoginAvailability).toHaveBeenCalledOnceWith(http);
+    expect(sessionApi.loadGoogleLoginAvailability).toHaveBeenCalledTimes(1);
     expect(sessionApi.buildGoogleLoginUrl).toHaveBeenCalledOnceWith('http://localhost:4200');
-    expect(sessionApi.loadCurrentUser).toHaveBeenCalledOnceWith(http);
-    expect(sessionApi.logout).toHaveBeenCalledOnceWith(http);
-    expect(usersApi.loadUsers).toHaveBeenCalledOnceWith(http);
-    expect(usersApi.deleteUser).toHaveBeenCalledOnceWith(http, 'managed-1');
+    expect(sessionApi.loadCurrentUser).toHaveBeenCalledTimes(1);
+    expect(sessionApi.logout).toHaveBeenCalledTimes(1);
+    expect(usersApi.loadUsers).toHaveBeenCalledTimes(1);
+    expect(usersApi.deleteUser).toHaveBeenCalledOnceWith('managed-1');
     expect(googleAvailability).toBeTrue();
     expect(loginUrl).toBe('http://backend/auth/google/login?returnTo=x');
     expect(currentUser).toEqual(authUser);

@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
@@ -14,8 +13,8 @@ export class SessionCoordinatorService {
     private readonly appShellStateService: AppShellStateService
   ) {}
 
-  async loadCurrentUserAndApplyState(http: HttpClient): Promise<void> {
-    const user = await this.listingAuthFacadeService.loadCurrentUser(http);
+  async loadCurrentUserAndApplyState(): Promise<void> {
+    const user = await this.listingAuthFacadeService.loadCurrentUser();
     this.appShellStateService.authenticatedUser.set(user);
 
     if (!user) {
@@ -23,7 +22,7 @@ export class SessionCoordinatorService {
       return;
     }
 
-    await this.listingQueryOrchestratorService.loadUserPreferences(http);
+    await this.listingQueryOrchestratorService.loadUserPreferences();
 
     if (
       this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB' &&
@@ -35,30 +34,30 @@ export class SessionCoordinatorService {
       this.appShellStateService.activeTab() === 'USERS_TAB' &&
       this.appShellStateService.canEditUsers()
     ) {
-      await this.loadUsers(http);
+      await this.loadUsers();
     }
   }
 
-  async logoutAndReset(http: HttpClient): Promise<void> {
-    await this.listingAuthFacadeService.logout(http);
+  async logoutAndReset(): Promise<void> {
+    await this.listingAuthFacadeService.logout();
     this.appShellStateService.authenticatedUser.set(null);
     this.resetGuestState();
-    await this.listingQueryOrchestratorService.refreshListingData(http);
+    await this.listingQueryOrchestratorService.refreshListingData();
   }
 
-  async loadUsers(http: HttpClient): Promise<void> {
+  async loadUsers(): Promise<void> {
     if (!this.appShellStateService.canEditUsers()) {
       this.appShellStateService.users.set([]);
       return;
     }
 
     this.appShellStateService.usersLoading.set(true);
-    const users = await this.listingAuthFacadeService.loadUsers(http);
+    const users = await this.listingAuthFacadeService.loadUsers();
     this.appShellStateService.users.set(users);
     this.appShellStateService.usersLoading.set(false);
   }
 
-  async deleteUserAndRefresh(http: HttpClient, userId: string): Promise<void> {
+  async deleteUserAndRefresh(userId: string): Promise<void> {
     if (!this.appShellStateService.canEditUsers() || !userId) {
       return;
     }
@@ -69,9 +68,9 @@ export class SessionCoordinatorService {
     }
 
     this.appShellStateService.usersLoading.set(true);
-    const deleted = await this.listingAuthFacadeService.deleteUser(http, userId);
+    const deleted = await this.listingAuthFacadeService.deleteUser(userId);
     if (deleted) {
-      await this.loadUsers(http);
+      await this.loadUsers();
       return;
     }
 

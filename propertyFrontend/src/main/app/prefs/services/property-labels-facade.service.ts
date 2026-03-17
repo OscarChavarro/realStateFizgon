@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.service';
 import {
@@ -35,17 +34,15 @@ export class PropertyLabelsFacadeService {
   }
 
   async togglePropertyReview(
-    http: HttpClient,
     propertyId: string,
     propertyLabels: PropertyLabelEntry[]
   ): Promise<PropertyLabelEntry[]> {
     const currentReview = this.getPropertyReviewLabel(propertyLabels, propertyId);
     const nextReview = this.nextReviewLabel(currentReview);
-    return this.listingUserPreferencesService.setPropertyReview(http, propertyId, nextReview);
+    return this.listingUserPreferencesService.setPropertyReview(propertyId, nextReview);
   }
 
   async savePropertyComment(
-    http: HttpClient,
     propertyId: string,
     commentRaw: string,
     propertyLabels: PropertyLabelEntry[]
@@ -55,7 +52,7 @@ export class PropertyLabelsFacadeService {
       return null;
     }
 
-    return this.listingUserPreferencesService.setPropertyComment(http, propertyId, comment);
+    return this.listingUserPreferencesService.setPropertyComment(propertyId, comment);
   }
 
   private nextReviewLabel(current: PropertyReviewLabel): PropertyReviewLabel {

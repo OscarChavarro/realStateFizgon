@@ -135,7 +135,7 @@ describe('ListingQueryOrchestratorService', () => {
     const property = ListingQueryOrchestratorMockFactory.createProperty();
     appShellStateMock.pagination.set({ page: 2, pageSize: 100, totalElements: 0, totalPages: 0 });
     listingDataCoordinatorServiceMock.refreshListingData.and.callFake(
-      async (_http: unknown, _pagination: unknown, onAfterRefresh?: () => void) => {
+      async (_pagination: unknown, onAfterRefresh?: () => void) => {
         appShellStateMock.allProperties.set([property]);
         appShellStateMock.pagination.set({
           page: 2,
@@ -148,7 +148,7 @@ describe('ListingQueryOrchestratorService', () => {
     );
 
     // Action
-    await service.refreshListingData({} as any);
+    await service.refreshListingData();
 
     // Assert
     expect(listingDataCoordinatorServiceMock.refreshListingData).toHaveBeenCalled();
@@ -162,11 +162,11 @@ describe('ListingQueryOrchestratorService', () => {
     appShellStateMock.pagination.set({ page: 3, pageSize: 0, totalElements: 0, totalPages: 0 });
 
     // Action
-    await service.refreshListingData({} as any);
+    await service.refreshListingData();
 
     // Assert
     const args = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args;
-    expect(args[1]).toEqual({ page: 3, pageSize: 100, totalElements: 0, totalPages: 0 });
+    expect(args[0]).toEqual({ page: 3, pageSize: 100, totalElements: 0, totalPages: 0 });
   });
 
   it('whenResolvedPageSizeIsZero_refreshListingData_shouldForceRequestPageOne', async () => {
@@ -175,11 +175,11 @@ describe('ListingQueryOrchestratorService', () => {
     appShellStateMock.pagination.set({ page: 8, pageSize: 100, totalElements: 0, totalPages: 0 });
 
     // Action
-    await service.refreshListingData({} as any);
+    await service.refreshListingData();
 
     // Assert
     const args = listingDataCoordinatorServiceMock.refreshListingData.calls.mostRecent().args;
-    expect(args[1]).toEqual({ page: 1, pageSize: 0, totalElements: 0, totalPages: 0 });
+    expect(args[0]).toEqual({ page: 1, pageSize: 0, totalElements: 0, totalPages: 0 });
   });
 
   it('whenFiltersDoNotChange_handleFiltersChange_shouldSkipRefresh', async () => {
@@ -188,7 +188,7 @@ describe('ListingQueryOrchestratorService', () => {
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({} as any, {
+    await service.handleFiltersChange({
       ...createDefaultListingFilters(),
       showClosed: false
     });
@@ -203,7 +203,7 @@ describe('ListingQueryOrchestratorService', () => {
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({} as any, {
+    await service.handleFiltersChange({
       ...createDefaultListingFilters(),
       showClosed: false
     });
@@ -219,12 +219,11 @@ describe('ListingQueryOrchestratorService', () => {
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.toggleSort({} as any, 'price');
+    await service.toggleSort('price');
 
     // Assert
     expect(appShellStateMock.pagination().page).toBe(1);
     expect(listingDataCoordinatorServiceMock.toggleSortAndRefresh).toHaveBeenCalledOnceWith(
-      {} as any,
       'price'
     );
     expect(refreshSpy).toHaveBeenCalled();
@@ -266,7 +265,7 @@ describe('ListingQueryOrchestratorService', () => {
       const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
       // Action
-      await service.changePage({} as any, page);
+      await service.changePage(page);
 
       // Assert
       expect(appShellStateMock.pagination().page).toBe(expectedPage);
@@ -291,7 +290,7 @@ describe('ListingQueryOrchestratorService', () => {
       const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
       // Action
-      await service.changePageSize({} as any, pageSize);
+      await service.changePageSize(pageSize);
 
       // Assert
       if (shouldReturn) {
@@ -305,7 +304,6 @@ describe('ListingQueryOrchestratorService', () => {
           totalPages: 0
         });
         expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalledOnceWith(
-          {} as any,
           'en'
         );
         expect(refreshSpy).toHaveBeenCalled();
@@ -318,13 +316,12 @@ describe('ListingQueryOrchestratorService', () => {
     appShellStateMock.filteredTotalElements.set(32);
 
     // Action
-    await service.loadUserPreferences({} as any);
+    await service.loadUserPreferences();
 
     // Assert
     expect(appShellStateMock.filteredTotalElements()).toBe(0);
     expect(sessionStorage.getItem('filteredTotalElements')).toBe('0');
     expect(listingDataCoordinatorServiceMock.loadUserPreferences).toHaveBeenCalledOnceWith(
-      {} as any,
       'selectedLanguage'
     );
   });

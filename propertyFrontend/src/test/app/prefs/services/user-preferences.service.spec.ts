@@ -16,16 +16,17 @@ class UserPreferencesServiceMockFactory {
 }
 
 describe('UserPreferencesService', () => {
-  const createService = (): UserPreferencesService =>
+  const createService = (http: HttpClient = {} as HttpClient): UserPreferencesService =>
     new UserPreferencesService(
+      http,
       new UserPreferencesPayloadMapperService(),
       new RequestErrorPolicyService()
     );
 
   it('loadPreferences should normalize payload values', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.get as jasmine.Spy).and.returnValue(
       of({
         language: ' SP ',
@@ -67,7 +68,7 @@ describe('UserPreferencesService', () => {
     );
 
     // Action
-    const result = await service.loadPreferences(http);
+    const result = await service.loadPreferences();
 
     // Assert
     expect(http.get).toHaveBeenCalledOnceWith('/auth/preferences');
@@ -108,12 +109,12 @@ describe('UserPreferencesService', () => {
 
   it('loadPreferences should return null on request error', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
-    const result = await service.loadPreferences(http);
+    const result = await service.loadPreferences();
 
     // Assert
     expect(result).toBeNull();
@@ -121,8 +122,8 @@ describe('UserPreferencesService', () => {
 
   it('loadPreferences should retry transient errors before succeeding', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.get as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
       of({
@@ -136,7 +137,7 @@ describe('UserPreferencesService', () => {
     );
 
     // Action
-    const result = await service.loadPreferences(http);
+    const result = await service.loadPreferences();
 
     // Assert
     expect((http.get as jasmine.Spy).calls.count()).toBe(2);
@@ -145,8 +146,8 @@ describe('UserPreferencesService', () => {
 
   it('saveFilters should post normalized filters payload', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     const filters = createDefaultListingFilters();
     filters.showClosed = false;
     filters.showNew = false;
@@ -160,7 +161,6 @@ describe('UserPreferencesService', () => {
 
     // Action
     await service.saveFilters(
-      http,
       filters,
       'en',
       [
@@ -192,8 +192,8 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyReview should post labels and normalize response', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.post as jasmine.Spy).and.returnValue(
       of({
         propertyLabels: [
@@ -203,7 +203,7 @@ describe('UserPreferencesService', () => {
     );
 
     // Action
-    const result = await service.setPropertyReview(http, 'p-1', 'FAVOURITE');
+    const result = await service.setPropertyReview('p-1', 'FAVOURITE');
 
     // Assert
     expect(http.post).toHaveBeenCalledOnceWith('/auth/preferences/setPropertyLabels', {
@@ -220,8 +220,8 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyComment should post comment labels and normalize response', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.post as jasmine.Spy).and.returnValue(
       of({
         propertyLabels: [{ propertyId: 'p-2', labels: { comment: ' kept ' } }]
@@ -229,7 +229,7 @@ describe('UserPreferencesService', () => {
     );
 
     // Action
-    const result = await service.setPropertyComment(http, 'p-2', 'message');
+    const result = await service.setPropertyComment('p-2', 'message');
 
     // Assert
     expect(http.post).toHaveBeenCalledOnceWith('/auth/preferences/setPropertyLabels', {
@@ -241,8 +241,8 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyComment should retry transient post failures before returning labels', async () => {
     // Arrange
-    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    const service = createService(http);
     (http.post as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
       of({
@@ -251,7 +251,7 @@ describe('UserPreferencesService', () => {
     );
 
     // Action
-    const result = await service.setPropertyComment(http, 'p-2', 'message');
+    const result = await service.setPropertyComment('p-2', 'message');
 
     // Assert
     expect((http.post as jasmine.Spy).calls.count()).toBe(2);

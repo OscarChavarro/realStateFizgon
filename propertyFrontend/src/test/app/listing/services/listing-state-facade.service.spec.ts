@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClient } from '@angular/common/http';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { ListingDataService } from 'src/app/listing/services/listing-data.service';
@@ -41,6 +42,7 @@ describe('ListingStateFacadeService', () => {
     TestBed.configureTestingModule({
       providers: [
         ListingStateFacadeService,
+        { provide: HttpClient, useValue: {} },
         { provide: ListingDataService, useValue: listingDataServiceMock },
         { provide: UserPreferencesService, useValue: userPreferencesServiceMock },
         { provide: SortCriteriaService, useValue: sortCriteriaServiceMock },
@@ -92,27 +94,27 @@ describe('ListingStateFacadeService', () => {
 
   it('loadBackendConfiguration should delegate to listing data service', async () => {
     // Arrange
-    const http = {} as any;
 
     // Action
-    await service.loadBackendConfiguration(http);
+    await service.loadBackendConfiguration();
 
     // Assert
-    expect(listingDataServiceMock.loadBackendConfiguration).toHaveBeenCalledOnceWith(http);
+    expect(listingDataServiceMock.loadBackendConfiguration).toHaveBeenCalledOnceWith(
+      jasmine.any(Object)
+    );
   });
 
   it('refreshListingData should delegate to listing data service', async () => {
     // Arrange
-    const http = {} as any;
     const filters = createDefaultListingFilters();
     const sortCriteria: any[] = [{ sortBy: 'title', sortOrder: 'asc' }];
 
     // Action
-    await service.refreshListingData(http, sortCriteria as any, filters, 2, 500);
+    await service.refreshListingData(sortCriteria as any, filters, 2, 500);
 
     // Assert
     expect(listingDataServiceMock.loadListingData).toHaveBeenCalledOnceWith(
-      http,
+      jasmine.any(Object),
       sortCriteria,
       filters,
       2,
@@ -157,16 +159,14 @@ describe('ListingStateFacadeService', () => {
 
   it('saveFiltersPreference should delegate to preferences service', async () => {
     // Arrange
-    const http = {} as any;
     const filters = createDefaultListingFilters();
     const sortCriteria: any[] = [];
 
     // Action
-    await service.saveFiltersPreference(http, filters, 'en', sortCriteria as any, 100);
+    await service.saveFiltersPreference(filters, 'en', sortCriteria as any, 100);
 
     // Assert
     expect(userPreferencesServiceMock.saveFilters).toHaveBeenCalledOnceWith(
-      http,
       filters,
       'en',
       sortCriteria,
@@ -175,14 +175,11 @@ describe('ListingStateFacadeService', () => {
   });
 
   it('loadUserPreferences should delegate to preferences service', async () => {
-    // Arrange
-    const http = {} as any;
-
     // Action
-    await service.loadUserPreferences(http);
+    await service.loadUserPreferences();
 
     // Assert
-    expect(userPreferencesServiceMock.loadPreferences).toHaveBeenCalledOnceWith(http);
+    expect(userPreferencesServiceMock.loadPreferences).toHaveBeenCalledOnceWith();
   });
 
   it('toggleSortCriteria should delegate to sort criteria service', () => {
@@ -202,15 +199,14 @@ describe('ListingStateFacadeService', () => {
   it('runMaintenanceOperation should delegate to maintenance operation runner', async () => {
     // Arrange
     const operation = {} as any;
-    const http = {} as any;
 
     // Action
-    await service.runMaintenanceOperation(operation, http);
+    await service.runMaintenanceOperation(operation);
 
     // Assert
     expect(maintenanceOperationRunnerServiceMock.runOperation).toHaveBeenCalledOnceWith(
       operation,
-      http
+      jasmine.any(Object)
     );
   });
 });

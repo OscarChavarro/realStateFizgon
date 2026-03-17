@@ -1,11 +1,9 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PropertyLabelEntry } from 'src/app/listing/model/listing.types';
 import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { PropertyLabelsFacadeService } from 'src/app/prefs/services/property-labels-facade.service';
 
 type TogglePropertyReviewParams = {
-  http: HttpClient;
   propertyId: string;
   isAuthenticated: boolean;
   getPropertyLabels: () => PropertyLabelEntry[];
@@ -13,7 +11,6 @@ type TogglePropertyReviewParams = {
 };
 
 type SavePropertyCommentParams = {
-  http: HttpClient;
   propertyId: string;
   commentRaw: string;
   isAuthenticated: boolean;
@@ -37,7 +34,6 @@ export class ListingInteractionUseCaseService {
 
     try {
       const updatedLabels = await this.propertyLabelsFacadeService.togglePropertyReview(
-        params.http,
         params.propertyId,
         params.getPropertyLabels()
       );
@@ -57,7 +53,6 @@ export class ListingInteractionUseCaseService {
 
     try {
       const updatedLabels = await this.propertyLabelsFacadeService.savePropertyComment(
-        params.http,
         params.propertyId,
         params.commentRaw,
         params.getPropertyLabels()

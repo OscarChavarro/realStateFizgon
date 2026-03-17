@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
 import { AuthSessionApiService } from 'src/app/auth/services/auth-session-api.service';
@@ -18,28 +17,28 @@ export class AuthFacadeService {
     private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
-  async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {
-    return this.authSessionApiService.loadGoogleLoginAvailability(http);
+  async loadGoogleLoginAvailability(): Promise<boolean> {
+    return this.authSessionApiService.loadGoogleLoginAvailability();
   }
 
   buildGoogleLoginUrl(returnTo: string): string {
     return this.authSessionApiService.buildGoogleLoginUrl(returnTo);
   }
 
-  async loadCurrentUser(http: HttpClient): Promise<AuthenticatedUser | null> {
-    return this.authSessionApiService.loadCurrentUser(http);
+  async loadCurrentUser(): Promise<AuthenticatedUser | null> {
+    return this.authSessionApiService.loadCurrentUser();
   }
 
-  async logout(http: HttpClient): Promise<void> {
-    await this.authSessionApiService.logout(http);
+  async logout(): Promise<void> {
+    await this.authSessionApiService.logout();
   }
 
-  async loadUsers(http: HttpClient): Promise<AuthUserListItem[]> {
-    return this.authUsersService.loadUsers(http);
+  async loadUsers(): Promise<AuthUserListItem[]> {
+    return this.authUsersService.loadUsers();
   }
 
-  async deleteUser(http: HttpClient, userId: string): Promise<boolean> {
-    return this.authUsersService.deleteUser(http, userId);
+  async deleteUser(userId: string): Promise<boolean> {
+    return this.authUsersService.deleteUser(userId);
   }
 
   warnIfAuthHostMismatch(frontendHost: string): void {

@@ -20,6 +20,7 @@ import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.ty
 })
 export class ListingStateFacadeService {
   constructor(
+    private readonly http: HttpClient,
     private readonly listingDataService: ListingDataService,
     private readonly listingUserPreferencesService: UserPreferencesService,
     private readonly sortCriteriaService: SortCriteriaService,
@@ -40,17 +41,16 @@ export class ListingStateFacadeService {
     sessionStorage.setItem(selectedLanguageKey, language);
   }
 
-  async loadBackendConfiguration(http: HttpClient): Promise<{
+  async loadBackendConfiguration(): Promise<{
     backendBaseUrl: string;
     staticMediaBaseUrl: string;
     googleMapsApiKey: string | null;
     googleMapsMapId: string | null;
   }> {
-    return this.listingDataService.loadBackendConfiguration(http);
+    return this.listingDataService.loadBackendConfiguration(this.http);
   }
 
   async refreshListingData(
-    http: HttpClient,
     sortCriteria: SortCriterion[],
     filters: ListingFiltersState,
     page: number,
@@ -60,7 +60,13 @@ export class ListingStateFacadeService {
     properties: ListingPropertyRow[];
     pagination: ListingPaginationState;
   }> {
-    return this.listingDataService.loadListingData(http, sortCriteria, filters, page, pageSize);
+    return this.listingDataService.loadListingData(
+      this.http,
+      sortCriteria,
+      filters,
+      page,
+      pageSize
+    );
   }
 
   areFiltersChanged(current: ListingFiltersState, next: ListingFiltersState): boolean {
@@ -77,14 +83,12 @@ export class ListingStateFacadeService {
   }
 
   async saveFiltersPreference(
-    http: HttpClient,
     filters: ListingFiltersState,
     language: SupportedLanguage,
     sortCriteria: SortCriterion[],
     pageSize: number
   ): Promise<void> {
     await this.listingUserPreferencesService.saveFilters(
-      http,
       filters,
       language,
       sortCriteria,
@@ -92,14 +96,14 @@ export class ListingStateFacadeService {
     );
   }
 
-  async loadUserPreferences(http: HttpClient): Promise<{
+  async loadUserPreferences(): Promise<{
     language: SupportedLanguage;
     pageSize: number;
     filters: ListingFiltersState;
     sortCriteria: SortCriterion[];
     propertyLabels: PropertyLabelEntry[];
   } | null> {
-    return this.listingUserPreferencesService.loadPreferences(http);
+    return this.listingUserPreferencesService.loadPreferences();
   }
 
   toggleSortCriteria(
@@ -109,10 +113,7 @@ export class ListingStateFacadeService {
     return this.sortCriteriaService.cycleSortCriteria(currentSortCriteria, sortBy);
   }
 
-  async runMaintenanceOperation(
-    operation: DatabaseMaintenanceOperation,
-    http: HttpClient
-  ): Promise<string> {
-    return this.maintenanceOperationRunnerService.runOperation(operation, http);
+  async runMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<string> {
+    return this.maintenanceOperationRunnerService.runOperation(operation, this.http);
   }
 }

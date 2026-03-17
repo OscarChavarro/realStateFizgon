@@ -37,15 +37,15 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
 
     // Action
     (http.get as jasmine.Spy).and.returnValue(of({ enabled: true }));
-    const enabledTrue = await service.loadGoogleLoginAvailability(http);
+    const enabledTrue = await service.loadGoogleLoginAvailability();
     (http.get as jasmine.Spy).and.returnValue(of({ enabled: false }));
-    const enabledFalse = await service.loadGoogleLoginAvailability(http);
+    const enabledFalse = await service.loadGoogleLoginAvailability();
     (http.get as jasmine.Spy).and.returnValue(of({}));
-    const enabledMissing = await service.loadGoogleLoginAvailability(http);
+    const enabledMissing = await service.loadGoogleLoginAvailability();
 
     // Assert
     expect((http.get as jasmine.Spy).calls.allArgs()).toEqual([
@@ -62,11 +62,11 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
-    const enabled = await service.loadGoogleLoginAvailability(http);
+    const enabled = await service.loadGoogleLoginAvailability();
 
     // Assert
     expect(enabled).toBeFalse();
@@ -76,14 +76,14 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
       of({ enabled: true })
     );
 
     // Action
-    const enabled = await service.loadGoogleLoginAvailability(http);
+    const enabled = await service.loadGoogleLoginAvailability();
 
     // Assert
     expect(enabled).toBeTrue();
@@ -94,16 +94,16 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
     const user = AuthSessionApiServiceMockFactory.createUser();
 
     // Action
     (http.get as jasmine.Spy).and.returnValue(of({ authenticated: true, user }));
-    const authenticated = await service.loadCurrentUser(http);
+    const authenticated = await service.loadCurrentUser();
     (http.get as jasmine.Spy).and.returnValue(of({ authenticated: false, user }));
-    const unauthenticated = await service.loadCurrentUser(http);
+    const unauthenticated = await service.loadCurrentUser();
     (http.get as jasmine.Spy).and.returnValue(of({ authenticated: true, user: null }));
-    const missingUser = await service.loadCurrentUser(http);
+    const missingUser = await service.loadCurrentUser();
 
     // Assert
     expect((http.get as jasmine.Spy).calls.allArgs()).toEqual([
@@ -120,11 +120,11 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
-    const user = await service.loadCurrentUser(http);
+    const user = await service.loadCurrentUser();
 
     // Assert
     expect(user).toBeNull();
@@ -134,13 +134,13 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(http, runtimeConfig, new RequestErrorPolicyService());
 
     // Action
     (http.post as jasmine.Spy).and.returnValue(of({}));
-    await service.logout(http);
+    await service.logout();
     (http.post as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
-    await service.logout(http);
+    await service.logout();
 
     // Assert
     expect((http.post as jasmine.Spy).calls.allArgs()).toEqual([
@@ -153,7 +153,11 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const runtimeConfig =
       AuthSessionApiServiceMockFactory.createRuntimeConfigMock('http://localhost:8081');
-    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
+    const service = new AuthSessionApiService(
+      {} as HttpClient,
+      runtimeConfig,
+      new RequestErrorPolicyService()
+    );
     const returnTo = 'http://localhost:4200/?next=/dashboard map';
 
     // Action

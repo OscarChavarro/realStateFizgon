@@ -130,27 +130,26 @@ describe('AuthBootstrapUseCaseService', () => {
       listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
       appShellState as unknown as AppShellStateService
     );
-    const http = {} as any;
     const destroyRef = new FakeDestroyRef() as unknown as DestroyRef;
 
     // Action
-    await service.initialize(http, destroyRef, 'localhost', 'selected-language');
+    await service.initialize(destroyRef, 'localhost', 'selected-language');
 
     // Assert
     expect(listingStateFacade.loadSelectedLanguageFromSession).toHaveBeenCalledOnceWith(
       'selected-language'
     );
     expect(appShellState.selectedLanguage()).toBe('sp');
-    expect(listingStateFacade.loadBackendConfiguration).toHaveBeenCalledOnceWith(http);
+    expect(listingStateFacade.loadBackendConfiguration).toHaveBeenCalledTimes(1);
     expect(runtimeConfig.setConfiguration).toHaveBeenCalledTimes(1);
     expect(appShellState.backendBaseUrl()).toBe('http://api.local:8081');
     expect(appShellState.staticMediaBaseUrl()).toBe('http://static.local/');
     expect(appShellState.googleMapsApiKey()).toBe('maps-key');
     expect(appShellState.googleMapsMapId()).toBe('maps-id');
     expect(authFacade.warnIfAuthHostMismatch).toHaveBeenCalledOnceWith('localhost');
-    expect(authFacade.loadGoogleLoginAvailability).toHaveBeenCalledOnceWith(http);
+    expect(authFacade.loadGoogleLoginAvailability).toHaveBeenCalledTimes(1);
     expect(appShellState.googleLoginEnabled()).toBeTrue();
-    expect(sessionCoordinator.loadCurrentUserAndApplyState).toHaveBeenCalledOnceWith(http);
+    expect(sessionCoordinator.loadCurrentUserAndApplyState).toHaveBeenCalledTimes(1);
   });
 
   it('whenUnauthorizedArrivesAndUserIsUnauthenticated_initialize_shouldIgnoreEvent', async () => {
@@ -177,7 +176,6 @@ describe('AuthBootstrapUseCaseService', () => {
 
     // Action
     await service.initialize(
-      {} as any,
       new FakeDestroyRef() as unknown as DestroyRef,
       'localhost',
       'selected-language'
@@ -219,11 +217,9 @@ describe('AuthBootstrapUseCaseService', () => {
         listingQueryOrchestrator as unknown as ListingQueryOrchestratorService,
         appShellState as unknown as AppShellStateService
       );
-      const http = {} as any;
 
       // Action
       await service.initialize(
-        http,
         new FakeDestroyRef() as unknown as DestroyRef,
         'localhost',
         'selected-language'
@@ -239,7 +235,7 @@ describe('AuthBootstrapUseCaseService', () => {
       } else {
         expect(appShellState.activeTab()).toBe(tab as any);
       }
-      expect(listingQueryOrchestrator.refreshListingData).toHaveBeenCalledOnceWith(http);
+      expect(listingQueryOrchestrator.refreshListingData).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -268,12 +264,7 @@ describe('AuthBootstrapUseCaseService', () => {
     const destroyRef = new FakeDestroyRef();
 
     // Action
-    await service.initialize(
-      {} as any,
-      destroyRef as unknown as DestroyRef,
-      'localhost',
-      'selected-language'
-    );
+    await service.initialize(destroyRef as unknown as DestroyRef, 'localhost', 'selected-language');
     destroyRef.destroy();
     sessionEvents.unauthorizedSubject.next();
 

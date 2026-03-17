@@ -290,9 +290,8 @@ describe('AppComponent', () => {
     expect(authBootstrap.initialize).toHaveBeenCalledTimes(1);
     expect(listingBootstrap.initialize).toHaveBeenCalled();
     expect(authArgs[0]).toEqual(jasmine.any(Object));
-    expect(authArgs[1]).toEqual(jasmine.any(Object));
-    expect(authArgs[2]).toBe(window.location.hostname);
-    expect(authArgs[3]).toBe('selectedLanguage');
+    expect(authArgs[1]).toBe(window.location.hostname);
+    expect(authArgs[2]).toBe('selectedLanguage');
     expect(refreshListingDataSpy).toHaveBeenCalledTimes(1);
     expect(appShellState.filteredTotalElements()).toBe(17);
   });
@@ -430,10 +429,10 @@ describe('AppComponent', () => {
     expect(appShellCommands.onMaintenanceOperationRequested).toHaveBeenCalled();
     expect(appShellCommands.onLogoutRequested).toHaveBeenCalled();
     expect(appShellCommands.onDeleteUserRequested).toHaveBeenCalled();
-    expect(appShellCommands.onTabChange.calls.mostRecent().args[1]).toBe('USERS_TAB');
-    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[1]).toBe('sp');
-    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[2]).toBe('selectedLanguage');
-    expect(appShellCommands.onDeleteUserRequested.calls.mostRecent().args[1]).toBe(
+    expect(appShellCommands.onTabChange.calls.mostRecent().args[0]).toBe('USERS_TAB');
+    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[0]).toBe('sp');
+    expect(appShellCommands.onLanguageChange.calls.mostRecent().args[1]).toBe('selectedLanguage');
+    expect(appShellCommands.onDeleteUserRequested.calls.mostRecent().args[0]).toBe(
       'managed-user-1'
     );
     expect(appShellCommands.onMaintenanceOperationRequested.calls.mostRecent().args[0]).toBe(
@@ -548,7 +547,6 @@ describe('AppComponent', () => {
 
     // Assert
     expect(listingQueryOrchestrator.handleFiltersChange).toHaveBeenCalledWith(
-      jasmine.any(Object),
       nextFilters
     );
   });

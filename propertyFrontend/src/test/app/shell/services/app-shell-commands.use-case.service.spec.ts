@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { computed, signal } from '@angular/core';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
@@ -61,10 +60,6 @@ class AppShellCommandsUseCaseMockFactory {
     };
   }
 
-  static createHttpClientMock(): HttpClient {
-    return {} as HttpClient;
-  }
-
   static createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
     return {
       id: 'user-1',
@@ -121,15 +116,13 @@ describe('AppShellCommandsUseCaseService', () => {
         sessionManagement as unknown as UserSessionManagementUseCaseService,
         appShellState as unknown as AppShellStateService
       );
-      const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
-
       // Action
-      service.onTabChange(http, tabId as any);
+      service.onTabChange(tabId as any);
 
       // Assert
       expect(appShellState.activeTab()).toBe(expectedTab as any);
       if (shouldLoadUsers) {
-        expect(sessionManagement.loadUsers).toHaveBeenCalledOnceWith(http);
+        expect(sessionManagement.loadUsers).toHaveBeenCalledTimes(1);
       } else {
         expect(sessionManagement.loadUsers).not.toHaveBeenCalled();
       }
@@ -148,10 +141,8 @@ describe('AppShellCommandsUseCaseService', () => {
       sessionManagement as unknown as UserSessionManagementUseCaseService,
       appShellState as unknown as AppShellStateService
     );
-    const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
-
     // Action
-    service.onLanguageChange(http, 'sp', 'selected-language');
+    service.onLanguageChange('sp', 'selected-language');
 
     // Assert
     expect(appShellState.selectedLanguage()).toBe('sp');
@@ -159,7 +150,7 @@ describe('AppShellCommandsUseCaseService', () => {
       'selected-language',
       'sp'
     );
-    expect(dataCoordinator.saveLanguagePreference).toHaveBeenCalledOnceWith(http, 'sp');
+    expect(dataCoordinator.saveLanguagePreference).toHaveBeenCalledOnceWith('sp');
   });
 
   it('whenLogoutIsRequested_onLogoutRequested_shouldDelegateToSessionManagement', () => {
@@ -174,13 +165,11 @@ describe('AppShellCommandsUseCaseService', () => {
       sessionManagement as unknown as UserSessionManagementUseCaseService,
       appShellState as unknown as AppShellStateService
     );
-    const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
-
     // Action
-    service.onLogoutRequested(http);
+    service.onLogoutRequested();
 
     // Assert
-    expect(sessionManagement.logoutCurrentUser).toHaveBeenCalledOnceWith(http);
+    expect(sessionManagement.logoutCurrentUser).toHaveBeenCalledTimes(1);
   });
 
   it('whenDeleteUserIsRequested_onDeleteUserRequested_shouldDelegateToSessionManagement', () => {
@@ -195,13 +184,11 @@ describe('AppShellCommandsUseCaseService', () => {
       sessionManagement as unknown as UserSessionManagementUseCaseService,
       appShellState as unknown as AppShellStateService
     );
-    const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
-
     // Action
-    service.onDeleteUserRequested(http, 'user-9');
+    service.onDeleteUserRequested('user-9');
 
     // Assert
-    expect(sessionManagement.deleteUserAndRefresh).toHaveBeenCalledOnceWith(http, 'user-9');
+    expect(sessionManagement.deleteUserAndRefresh).toHaveBeenCalledOnceWith('user-9');
   });
 
   it('whenMaintenanceIsRequested_onMaintenanceOperationRequested_shouldDelegateToCoordinator', () => {
@@ -217,13 +204,12 @@ describe('AppShellCommandsUseCaseService', () => {
       appShellState as unknown as AppShellStateService
     );
     const operation = new RemoveDanglingImagesOperation();
-    const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
 
     // Action
-    service.onMaintenanceOperationRequested(operation, http);
+    service.onMaintenanceOperationRequested(operation);
 
     // Assert
-    expect(dataCoordinator.runMaintenanceOperation).toHaveBeenCalledOnceWith(operation, http);
+    expect(dataCoordinator.runMaintenanceOperation).toHaveBeenCalledOnceWith(operation);
   });
 
   it('whenLoadingUsersForManagement_loadUsersForManagement_shouldDelegateToSessionManagement', async () => {
@@ -238,12 +224,10 @@ describe('AppShellCommandsUseCaseService', () => {
       sessionManagement as unknown as UserSessionManagementUseCaseService,
       appShellState as unknown as AppShellStateService
     );
-    const http = AppShellCommandsUseCaseMockFactory.createHttpClientMock();
-
     // Action
-    await service.loadUsersForManagement(http);
+    await service.loadUsersForManagement();
 
     // Assert
-    expect(sessionManagement.loadUsers).toHaveBeenCalledOnceWith(http);
+    expect(sessionManagement.loadUsers).toHaveBeenCalledTimes(1);
   });
 });

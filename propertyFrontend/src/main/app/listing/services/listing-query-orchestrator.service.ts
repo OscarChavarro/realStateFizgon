@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
   ListingFiltersState,
@@ -47,7 +46,7 @@ export class ListingQueryOrchestratorService {
     );
   }
 
-  async refreshListingData(http: HttpClient): Promise<void> {
+  async refreshListingData(): Promise<void> {
     const currentPagination = this.appShellStateService.pagination();
     const requestPageSize = this.resolveRequestPageSize(currentPagination.pageSize);
     const requestPage = requestPageSize > 0 ? currentPagination.page : 1;
@@ -57,7 +56,7 @@ export class ListingQueryOrchestratorService {
       pageSize: requestPageSize
     };
 
-    await this.listingDataCoordinatorService.refreshListingData(http, requestPagination, () =>
+    await this.listingDataCoordinatorService.refreshListingData(requestPagination, () =>
       this.propertySelectionService.syncAfterRefresh(this.appShellStateService.properties())
     );
     this.persistFilteredTotalElementsInSession(
@@ -65,25 +64,25 @@ export class ListingQueryOrchestratorService {
     );
   }
 
-  async handleFiltersChange(http: HttpClient, nextFilters: ListingFiltersState): Promise<void> {
-    const changed = await this.listingDataCoordinatorService.handleFiltersChange(http, nextFilters);
+  async handleFiltersChange(nextFilters: ListingFiltersState): Promise<void> {
+    const changed = await this.listingDataCoordinatorService.handleFiltersChange(nextFilters);
     if (!changed) {
       return;
     }
 
-    await this.refreshListingData(http);
+    await this.refreshListingData();
   }
 
-  async toggleSort(http: HttpClient, sortBy: SortToggleRequest['sortBy']): Promise<void> {
+  async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
     this.appShellStateService.pagination.update((current) => ({
       ...current,
       page: 1
     }));
-    await this.listingDataCoordinatorService.toggleSortAndRefresh(http, sortBy);
-    await this.refreshListingData(http);
+    await this.listingDataCoordinatorService.toggleSortAndRefresh(sortBy);
+    await this.refreshListingData();
   }
 
-  async changePage(http: HttpClient, page: number): Promise<void> {
+  async changePage(page: number): Promise<void> {
     const current = this.appShellStateService.pagination();
     const totalPages = current.totalPages;
     let normalized = Number.isFinite(page) ? Math.floor(page) : current.page;
@@ -101,10 +100,10 @@ export class ListingQueryOrchestratorService {
       ...state,
       page: normalized
     }));
-    await this.refreshListingData(http);
+    await this.refreshListingData();
   }
 
-  async changePageSize(http: HttpClient, pageSize: number): Promise<void> {
+  async changePageSize(pageSize: number): Promise<void> {
     if (!Number.isFinite(pageSize) || pageSize < 1) {
       return;
     }
@@ -121,16 +120,14 @@ export class ListingQueryOrchestratorService {
       pageSize: normalized
     });
     await this.listingDataCoordinatorService.saveLanguagePreference(
-      http,
       this.appShellStateService.selectedLanguage()
     );
-    await this.refreshListingData(http);
+    await this.refreshListingData();
   }
 
-  async loadUserPreferences(http: HttpClient): Promise<void> {
+  async loadUserPreferences(): Promise<void> {
     this.persistFilteredTotalElementsInSession(0);
     await this.listingDataCoordinatorService.loadUserPreferences(
-      http,
       ListingQueryOrchestratorService.SELECTED_LANGUAGE_KEY
     );
   }

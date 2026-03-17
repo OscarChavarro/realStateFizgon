@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { SessionCoordinatorService } from 'src/app/auth/services/session-coordinator.service';
 
@@ -8,15 +7,15 @@ import { SessionCoordinatorService } from 'src/app/auth/services/session-coordin
 export class UserSessionManagementUseCaseService {
   constructor(private readonly listingSessionCoordinatorService: SessionCoordinatorService) {}
 
-  async logoutCurrentUser(http: HttpClient): Promise<void> {
-    await this.listingSessionCoordinatorService.logoutAndReset(http);
+  async logoutCurrentUser(): Promise<void> {
+    await this.listingSessionCoordinatorService.logoutAndReset();
   }
 
-  async loadUsers(http: HttpClient): Promise<void> {
-    await this.listingSessionCoordinatorService.loadUsers(http);
+  async loadUsers(): Promise<void> {
+    await this.listingSessionCoordinatorService.loadUsers();
   }
 
-  async deleteUserAndRefresh(http: HttpClient, userId: string): Promise<void> {
-    await this.listingSessionCoordinatorService.deleteUserAndRefresh(http, userId);
+  async deleteUserAndRefresh(userId: string): Promise<void> {
+    await this.listingSessionCoordinatorService.deleteUserAndRefresh(userId);
   }
 }

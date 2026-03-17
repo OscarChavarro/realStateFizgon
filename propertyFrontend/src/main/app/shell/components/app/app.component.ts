@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import {
   Component,
   DestroyRef,
@@ -52,7 +51,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private static readonly SELECTED_LANGUAGE_KEY = 'selectedLanguage';
   private locationRef: Pick<Location, 'assign'> = window.location;
 
-  private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private readonly listingAuthFacadeService = inject(AuthFacadeService);
   private readonly workspaceInteractionCoordinatorService = inject(
@@ -107,7 +105,6 @@ export class AppComponent implements OnInit, OnDestroy {
     );
 
     await this.authBootstrapUseCaseService.initialize(
-      this.http,
       this.destroyRef,
       window.location.hostname,
       AppComponent.SELECTED_LANGUAGE_KEY
@@ -123,12 +120,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: ListingTab): void {
-    this.appShellCommandsUseCaseService.onTabChange(this.http, tabId);
+    this.appShellCommandsUseCaseService.onTabChange(tabId);
   }
 
   onLanguageChange(language: SupportedLanguage): void {
     this.appShellCommandsUseCaseService.onLanguageChange(
-      this.http,
       language,
       AppComponent.SELECTED_LANGUAGE_KEY
     );
@@ -183,7 +179,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
-    this.appShellCommandsUseCaseService.onMaintenanceOperationRequested(operation, this.http);
+    this.appShellCommandsUseCaseService.onMaintenanceOperationRequested(operation);
   }
 
   getStaticMediaBaseUrl(): string {
@@ -208,11 +204,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onLogoutRequested(): void {
-    this.appShellCommandsUseCaseService.onLogoutRequested(this.http);
+    this.appShellCommandsUseCaseService.onLogoutRequested();
   }
 
   onDeleteUserRequested(userId: string): void {
-    this.appShellCommandsUseCaseService.onDeleteUserRequested(this.http, userId);
+    this.appShellCommandsUseCaseService.onDeleteUserRequested(userId);
   }
 
   @HostListener('window:mousemove', ['$event'])
@@ -244,20 +240,19 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async refreshListingData(): Promise<void> {
-    await this.listingQueryOrchestratorService.refreshListingData(this.http);
+    await this.listingQueryOrchestratorService.refreshListingData();
   }
 
   private async handleFiltersChange(filters: ListingFiltersState): Promise<void> {
-    await this.listingQueryOrchestratorService.handleFiltersChange(this.http, filters);
+    await this.listingQueryOrchestratorService.handleFiltersChange(filters);
   }
 
   private async loadUserPreferences(): Promise<void> {
-    await this.listingQueryOrchestratorService.loadUserPreferences(this.http);
+    await this.listingQueryOrchestratorService.loadUserPreferences();
   }
 
   private async togglePropertyReview(property: ListingPropertyRow): Promise<void> {
     await this.listingInteractionUseCaseService.togglePropertyReview({
-      http: this.http,
       propertyId: property.propertyId,
       isAuthenticated: this.authenticatedUser() !== null,
       getPropertyLabels: () => this.propertyLabels(),
@@ -270,7 +265,6 @@ export class AppComponent implements OnInit, OnDestroy {
     commentRaw: string
   ): Promise<void> {
     await this.listingInteractionUseCaseService.savePropertyComment({
-      http: this.http,
       propertyId: property.propertyId,
       commentRaw,
       isAuthenticated: this.authenticatedUser() !== null,
@@ -280,15 +274,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async toggleSort(sortBy: SortToggleRequest['sortBy']): Promise<void> {
-    await this.listingQueryOrchestratorService.toggleSort(this.http, sortBy);
+    await this.listingQueryOrchestratorService.toggleSort(sortBy);
   }
 
   private async changePage(page: number): Promise<void> {
-    await this.listingQueryOrchestratorService.changePage(this.http, page);
+    await this.listingQueryOrchestratorService.changePage(page);
   }
 
   private async changePageSize(pageSize: number): Promise<void> {
-    await this.listingQueryOrchestratorService.changePageSize(this.http, pageSize);
+    await this.listingQueryOrchestratorService.changePageSize(pageSize);
   }
 
   private navigateTo(url: string): void {

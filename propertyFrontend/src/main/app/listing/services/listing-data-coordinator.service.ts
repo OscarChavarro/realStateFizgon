@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {
   ListingFiltersState,
@@ -23,14 +22,12 @@ export class ListingDataCoordinatorService {
   ) {}
 
   async refreshListingData(
-    http: HttpClient,
     pagination: ListingPaginationState,
     onAfterRefresh?: () => void
   ): Promise<void> {
     this.appShellStateService.loading.set(true);
     try {
       const listingData = await this.listingStateFacadeService.refreshListingData(
-        http,
         this.appShellStateService.sortCriteria(),
         this.appShellStateService.filters(),
         pagination.page,
@@ -46,7 +43,7 @@ export class ListingDataCoordinatorService {
     }
   }
 
-  async handleFiltersChange(http: HttpClient, nextFilters: ListingFiltersState): Promise<boolean> {
+  async handleFiltersChange(nextFilters: ListingFiltersState): Promise<boolean> {
     const currentFilters = this.appShellStateService.filters();
     this.appShellStateService.filters.set(nextFilters);
     const changed = this.listingStateFacadeService.areFiltersChanged(currentFilters, nextFilters);
@@ -64,7 +61,6 @@ export class ListingDataCoordinatorService {
         operation: 'listing.handleFiltersChange.savePreferences',
         request: async () =>
           this.listingStateFacadeService.saveFiltersPreference(
-            http,
             nextFilters,
             this.appShellStateService.selectedLanguage(),
             this.appShellStateService.sortCriteria(),
@@ -77,10 +73,10 @@ export class ListingDataCoordinatorService {
     return true;
   }
 
-  async loadUserPreferences(http: HttpClient, selectedLanguageKey: string): Promise<void> {
+  async loadUserPreferences(selectedLanguageKey: string): Promise<void> {
     const preferences = await this.requestErrorPolicyService.executeWithFallback({
       operation: 'listing.loadUserPreferences',
-      request: async () => this.listingStateFacadeService.loadUserPreferences(http),
+      request: async () => this.listingStateFacadeService.loadUserPreferences(),
       fallback: () => null,
       shouldNotifyOnFailure: (classification) => classification.category !== 'unauthorized'
     });
@@ -105,10 +101,7 @@ export class ListingDataCoordinatorService {
     this.appShellStateService.propertyLabels.set(preferences.propertyLabels);
   }
 
-  async saveLanguagePreference(
-    http: HttpClient,
-    selectedLanguage: SupportedLanguage
-  ): Promise<void> {
+  async saveLanguagePreference(selectedLanguage: SupportedLanguage): Promise<void> {
     if (this.appShellStateService.authenticatedUser() === null) {
       return;
     }
@@ -117,7 +110,6 @@ export class ListingDataCoordinatorService {
       operation: 'listing.saveLanguagePreference',
       request: async () =>
         this.listingStateFacadeService.saveFiltersPreference(
-          http,
           this.appShellStateService.filters(),
           selectedLanguage,
           this.appShellStateService.sortCriteria(),
@@ -127,7 +119,7 @@ export class ListingDataCoordinatorService {
     });
   }
 
-  async toggleSortAndRefresh(http: HttpClient, sortBy: SortToggleRequest['sortBy']): Promise<void> {
+  async toggleSortAndRefresh(sortBy: SortToggleRequest['sortBy']): Promise<void> {
     const updatedSortCriteria = this.listingStateFacadeService.toggleSortCriteria(
       this.appShellStateService.sortCriteria(),
       sortBy
@@ -138,7 +130,6 @@ export class ListingDataCoordinatorService {
         operation: 'listing.toggleSortAndRefresh.savePreferences',
         request: async () =>
           this.listingStateFacadeService.saveFiltersPreference(
-            http,
             this.appShellStateService.filters(),
             this.appShellStateService.selectedLanguage(),
             updatedSortCriteria,
@@ -149,17 +140,11 @@ export class ListingDataCoordinatorService {
     }
   }
 
-  async runMaintenanceOperation(
-    operation: DatabaseMaintenanceOperation,
-    http: HttpClient
-  ): Promise<void> {
+  async runMaintenanceOperation(operation: DatabaseMaintenanceOperation): Promise<void> {
     this.appShellStateService.maintenanceRunning.set(true);
     this.appShellStateService.maintenanceResultText.set('');
     try {
-      const resultText = await this.listingStateFacadeService.runMaintenanceOperation(
-        operation,
-        http
-      );
+      const resultText = await this.listingStateFacadeService.runMaintenanceOperation(operation);
       this.appShellStateService.maintenanceResultText.set(resultText);
     } finally {
       this.appShellStateService.maintenanceRunning.set(false);

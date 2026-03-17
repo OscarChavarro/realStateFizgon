@@ -15,16 +15,17 @@ type CurrentUserResponse = {
 })
 export class AuthSessionApiService {
   constructor(
+    private readonly http: HttpClient,
     private readonly apiRuntimeConfigService: ApiRuntimeConfigService,
     private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
-  async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {
+  async loadGoogleLoginAvailability(): Promise<boolean> {
     return this.requestErrorPolicyService.executeWithFallback({
       operation: 'auth.loadGoogleLoginAvailability',
       request: async () => {
         const response = await firstValueFrom(
-          http.get<{ enabled?: boolean }>('/auth/google/login-url')
+          this.http.get<{ enabled?: boolean }>('/auth/google/login-url')
         );
         return response.enabled === true;
       },
@@ -32,11 +33,13 @@ export class AuthSessionApiService {
     });
   }
 
-  async loadCurrentUser(http: HttpClient): Promise<AuthenticatedUser | null> {
+  async loadCurrentUser(): Promise<AuthenticatedUser | null> {
     return this.requestErrorPolicyService.executeWithFallback({
       operation: 'auth.loadCurrentUser',
       request: async () => {
-        const response = await firstValueFrom(http.get<CurrentUserResponse>('/auth/google/me'));
+        const response = await firstValueFrom(
+          this.http.get<CurrentUserResponse>('/auth/google/me')
+        );
 
         if (response.authenticated && response.user) {
           return response.user;
@@ -49,11 +52,11 @@ export class AuthSessionApiService {
     });
   }
 
-  async logout(http: HttpClient): Promise<void> {
+  async logout(): Promise<void> {
     await this.requestErrorPolicyService.executeWithFallback({
       operation: 'auth.logout',
       request: async () => {
-        await firstValueFrom(http.post('/auth/google/logout', {}));
+        await firstValueFrom(this.http.post('/auth/google/logout', {}));
       },
       fallback: () => undefined
     });

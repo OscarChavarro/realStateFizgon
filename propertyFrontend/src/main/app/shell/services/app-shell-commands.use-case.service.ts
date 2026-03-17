@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
 import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
@@ -19,7 +18,7 @@ export class AppShellCommandsUseCaseService {
     private readonly appShellStateService: AppShellStateService
   ) {}
 
-  onTabChange(http: HttpClient, tabId: ListingTab): void {
+  onTabChange(tabId: ListingTab): void {
     if (tabId === 'USERS_TAB' && !this.appShellStateService.canEditUsers()) {
       this.appShellStateService.activeTab.set('DASHBOARD');
       return;
@@ -31,33 +30,29 @@ export class AppShellCommandsUseCaseService {
 
     this.appShellStateService.activeTab.set(tabId);
     if (tabId === 'USERS_TAB') {
-      void this.loadUsersForManagement(http);
+      void this.loadUsersForManagement();
     }
   }
 
-  onLanguageChange(
-    http: HttpClient,
-    language: SupportedLanguage,
-    selectedLanguageKey: string
-  ): void {
+  onLanguageChange(language: SupportedLanguage, selectedLanguageKey: string): void {
     this.appShellStateService.selectedLanguage.set(language);
     this.listingStateFacadeService.persistSelectedLanguage(selectedLanguageKey, language);
-    void this.listingDataCoordinatorService.saveLanguagePreference(http, language);
+    void this.listingDataCoordinatorService.saveLanguagePreference(language);
   }
 
-  onLogoutRequested(http: HttpClient): void {
-    void this.userSessionManagementUseCaseService.logoutCurrentUser(http);
+  onLogoutRequested(): void {
+    void this.userSessionManagementUseCaseService.logoutCurrentUser();
   }
 
-  onDeleteUserRequested(http: HttpClient, userId: string): void {
-    void this.userSessionManagementUseCaseService.deleteUserAndRefresh(http, userId);
+  onDeleteUserRequested(userId: string): void {
+    void this.userSessionManagementUseCaseService.deleteUserAndRefresh(userId);
   }
 
-  onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation, http: HttpClient): void {
-    void this.listingDataCoordinatorService.runMaintenanceOperation(operation, http);
+  onMaintenanceOperationRequested(operation: DatabaseMaintenanceOperation): void {
+    void this.listingDataCoordinatorService.runMaintenanceOperation(operation);
   }
 
-  async loadUsersForManagement(http: HttpClient): Promise<void> {
-    await this.userSessionManagementUseCaseService.loadUsers(http);
+  async loadUsersForManagement(): Promise<void> {
+    await this.userSessionManagementUseCaseService.loadUsers();
   }
 }

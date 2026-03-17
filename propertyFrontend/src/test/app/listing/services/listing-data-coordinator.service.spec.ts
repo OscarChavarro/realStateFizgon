@@ -77,7 +77,7 @@ describe('ListingDataCoordinatorService', () => {
     const pagination = { page: 1, pageSize: 100, totalElements: 0, totalPages: 0 };
 
     // Action
-    await service.refreshListingData({} as any, pagination, onAfterRefresh);
+    await service.refreshListingData(pagination, onAfterRefresh);
 
     // Assert
     expect(appShellStateMock.loading()).toBeFalse();
@@ -99,7 +99,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.filters.set(filters);
 
     // Action
-    const changed = await service.handleFiltersChange({} as any, filters);
+    const changed = await service.handleFiltersChange(filters);
 
     // Assert
     expect(changed).toBeFalse();
@@ -116,14 +116,13 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.authenticatedUser.set({ id: 'user-1' });
 
     // Action
-    const changed = await service.handleFiltersChange({} as any, nextFilters);
+    const changed = await service.handleFiltersChange(nextFilters);
 
     // Assert
     expect(changed).toBeTrue();
     expect(appShellStateMock.filters()).toEqual(nextFilters);
     expect(appShellStateMock.pagination().page).toBe(1);
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledOnceWith(
-      {} as any,
       nextFilters,
       'en',
       [{ sortBy: 'title', sortOrder: 'asc' }],
@@ -139,7 +138,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.authenticatedUser.set({ id: 'user-1' });
 
     // Action
-    const changed = await service.handleFiltersChange({} as any, {
+    const changed = await service.handleFiltersChange({
       ...currentFilters,
       minPrice: '1200'
     });
@@ -155,7 +154,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.propertyLabels.set([{ propertyId: 'p1', labels: { review: 'NEW' } }]);
 
     // Action
-    await service.loadUserPreferences({} as any, 'selected-language');
+    await service.loadUserPreferences('selected-language');
 
     // Assert
     expect(appShellStateMock.filters()).toEqual(createDefaultListingFilters());
@@ -174,7 +173,7 @@ describe('ListingDataCoordinatorService', () => {
     });
 
     // Action
-    await service.loadUserPreferences({} as any, 'selected-language');
+    await service.loadUserPreferences('selected-language');
 
     // Assert
     expect(appShellStateMock.selectedLanguage()).toBe('sp');
@@ -200,7 +199,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.propertyLabels.set([{ propertyId: 'p-1', labels: { review: 'FAVOURITE' } }]);
 
     // Action
-    await service.loadUserPreferences({} as any, 'selected-language');
+    await service.loadUserPreferences('selected-language');
 
     // Assert
     expect(appShellStateMock.filters()).toEqual(createDefaultListingFilters());
@@ -214,7 +213,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.authenticatedUser.set(null);
 
     // Action
-    await service.saveLanguagePreference({} as any, 'sp');
+    await service.saveLanguagePreference('sp');
 
     // Assert
     expect(listingStateFacadeServiceMock.saveFiltersPreference).not.toHaveBeenCalled();
@@ -228,11 +227,10 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.pagination.update((state) => ({ ...state, pageSize: 500 }));
 
     // Action
-    await service.saveLanguagePreference({} as any, 'sp');
+    await service.saveLanguagePreference('sp');
 
     // Assert
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledOnceWith(
-      {} as any,
       { ...createDefaultListingFilters(), showClosed: false },
       'sp',
       [{ sortBy: 'price', sortOrder: 'desc' }],
@@ -249,7 +247,7 @@ describe('ListingDataCoordinatorService', () => {
     );
 
     // Action
-    await service.saveLanguagePreference({} as any, 'en');
+    await service.saveLanguagePreference('en');
 
     // Assert
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledTimes(2);
@@ -261,7 +259,7 @@ describe('ListingDataCoordinatorService', () => {
     listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-failed'));
 
     // Action
-    await service.saveLanguagePreference({} as any, 'en');
+    await service.saveLanguagePreference('en');
 
     // Assert
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledTimes(1);
@@ -273,7 +271,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.sortCriteria.set([]);
 
     // Action
-    await service.toggleSortAndRefresh({} as any, 'price');
+    await service.toggleSortAndRefresh('price');
 
     // Assert
     expect(listingStateFacadeServiceMock.toggleSortCriteria).toHaveBeenCalledOnceWith([], 'price');
@@ -287,7 +285,7 @@ describe('ListingDataCoordinatorService', () => {
     listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-failed'));
 
     // Action
-    await service.toggleSortAndRefresh({} as any, 'price');
+    await service.toggleSortAndRefresh('price');
 
     // Assert
     expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
@@ -300,7 +298,7 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.maintenanceResultText.set('old');
 
     // Action
-    await service.runMaintenanceOperation({} as any, {} as any);
+    await service.runMaintenanceOperation({} as any);
 
     // Assert
     expect(appShellStateMock.maintenanceRunning()).toBeFalse();

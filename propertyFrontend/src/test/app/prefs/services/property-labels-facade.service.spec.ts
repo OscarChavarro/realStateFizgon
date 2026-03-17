@@ -1,13 +1,8 @@
-import { HttpClient } from '@angular/common/http';
 import { PropertyLabelEntry, PropertyReviewLabel } from 'src/app/listing/model/listing.types';
 import { PropertyLabelsFacadeService } from 'src/app/prefs/services/property-labels-facade.service';
 import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.service';
 
 class PropertyLabelsFacadeServiceMockFactory {
-  static createHttpClientMock(): HttpClient {
-    return {} as HttpClient;
-  }
-
   static createUserPreferencesMock() {
     return {
       setPropertyReview: jasmine.createSpy('setPropertyReview').and.resolveTo([]),
@@ -85,18 +80,17 @@ describe('PropertyLabelsFacadeService', () => {
       const service = new PropertyLabelsFacadeService(
         userPreferences as unknown as UserPreferencesService
       );
-      const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
       userPreferences.setPropertyReview.and.resolveTo([
         { propertyId: 'p-1', labels: { review: expected } }
       ]);
 
       // Action
-      const result = await service.togglePropertyReview(http, 'p-1', [
+      const result = await service.togglePropertyReview('p-1', [
         { propertyId: 'p-1', labels: { review: current } }
       ]);
 
       // Assert
-      expect(userPreferences.setPropertyReview).toHaveBeenCalledOnceWith(http, 'p-1', expected);
+      expect(userPreferences.setPropertyReview).toHaveBeenCalledOnceWith('p-1', expected);
       expect(result).toEqual([{ propertyId: 'p-1', labels: { review: expected } }]);
     });
   });
@@ -107,10 +101,9 @@ describe('PropertyLabelsFacadeService', () => {
     const service = new PropertyLabelsFacadeService(
       userPreferences as unknown as UserPreferencesService
     );
-    const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
 
     // Action
-    const result = await service.savePropertyComment(http, 'p-1', '  note  ', [
+    const result = await service.savePropertyComment('p-1', '  note  ', [
       { propertyId: 'p-1', labels: { comment: 'note' } }
     ]);
 
@@ -125,18 +118,17 @@ describe('PropertyLabelsFacadeService', () => {
     const service = new PropertyLabelsFacadeService(
       userPreferences as unknown as UserPreferencesService
     );
-    const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
     userPreferences.setPropertyComment.and.resolveTo([
       { propertyId: 'p-1', labels: { comment: 'note-2' } }
     ]);
 
     // Action
-    const result = await service.savePropertyComment(http, 'p-1', '  note-2  ', [
+    const result = await service.savePropertyComment('p-1', '  note-2  ', [
       { propertyId: 'p-1', labels: { comment: 'note-1' } }
     ]);
 
     // Assert
-    expect(userPreferences.setPropertyComment).toHaveBeenCalledOnceWith(http, 'p-1', 'note-2');
+    expect(userPreferences.setPropertyComment).toHaveBeenCalledOnceWith('p-1', 'note-2');
     expect(result).toEqual([{ propertyId: 'p-1', labels: { comment: 'note-2' } }]);
   });
 

@@ -5,6 +5,7 @@ import { AuthSessionApiService } from 'src/app/auth/services/auth-session-api.se
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthUsersService } from 'src/app/auth/services/auth-users.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,8 @@ export class AuthFacadeService {
   constructor(
     private readonly authSessionApiService: AuthSessionApiService,
     private readonly authUsersService: AuthUsersService,
-    private readonly apiRuntimeConfigService: ApiRuntimeConfigService
+    private readonly apiRuntimeConfigService: ApiRuntimeConfigService,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
   ) {}
 
   async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {
@@ -50,8 +52,11 @@ export class AuthFacadeService {
             'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
         );
       }
-    } catch {
-      // Ignore URL parsing issues; normal request errors will surface elsewhere.
+    } catch (error) {
+      this.requestErrorPolicyService.notifyFallback(
+        'auth.warnIfAuthHostMismatch',
+        this.requestErrorPolicyService.classify(error)
+      );
     }
   }
 }

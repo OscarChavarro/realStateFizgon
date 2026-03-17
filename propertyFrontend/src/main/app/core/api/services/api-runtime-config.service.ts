@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 type RuntimeConfiguration = {
   backendBaseUrl: string;
@@ -14,6 +15,10 @@ export class ApiRuntimeConfigService {
 
   private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
   private staticMediaBaseUrl = ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL;
+
+  constructor(
+    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+  ) {}
 
   setConfiguration(configuration: RuntimeConfiguration): void {
     this.backendBaseUrl = this.normalizeBackendBaseUrl(configuration.backendBaseUrl);
@@ -81,7 +86,11 @@ export class ApiRuntimeConfigService {
       const backendUrl = new URL(this.backendBaseUrl);
       const requestUrl = new URL(value);
       return backendUrl.origin === requestUrl.origin;
-    } catch {
+    } catch (error) {
+      this.requestErrorPolicyService.notifyFallback(
+        'apiRuntimeConfig.isBackendUrl',
+        this.requestErrorPolicyService.classify(error)
+      );
       return false;
     }
   }

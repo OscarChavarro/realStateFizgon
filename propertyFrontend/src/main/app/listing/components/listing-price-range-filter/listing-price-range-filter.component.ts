@@ -16,6 +16,7 @@ import {
   SupportedLanguage,
   TranslationKey
 } from 'src/app/core/i18n/services/i18n.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 type PriceRangesResponse = {
   minPrice?: unknown;
@@ -33,6 +34,7 @@ export class ListingPriceRangeFilterComponent implements OnInit, OnChanges {
 
   private readonly http = inject(HttpClient);
   private readonly i18nService = inject(I18nService);
+  private readonly requestErrorPolicyService = inject(RequestErrorPolicyService);
 
   @Input({ required: true }) selectedLanguage: SupportedLanguage = 'en';
   @Input() minPrice = '';
@@ -157,7 +159,11 @@ export class ListingPriceRangeFilterComponent implements OnInit, OnChanges {
       const range = { minPrice, maxPrice };
       ListingPriceRangeFilterComponent.cachedPriceRange = range;
       this.applyPriceRange(range);
-    } catch {
+    } catch (error) {
+      this.requestErrorPolicyService.notifyFallback(
+        'listing.loadPriceRange',
+        this.requestErrorPolicyService.classify(error)
+      );
       this.hasRange.set(false);
     } finally {
       this.loading.set(false);

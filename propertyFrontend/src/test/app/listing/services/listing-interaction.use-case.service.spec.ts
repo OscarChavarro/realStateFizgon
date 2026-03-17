@@ -157,4 +157,31 @@ describe('ListingInteractionUseCaseService', () => {
     // Assert
     expect(setSpy).not.toHaveBeenCalled();
   });
+
+  it('togglePropertyReview should use default error policy when request policy is not injected', async () => {
+    // Arrange
+    const isolatedFacadeMock = {
+      togglePropertyReview: jasmine.createSpy('togglePropertyReview').and.rejectWith(new Error('failure')),
+      savePropertyComment: jasmine.createSpy('savePropertyComment')
+    };
+    const serviceWithDefaultPolicy = new ListingInteractionUseCaseService(
+      isolatedFacadeMock as any
+    );
+    const setSpy = jasmine.createSpy('setPropertyLabels');
+    const warnSpy = spyOn(console, 'warn');
+
+    // Action
+    await serviceWithDefaultPolicy.togglePropertyReview({
+      http: {} as any,
+      propertyId: 'p-1',
+      isAuthenticated: true,
+      getPropertyLabels: () => [],
+      setPropertyLabels: setSpy
+    });
+
+    // Assert
+    expect(setSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalled();
+    expect(warnSpy.calls.mostRecent().args[0]).toContain('listing.togglePropertyReview');
+  });
 });

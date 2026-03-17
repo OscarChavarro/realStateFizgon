@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { PropertyLabelEntry } from 'src/app/listing/model/listing.types';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { PropertyLabelsFacadeService } from 'src/app/prefs/services/property-labels-facade.service';
 
 type TogglePropertyReviewParams = {
@@ -24,7 +25,10 @@ type SavePropertyCommentParams = {
   providedIn: 'root'
 })
 export class ListingInteractionUseCaseService {
-  constructor(private readonly propertyLabelsFacadeService: PropertyLabelsFacadeService) {}
+  constructor(
+    private readonly propertyLabelsFacadeService: PropertyLabelsFacadeService,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+  ) {}
 
   async togglePropertyReview(params: TogglePropertyReviewParams): Promise<void> {
     if (!params.isAuthenticated) {
@@ -38,8 +42,11 @@ export class ListingInteractionUseCaseService {
         params.getPropertyLabels()
       );
       params.setPropertyLabels(updatedLabels);
-    } catch {
-      // Ignore API errors; UI state remains unchanged.
+    } catch (error) {
+      this.requestErrorPolicyService.notifyFallback(
+        'listing.togglePropertyReview',
+        this.requestErrorPolicyService.classify(error)
+      );
     }
   }
 
@@ -58,8 +65,11 @@ export class ListingInteractionUseCaseService {
       if (updatedLabels) {
         params.setPropertyLabels(updatedLabels);
       }
-    } catch {
-      // Ignore API errors; UI state remains unchanged.
+    } catch (error) {
+      this.requestErrorPolicyService.notifyFallback(
+        'listing.savePropertyComment',
+        this.requestErrorPolicyService.classify(error)
+      );
     }
   }
 }

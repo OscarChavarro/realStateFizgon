@@ -132,7 +132,7 @@ describe('AuthFacadeService', () => {
     });
   });
 
-  it('warnIfAuthHostMismatch should ignore URL parsing errors', () => {
+  it('warnIfAuthHostMismatch should notify when URL parsing fails', () => {
     // Arrange
     const sessionApi = AuthFacadeServiceMockFactory.createSessionApiMock();
     const usersApi = AuthFacadeServiceMockFactory.createUsersApiMock();
@@ -144,6 +144,7 @@ describe('AuthFacadeService', () => {
     facade.warnIfAuthHostMismatch('localhost');
 
     // Assert
-    expect(warnSpy).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.calls.mostRecent().args[0]).toContain('auth.warnIfAuthHostMismatch');
   });
 });

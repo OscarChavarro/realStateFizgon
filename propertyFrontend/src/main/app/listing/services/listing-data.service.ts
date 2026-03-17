@@ -9,6 +9,7 @@ import {
   PropertiesCountResponse,
   PropertiesResponse
 } from 'src/app/listing/model/listing-data.payload.types';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { ListingConfigurationPayloadMapperService } from 'src/app/listing/services/mappers/listing-configuration-payload-mapper.service';
 import { ListingPropertiesPayloadMapperService } from 'src/app/listing/services/mappers/listing-properties-payload-mapper.service';
 
@@ -18,16 +19,19 @@ import { ListingPropertiesPayloadMapperService } from 'src/app/listing/services/
 export class ListingDataService {
   constructor(
     private readonly listingConfigurationPayloadMapperService: ListingConfigurationPayloadMapperService = new ListingConfigurationPayloadMapperService(),
-    private readonly listingPropertiesPayloadMapperService: ListingPropertiesPayloadMapperService = new ListingPropertiesPayloadMapperService()
+    private readonly listingPropertiesPayloadMapperService: ListingPropertiesPayloadMapperService = new ListingPropertiesPayloadMapperService(),
+    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
   ) {}
 
   async loadBackendConfiguration(http: HttpClient): Promise<ListingConfiguration> {
-    try {
-      const secrets = await firstValueFrom(http.get('/secrets.json'));
-      return this.listingConfigurationPayloadMapperService.toListingConfiguration(secrets);
-    } catch {
-      return this.listingConfigurationPayloadMapperService.toListingConfiguration(null);
-    }
+    return this.requestErrorPolicyService.executeWithFallback({
+      operation: 'listing.loadBackendConfiguration',
+      request: async () => {
+        const secrets = await firstValueFrom(http.get('/secrets.json'));
+        return this.listingConfigurationPayloadMapperService.toListingConfiguration(secrets);
+      },
+      fallback: () => this.listingConfigurationPayloadMapperService.toListingConfiguration(null)
+    });
   }
 
   async loadListingData(
@@ -42,28 +46,41 @@ export class ListingDataService {
 
     try {
       let response: PropertiesResponse;
-      let effectiveRequestPageSize = normalizedPageSize;
       try {
-        response = await firstValueFrom(
-          http.get<PropertiesResponse>(
-            this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, true)
-          )
+        response = await this.loadPropertiesPage(
+          http,
+          sortCriteria,
+          filters,
+          normalizedPage,
+          normalizedPageSize
         );
       } catch (error) {
         const pageSizeLimitFromError = this.extractMaxAllowedPageSize(error);
         if (pageSizeLimitFromError !== null) {
-          effectiveRequestPageSize = pageSizeLimitFromError;
-          response = await firstValueFrom(
-            http.get<PropertiesResponse>(
-              this.buildPropertiesEndpointUrl(sortCriteria, filters, normalizedPage, effectiveRequestPageSize, true)
-            )
+          this.requestErrorPolicyService.notifyRecovery(
+            'listing.loadListingData.properties',
+            `backend-page-size-limit:${pageSizeLimitFromError}`,
+            error
+          );
+          response = await this.loadPropertiesPage(
+            http,
+            sortCriteria,
+            filters,
+            normalizedPage,
+            pageSizeLimitFromError
           );
         } else {
-          effectiveRequestPageSize = 1;
-          response = await firstValueFrom(
-            http.get<PropertiesResponse>(
-              this.buildPropertiesEndpointUrl(sortCriteria, filters, 1, effectiveRequestPageSize, true)
-            )
+          this.requestErrorPolicyService.notifyRecovery(
+            'listing.loadListingData.properties',
+            'fallback-to-minimal-pagination',
+            error
+          );
+          response = await this.loadPropertiesPage(
+            http,
+            sortCriteria,
+            filters,
+            1,
+            1
           );
         }
       }
@@ -90,7 +107,9 @@ export class ListingDataService {
           totalPages
         }
       };
-    } catch {
+    } catch (error) {
+      const classification = this.requestErrorPolicyService.classify(error);
+      this.requestErrorPolicyService.notifyFallback('listing.loadListingData', classification);
       const totalCount = await this.loadTotalCount(http, 0);
       return {
         count: totalCount,
@@ -166,14 +185,36 @@ export class ListingDataService {
   }
 
   private async loadTotalCount(http: HttpClient, fallback: number): Promise<number> {
-    try {
-      const countResponse = await firstValueFrom(
-        http.get<PropertiesCountResponse>('/properties/count')
-      );
-      return countResponse.count;
-    } catch {
-      return fallback;
-    }
+    return this.requestErrorPolicyService.executeWithFallback({
+      operation: 'listing.loadTotalCount',
+      request: async () => {
+        const countResponse = await firstValueFrom(
+          http.get<PropertiesCountResponse>('/properties/count')
+        );
+        return countResponse.count;
+      },
+      fallback: () => fallback,
+      shouldNotifyOnFailure: (classification) => classification.category !== 'unauthorized'
+    });
+  }
+
+  private async loadPropertiesPage(
+    http: HttpClient,
+    sortCriteria: SortCriterion[],
+    filters: ListingFiltersState,
+    page: number,
+    pageSize: number
+  ): Promise<PropertiesResponse> {
+    return this.requestErrorPolicyService.executeOrThrow({
+      operation: 'listing.loadListingData.properties',
+      request: async () => firstValueFrom(
+        http.get<PropertiesResponse>(
+          this.buildPropertiesEndpointUrl(sortCriteria, filters, page, pageSize, true)
+        )
+      ),
+      maxAttempts: 1,
+      notifyOnFailure: false
+    });
   }
 
   private toDateOnlyString(value: unknown): string {

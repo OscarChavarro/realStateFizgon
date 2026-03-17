@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
@@ -167,6 +168,25 @@ describe('ListingDataCoordinatorService', () => {
     expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledOnceWith('selected-language', 'sp');
   });
 
+  it('whenLoadingPreferencesFails_loadUserPreferences_shouldFallbackToDefaultsWithoutThrowing', async () => {
+    // Arrange
+    listingStateFacadeServiceMock.loadUserPreferences.and.rejectWith(
+      new HttpErrorResponse({ status: 401, error: { message: 'unauthorized' } })
+    );
+    appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false });
+    appShellStateMock.sortCriteria.set([{ sortBy: 'price', sortOrder: 'asc' }]);
+    appShellStateMock.propertyLabels.set([{ propertyId: 'p-1', labels: { review: 'FAVOURITE' } }]);
+
+    // Action
+    await service.loadUserPreferences({} as any, 'selected-language');
+
+    // Assert
+    expect(appShellStateMock.filters()).toEqual(createDefaultListingFilters());
+    expect(appShellStateMock.sortCriteria()).toEqual([]);
+    expect(appShellStateMock.propertyLabels()).toEqual([]);
+    expect(listingStateFacadeServiceMock.persistSelectedLanguage).not.toHaveBeenCalled();
+  });
+
   it('whenLanguageChangesWhileUnauthenticated_saveLanguagePreference_shouldSkipPersistence', async () => {
     // Arrange
     appShellStateMock.authenticatedUser.set(null);
@@ -198,6 +218,33 @@ describe('ListingDataCoordinatorService', () => {
     );
   });
 
+  it('whenPreferenceSaveFailsTransiently_saveLanguagePreference_shouldRetryOnce', async () => {
+    // Arrange
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
+    listingStateFacadeServiceMock.saveFiltersPreference.and.returnValues(
+      Promise.reject(new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
+      Promise.resolve(undefined)
+    );
+
+    // Action
+    await service.saveLanguagePreference({} as any, 'en');
+
+    // Assert
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledTimes(2);
+  });
+
+  it('whenPreferenceSaveFailsWithNonRetryableError_saveLanguagePreference_shouldSwallowAndContinue', async () => {
+    // Arrange
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
+    listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-failed'));
+
+    // Action
+    await service.saveLanguagePreference({} as any, 'en');
+
+    // Assert
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledTimes(1);
+  });
+
   it('whenSortChanges_toggleSortAndRefresh_shouldUpdateSortAndPersistForAuthenticatedUser', async () => {
     // Arrange
     appShellStateMock.authenticatedUser.set({ id: 'user-1' });
@@ -210,6 +257,19 @@ describe('ListingDataCoordinatorService', () => {
     expect(listingStateFacadeServiceMock.toggleSortCriteria).toHaveBeenCalledOnceWith([], 'price');
     expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
     expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalled();
+  });
+
+  it('whenSortPreferenceSaveFails_toggleSortAndRefresh_shouldKeepSortUpdateAndNotThrow', async () => {
+    // Arrange
+    appShellStateMock.authenticatedUser.set({ id: 'user-1' });
+    listingStateFacadeServiceMock.saveFiltersPreference.and.rejectWith(new Error('save-failed'));
+
+    // Action
+    await service.toggleSortAndRefresh({} as any, 'price');
+
+    // Assert
+    expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
+    expect(listingStateFacadeServiceMock.saveFiltersPreference).toHaveBeenCalledTimes(1);
   });
 
   it('whenMaintenanceRuns_runMaintenanceOperation_shouldSetRunningAndResult', async () => {

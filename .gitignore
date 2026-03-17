@@ -13,6 +13,7 @@ idealistaPropertyScraper/output/images/
 .DS_Store
 .idea/
 .vscode/
+.tmp/
 
 # Secrets in secrets.json are not pushed. Refer to secrets-example.json
 secrets.json

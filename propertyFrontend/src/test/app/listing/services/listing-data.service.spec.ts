@@ -68,6 +68,27 @@ describe('ListingDataService', () => {
     expect(result.googleMapsMapId).toBeNull();
   });
 
+  it('loadBackendConfiguration should retry transient request errors before applying fallback', async () => {
+    // Arrange
+    const transientError = new HttpErrorResponse({
+      status: 503,
+      error: { message: 'temporarily unavailable' }
+    });
+    httpMock.queueError(transientError);
+    httpMock.queueResponse({
+      staticMedia: 'http://cdn.example.com',
+      backend: { baseUrl: 'http://localhost:8081' }
+    });
+
+    // Action
+    const result = await service.loadBackendConfiguration(httpMock as any);
+
+    // Assert
+    expect(httpMock.getCalls).toEqual(['/secrets.json', '/secrets.json']);
+    expect(result.backendBaseUrl).toBe('http://localhost:8081');
+    expect(result.staticMediaBaseUrl).toBe('http://cdn.example.com/');
+  });
+
   it('loadBackendConfiguration should keep defaults when optional values are empty in payload', async () => {
     // Arrange
     httpMock.queueResponse({

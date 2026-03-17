@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
@@ -68,6 +69,24 @@ describe('AuthSessionApiService', () => {
 
     // Assert
     expect(enabled).toBeFalse();
+  });
+
+  it('loadGoogleLoginAvailability should retry transient errors and eventually return enabled response', async () => {
+    // Arrange
+    const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
+    const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
+    const service = new AuthSessionApiService(runtimeConfig);
+    (http.get as jasmine.Spy).and.returnValues(
+      throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
+      of({ enabled: true })
+    );
+
+    // Action
+    const enabled = await service.loadGoogleLoginAvailability(http);
+
+    // Assert
+    expect(enabled).toBeTrue();
+    expect((http.get as jasmine.Spy).calls.count()).toBe(2);
   });
 
   it('loadCurrentUser should return user only when authenticated and user are present', async () => {

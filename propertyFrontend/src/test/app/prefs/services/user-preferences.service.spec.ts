@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
@@ -100,6 +101,30 @@ describe('UserPreferencesService', () => {
     expect(result).toBeNull();
   });
 
+  it('loadPreferences should retry transient errors before succeeding', async () => {
+    // Arrange
+    const service = new UserPreferencesService();
+    const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    (http.get as jasmine.Spy).and.returnValues(
+      throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
+      of({
+        language: 'en',
+        pageSize: 100,
+        showClosed: true,
+        showNew: true,
+        showFavourite: true,
+        showRejected: true
+      })
+    );
+
+    // Action
+    const result = await service.loadPreferences(http);
+
+    // Assert
+    expect((http.get as jasmine.Spy).calls.count()).toBe(2);
+    expect(result?.language).toBe('en');
+  });
+
   it('saveFilters should post normalized filters payload', async () => {
     // Arrange
     const service = new UserPreferencesService();
@@ -189,6 +214,25 @@ describe('UserPreferencesService', () => {
       propertyId: 'p-2',
       labels: { comment: 'message' }
     });
+    expect(result).toEqual([{ propertyId: 'p-2', labels: { comment: 'kept' } }]);
+  });
+
+  it('setPropertyComment should retry transient post failures before returning labels', async () => {
+    // Arrange
+    const service = new UserPreferencesService();
+    const http = UserPreferencesServiceMockFactory.createHttpClientMock();
+    (http.post as jasmine.Spy).and.returnValues(
+      throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
+      of({
+        propertyLabels: [{ propertyId: 'p-2', labels: { comment: 'kept' } }]
+      })
+    );
+
+    // Action
+    const result = await service.setPropertyComment(http, 'p-2', 'message');
+
+    // Assert
+    expect((http.post as jasmine.Spy).calls.count()).toBe(2);
     expect(result).toEqual([{ propertyId: 'p-2', labels: { comment: 'kept' } }]);
   });
 

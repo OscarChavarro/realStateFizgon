@@ -9,6 +9,7 @@ import { SortToggleRequest } from 'src/app/listing/model/listing.types';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 
 @Injectable({
@@ -17,6 +18,7 @@ import { AppShellStateService } from 'src/app/shell/services/app-shell-state.ser
 export class ListingDataCoordinatorService {
   constructor(
     private readonly listingStateFacadeService: ListingStateFacadeService,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService,
     private readonly appShellStateService: AppShellStateService
   ) {}
 
@@ -26,19 +28,22 @@ export class ListingDataCoordinatorService {
     onAfterRefresh?: () => void
   ): Promise<void> {
     this.appShellStateService.loading.set(true);
-    const listingData = await this.listingStateFacadeService.refreshListingData(
-      http,
-      this.appShellStateService.sortCriteria(),
-      this.appShellStateService.filters(),
-      pagination.page,
-      pagination.pageSize
-    );
+    try {
+      const listingData = await this.listingStateFacadeService.refreshListingData(
+        http,
+        this.appShellStateService.sortCriteria(),
+        this.appShellStateService.filters(),
+        pagination.page,
+        pagination.pageSize
+      );
 
-    this.appShellStateService.count.set(listingData.count);
-    this.appShellStateService.allProperties.set(listingData.properties);
-    this.appShellStateService.pagination.set(listingData.pagination);
-    onAfterRefresh?.();
-    this.appShellStateService.loading.set(false);
+      this.appShellStateService.count.set(listingData.count);
+      this.appShellStateService.allProperties.set(listingData.properties);
+      this.appShellStateService.pagination.set(listingData.pagination);
+      onAfterRefresh?.();
+    } finally {
+      this.appShellStateService.loading.set(false);
+    }
   }
 
   async handleFiltersChange(http: HttpClient, nextFilters: ListingFiltersState): Promise<boolean> {
@@ -55,24 +60,29 @@ export class ListingDataCoordinatorService {
     }));
 
     if (this.appShellStateService.authenticatedUser() !== null) {
-      try {
-        await this.listingStateFacadeService.saveFiltersPreference(
+      await this.requestErrorPolicyService.executeWithFallback({
+        operation: 'listing.handleFiltersChange.savePreferences',
+        request: async () => this.listingStateFacadeService.saveFiltersPreference(
           http,
           nextFilters,
           this.appShellStateService.selectedLanguage(),
           this.appShellStateService.sortCriteria(),
           this.appShellStateService.pagination().pageSize
-        );
-      } catch {
-        // Ignore persistence errors so filtering still updates UI from backend.
-      }
+        ),
+        fallback: () => undefined
+      });
     }
 
     return true;
   }
 
   async loadUserPreferences(http: HttpClient, selectedLanguageKey: string): Promise<void> {
-    const preferences = await this.listingStateFacadeService.loadUserPreferences(http);
+    const preferences = await this.requestErrorPolicyService.executeWithFallback({
+      operation: 'listing.loadUserPreferences',
+      request: async () => this.listingStateFacadeService.loadUserPreferences(http),
+      fallback: () => null,
+      shouldNotifyOnFailure: (classification) => classification.category !== 'unauthorized'
+    });
     if (!preferences) {
       this.appShellStateService.filters.set(createDefaultListingFilters());
       this.appShellStateService.sortCriteria.set([]);
@@ -96,17 +106,17 @@ export class ListingDataCoordinatorService {
       return;
     }
 
-    try {
-      await this.listingStateFacadeService.saveFiltersPreference(
+    await this.requestErrorPolicyService.executeWithFallback({
+      operation: 'listing.saveLanguagePreference',
+      request: async () => this.listingStateFacadeService.saveFiltersPreference(
         http,
         this.appShellStateService.filters(),
         selectedLanguage,
         this.appShellStateService.sortCriteria(),
         this.appShellStateService.pagination().pageSize
-      );
-    } catch {
-      // Ignore persistence errors so language still updates locally.
-    }
+      ),
+      fallback: () => undefined
+    });
   }
 
   async toggleSortAndRefresh(http: HttpClient, sortBy: SortToggleRequest['sortBy']): Promise<void> {
@@ -116,25 +126,28 @@ export class ListingDataCoordinatorService {
     );
     this.appShellStateService.sortCriteria.set(updatedSortCriteria);
     if (this.appShellStateService.authenticatedUser() !== null) {
-      try {
-        await this.listingStateFacadeService.saveFiltersPreference(
+      await this.requestErrorPolicyService.executeWithFallback({
+        operation: 'listing.toggleSortAndRefresh.savePreferences',
+        request: async () => this.listingStateFacadeService.saveFiltersPreference(
           http,
           this.appShellStateService.filters(),
           this.appShellStateService.selectedLanguage(),
           updatedSortCriteria,
           this.appShellStateService.pagination().pageSize
-        );
-      } catch {
-        // Ignore persistence errors so sorting keeps working in current session.
-      }
+        ),
+        fallback: () => undefined
+      });
     }
   }
 
   async runMaintenanceOperation(operation: DatabaseMaintenanceOperation, http: HttpClient): Promise<void> {
     this.appShellStateService.maintenanceRunning.set(true);
     this.appShellStateService.maintenanceResultText.set('');
-    const resultText = await this.listingStateFacadeService.runMaintenanceOperation(operation, http);
-    this.appShellStateService.maintenanceResultText.set(resultText);
-    this.appShellStateService.maintenanceRunning.set(false);
+    try {
+      const resultText = await this.listingStateFacadeService.runMaintenanceOperation(operation, http);
+      this.appShellStateService.maintenanceResultText.set(resultText);
+    } finally {
+      this.appShellStateService.maintenanceRunning.set(false);
+    }
   }
 }

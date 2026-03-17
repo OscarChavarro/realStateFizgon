@@ -12,13 +12,15 @@ import {
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
 import { UserPreferencesPayload } from 'src/app/prefs/model/user-preferences-payload.type';
 import { UserPreferencesPayloadMapperService } from 'src/app/prefs/services/mappers/user-preferences-payload-mapper.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserPreferencesService {
   constructor(
-    private readonly userPreferencesPayloadMapperService: UserPreferencesPayloadMapperService = new UserPreferencesPayloadMapperService()
+    private readonly userPreferencesPayloadMapperService: UserPreferencesPayloadMapperService = new UserPreferencesPayloadMapperService(),
+    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
   ) {}
 
   async loadPreferences(
@@ -30,14 +32,17 @@ export class UserPreferencesService {
     sortCriteria: SortCriterion[];
     propertyLabels: PropertyLabelEntry[];
   } | null> {
-    try {
-      const response = await firstValueFrom(
-        http.get<UserPreferencesPayload>('/auth/preferences')
-      );
-      return this.userPreferencesPayloadMapperService.normalizePreferencesPayload(response);
-    } catch {
-      return null;
-    }
+    return this.requestErrorPolicyService.executeWithFallback({
+      operation: 'prefs.loadPreferences',
+      request: async () => {
+        const response = await firstValueFrom(
+          http.get<UserPreferencesPayload>('/auth/preferences')
+        );
+        return this.userPreferencesPayloadMapperService.normalizePreferencesPayload(response);
+      },
+      fallback: () => null,
+      shouldNotifyOnFailure: (classification) => classification.category !== 'unauthorized'
+    });
   }
 
   async saveFilters(
@@ -47,12 +52,17 @@ export class UserPreferencesService {
     sortCriteria: SortCriterion[],
     pageSize: number
   ): Promise<void> {
-    await firstValueFrom(
-      http.post(
-        '/auth/preferences',
-        this.userPreferencesPayloadMapperService.buildSaveFiltersPayload(filters, language, sortCriteria, pageSize)
-      )
-    );
+    await this.requestErrorPolicyService.executeOrThrow({
+      operation: 'prefs.saveFilters',
+      request: async () => {
+        await firstValueFrom(
+          http.post(
+            '/auth/preferences',
+            this.userPreferencesPayloadMapperService.buildSaveFiltersPayload(filters, language, sortCriteria, pageSize)
+          )
+        );
+      }
+    });
   }
 
   async setPropertyReview(
@@ -76,15 +86,18 @@ export class UserPreferencesService {
     propertyId: string,
     labels: Partial<PropertyLabels>
   ): Promise<PropertyLabelEntry[]> {
-    const response = await firstValueFrom(
-      http.post<UserPreferencesPayload>(
-        '/auth/preferences/setPropertyLabels',
-        {
-          propertyId,
-          labels
-        }
+    const response = await this.requestErrorPolicyService.executeOrThrow({
+      operation: 'prefs.setPropertyLabels',
+      request: async () => firstValueFrom(
+        http.post<UserPreferencesPayload>(
+          '/auth/preferences/setPropertyLabels',
+          {
+            propertyId,
+            labels
+          }
+        )
       )
-    );
+    });
 
     return this.userPreferencesPayloadMapperService.normalizePropertyLabels(response.propertyLabels);
   }

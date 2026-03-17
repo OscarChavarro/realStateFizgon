@@ -6,7 +6,9 @@ import { I18nService } from 'src/app/core/i18n/services/i18n.service';
 class UsersPanelComponentMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 
@@ -60,8 +62,20 @@ describe('UsersPanelComponent', () => {
   });
 
   [
-    { user: UsersPanelComponentMockFactory.createUser({ name: '  Name  ', email: 'mail@example.com' }), expected: 'Name' },
-    { user: UsersPanelComponentMockFactory.createUser({ name: '  ', email: '  mail@example.com  ' }), expected: 'mail@example.com' },
+    {
+      user: UsersPanelComponentMockFactory.createUser({
+        name: '  Name  ',
+        email: 'mail@example.com'
+      }),
+      expected: 'Name'
+    },
+    {
+      user: UsersPanelComponentMockFactory.createUser({
+        name: '  ',
+        email: '  mail@example.com  '
+      }),
+      expected: 'mail@example.com'
+    },
     { user: UsersPanelComponentMockFactory.createUser({ name: ' ', email: ' ' }), expected: '-' },
     { user: UsersPanelComponentMockFactory.createUser({ name: null, email: null }), expected: '-' }
   ].forEach(({ user, expected }) => {
@@ -79,10 +93,19 @@ describe('UsersPanelComponent', () => {
   });
 
   [
-    { user: UsersPanelComponentMockFactory.createUser({ roles: ['STANDARD_USER'] }), expected: 'STANDARD_USER' },
-    { user: UsersPanelComponentMockFactory.createUser({ roles: ['STANDARD_USER', 'ADMIN'] }), expected: 'STANDARD_USER, ADMIN' },
+    {
+      user: UsersPanelComponentMockFactory.createUser({ roles: ['STANDARD_USER'] }),
+      expected: 'STANDARD_USER'
+    },
+    {
+      user: UsersPanelComponentMockFactory.createUser({ roles: ['STANDARD_USER', 'ADMIN'] }),
+      expected: 'STANDARD_USER, ADMIN'
+    },
     { user: UsersPanelComponentMockFactory.createUser({ roles: [] }), expected: 'STANDARD_USER' },
-    { user: UsersPanelComponentMockFactory.createUser({ roles: null as unknown as any[] }), expected: 'STANDARD_USER' }
+    {
+      user: UsersPanelComponentMockFactory.createUser({ roles: null as unknown as any[] }),
+      expected: 'STANDARD_USER'
+    }
   ].forEach(({ user, expected }) => {
     it(`getDisplayRoles should return "${expected}"`, () => {
       // Arrange
@@ -98,10 +121,21 @@ describe('UsersPanelComponent', () => {
   });
 
   [
-    { user: UsersPanelComponentMockFactory.createUser({ permissions: ['canEditUsers'] }), expected: 'canEditUsers' },
-    { user: UsersPanelComponentMockFactory.createUser({ permissions: ['canEditUsers', 'canMaintainDatabase'] }), expected: 'canEditUsers, canMaintainDatabase' },
+    {
+      user: UsersPanelComponentMockFactory.createUser({ permissions: ['canEditUsers'] }),
+      expected: 'canEditUsers'
+    },
+    {
+      user: UsersPanelComponentMockFactory.createUser({
+        permissions: ['canEditUsers', 'canMaintainDatabase']
+      }),
+      expected: 'canEditUsers, canMaintainDatabase'
+    },
     { user: UsersPanelComponentMockFactory.createUser({ permissions: [] }), expected: '-' },
-    { user: UsersPanelComponentMockFactory.createUser({ permissions: null as unknown as any[] }), expected: '-' }
+    {
+      user: UsersPanelComponentMockFactory.createUser({ permissions: null as unknown as any[] }),
+      expected: '-'
+    }
   ].forEach(({ user, expected }) => {
     it(`getDisplayPermissions should return "${expected}"`, () => {
       // Arrange

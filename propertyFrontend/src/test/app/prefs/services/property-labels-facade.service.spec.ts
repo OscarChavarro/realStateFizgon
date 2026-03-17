@@ -31,7 +31,9 @@ describe('PropertyLabelsFacadeService', () => {
     it(`getPropertyReviewLabel should return ${expected}`, () => {
       // Arrange
       const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-      const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+      const service = new PropertyLabelsFacadeService(
+        userPreferences as unknown as UserPreferencesService
+      );
 
       // Action
       const result = service.getPropertyReviewLabel(
@@ -52,7 +54,9 @@ describe('PropertyLabelsFacadeService', () => {
     it(`getPropertyComment should return "${expected}"`, () => {
       // Arrange
       const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-      const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+      const service = new PropertyLabelsFacadeService(
+        userPreferences as unknown as UserPreferencesService
+      );
 
       // Action
       const result = service.getPropertyComment(
@@ -65,7 +69,10 @@ describe('PropertyLabelsFacadeService', () => {
     });
   });
 
-  const toggleReviewCases: ReadonlyArray<{ current: PropertyReviewLabel; expected: PropertyReviewLabel }> = [
+  const toggleReviewCases: ReadonlyArray<{
+    current: PropertyReviewLabel;
+    expected: PropertyReviewLabel;
+  }> = [
     { current: 'NEW', expected: 'FAVOURITE' },
     { current: 'FAVOURITE', expected: 'DISCHARGED' },
     { current: 'DISCHARGED', expected: 'NEW' }
@@ -75,14 +82,18 @@ describe('PropertyLabelsFacadeService', () => {
     it(`togglePropertyReview should move ${current} to ${expected}`, async () => {
       // Arrange
       const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-      const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+      const service = new PropertyLabelsFacadeService(
+        userPreferences as unknown as UserPreferencesService
+      );
       const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
       userPreferences.setPropertyReview.and.resolveTo([
         { propertyId: 'p-1', labels: { review: expected } }
       ]);
 
       // Action
-      const result = await service.togglePropertyReview(http, 'p-1', [{ propertyId: 'p-1', labels: { review: current } }]);
+      const result = await service.togglePropertyReview(http, 'p-1', [
+        { propertyId: 'p-1', labels: { review: current } }
+      ]);
 
       // Assert
       expect(userPreferences.setPropertyReview).toHaveBeenCalledOnceWith(http, 'p-1', expected);
@@ -93,16 +104,15 @@ describe('PropertyLabelsFacadeService', () => {
   it('savePropertyComment should return null when trimmed comment does not change', async () => {
     // Arrange
     const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-    const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+    const service = new PropertyLabelsFacadeService(
+      userPreferences as unknown as UserPreferencesService
+    );
     const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
 
     // Action
-    const result = await service.savePropertyComment(
-      http,
-      'p-1',
-      '  note  ',
-      [{ propertyId: 'p-1', labels: { comment: 'note' } }]
-    );
+    const result = await service.savePropertyComment(http, 'p-1', '  note  ', [
+      { propertyId: 'p-1', labels: { comment: 'note' } }
+    ]);
 
     // Assert
     expect(result).toBeNull();
@@ -112,19 +122,18 @@ describe('PropertyLabelsFacadeService', () => {
   it('savePropertyComment should persist trimmed comment when it changes', async () => {
     // Arrange
     const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-    const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+    const service = new PropertyLabelsFacadeService(
+      userPreferences as unknown as UserPreferencesService
+    );
     const http = PropertyLabelsFacadeServiceMockFactory.createHttpClientMock();
     userPreferences.setPropertyComment.and.resolveTo([
       { propertyId: 'p-1', labels: { comment: 'note-2' } }
     ]);
 
     // Action
-    const result = await service.savePropertyComment(
-      http,
-      'p-1',
-      '  note-2  ',
-      [{ propertyId: 'p-1', labels: { comment: 'note-1' } }]
-    );
+    const result = await service.savePropertyComment(http, 'p-1', '  note-2  ', [
+      { propertyId: 'p-1', labels: { comment: 'note-1' } }
+    ]);
 
     // Assert
     expect(userPreferences.setPropertyComment).toHaveBeenCalledOnceWith(http, 'p-1', 'note-2');
@@ -134,7 +143,9 @@ describe('PropertyLabelsFacadeService', () => {
   it('mergeLabelEntries should append a new entry when property is missing', () => {
     // Arrange
     const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-    const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+    const service = new PropertyLabelsFacadeService(
+      userPreferences as unknown as UserPreferencesService
+    );
     const current = [{ propertyId: 'p-1', labels: { review: 'NEW' as const } }];
 
     // Action
@@ -151,7 +162,9 @@ describe('PropertyLabelsFacadeService', () => {
   it('mergeLabelEntries should merge labels in existing entry', () => {
     // Arrange
     const userPreferences = PropertyLabelsFacadeServiceMockFactory.createUserPreferencesMock();
-    const service = new PropertyLabelsFacadeService(userPreferences as unknown as UserPreferencesService);
+    const service = new PropertyLabelsFacadeService(
+      userPreferences as unknown as UserPreferencesService
+    );
     const current = [
       { propertyId: 'p-1', labels: { review: 'NEW' as const, comment: 'old' } },
       { propertyId: 'p-2', labels: { review: 'FAVOURITE' as const } }

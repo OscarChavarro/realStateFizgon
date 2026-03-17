@@ -22,7 +22,9 @@ export class GoogleMapsRuntimeLoader {
     }
 
     GoogleMapsRuntimeLoader.googleMapsScriptPromise = new Promise<void>((resolve, reject) => {
-      const existingScript = document.querySelector<HTMLScriptElement>('script[data-google-maps-api="true"]');
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        'script[data-google-maps-api="true"]'
+      );
       if (existingScript) {
         if (this.getGoogleMaps()) {
           resolve();
@@ -30,7 +32,11 @@ export class GoogleMapsRuntimeLoader {
         }
 
         existingScript.addEventListener('load', () => resolve(), { once: true });
-        existingScript.addEventListener('error', (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`)), { once: true });
+        existingScript.addEventListener(
+          'error',
+          (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`)),
+          { once: true }
+        );
         return;
       }
 
@@ -40,7 +46,8 @@ export class GoogleMapsRuntimeLoader {
       script.defer = true;
       script.dataset['googleMapsApi'] = 'true';
       script.onload = () => resolve();
-      script.onerror = (event) => reject(new Error(`Failed loading Google Maps script: ${String(event)}`));
+      script.onerror = (event) =>
+        reject(new Error(`Failed loading Google Maps script: ${String(event)}`));
       document.head.appendChild(script);
     }).catch((error: unknown) => {
       GoogleMapsRuntimeLoader.googleMapsScriptPromise = null;

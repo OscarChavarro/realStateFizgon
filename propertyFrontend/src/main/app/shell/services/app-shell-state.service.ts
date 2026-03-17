@@ -3,11 +3,19 @@ import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import {
+  ListingFiltersState,
+  createDefaultListingFilters
+} from 'src/app/listing/model/filters/listing-filters.model';
 import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
 import { RemoveDanglingImagesOperation } from 'src/app/maintenance/model/remove-dangling-images.operation';
-import { ListingPropertyRow, ListingTab, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
+import {
+  ListingPropertyRow,
+  ListingTab,
+  PropertyLabelEntry,
+  SortCriterion
+} from 'src/app/listing/model/listing.types';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { WorkspaceInteractionCoordinatorService } from 'src/app/listing/services/workspace-interaction-coordinator.service';
 
@@ -16,7 +24,9 @@ import { WorkspaceInteractionCoordinatorService } from 'src/app/listing/services
 })
 export class AppShellStateService {
   readonly backendBaseUrl = signal<string>(ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL);
-  readonly staticMediaBaseUrl = signal<string>(ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL);
+  readonly staticMediaBaseUrl = signal<string>(
+    ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+  );
   readonly googleMapsApiKey = signal<string | null>(null);
   readonly googleMapsMapId = signal<string | null>(null);
 
@@ -32,11 +42,11 @@ export class AppShellStateService {
   readonly activeTab = signal<ListingTab>('DASHBOARD');
   readonly googleLoginEnabled = signal<boolean>(true);
   readonly authenticatedUser = signal<AuthenticatedUser | null>(null);
-  readonly canEditUsers = computed<boolean>(() =>
-    this.authenticatedUser()?.permissions?.includes('canEditUsers') === true
+  readonly canEditUsers = computed<boolean>(
+    () => this.authenticatedUser()?.permissions?.includes('canEditUsers') === true
   );
-  readonly canMaintainDatabase = computed<boolean>(() =>
-    this.authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
+  readonly canMaintainDatabase = computed<boolean>(
+    () => this.authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
   );
   readonly authenticatedUserAvatarUrl = computed<string | null>(() =>
     this.authenticatedUser() ? `${this.backendBaseUrl()}/auth/google/avatar` : null

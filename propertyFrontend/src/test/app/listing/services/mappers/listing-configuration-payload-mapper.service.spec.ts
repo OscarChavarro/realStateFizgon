@@ -36,7 +36,7 @@ describe('ListingConfigurationPayloadMapperService', () => {
 
     // Assert
     expect(emptyResult).toEqual({
-      backendBaseUrl: 'http://192.168.1.110:4200',
+      backendBaseUrl: 'http://localhost:4200',
       staticMediaBaseUrl: 'http://localhost:666/',
       googleMapsApiKey: null,
       googleMapsMapId: null

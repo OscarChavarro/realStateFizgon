@@ -15,9 +15,7 @@ export abstract class DatabaseMaintenanceOperation {
 
   async execute(http: HttpClient): Promise<DatabaseMaintenanceOperationResult> {
     const endpointUrl = this.buildEndpointUrl();
-    const response = await firstValueFrom(
-      http.get<unknown>(endpointUrl, { observe: 'response' })
-    );
+    const response = await firstValueFrom(http.get<unknown>(endpointUrl, { observe: 'response' }));
 
     return this.toResult(response);
   }

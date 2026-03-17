@@ -1,4 +1,12 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  inject
+} from '@angular/core';
 import {
   ListingPropertyRow,
   PropertyLabelEntry,
@@ -9,7 +17,11 @@ import {
   SortToggleRequest
 } from 'src/app/listing/model/listing.types';
 import { ListingPaginationControlsComponent } from 'src/app/listing/components/listing-pagination-controls/listing-pagination-controls.component';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-listing-properties-table',
@@ -67,7 +79,8 @@ export class ListingPropertiesTableComponent {
 
   getDisplayRowIndex(rowIndex: number): number {
     const normalizedPage = Number.isFinite(this.page) && this.page >= 1 ? Math.floor(this.page) : 1;
-    const normalizedPageSize = Number.isFinite(this.pageSize) && this.pageSize >= 1 ? Math.floor(this.pageSize) : 100;
+    const normalizedPageSize =
+      Number.isFinite(this.pageSize) && this.pageSize >= 1 ? Math.floor(this.pageSize) : 100;
     const base = (normalizedPage - 1) * normalizedPageSize;
     return base + rowIndex + 1;
   }
@@ -121,7 +134,9 @@ export class ListingPropertiesTableComponent {
   }
 
   scrollPropertyIntoView(property: ListingPropertyRow): void {
-    const container = this.tableWrapperContainer?.nativeElement.querySelector<HTMLDivElement>('.spreadsheet-table-scroll');
+    const container = this.tableWrapperContainer?.nativeElement.querySelector<HTMLDivElement>(
+      '.spreadsheet-table-scroll'
+    );
     if (!container) {
       return;
     }

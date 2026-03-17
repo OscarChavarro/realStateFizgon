@@ -27,7 +27,7 @@ export const apiTransportInterceptor: HttpInterceptorFn = (request, next) => {
           throw error;
         }
 
-        const delayMs = Math.min(BASE_RETRY_DELAY_MS * (2 ** (retryCount - 1)), MAX_RETRY_DELAY_MS);
+        const delayMs = Math.min(BASE_RETRY_DELAY_MS * 2 ** (retryCount - 1), MAX_RETRY_DELAY_MS);
         return timer(delayMs);
       }
     }),

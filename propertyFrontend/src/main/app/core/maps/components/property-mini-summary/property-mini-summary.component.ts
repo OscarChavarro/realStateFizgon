@@ -1,7 +1,14 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 import { PropertyMiniImageCarouselComponent } from 'src/app/core/maps/components/property-mini-image-carousel/property-mini-image-carousel.component';
-import { GoogleMapProperty, GoogleMapPropertyReview } from 'src/app/core/maps/model/google-map-property.model';
+import {
+  GoogleMapProperty,
+  GoogleMapPropertyReview
+} from 'src/app/core/maps/model/google-map-property.model';
 
 @Component({
   selector: 'app-property-mini-summary',

@@ -33,7 +33,9 @@
                   type="button"
                   class="delete-user-button"
                   [disabled]="isCurrentUser(user)"
-                  [title]="isCurrentUser(user) ? t('DELETE_USER_CURRENT_DISABLED') : t('DELETE_USER')"
+                  [title]="
+                    isCurrentUser(user) ? t('DELETE_USER_CURRENT_DISABLED') : t('DELETE_USER')
+                  "
                   (click)="onDeleteUser(user.id)"
                 >
                   {{ t('DELETE_USER') }}

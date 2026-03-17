@@ -55,8 +55,10 @@ class AppShellStateServiceMockFactory {
 describe('AppShellStateService', () => {
   it('should initialize default shell state and preserve injected signals', () => {
     // Arrange
-    const propertySelectionMock = AppShellStateServiceMockFactory.createPropertySelectionServiceMock();
-    const workspaceMock = AppShellStateServiceMockFactory.createWorkspaceInteractionCoordinatorServiceMock();
+    const propertySelectionMock =
+      AppShellStateServiceMockFactory.createPropertySelectionServiceMock();
+    const workspaceMock =
+      AppShellStateServiceMockFactory.createWorkspaceInteractionCoordinatorServiceMock();
 
     // Action
     const service = new AppShellStateService(
@@ -66,7 +68,9 @@ describe('AppShellStateService', () => {
 
     // Assert
     expect(service.backendBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL);
-    expect(service.staticMediaBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL);
+    expect(service.staticMediaBaseUrl()).toBe(
+      ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+    );
     expect(service.googleMapsApiKey()).toBeNull();
     expect(service.googleMapsMapId()).toBeNull();
     expect(service.loading()).toBeTrue();
@@ -91,8 +95,10 @@ describe('AppShellStateService', () => {
 
   it('computed getters should react to state updates', () => {
     // Arrange
-    const propertySelectionMock = AppShellStateServiceMockFactory.createPropertySelectionServiceMock();
-    const workspaceMock = AppShellStateServiceMockFactory.createWorkspaceInteractionCoordinatorServiceMock();
+    const propertySelectionMock =
+      AppShellStateServiceMockFactory.createPropertySelectionServiceMock();
+    const workspaceMock =
+      AppShellStateServiceMockFactory.createWorkspaceInteractionCoordinatorServiceMock();
     const service = new AppShellStateService(
       propertySelectionMock as unknown as PropertySelectionService,
       workspaceMock as unknown as WorkspaceInteractionCoordinatorService
@@ -103,9 +109,11 @@ describe('AppShellStateService', () => {
     service.allProperties.set([row]);
     service.filteredTotalElements.set(25);
     service.backendBaseUrl.set('http://localhost:8081');
-    service.authenticatedUser.set(AppShellStateServiceMockFactory.createUser({
-      permissions: ['canEditUsers', 'canMaintainDatabase']
-    }));
+    service.authenticatedUser.set(
+      AppShellStateServiceMockFactory.createUser({
+        permissions: ['canEditUsers', 'canMaintainDatabase']
+      })
+    );
     const computedProperties = service.properties();
     const computedVisibleCount = service.visibleCount();
     const canEditUsers = service.canEditUsers();

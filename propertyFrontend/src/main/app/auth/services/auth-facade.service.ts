@@ -47,7 +47,7 @@ export class AuthFacadeService {
       if (backendHost !== frontendHost) {
         console.warn(
           `Auth host mismatch detected (frontend=${frontendHost}, backend=${backendHost}). ` +
-          'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
+            'Prefer the same hostname in frontend URL, backend.baseUrl and auth.google.redirectUri.'
         );
       }
     } catch {

@@ -1,10 +1,6 @@
 import { TranslationKey } from 'src/app/core/i18n/services/i18n.service';
 
-export type GoogleMapLayerId =
-  | 'business'
-  | 'hospitals'
-  | 'metroStations'
-  | 'schools';
+export type GoogleMapLayerId = 'business' | 'hospitals' | 'metroStations' | 'schools';
 
 export type GoogleMapStyleRule = {
   featureType: string;
@@ -24,4 +20,3 @@ export type GoogleMapVisualStyleOption = {
   id: GoogleMapVisualStyleId;
   label: TranslationKey;
 };
-

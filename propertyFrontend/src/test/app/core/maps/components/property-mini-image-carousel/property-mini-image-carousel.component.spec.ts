@@ -6,7 +6,9 @@ import { PropertyMiniImageCarouselComponent } from 'src/app/core/maps/components
 class PropertyMiniImageCarouselMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 
@@ -64,8 +66,8 @@ describe('PropertyMiniImageCarouselComponent', () => {
     component.onWindowKeyDown(noImages);
 
     // Assert
-    expect((prevented.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
-    expect((noImages.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+    expect(prevented.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
+    expect(noImages.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
     expect(component.selectedImageIndex).toBe(0);
   });
 
@@ -89,7 +91,7 @@ describe('PropertyMiniImageCarouselComponent', () => {
       component.onWindowKeyDown(event);
 
       // Assert
-      expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+      expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
       expect(component.selectedImageIndex).toBe(1);
     });
   });
@@ -115,7 +117,7 @@ describe('PropertyMiniImageCarouselComponent', () => {
       component.onWindowKeyDown(event);
 
       // Assert
-      expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+      expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
       expect(component.selectedImageIndex).toBe(1);
     });
   });
@@ -136,8 +138,8 @@ describe('PropertyMiniImageCarouselComponent', () => {
     const afterRight = component.selectedImageIndex;
 
     // Assert
-    expect((left.preventDefault as jasmine.Spy)).toHaveBeenCalledTimes(1);
-    expect((right.preventDefault as jasmine.Spy)).toHaveBeenCalledTimes(1);
+    expect(left.preventDefault as jasmine.Spy).toHaveBeenCalledTimes(1);
+    expect(right.preventDefault as jasmine.Spy).toHaveBeenCalledTimes(1);
     expect(afterLeft).toBe(0);
     expect(afterRight).toBe(1);
   });
@@ -154,7 +156,7 @@ describe('PropertyMiniImageCarouselComponent', () => {
     component.onWindowKeyDown(event);
 
     // Assert
-    expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+    expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
     expect(component.selectedImageIndex).toBe(1);
   });
 

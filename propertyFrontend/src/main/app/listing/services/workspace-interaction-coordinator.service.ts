@@ -5,7 +5,10 @@ import { ListingPropertyRow, ListingTab } from 'src/app/listing/model/listing.ty
 import { BrowserFullscreenService } from 'src/app/listing/services/browser-fullscreen.service';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
 import { WorkspaceLayoutService } from 'src/app/listing/services/workspace-layout.service';
-import { InteractionShortcutsService, PropertyRowScroller } from 'src/app/listing/services/interaction-shortcuts.service';
+import {
+  InteractionShortcutsService,
+  PropertyRowScroller
+} from 'src/app/listing/services/interaction-shortcuts.service';
 
 type HandleWindowKeyDownParams = {
   event: KeyboardEvent;
@@ -80,7 +83,8 @@ export class WorkspaceInteractionCoordinatorService {
       isAuthenticated: params.isAuthenticated,
       properties: params.properties,
       selectedProperty: params.selectedProperty,
-      onKeyboardSelect: (delta) => this.propertySelectionService.selectByKeyboard(params.properties, delta),
+      onKeyboardSelect: (delta) =>
+        this.propertySelectionService.selectByKeyboard(params.properties, delta),
       onToggleFullscreen: () => {
         void this.browserFullscreenService.toggleFullscreen();
       },

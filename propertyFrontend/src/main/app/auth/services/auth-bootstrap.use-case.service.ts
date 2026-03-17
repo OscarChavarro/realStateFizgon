@@ -38,12 +38,15 @@ export class AuthBootstrapUseCaseService {
     const config = await this.listingStateFacadeService.loadBackendConfiguration(http);
     this.apiRuntimeConfigService.setConfiguration(config);
     this.appShellStateService.backendBaseUrl.set(this.apiRuntimeConfigService.getBackendBaseUrl());
-    this.appShellStateService.staticMediaBaseUrl.set(this.apiRuntimeConfigService.getStaticMediaBaseUrl());
+    this.appShellStateService.staticMediaBaseUrl.set(
+      this.apiRuntimeConfigService.getStaticMediaBaseUrl()
+    );
     this.appShellStateService.googleMapsApiKey.set(config.googleMapsApiKey);
     this.appShellStateService.googleMapsMapId.set(config.googleMapsMapId);
     this.listingAuthFacadeService.warnIfAuthHostMismatch(frontendHost);
 
-    const googleLoginEnabled = await this.listingAuthFacadeService.loadGoogleLoginAvailability(http);
+    const googleLoginEnabled =
+      await this.listingAuthFacadeService.loadGoogleLoginAvailability(http);
     this.appShellStateService.googleLoginEnabled.set(googleLoginEnabled);
 
     await this.listingSessionCoordinatorService.loadCurrentUserAndApplyState(http);

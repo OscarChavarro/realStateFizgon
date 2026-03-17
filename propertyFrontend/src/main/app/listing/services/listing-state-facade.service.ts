@@ -3,7 +3,12 @@ import { Injectable } from '@angular/core';
 import { ListingDataService } from 'src/app/listing/services/listing-data.service';
 import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
 import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.service';
-import { ListingPropertyRow, PropertyLabelEntry, SortCriterion, SortToggleRequest } from 'src/app/listing/model/listing.types';
+import {
+  ListingPropertyRow,
+  PropertyLabelEntry,
+  SortCriterion,
+  SortToggleRequest
+} from 'src/app/listing/model/listing.types';
 import { ListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 import { MaintenanceOperationRunnerService } from 'src/app/maintenance/services/maintenance-operation-runner.service';
 import { SortCriteriaService } from 'src/app/listing/services/sort-criteria.service';
@@ -35,9 +40,7 @@ export class ListingStateFacadeService {
     sessionStorage.setItem(selectedLanguageKey, language);
   }
 
-  async loadBackendConfiguration(
-    http: HttpClient
-  ): Promise<{
+  async loadBackendConfiguration(http: HttpClient): Promise<{
     backendBaseUrl: string;
     staticMediaBaseUrl: string;
     googleMapsApiKey: string | null;
@@ -52,19 +55,25 @@ export class ListingStateFacadeService {
     filters: ListingFiltersState,
     page: number,
     pageSize: number
-  ): Promise<{ count: number; properties: ListingPropertyRow[]; pagination: ListingPaginationState }> {
+  ): Promise<{
+    count: number;
+    properties: ListingPropertyRow[];
+    pagination: ListingPaginationState;
+  }> {
     return this.listingDataService.loadListingData(http, sortCriteria, filters, page, pageSize);
   }
 
   areFiltersChanged(current: ListingFiltersState, next: ListingFiltersState): boolean {
-    return current.showClosed !== next.showClosed
-      || current.showNew !== next.showNew
-      || current.showFavourite !== next.showFavourite
-      || current.showRejected !== next.showRejected
-      || current.minPublicationDate !== next.minPublicationDate
-      || current.maxPublicationDate !== next.maxPublicationDate
-      || current.minPrice !== next.minPrice
-      || current.maxPrice !== next.maxPrice;
+    return (
+      current.showClosed !== next.showClosed ||
+      current.showNew !== next.showNew ||
+      current.showFavourite !== next.showFavourite ||
+      current.showRejected !== next.showRejected ||
+      current.minPublicationDate !== next.minPublicationDate ||
+      current.maxPublicationDate !== next.maxPublicationDate ||
+      current.minPrice !== next.minPrice ||
+      current.maxPrice !== next.maxPrice
+    );
   }
 
   async saveFiltersPreference(
@@ -74,12 +83,16 @@ export class ListingStateFacadeService {
     sortCriteria: SortCriterion[],
     pageSize: number
   ): Promise<void> {
-    await this.listingUserPreferencesService.saveFilters(http, filters, language, sortCriteria, pageSize);
+    await this.listingUserPreferencesService.saveFilters(
+      http,
+      filters,
+      language,
+      sortCriteria,
+      pageSize
+    );
   }
 
-  async loadUserPreferences(
-    http: HttpClient
-  ): Promise<{
+  async loadUserPreferences(http: HttpClient): Promise<{
     language: SupportedLanguage;
     pageSize: number;
     filters: ListingFiltersState;

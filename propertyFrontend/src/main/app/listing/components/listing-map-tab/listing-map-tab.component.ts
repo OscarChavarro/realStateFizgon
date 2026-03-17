@@ -2,7 +2,11 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
-import { ListingPropertyRow, PropertyLabelEntry, PropertyReviewLabel } from 'src/app/listing/model/listing.types';
+import {
+  ListingPropertyRow,
+  PropertyLabelEntry,
+  PropertyReviewLabel
+} from 'src/app/listing/model/listing.types';
 
 @Component({
   selector: 'app-listing-map-tab',
@@ -43,10 +47,16 @@ export class ListingMapTabComponent {
   mapProperties: GoogleMapProperty[] = [];
 
   private rebuildMapProperties(): void {
-    this.mapProperties = this.buildMapProperties(this.listingProperties, this.listingPropertyLabels);
+    this.mapProperties = this.buildMapProperties(
+      this.listingProperties,
+      this.listingPropertyLabels
+    );
   }
 
-  private buildMapProperties(properties: ListingPropertyRow[], labels: PropertyLabelEntry[]): GoogleMapProperty[] {
+  private buildMapProperties(
+    properties: ListingPropertyRow[],
+    labels: PropertyLabelEntry[]
+  ): GoogleMapProperty[] {
     const output: GoogleMapProperty[] = [];
     for (const property of properties) {
       const lat = this.toFiniteNumber(property.geoLocationHint?.lat);
@@ -84,7 +94,11 @@ export class ListingMapTabComponent {
 
   private buildImageUrls(property: ListingPropertyRow): string[] {
     const propertyId = (property.propertyId ?? '').trim();
-    if (!propertyId || !Array.isArray(property.localImageUrls) || property.localImageUrls.length === 0) {
+    if (
+      !propertyId ||
+      !Array.isArray(property.localImageUrls) ||
+      property.localImageUrls.length === 0
+    ) {
       return [];
     }
 

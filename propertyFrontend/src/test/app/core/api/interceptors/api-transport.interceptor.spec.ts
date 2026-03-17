@@ -20,7 +20,9 @@ describe('apiTransportInterceptor', () => {
       'shouldRouteToBackend',
       'resolveBackendUrl'
     ]);
-    sessionEvents = jasmine.createSpyObj<ApiSessionEventsService>('ApiSessionEventsService', ['notifyUnauthorized']);
+    sessionEvents = jasmine.createSpyObj<ApiSessionEventsService>('ApiSessionEventsService', [
+      'notifyUnauthorized'
+    ]);
 
     TestBed.configureTestingModule({
       providers: [
@@ -104,7 +106,9 @@ describe('apiTransportInterceptor', () => {
       defer(() => {
         attempts += 1;
         if (attempts === 1) {
-          return throwError(() => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' }));
+          return throwError(
+            () => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' })
+          );
         }
 
         return of(new HttpResponse({ status: 200 }));
@@ -159,7 +163,9 @@ describe('apiTransportInterceptor', () => {
 
     runInterceptor(request, () => {
       attempts += 1;
-      return throwError(() => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' }));
+      return throwError(
+        () => new HttpErrorResponse({ status: 503, statusText: 'Service Unavailable' })
+      );
     }).subscribe({
       error: (error) => {
         emittedError = error;

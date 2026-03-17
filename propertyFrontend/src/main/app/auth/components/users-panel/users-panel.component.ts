@@ -1,6 +1,10 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-users-panel',

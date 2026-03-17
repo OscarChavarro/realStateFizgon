@@ -38,7 +38,9 @@ type SaveFiltersPayload = {
   providedIn: 'root'
 })
 export class UserPreferencesPayloadMapperService {
-  normalizePreferencesPayload(response: UserPreferencesPayload | null | undefined): NormalizedUserPreferences {
+  normalizePreferencesPayload(
+    response: UserPreferencesPayload | null | undefined
+  ): NormalizedUserPreferences {
     return {
       language: this.toSupportedLanguage(response?.language, 'en'),
       pageSize: this.toPageSize(response?.pageSize, 100),
@@ -131,10 +133,12 @@ export class UserPreferencesPayloadMapperService {
     const month = Number.parseInt(match[2], 10);
     const day = Number.parseInt(match[3], 10);
     const parsed = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-    if (Number.isNaN(parsed.getTime())
-      || parsed.getUTCFullYear() !== year
-      || parsed.getUTCMonth() !== month - 1
-      || parsed.getUTCDate() !== day) {
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getUTCFullYear() !== year ||
+      parsed.getUTCMonth() !== month - 1 ||
+      parsed.getUTCDate() !== day
+    ) {
       return '';
     }
 
@@ -257,8 +261,9 @@ export class UserPreferencesPayloadMapperService {
         continue;
       }
 
-      const sortOrderRaw = (item as { sortOrder?: unknown; order?: unknown }).sortOrder
-        ?? (item as { sortOrder?: unknown; order?: unknown }).order;
+      const sortOrderRaw =
+        (item as { sortOrder?: unknown; order?: unknown }).sortOrder ??
+        (item as { sortOrder?: unknown; order?: unknown }).order;
       const sortOrder = this.toSortDirection(sortOrderRaw, 'asc');
       seenSortFields.add(sortBy);
       normalized.push({

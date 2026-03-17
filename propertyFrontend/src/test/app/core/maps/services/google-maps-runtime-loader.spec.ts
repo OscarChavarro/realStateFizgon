@@ -133,15 +133,17 @@ describe('GoogleMapsRuntimeLoader', () => {
   it('loadGoogleMapsScript should create script and resolve on script load', async () => {
     // Arrange
     let appendedScript: HTMLScriptElement | null = null;
-    const appendChildSpy = spyOn(document.head, 'appendChild').and.callFake(<T extends Node>(node: T): T => {
-      const script = node as unknown as HTMLScriptElement;
-      appendedScript = script;
-      GoogleMapsRuntimeLoaderMockFactory.setGoogleMapsNamespace({ ready: true });
-      setTimeout(() => {
-        script.onload?.(new Event('load'));
-      }, 0);
-      return node;
-    });
+    const appendChildSpy = spyOn(document.head, 'appendChild').and.callFake(
+      <T extends Node>(node: T): T => {
+        const script = node as unknown as HTMLScriptElement;
+        appendedScript = script;
+        GoogleMapsRuntimeLoaderMockFactory.setGoogleMapsNamespace({ ready: true });
+        setTimeout(() => {
+          script.onload?.(new Event('load'));
+        }, 0);
+        return node;
+      }
+    );
 
     // Action
     await loader.loadGoogleMapsScript('abc=123');
@@ -216,6 +218,8 @@ describe('GoogleMapsRuntimeLoader', () => {
     const promise = loader.waitForGoogleMapsReady(20);
 
     // Assert
-    await expectAsync(promise).toBeRejectedWithError('Google Maps namespace did not become available after script load.');
+    await expectAsync(promise).toBeRejectedWithError(
+      'Google Maps namespace did not become available after script load.'
+    );
   });
 });

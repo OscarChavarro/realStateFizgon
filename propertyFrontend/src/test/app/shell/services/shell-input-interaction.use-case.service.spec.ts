@@ -40,7 +40,8 @@ class ShellInputInteractionUseCaseMockFactory {
 describe('ShellInputInteractionUseCaseService', () => {
   it('onSplitterMouseDown should delegate to workspace coordinator', () => {
     // Arrange
-    const workspaceCoordinator = ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
+    const workspaceCoordinator =
+      ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
     const keyboardFlow = ShellInputInteractionUseCaseMockFactory.createKeyboardFlowUseCaseMock();
     const service = new ShellInputInteractionUseCaseService(
       workspaceCoordinator as unknown as WorkspaceInteractionCoordinatorService,
@@ -57,7 +58,8 @@ describe('ShellInputInteractionUseCaseService', () => {
 
   it('onWindowMouseMove should delegate with container element or null fallback', () => {
     // Arrange
-    const workspaceCoordinator = ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
+    const workspaceCoordinator =
+      ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
     const keyboardFlow = ShellInputInteractionUseCaseMockFactory.createKeyboardFlowUseCaseMock();
     const service = new ShellInputInteractionUseCaseService(
       workspaceCoordinator as unknown as WorkspaceInteractionCoordinatorService,
@@ -80,7 +82,8 @@ describe('ShellInputInteractionUseCaseService', () => {
 
   it('onWindowMouseUp should delegate to workspace coordinator', () => {
     // Arrange
-    const workspaceCoordinator = ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
+    const workspaceCoordinator =
+      ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
     const keyboardFlow = ShellInputInteractionUseCaseMockFactory.createKeyboardFlowUseCaseMock();
     const service = new ShellInputInteractionUseCaseService(
       workspaceCoordinator as unknown as WorkspaceInteractionCoordinatorService,
@@ -96,7 +99,8 @@ describe('ShellInputInteractionUseCaseService', () => {
 
   it('onWindowKeyDown should delegate params to keyboard flow use case', () => {
     // Arrange
-    const workspaceCoordinator = ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
+    const workspaceCoordinator =
+      ShellInputInteractionUseCaseMockFactory.createWorkspaceInteractionCoordinatorMock();
     const keyboardFlow = ShellInputInteractionUseCaseMockFactory.createKeyboardFlowUseCaseMock();
     const service = new ShellInputInteractionUseCaseService(
       workspaceCoordinator as unknown as WorkspaceInteractionCoordinatorService,
@@ -106,7 +110,10 @@ describe('ShellInputInteractionUseCaseService', () => {
     const selectedProperty = ShellInputInteractionUseCaseMockFactory.createProperty();
     const properties = [
       selectedProperty,
-      ShellInputInteractionUseCaseMockFactory.createProperty({ propertyId: 'p-2', title: 'Title 2' })
+      ShellInputInteractionUseCaseMockFactory.createProperty({
+        propertyId: 'p-2',
+        title: 'Title 2'
+      })
     ];
     const scroller = {
       scrollPropertyIntoView: jasmine.createSpy('scrollPropertyIntoView')

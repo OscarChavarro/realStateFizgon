@@ -13,12 +13,15 @@ describe('WorkspaceLayoutService', () => {
 
     // Action
     service.startResize(event);
-    service.updateResizeFromMouse({ clientX: 100 } as MouseEvent, {
-      getBoundingClientRect: () => ({ left: 0, width: 200 } as DOMRect)
-    } as HTMLDivElement);
+    service.updateResizeFromMouse(
+      { clientX: 100 } as MouseEvent,
+      {
+        getBoundingClientRect: () => ({ left: 0, width: 200 }) as DOMRect
+      } as HTMLDivElement
+    );
 
     // Assert
-    expect((event.preventDefault as jasmine.Spy)).toHaveBeenCalled();
+    expect(event.preventDefault as jasmine.Spy).toHaveBeenCalled();
     expect(service.leftPanelWidthPercent()).toBe(50);
   });
 
@@ -28,18 +31,23 @@ describe('WorkspaceLayoutService', () => {
   ].forEach(({ leftHidden, rightHidden }) => {
     it(`startResize should skip resizing when hidden state is left=${leftHidden} right=${rightHidden}`, () => {
       // Arrange
-      const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as MouseEvent;
+      const event = {
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as unknown as MouseEvent;
       service.leftPanelHidden.set(leftHidden);
       service.rightPanelHidden.set(rightHidden);
 
       // Action
       service.startResize(event);
-      service.updateResizeFromMouse({ clientX: 20 } as MouseEvent, {
-        getBoundingClientRect: () => ({ left: 0, width: 200 } as DOMRect)
-      } as HTMLDivElement);
+      service.updateResizeFromMouse(
+        { clientX: 20 } as MouseEvent,
+        {
+          getBoundingClientRect: () => ({ left: 0, width: 200 }) as DOMRect
+        } as HTMLDivElement
+      );
 
       // Assert
-      expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+      expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
       expect(service.leftPanelWidthPercent()).toBe(50);
     });
   });
@@ -62,9 +70,12 @@ describe('WorkspaceLayoutService', () => {
     service.startResize(event);
 
     // Action
-    service.updateResizeFromMouse({ clientX: 50 } as MouseEvent, {
-      getBoundingClientRect: () => ({ left: 0, width: 0 } as DOMRect)
-    } as HTMLDivElement);
+    service.updateResizeFromMouse(
+      { clientX: 50 } as MouseEvent,
+      {
+        getBoundingClientRect: () => ({ left: 0, width: 0 }) as DOMRect
+      } as HTMLDivElement
+    );
 
     // Assert
     expect(service.leftPanelWidthPercent()).toBe(50);
@@ -77,13 +88,18 @@ describe('WorkspaceLayoutService', () => {
   ].forEach(({ clientX, expected }) => {
     it(`updateResizeFromMouse should clamp width percent to ${expected}`, () => {
       // Arrange
-      const event = { preventDefault: jasmine.createSpy('preventDefault') } as unknown as MouseEvent;
+      const event = {
+        preventDefault: jasmine.createSpy('preventDefault')
+      } as unknown as MouseEvent;
       service.startResize(event);
 
       // Action
-      service.updateResizeFromMouse({ clientX } as MouseEvent, {
-        getBoundingClientRect: () => ({ left: 0, width: 100 } as DOMRect)
-      } as HTMLDivElement);
+      service.updateResizeFromMouse(
+        { clientX } as MouseEvent,
+        {
+          getBoundingClientRect: () => ({ left: 0, width: 100 }) as DOMRect
+        } as HTMLDivElement
+      );
 
       // Assert
       expect(service.leftPanelWidthPercent()).toBe(expected);
@@ -97,9 +113,12 @@ describe('WorkspaceLayoutService', () => {
     service.stopResize();
 
     // Action
-    service.updateResizeFromMouse({ clientX: 80 } as MouseEvent, {
-      getBoundingClientRect: () => ({ left: 0, width: 100 } as DOMRect)
-    } as HTMLDivElement);
+    service.updateResizeFromMouse(
+      { clientX: 80 } as MouseEvent,
+      {
+        getBoundingClientRect: () => ({ left: 0, width: 100 }) as DOMRect
+      } as HTMLDivElement
+    );
 
     // Assert
     expect(service.leftPanelWidthPercent()).toBe(50);

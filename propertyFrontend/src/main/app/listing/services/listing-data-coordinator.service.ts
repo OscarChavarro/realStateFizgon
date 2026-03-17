@@ -62,13 +62,14 @@ export class ListingDataCoordinatorService {
     if (this.appShellStateService.authenticatedUser() !== null) {
       await this.requestErrorPolicyService.executeWithFallback({
         operation: 'listing.handleFiltersChange.savePreferences',
-        request: async () => this.listingStateFacadeService.saveFiltersPreference(
-          http,
-          nextFilters,
-          this.appShellStateService.selectedLanguage(),
-          this.appShellStateService.sortCriteria(),
-          this.appShellStateService.pagination().pageSize
-        ),
+        request: async () =>
+          this.listingStateFacadeService.saveFiltersPreference(
+            http,
+            nextFilters,
+            this.appShellStateService.selectedLanguage(),
+            this.appShellStateService.sortCriteria(),
+            this.appShellStateService.pagination().pageSize
+          ),
         fallback: () => undefined
       });
     }
@@ -91,7 +92,10 @@ export class ListingDataCoordinatorService {
     }
 
     this.appShellStateService.selectedLanguage.set(preferences.language);
-    this.listingStateFacadeService.persistSelectedLanguage(selectedLanguageKey, preferences.language);
+    this.listingStateFacadeService.persistSelectedLanguage(
+      selectedLanguageKey,
+      preferences.language
+    );
     this.appShellStateService.pagination.update((current) => ({
       ...current,
       pageSize: preferences.pageSize
@@ -101,20 +105,24 @@ export class ListingDataCoordinatorService {
     this.appShellStateService.propertyLabels.set(preferences.propertyLabels);
   }
 
-  async saveLanguagePreference(http: HttpClient, selectedLanguage: SupportedLanguage): Promise<void> {
+  async saveLanguagePreference(
+    http: HttpClient,
+    selectedLanguage: SupportedLanguage
+  ): Promise<void> {
     if (this.appShellStateService.authenticatedUser() === null) {
       return;
     }
 
     await this.requestErrorPolicyService.executeWithFallback({
       operation: 'listing.saveLanguagePreference',
-      request: async () => this.listingStateFacadeService.saveFiltersPreference(
-        http,
-        this.appShellStateService.filters(),
-        selectedLanguage,
-        this.appShellStateService.sortCriteria(),
-        this.appShellStateService.pagination().pageSize
-      ),
+      request: async () =>
+        this.listingStateFacadeService.saveFiltersPreference(
+          http,
+          this.appShellStateService.filters(),
+          selectedLanguage,
+          this.appShellStateService.sortCriteria(),
+          this.appShellStateService.pagination().pageSize
+        ),
       fallback: () => undefined
     });
   }
@@ -128,23 +136,30 @@ export class ListingDataCoordinatorService {
     if (this.appShellStateService.authenticatedUser() !== null) {
       await this.requestErrorPolicyService.executeWithFallback({
         operation: 'listing.toggleSortAndRefresh.savePreferences',
-        request: async () => this.listingStateFacadeService.saveFiltersPreference(
-          http,
-          this.appShellStateService.filters(),
-          this.appShellStateService.selectedLanguage(),
-          updatedSortCriteria,
-          this.appShellStateService.pagination().pageSize
-        ),
+        request: async () =>
+          this.listingStateFacadeService.saveFiltersPreference(
+            http,
+            this.appShellStateService.filters(),
+            this.appShellStateService.selectedLanguage(),
+            updatedSortCriteria,
+            this.appShellStateService.pagination().pageSize
+          ),
         fallback: () => undefined
       });
     }
   }
 
-  async runMaintenanceOperation(operation: DatabaseMaintenanceOperation, http: HttpClient): Promise<void> {
+  async runMaintenanceOperation(
+    operation: DatabaseMaintenanceOperation,
+    http: HttpClient
+  ): Promise<void> {
     this.appShellStateService.maintenanceRunning.set(true);
     this.appShellStateService.maintenanceResultText.set('');
     try {
-      const resultText = await this.listingStateFacadeService.runMaintenanceOperation(operation, http);
+      const resultText = await this.listingStateFacadeService.runMaintenanceOperation(
+        operation,
+        http
+      );
       this.appShellStateService.maintenanceResultText.set(resultText);
     } finally {
       this.appShellStateService.maintenanceRunning.set(false);

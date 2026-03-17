@@ -16,7 +16,10 @@ export class ApiSessionEventsService {
 
   notifyUnauthorized(): void {
     const now = Date.now();
-    if (now - this.lastUnauthorizedAtMs < ApiSessionEventsService.MIN_UNAUTHORIZED_EVENT_INTERVAL_MS) {
+    if (
+      now - this.lastUnauthorizedAtMs <
+      ApiSessionEventsService.MIN_UNAUTHORIZED_EVENT_INTERVAL_MS
+    ) {
       return;
     }
 

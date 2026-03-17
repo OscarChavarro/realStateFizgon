@@ -36,14 +36,20 @@ class AppShellCommandsUseCaseMockFactory {
     const authenticatedUser = signal<AuthenticatedUser | null>(null);
     return {
       authenticatedUser,
-      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD'),
+      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>(
+        'DASHBOARD'
+      ),
       selectedLanguage: signal<'en' | 'sp'>('en'),
       usersLoading: signal(false),
       users: signal<AuthUserListItem[]>([]),
       maintenanceRunning: signal(false),
       maintenanceResultText: signal(''),
-      canEditUsers: computed(() => authenticatedUser()?.permissions?.includes('canEditUsers') === true),
-      canMaintainDatabase: computed(() => authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true),
+      canEditUsers: computed(
+        () => authenticatedUser()?.permissions?.includes('canEditUsers') === true
+      ),
+      canMaintainDatabase: computed(
+        () => authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
+      ),
       filters: signal(createDefaultListingFilters()),
       sortCriteria: signal([{ sortBy: 'price', sortOrder: 'asc' }] as const),
       pagination: signal({
@@ -94,7 +100,9 @@ describe('AppShellCommandsUseCaseService', () => {
     },
     {
       tabId: 'MAP_TAB',
-      user: AppShellCommandsUseCaseMockFactory.createUser({ permissions: ['canEditUsers', 'canMaintainDatabase'] }),
+      user: AppShellCommandsUseCaseMockFactory.createUser({
+        permissions: ['canEditUsers', 'canMaintainDatabase']
+      }),
       expectedTab: 'MAP_TAB',
       shouldLoadUsers: false
     }
@@ -103,7 +111,8 @@ describe('AppShellCommandsUseCaseService', () => {
       // Arrange
       const listingStateFacade = AppShellCommandsUseCaseMockFactory.createListingStateFacadeMock();
       const dataCoordinator = AppShellCommandsUseCaseMockFactory.createListingDataCoordinatorMock();
-      const sessionManagement = AppShellCommandsUseCaseMockFactory.createUserSessionManagementMock();
+      const sessionManagement =
+        AppShellCommandsUseCaseMockFactory.createUserSessionManagementMock();
       const appShellState = AppShellCommandsUseCaseMockFactory.createAppShellStateMock();
       appShellState.authenticatedUser.set(user);
       const service = new AppShellCommandsUseCaseService(
@@ -146,7 +155,10 @@ describe('AppShellCommandsUseCaseService', () => {
 
     // Assert
     expect(appShellState.selectedLanguage()).toBe('sp');
-    expect(listingStateFacade.persistSelectedLanguage).toHaveBeenCalledOnceWith('selected-language', 'sp');
+    expect(listingStateFacade.persistSelectedLanguage).toHaveBeenCalledOnceWith(
+      'selected-language',
+      'sp'
+    );
     expect(dataCoordinator.saveLanguagePreference).toHaveBeenCalledOnceWith(http, 'sp');
   });
 

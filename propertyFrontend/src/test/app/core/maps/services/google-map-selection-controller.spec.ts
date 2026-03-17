@@ -95,7 +95,9 @@ describe('GoogleMapSelectionController', () => {
   it('syncSelectionAgainstProperties should clear selection when selected id does not exist', () => {
     // Arrange
     const properties = GoogleMapSelectionControllerMockFactory.createProperties();
-    controller.selectProperty(GoogleMapSelectionControllerMockFactory.createProperty({ id: 'missing', propertyId: 'x' }));
+    controller.selectProperty(
+      GoogleMapSelectionControllerMockFactory.createProperty({ id: 'missing', propertyId: 'x' })
+    );
 
     // Action
     const synced = controller.syncSelectionAgainstProperties(properties);
@@ -114,7 +116,8 @@ describe('GoogleMapSelectionController', () => {
     {
       name: 'event is defaultPrevented',
       event: (() => {
-        const keyboardEvent = GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown');
+        const keyboardEvent =
+          GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown');
         keyboardEvent.preventDefault();
         return keyboardEvent;
       })(),
@@ -122,22 +125,30 @@ describe('GoogleMapSelectionController', () => {
     },
     {
       name: 'event is repeat',
-      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', { repeat: true }),
+      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', {
+        repeat: true
+      }),
       interactionEnabled: true
     },
     {
       name: 'ctrl modifier is pressed',
-      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', { ctrlKey: true }),
+      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', {
+        ctrlKey: true
+      }),
       interactionEnabled: true
     },
     {
       name: 'meta modifier is pressed',
-      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', { metaKey: true }),
+      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', {
+        metaKey: true
+      }),
       interactionEnabled: true
     },
     {
       name: 'alt modifier is pressed',
-      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', { altKey: true }),
+      event: GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', {
+        altKey: true
+      }),
       interactionEnabled: true
     }
   ].forEach(({ name, event, interactionEnabled }) => {
@@ -169,7 +180,11 @@ describe('GoogleMapSelectionController', () => {
       // Arrange
       const properties = GoogleMapSelectionControllerMockFactory.createProperties();
       const target = setup(document.createElement(tagName === 'contenteditable' ? 'div' : tagName));
-      const event = GoogleMapSelectionControllerMockFactory.createKeyboardEvent('ArrowDown', {}, target);
+      const event = GoogleMapSelectionControllerMockFactory.createKeyboardEvent(
+        'ArrowDown',
+        {},
+        target
+      );
 
       // Action
       const result = controller.handleKeyboardSelection(event, true, properties);
@@ -271,14 +286,22 @@ describe('GoogleMapSelectionController', () => {
       // Arrange
       const properties = GoogleMapSelectionControllerMockFactory.createProperties();
       if (beforeSelect) {
-        const selected = properties.find((item) => item.id === beforeSelect)
-          ?? GoogleMapSelectionControllerMockFactory.createProperty({ id: beforeSelect, propertyId: beforeSelect });
+        const selected =
+          properties.find((item) => item.id === beforeSelect) ??
+          GoogleMapSelectionControllerMockFactory.createProperty({
+            id: beforeSelect,
+            propertyId: beforeSelect
+          });
         controller.selectProperty(selected);
       }
       const event = GoogleMapSelectionControllerMockFactory.createKeyboardEvent(key);
 
       // Action
-      const result = controller.handleKeyboardSelection(event, true, properties) as GoogleMapKeyboardSelectionResult;
+      const result = controller.handleKeyboardSelection(
+        event,
+        true,
+        properties
+      ) as GoogleMapKeyboardSelectionResult;
 
       // Assert
       expect(result.type).toBe('selected');

@@ -31,11 +31,17 @@ class SessionCoordinatorServiceMockFactory {
     const authenticatedUser = signal<AuthenticatedUser | null>(null);
     return {
       authenticatedUser,
-      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD'),
+      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>(
+        'DASHBOARD'
+      ),
       usersLoading: signal(false),
       users: signal<any[]>([]),
-      canMaintainDatabase: computed(() => authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true),
-      canEditUsers: computed(() => authenticatedUser()?.permissions?.includes('canEditUsers') === true)
+      canMaintainDatabase: computed(
+        () => authenticatedUser()?.permissions?.includes('canMaintainDatabase') === true
+      ),
+      canEditUsers: computed(
+        () => authenticatedUser()?.permissions?.includes('canEditUsers') === true
+      )
     };
   }
 
@@ -67,7 +73,9 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.loadCurrentUserAndApplyState(SessionCoordinatorServiceMockFactory.createHttpClientMock());
+    await service.loadCurrentUserAndApplyState(
+      SessionCoordinatorServiceMockFactory.createHttpClientMock()
+    );
 
     // Assert
     expect(appShellState.authenticatedUser()).toBeNull();
@@ -93,7 +101,9 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.loadCurrentUserAndApplyState(SessionCoordinatorServiceMockFactory.createHttpClientMock());
+    await service.loadCurrentUserAndApplyState(
+      SessionCoordinatorServiceMockFactory.createHttpClientMock()
+    );
 
     // Assert
     expect(listingQuery.loadUserPreferences).toHaveBeenCalledTimes(1);
@@ -154,14 +164,23 @@ describe('SessionCoordinatorService', () => {
   });
 
   [
-    { label: 'cannot edit users', user: SessionCoordinatorServiceMockFactory.createUser({ permissions: [] }), expectedUsers: [] },
-    { label: 'can edit users', user: SessionCoordinatorServiceMockFactory.createUser({ permissions: ['canEditUsers'] }), expectedUsers: [{ id: 'managed-user-1' }] }
+    {
+      label: 'cannot edit users',
+      user: SessionCoordinatorServiceMockFactory.createUser({ permissions: [] }),
+      expectedUsers: []
+    },
+    {
+      label: 'can edit users',
+      user: SessionCoordinatorServiceMockFactory.createUser({ permissions: ['canEditUsers'] }),
+      expectedUsers: [{ id: 'managed-user-1' }]
+    }
   ].forEach(({ label, user, expectedUsers }) => {
     it(`whenLoadingUsers_loadUsers_shouldHandle${label.replace(/\s/g, '')}`, async () => {
       // Arrange
       const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
       authFacade.loadUsers.and.resolveTo([{ id: 'managed-user-1' }]);
-      const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+      const listingQuery =
+        SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
       const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
       appShellState.authenticatedUser.set(user);
       const service = new SessionCoordinatorService(
@@ -185,17 +204,42 @@ describe('SessionCoordinatorService', () => {
   });
 
   [
-    { label: 'without permissions', permissions: [] as UserPermission[], userId: 'u1', currentUserId: 'u0', shouldDelete: false },
-    { label: 'with empty id', permissions: ['canEditUsers'] as UserPermission[], userId: '', currentUserId: 'u0', shouldDelete: false },
-    { label: 'self delete', permissions: ['canEditUsers'] as UserPermission[], userId: 'u1', currentUserId: 'u1', shouldDelete: false },
-    { label: 'with valid target', permissions: ['canEditUsers'] as UserPermission[], userId: 'u2', currentUserId: 'u1', shouldDelete: true }
+    {
+      label: 'without permissions',
+      permissions: [] as UserPermission[],
+      userId: 'u1',
+      currentUserId: 'u0',
+      shouldDelete: false
+    },
+    {
+      label: 'with empty id',
+      permissions: ['canEditUsers'] as UserPermission[],
+      userId: '',
+      currentUserId: 'u0',
+      shouldDelete: false
+    },
+    {
+      label: 'self delete',
+      permissions: ['canEditUsers'] as UserPermission[],
+      userId: 'u1',
+      currentUserId: 'u1',
+      shouldDelete: false
+    },
+    {
+      label: 'with valid target',
+      permissions: ['canEditUsers'] as UserPermission[],
+      userId: 'u2',
+      currentUserId: 'u1',
+      shouldDelete: true
+    }
   ].forEach(({ label, permissions, userId, currentUserId, shouldDelete }) => {
     it(`whenDeletingUser_deleteUserAndRefresh_shouldHandle${label.replace(/\s/g, '')}`, async () => {
       // Arrange
       const authFacade = SessionCoordinatorServiceMockFactory.createAuthFacadeMock();
       authFacade.deleteUser.and.resolveTo(true);
       authFacade.loadUsers.and.resolveTo([{ id: 'managed-user-2' }]);
-      const listingQuery = SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
+      const listingQuery =
+        SessionCoordinatorServiceMockFactory.createListingQueryOrchestratorMock();
       const appShellState = SessionCoordinatorServiceMockFactory.createAppShellStateMock();
       appShellState.authenticatedUser.set(
         SessionCoordinatorServiceMockFactory.createUser({ id: currentUserId, permissions })
@@ -237,7 +281,10 @@ describe('SessionCoordinatorService', () => {
     );
 
     // Action
-    await service.deleteUserAndRefresh(SessionCoordinatorServiceMockFactory.createHttpClientMock(), 'u2');
+    await service.deleteUserAndRefresh(
+      SessionCoordinatorServiceMockFactory.createHttpClientMock(),
+      'u2'
+    );
 
     // Assert
     expect(appShellState.usersLoading()).toBeFalse();

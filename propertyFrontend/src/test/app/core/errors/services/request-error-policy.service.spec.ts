@@ -5,9 +5,15 @@ describe('RequestErrorPolicyService', () => {
   it('whenClassifyingHttpError_classify_shouldMapCategoryAndMessage', () => {
     // Arrange
     const service = new RequestErrorPolicyService();
-    const transientError = new HttpErrorResponse({ status: 503, error: { message: 'service unavailable' } });
+    const transientError = new HttpErrorResponse({
+      status: 503,
+      error: { message: 'service unavailable' }
+    });
     const validationError = new HttpErrorResponse({ status: 400, error: 'bad request' });
-    const unauthorizedError = new HttpErrorResponse({ status: 401, error: { error: 'unauthorized' } });
+    const unauthorizedError = new HttpErrorResponse({
+      status: 401,
+      error: { error: 'unauthorized' }
+    });
 
     // Action
     const transient = service.classify(transientError);
@@ -15,9 +21,17 @@ describe('RequestErrorPolicyService', () => {
     const unauthorized = service.classify(unauthorizedError);
 
     // Assert
-    expect(transient).toEqual({ category: 'transient', status: 503, message: 'service unavailable' });
+    expect(transient).toEqual({
+      category: 'transient',
+      status: 503,
+      message: 'service unavailable'
+    });
     expect(validation).toEqual({ category: 'validation', status: 400, message: 'bad request' });
-    expect(unauthorized).toEqual({ category: 'unauthorized', status: 401, message: 'unauthorized' });
+    expect(unauthorized).toEqual({
+      category: 'unauthorized',
+      status: 401,
+      message: 'unauthorized'
+    });
   });
 
   it('whenTransientErrorThenSuccess_executeWithFallback_shouldRetryAndReturnResponse', async () => {
@@ -99,7 +113,10 @@ describe('RequestErrorPolicyService', () => {
     const forbiddenError = new HttpErrorResponse({ status: 403, error: { message: 'forbidden' } });
     const notFoundError = new HttpErrorResponse({ status: 404, error: { message: 'missing' } });
     const serverError = new HttpErrorResponse({ status: 501, error: { message: 'server' } });
-    const unknownHttpError = new HttpErrorResponse({ status: Number.NaN, error: { message: 'unknown-http' } });
+    const unknownHttpError = new HttpErrorResponse({
+      status: Number.NaN,
+      error: { message: 'unknown-http' }
+    });
 
     // Action
     const forbidden = service.classify(forbiddenError);
@@ -119,7 +136,10 @@ describe('RequestErrorPolicyService', () => {
     const service = new RequestErrorPolicyService();
     const messageFallbackError = new HttpErrorResponse({ status: 418, error: {} });
     const defaultFallbackError = new HttpErrorResponse({ status: 418, error: {} });
-    Object.defineProperty(messageFallbackError, 'message', { configurable: true, value: '  from-http-message  ' });
+    Object.defineProperty(messageFallbackError, 'message', {
+      configurable: true,
+      value: '  from-http-message  '
+    });
     Object.defineProperty(defaultFallbackError, 'message', { configurable: true, value: '   ' });
 
     // Action
@@ -127,8 +147,16 @@ describe('RequestErrorPolicyService', () => {
     const defaultFallback = service.classify(defaultFallbackError);
 
     // Assert
-    expect(messageFallback).toEqual({ category: 'validation', status: 418, message: 'from-http-message' });
-    expect(defaultFallback).toEqual({ category: 'validation', status: 418, message: 'HTTP request failed.' });
+    expect(messageFallback).toEqual({
+      category: 'validation',
+      status: 418,
+      message: 'from-http-message'
+    });
+    expect(defaultFallback).toEqual({
+      category: 'validation',
+      status: 418,
+      message: 'HTTP request failed.'
+    });
   });
 
   it('whenErrorIsStringOrUnknownObject_classify_shouldReturnNormalizedUnknownMessages', () => {
@@ -141,7 +169,11 @@ describe('RequestErrorPolicyService', () => {
 
     // Assert
     expect(fromString).toEqual({ category: 'unknown', status: null, message: 'custom error text' });
-    expect(fromUnknownObject).toEqual({ category: 'unknown', status: null, message: 'Unexpected request failure.' });
+    expect(fromUnknownObject).toEqual({
+      category: 'unknown',
+      status: null,
+      message: 'Unexpected request failure.'
+    });
   });
 
   it('whenAttemptsAreForcedToZero_executeWithFallback_shouldReturnFallbackAfterLoop', async () => {
@@ -192,8 +224,16 @@ describe('RequestErrorPolicyService', () => {
     const errorSpy = spyOn(console, 'error');
 
     // Action
-    service.notifyFailure('test.notifyFailure', { category: 'unknown', status: null, message: 'unknown' });
-    service.notifyFallback('test.notifyFallback', { category: 'transient', status: 503, message: 'down' });
+    service.notifyFailure('test.notifyFailure', {
+      category: 'unknown',
+      status: null,
+      message: 'unknown'
+    });
+    service.notifyFallback('test.notifyFallback', {
+      category: 'transient',
+      status: 503,
+      message: 'down'
+    });
     service.notifyRecovery('test.notifyRecovery', 'fallback', new Error('recovery'));
     (service as any).notifyRetry('test.notifyRetry', 1, 2, 10, {
       category: 'unknown',
@@ -206,15 +246,26 @@ describe('RequestErrorPolicyService', () => {
     expect(warnSpy).toHaveBeenCalled();
     const warnMessages = warnSpy.calls.allArgs().map((args) => String(args[0]));
     expect(warnMessages.some((message) => message.includes('test.notifyRecovery'))).toBeTrue();
-    expect(warnMessages.some((message) => message.includes('test.notifyFallback') && message.includes(':503'))).toBeTrue();
-    expect(warnMessages.some((message) => message.includes('test.notifyRetry') && !message.includes(':null'))).toBeTrue();
+    expect(
+      warnMessages.some(
+        (message) => message.includes('test.notifyFallback') && message.includes(':503')
+      )
+    ).toBeTrue();
+    expect(
+      warnMessages.some(
+        (message) => message.includes('test.notifyRetry') && !message.includes(':null')
+      )
+    ).toBeTrue();
   });
 
   it('whenNotifyRecoveryReceivesHttpError_notifyRecovery_shouldIncludeStatusSuffix', () => {
     // Arrange
     const service = new RequestErrorPolicyService();
     const warnSpy = spyOn(console, 'warn');
-    const error = new HttpErrorResponse({ status: 503, error: { message: 'temporarily unavailable' } });
+    const error = new HttpErrorResponse({
+      status: 503,
+      error: { message: 'temporarily unavailable' }
+    });
 
     // Action
     service.notifyRecovery('test.notifyRecoveryWithStatus', 'retry', error);

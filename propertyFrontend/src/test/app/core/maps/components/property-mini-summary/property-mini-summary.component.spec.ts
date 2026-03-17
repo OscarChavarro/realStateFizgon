@@ -6,7 +6,9 @@ import { I18nService } from 'src/app/core/i18n/services/i18n.service';
 class PropertyMiniSummaryComponentMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 
@@ -58,8 +60,18 @@ describe('PropertyMiniSummaryComponent', () => {
   });
 
   [
-    { review: 'FAVOURITE', expectedClass: 'favourite', expectedIcon: 'check', expectedText: 'REVIEW_FAVOURITE:en' },
-    { review: 'DISCHARGED', expectedClass: 'discharged', expectedIcon: 'close', expectedText: 'REVIEW_DISCHARGED:en' },
+    {
+      review: 'FAVOURITE',
+      expectedClass: 'favourite',
+      expectedIcon: 'check',
+      expectedText: 'REVIEW_FAVOURITE:en'
+    },
+    {
+      review: 'DISCHARGED',
+      expectedClass: 'discharged',
+      expectedIcon: 'close',
+      expectedText: 'REVIEW_DISCHARGED:en'
+    },
     { review: 'NEW', expectedClass: 'new', expectedIcon: 'flare', expectedText: 'REVIEW_NEW:en' }
   ].forEach(({ review, expectedClass, expectedIcon, expectedText }) => {
     it(`review helpers should map ${review}`, () => {

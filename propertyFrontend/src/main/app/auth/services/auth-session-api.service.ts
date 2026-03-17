@@ -36,9 +36,7 @@ export class AuthSessionApiService {
     return this.requestErrorPolicyService.executeWithFallback({
       operation: 'auth.loadCurrentUser',
       request: async () => {
-        const response = await firstValueFrom(
-          http.get<CurrentUserResponse>('/auth/google/me')
-        );
+        const response = await firstValueFrom(http.get<CurrentUserResponse>('/auth/google/me'));
 
         if (response.authenticated && response.user) {
           return response.user;
@@ -55,16 +53,17 @@ export class AuthSessionApiService {
     await this.requestErrorPolicyService.executeWithFallback({
       operation: 'auth.logout',
       request: async () => {
-        await firstValueFrom(
-          http.post('/auth/google/logout', {})
-        );
+        await firstValueFrom(http.post('/auth/google/logout', {}));
       },
       fallback: () => undefined
     });
   }
 
   buildGoogleLoginUrl(returnTo: string): string {
-    const loginUrl = new URL('/auth/google/login', `${this.apiRuntimeConfigService.getBackendBaseUrl()}/`);
+    const loginUrl = new URL(
+      '/auth/google/login',
+      `${this.apiRuntimeConfigService.getBackendBaseUrl()}/`
+    );
     loginUrl.searchParams.set('returnTo', returnTo);
     return loginUrl.toString();
   }

@@ -23,7 +23,11 @@
 
   @if (activeTab() === 'DASHBOARD') {
     <section class="listing-workspace">
-      <div #workspaceContainer class="workspace-panels" [style.grid-template-columns]="getWorkspaceColumns()">
+      <div
+        #workspaceContainer
+        class="workspace-panels"
+        [style.grid-template-columns]="getWorkspaceColumns()"
+      >
         <section class="workspace-panel left" [class.hidden]="leftPanelHidden()">
           <app-listing-properties-table
             [properties]="properties()"

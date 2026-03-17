@@ -1,19 +1,19 @@
 import { ElementRef, SimpleChange } from '@angular/core';
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
-import {
-  GoogleMapKeyboardSelectionResult
-} from 'src/app/core/maps/services/google-map-selection-controller';
+import { GoogleMapKeyboardSelectionResult } from 'src/app/core/maps/services/google-map-selection-controller';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 
 class MockGoogleMap {
   options: Record<string, unknown>;
-  setOptions = jasmine.createSpy('setOptions').and.callFake((nextOptions: Record<string, unknown>) => {
-    this.options = {
-      ...this.options,
-      ...nextOptions
-    };
-  });
+  setOptions = jasmine
+    .createSpy('setOptions')
+    .and.callFake((nextOptions: Record<string, unknown>) => {
+      this.options = {
+        ...this.options,
+        ...nextOptions
+      };
+    });
   addListener = jasmine.createSpy('addListener').and.returnValue({ remove: () => undefined });
 
   constructor(_container: HTMLElement, options: Record<string, unknown>) {
@@ -78,19 +78,19 @@ function MockOverlayView(this: { map?: unknown }) {
   this.map = null;
 }
 
-MockOverlayView.prototype.setMap = function(map: unknown): void {
+MockOverlayView.prototype.setMap = function (map: unknown): void {
   this.map = map;
 };
 
-MockOverlayView.prototype.getMap = function(): unknown {
+MockOverlayView.prototype.getMap = function (): unknown {
   return this.map;
 };
 
-MockOverlayView.prototype.getProjection = function() {
+MockOverlayView.prototype.getProjection = function () {
   return {};
 };
 
-MockOverlayView.prototype.addListener = function() {
+MockOverlayView.prototype.addListener = function () {
   return { remove: () => undefined };
 };
 
@@ -112,39 +112,53 @@ class GoogleMapViewportManagerMock {
 }
 
 class GoogleMapMarkerIconFactoryMock {
-  buildPropertyMarkerIconDataUrl = jasmine.createSpy('buildPropertyMarkerIconDataUrl').and.returnValue('data:image/svg+xml,property');
-  buildSelectedTargetMarkerIconDataUrl = jasmine.createSpy('buildSelectedTargetMarkerIconDataUrl').and.returnValue('data:image/svg+xml,target');
+  buildPropertyMarkerIconDataUrl = jasmine
+    .createSpy('buildPropertyMarkerIconDataUrl')
+    .and.returnValue('data:image/svg+xml,property');
+  buildSelectedTargetMarkerIconDataUrl = jasmine
+    .createSpy('buildSelectedTargetMarkerIconDataUrl')
+    .and.returnValue('data:image/svg+xml,target');
 }
 
 class GoogleMapSelectionControllerMock {
   private selected: GoogleMapProperty | null = null;
-  handleKeyboardSelection = jasmine.createSpy('handleKeyboardSelection').and.returnValue({ type: 'none' } as GoogleMapKeyboardSelectionResult);
-  getSelectedPropertySummary = jasmine.createSpy('getSelectedPropertySummary').and.callFake(() => this.selected);
-  selectProperty = jasmine.createSpy('selectProperty').and.callFake((property: GoogleMapProperty) => {
-    this.selected = property;
-  });
+  handleKeyboardSelection = jasmine
+    .createSpy('handleKeyboardSelection')
+    .and.returnValue({ type: 'none' } as GoogleMapKeyboardSelectionResult);
+  getSelectedPropertySummary = jasmine
+    .createSpy('getSelectedPropertySummary')
+    .and.callFake(() => this.selected);
+  selectProperty = jasmine
+    .createSpy('selectProperty')
+    .and.callFake((property: GoogleMapProperty) => {
+      this.selected = property;
+    });
   clearSelection = jasmine.createSpy('clearSelection').and.callFake(() => {
     const hadSelection = this.selected !== null;
     this.selected = null;
     return hadSelection;
   });
-  syncSelectionAgainstProperties = jasmine.createSpy('syncSelectionAgainstProperties').and.callFake((properties: GoogleMapProperty[]) => {
-    if (!this.selected) {
-      return null;
-    }
+  syncSelectionAgainstProperties = jasmine
+    .createSpy('syncSelectionAgainstProperties')
+    .and.callFake((properties: GoogleMapProperty[]) => {
+      if (!this.selected) {
+        return null;
+      }
 
-    this.selected = properties.find((property) => property.id === this.selected?.id) ?? null;
-    return this.selected;
-  });
+      this.selected = properties.find((property) => property.id === this.selected?.id) ?? null;
+      return this.selected;
+    });
 }
 
 class GoogleMapPoiLayerManagerMock {
-  readonly layerOptions = [
-    { id: 'business', label: 'PROPERTY_LOCATION_LAYER_BUSINESS' as const }
-  ];
+  readonly layerOptions = [{ id: 'business', label: 'PROPERTY_LOCATION_LAYER_BUSINESS' as const }];
   isLayerEnabled = jasmine.createSpy('isLayerEnabled').and.returnValue(true);
   toggleLayer = jasmine.createSpy('toggleLayer');
-  buildMapStyles = jasmine.createSpy('buildMapStyles').and.returnValue([{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]);
+  buildMapStyles = jasmine
+    .createSpy('buildMapStyles')
+    .and.returnValue([
+      { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+    ]);
   onMapReady = jasmine.createSpy('onMapReady');
 }
 
@@ -351,7 +365,8 @@ describe('GoogleMapComponent', () => {
 
   it('should delegate layer state methods to the layer manager', () => {
     // Arrange
-    const { component, poiLayerManagerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, poiLayerManagerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const event = { target: { checked: true } } as unknown as Event;
 
     // Action
@@ -517,12 +532,15 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should handle same signatures with interaction change and missing runtime Google maps', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     component.properties = [GoogleMapComponentMockFactory.createProperty()];
     component.googleMapsApiKey = 'key';
     (component as any).mapInstance = { setOptions: () => undefined, getCenter: () => null };
     (component as any).mapRenderSignature = (component as any).buildConfigSignature();
-    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(component.properties);
+    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(
+      component.properties
+    );
     (component as any).markerInteractionEnabledSnapshot = false;
     component.interactionEnabled = true;
     runtimeLoaderMock.googleMaps = null;
@@ -537,7 +555,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should clear selection when interaction changed to disabled and signatures are unchanged', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMarkersSpy = spyOn<any>(component, 'renderMarkers');
@@ -547,7 +566,9 @@ describe('GoogleMapComponent', () => {
     component.interactionEnabled = false;
     (component as any).mapInstance = { setOptions: () => undefined, getCenter: () => null };
     (component as any).mapRenderSignature = (component as any).buildConfigSignature();
-    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(component.properties);
+    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(
+      component.properties
+    );
     (component as any).markerInteractionEnabledSnapshot = true;
 
     // Action
@@ -567,7 +588,9 @@ describe('GoogleMapComponent', () => {
     component.googleMapsApiKey = 'key';
     (component as any).mapInstance = { setOptions: () => undefined, getCenter: () => null };
     (component as any).mapRenderSignature = (component as any).buildConfigSignature();
-    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(component.properties);
+    (component as any).propertiesRenderSignature = (component as any).buildPropertiesSignature(
+      component.properties
+    );
     (component as any).markerInteractionEnabledSnapshot = component.interactionEnabled;
 
     // Action
@@ -580,7 +603,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should handle property signature change when runtime Google maps are missing', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     component.properties = [GoogleMapComponentMockFactory.createProperty()];
     component.googleMapsApiKey = 'key';
     (component as any).mapInstance = { setOptions: () => undefined, getCenter: () => null };
@@ -598,7 +622,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should re-render markers and keep viewport when preserveViewportOnPropertiesChange is true', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMarkersSpy = spyOn<any>(component, 'renderMarkers');
@@ -607,7 +632,12 @@ describe('GoogleMapComponent', () => {
     const clearSelectionSpy = spyOn<any>(component, 'clearSelectionState');
     component.properties = [
       GoogleMapComponentMockFactory.createProperty(),
-      GoogleMapComponentMockFactory.createProperty({ id: 'property-2', propertyId: '2', latitude: 40.52, longitude: -3.5 })
+      GoogleMapComponentMockFactory.createProperty({
+        id: 'property-2',
+        propertyId: '2',
+        latitude: 40.52,
+        longitude: -3.5
+      })
     ];
     component.googleMapsApiKey = 'key';
     component.preserveViewportOnPropertiesChange = true;
@@ -629,7 +659,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should apply viewport and clear selection when preserveViewportOnPropertiesChange is false and interaction disabled', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMarkersSpy = spyOn<any>(component, 'renderMarkers');
@@ -655,7 +686,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should create a new map on first render', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMapSpy = spyOn<any>(component, 'renderMap').and.resolveTo(undefined);
@@ -678,7 +710,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should clear selection after first render when interaction is disabled', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMapSpy = spyOn<any>(component, 'renderMap').and.resolveTo(undefined);
@@ -700,7 +733,8 @@ describe('GoogleMapComponent', () => {
 
   it('initializeMapIfReady should set load error when map initialization throws', fakeAsync(() => {
     // Arrange
-    const { component, runtimeLoaderMock, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const clearSelectedSpy = spyOn<any>(component, 'clearSelectedTargetMarker');
     runtimeLoaderMock.loadGoogleMapsScript.and.rejectWith(new Error('boom'));
     const consoleErrorSpy = spyOn(console, 'error');
@@ -723,7 +757,11 @@ describe('GoogleMapComponent', () => {
     const { component } = GoogleMapComponentMockFactory.createComponentWithMocks();
     component.properties = [
       GoogleMapComponentMockFactory.createProperty(),
-      GoogleMapComponentMockFactory.createProperty({ id: 'invalid', latitude: Number.NaN, longitude: -3.6 })
+      GoogleMapComponentMockFactory.createProperty({
+        id: 'invalid',
+        latitude: Number.NaN,
+        longitude: -3.6
+      })
     ];
 
     // Action
@@ -736,7 +774,8 @@ describe('GoogleMapComponent', () => {
 
   it('renderMap should set load error when runtime or container is not available', async () => {
     // Arrange
-    const { component, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     runtimeLoaderMock.googleMaps = null;
     (component as any).mapContainerRef = undefined;
 
@@ -749,7 +788,8 @@ describe('GoogleMapComponent', () => {
 
   it('renderMap should build map options, render markers and notify POI manager', async () => {
     // Arrange
-    const { component, runtimeLoaderMock, viewportManagerMock, poiLayerManagerMock, mapContainer } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock, viewportManagerMock, poiLayerManagerMock, mapContainer } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     const renderMarkersSpy = spyOn<any>(component, 'renderMarkers');
@@ -767,7 +807,9 @@ describe('GoogleMapComponent', () => {
     expect(mapInstance).toBeTruthy();
     expect((mapInstance.options as any)['mapId']).toBe('map-id');
     expect((mapInstance.options as any)['mapTypeId']).toBe('hybrid');
-    expect((mapInstance.options as any)['styles']).toEqual(poiLayerManagerMock.buildMapStyles.calls.mostRecent().returnValue);
+    expect((mapInstance.options as any)['styles']).toEqual(
+      poiLayerManagerMock.buildMapStyles.calls.mostRecent().returnValue
+    );
     expect(mapContainer).toBeTruthy();
   });
 
@@ -779,7 +821,10 @@ describe('GoogleMapComponent', () => {
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
 
     // Action
-    (component as any).renderMarkers([GoogleMapComponentMockFactory.createProperty()], googleMapsApi);
+    (component as any).renderMarkers(
+      [GoogleMapComponentMockFactory.createProperty()],
+      googleMapsApi
+    );
 
     // Assert
     expect(clearClusterSpy).not.toHaveBeenCalled();
@@ -796,7 +841,12 @@ describe('GoogleMapComponent', () => {
     component.interactionEnabled = true;
     const properties = [
       GoogleMapComponentMockFactory.createProperty(),
-      GoogleMapComponentMockFactory.createProperty({ id: 'property-2', propertyId: '2', latitude: 40.52, longitude: -3.5 })
+      GoogleMapComponentMockFactory.createProperty({
+        id: 'property-2',
+        propertyId: '2',
+        latitude: 40.52,
+        longitude: -3.5
+      })
     ];
 
     // Action
@@ -820,7 +870,10 @@ describe('GoogleMapComponent', () => {
     component.interactionEnabled = false;
 
     // Action
-    (component as any).renderMarkers([GoogleMapComponentMockFactory.createProperty()], googleMapsApi);
+    (component as any).renderMarkers(
+      [GoogleMapComponentMockFactory.createProperty()],
+      googleMapsApi
+    );
 
     // Assert
     const marker = (component as any).propertyMarkerInstances[0] as MockGoogleMarker;
@@ -830,7 +883,8 @@ describe('GoogleMapComponent', () => {
 
   it('should delegate viewport helpers and signatures', () => {
     // Arrange
-    const { component, viewportManagerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, viewportManagerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const property = GoogleMapComponentMockFactory.createProperty();
     component.googleMapsApiKey = null;
     component.googleMapsMapId = 'id';
@@ -842,7 +896,13 @@ describe('GoogleMapComponent', () => {
     const configSignature = (component as any).buildConfigSignature();
     const propertiesSignature = (component as any).buildPropertiesSignature([
       property,
-      GoogleMapComponentMockFactory.createProperty({ id: 'property-2', latitude: 40.52, longitude: -3.5, review: undefined as unknown as 'NEW', closed: true })
+      GoogleMapComponentMockFactory.createProperty({
+        id: 'property-2',
+        latitude: 40.52,
+        longitude: -3.5,
+        review: undefined as unknown as 'NEW',
+        closed: true
+      })
     ]);
 
     // Assert
@@ -868,7 +928,8 @@ describe('GoogleMapComponent', () => {
 
   it('onWindowKeyDown should delegate keyboard result processing', () => {
     // Arrange
-    const { component, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const applyKeyboardSpy = spyOn<any>(component, 'applyKeyboardSelectionResult');
     const keyboardResult: GoogleMapKeyboardSelectionResult = {
       type: 'selected',
@@ -889,7 +950,8 @@ describe('GoogleMapComponent', () => {
 
   it('openPropertyMiniSummary should support focus and non-focus modes', () => {
     // Arrange
-    const { component, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const updateSelectedMarkerSpy = spyOn<any>(component, 'updateSelectedTargetMarker');
     const markForCheckSpy = spyOn((component as any).cdr, 'markForCheck');
     const focusSpy = spyOn<any>(component, 'focusMiniSummary');
@@ -923,10 +985,12 @@ describe('GoogleMapComponent', () => {
     // Arrange
     const { component, miniSummary } = GoogleMapComponentMockFactory.createComponentWithMocks();
     const focusSpy = spyOn(miniSummary, 'focus');
-    const requestAnimationFrameSpy = spyOn(window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback) => {
-      callback(0);
-      return 1;
-    });
+    const requestAnimationFrameSpy = spyOn(window, 'requestAnimationFrame').and.callFake(
+      (callback: FrameRequestCallback) => {
+        callback(0);
+        return 1;
+      }
+    );
 
     // Action
     (component as any).focusMiniSummary();
@@ -940,9 +1004,30 @@ describe('GoogleMapComponent', () => {
   }));
 
   [
-    { result: { type: 'none' } as GoogleMapKeyboardSelectionResult, selectedMarkerCalls: 0, centerCalls: 0, focusCalls: 0, markCalls: 0 },
-    { result: { type: 'closed' } as GoogleMapKeyboardSelectionResult, selectedMarkerCalls: 0, centerCalls: 0, focusCalls: 0, markCalls: 1 },
-    { result: { type: 'selected', property: GoogleMapComponentMockFactory.createProperty() } as GoogleMapKeyboardSelectionResult, selectedMarkerCalls: 1, centerCalls: 1, focusCalls: 1, markCalls: 1 }
+    {
+      result: { type: 'none' } as GoogleMapKeyboardSelectionResult,
+      selectedMarkerCalls: 0,
+      centerCalls: 0,
+      focusCalls: 0,
+      markCalls: 0
+    },
+    {
+      result: { type: 'closed' } as GoogleMapKeyboardSelectionResult,
+      selectedMarkerCalls: 0,
+      centerCalls: 0,
+      focusCalls: 0,
+      markCalls: 1
+    },
+    {
+      result: {
+        type: 'selected',
+        property: GoogleMapComponentMockFactory.createProperty()
+      } as GoogleMapKeyboardSelectionResult,
+      selectedMarkerCalls: 1,
+      centerCalls: 1,
+      focusCalls: 1,
+      markCalls: 1
+    }
   ].forEach(({ result, selectedMarkerCalls, centerCalls, focusCalls, markCalls }) => {
     it(`applyKeyboardSelectionResult should handle "${result.type}"`, () => {
       // Arrange
@@ -969,12 +1054,15 @@ describe('GoogleMapComponent', () => {
 
   it('syncSelectedSummaryAgainstProperties should clear target marker when selection disappears', () => {
     // Arrange
-    const { component, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const clearSelectedSpy = spyOn<any>(component, 'clearSelectedTargetMarker');
     selectionControllerMock.syncSelectionAgainstProperties.and.returnValue(null);
 
     // Action
-    (component as any).syncSelectedSummaryAgainstProperties([GoogleMapComponentMockFactory.createProperty()]);
+    (component as any).syncSelectedSummaryAgainstProperties([
+      GoogleMapComponentMockFactory.createProperty()
+    ]);
 
     // Assert
     expect(clearSelectedSpy).toHaveBeenCalled();
@@ -982,13 +1070,18 @@ describe('GoogleMapComponent', () => {
 
   it('syncSelectedSummaryAgainstProperties should keep target marker and mark for check when selection exists', () => {
     // Arrange
-    const { component, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const updateSelectedSpy = spyOn<any>(component, 'updateSelectedTargetMarker');
     const markForCheckSpy = spyOn((component as any).cdr, 'markForCheck');
-    selectionControllerMock.syncSelectionAgainstProperties.and.returnValue(GoogleMapComponentMockFactory.createProperty());
+    selectionControllerMock.syncSelectionAgainstProperties.and.returnValue(
+      GoogleMapComponentMockFactory.createProperty()
+    );
 
     // Action
-    (component as any).syncSelectedSummaryAgainstProperties([GoogleMapComponentMockFactory.createProperty()]);
+    (component as any).syncSelectedSummaryAgainstProperties([
+      GoogleMapComponentMockFactory.createProperty()
+    ]);
 
     // Assert
     expect(updateSelectedSpy).toHaveBeenCalled();
@@ -1016,7 +1109,8 @@ describe('GoogleMapComponent', () => {
 
   it('updateSelectedTargetMarker should create marker when selected property exists and runtime Google maps are ready', () => {
     // Arrange
-    const { component, runtimeLoaderMock, markerIconFactoryMock, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock, markerIconFactoryMock, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     (component as any).mapInstance = new MockGoogleMap(document.createElement('div'), {});
@@ -1034,7 +1128,8 @@ describe('GoogleMapComponent', () => {
 
   it('updateSelectedTargetMarker should return when runtime Google maps are not available', () => {
     // Arrange
-    const { component, runtimeLoaderMock, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, runtimeLoaderMock, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     runtimeLoaderMock.googleMaps = null;
     (component as any).mapInstance = new MockGoogleMap(document.createElement('div'), {});
     selectionControllerMock.getSelectedPropertySummary.and.returnValue(
@@ -1069,7 +1164,8 @@ describe('GoogleMapComponent', () => {
 
   it('clearSelectionState should clear controller and selected marker', () => {
     // Arrange
-    const { component, selectionControllerMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, selectionControllerMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const clearSelectedSpy = spyOn<any>(component, 'clearSelectedTargetMarker');
 
     // Action
@@ -1091,10 +1187,22 @@ describe('GoogleMapComponent', () => {
     (component as any).detachLayerPanelResizeListeners();
 
     // Assert
-    expect(addEventListenerSpy).toHaveBeenCalledWith('mousemove', (component as any).onLayerPanelResizeMove);
-    expect(addEventListenerSpy).toHaveBeenCalledWith('mouseup', (component as any).onLayerPanelResizeEnd);
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('mousemove', (component as any).onLayerPanelResizeMove);
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('mouseup', (component as any).onLayerPanelResizeEnd);
+    expect(addEventListenerSpy).toHaveBeenCalledWith(
+      'mousemove',
+      (component as any).onLayerPanelResizeMove
+    );
+    expect(addEventListenerSpy).toHaveBeenCalledWith(
+      'mouseup',
+      (component as any).onLayerPanelResizeEnd
+    );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      'mousemove',
+      (component as any).onLayerPanelResizeMove
+    );
+    expect(removeEventListenerSpy).toHaveBeenCalledWith(
+      'mouseup',
+      (component as any).onLayerPanelResizeEnd
+    );
   });
 
   it('stopLayerPanelResize should disable resizing and detach listeners', () => {
@@ -1146,7 +1254,8 @@ describe('GoogleMapComponent', () => {
 
   it('refreshMapViewport should delegate to viewport manager', () => {
     // Arrange
-    const { component, viewportManagerMock, runtimeLoaderMock } = GoogleMapComponentMockFactory.createComponentWithMocks();
+    const { component, viewportManagerMock, runtimeLoaderMock } =
+      GoogleMapComponentMockFactory.createComponentWithMocks();
     const { googleMapsApi } = GoogleMapComponentMockFactory.configureGoogleMapsGlobal();
     runtimeLoaderMock.googleMaps = googleMapsApi;
     (component as any).mapInstance = new MockGoogleMap(document.createElement('div'), {});

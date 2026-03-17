@@ -7,7 +7,9 @@ import { I18nService } from 'src/app/core/i18n/services/i18n.service';
 class UserMenuComponentMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 
@@ -19,7 +21,10 @@ class UserMenuComponentMockFactory {
     };
   }
 
-  static createComponent(i18nMock: { get: jasmine.Spy }, hostElementMock: { nativeElement: { contains: jasmine.Spy } }): UserMenuComponent {
+  static createComponent(
+    i18nMock: { get: jasmine.Spy },
+    hostElementMock: { nativeElement: { contains: jasmine.Spy } }
+  ): UserMenuComponent {
     TestBed.configureTestingModule({
       providers: [
         { provide: I18nService, useValue: i18nMock },
@@ -218,9 +223,21 @@ describe('UserMenuComponent', () => {
   });
 
   [
-    { user: UserMenuComponentMockFactory.createUser({ name: '   Name   ', email: 'mail@example.com' }), expected: 'Name' },
-    { user: UserMenuComponentMockFactory.createUser({ name: '   ', email: '  mail@example.com  ' }), expected: 'mail@example.com' },
-    { user: UserMenuComponentMockFactory.createUser({ name: '   ', email: '   ' }), expected: 'SIGNED_IN_USER:en' },
+    {
+      user: UserMenuComponentMockFactory.createUser({
+        name: '   Name   ',
+        email: 'mail@example.com'
+      }),
+      expected: 'Name'
+    },
+    {
+      user: UserMenuComponentMockFactory.createUser({ name: '   ', email: '  mail@example.com  ' }),
+      expected: 'mail@example.com'
+    },
+    {
+      user: UserMenuComponentMockFactory.createUser({ name: '   ', email: '   ' }),
+      expected: 'SIGNED_IN_USER:en'
+    },
     { user: null, expected: 'SIGNED_IN_USER:en' }
   ].forEach(({ user, expected }) => {
     it(`displayName should resolve to "${expected}"`, () => {
@@ -240,10 +257,26 @@ describe('UserMenuComponent', () => {
 
   [
     { user: null, displayRole: 'STANDARD_USER', shouldShowRole: false },
-    { user: UserMenuComponentMockFactory.createUser({ roles: [] }), displayRole: 'STANDARD_USER', shouldShowRole: false },
-    { user: UserMenuComponentMockFactory.createUser({ roles: ['STANDARD_USER'] }), displayRole: 'STANDARD_USER', shouldShowRole: false },
-    { user: UserMenuComponentMockFactory.createUser({ roles: ['ADMIN'] }), displayRole: 'ADMIN', shouldShowRole: true },
-    { user: UserMenuComponentMockFactory.createUser({ roles: ['STANDARD_USER', 'ADMIN'] }), displayRole: 'STANDARD_USER, ADMIN', shouldShowRole: true }
+    {
+      user: UserMenuComponentMockFactory.createUser({ roles: [] }),
+      displayRole: 'STANDARD_USER',
+      shouldShowRole: false
+    },
+    {
+      user: UserMenuComponentMockFactory.createUser({ roles: ['STANDARD_USER'] }),
+      displayRole: 'STANDARD_USER',
+      shouldShowRole: false
+    },
+    {
+      user: UserMenuComponentMockFactory.createUser({ roles: ['ADMIN'] }),
+      displayRole: 'ADMIN',
+      shouldShowRole: true
+    },
+    {
+      user: UserMenuComponentMockFactory.createUser({ roles: ['STANDARD_USER', 'ADMIN'] }),
+      displayRole: 'STANDARD_USER, ADMIN',
+      shouldShowRole: true
+    }
   ].forEach(({ user, displayRole, shouldShowRole }) => {
     it(`role getters should resolve displayRole="${displayRole}" and shouldShowRole=${shouldShowRole}`, () => {
       // Arrange

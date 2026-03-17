@@ -15,7 +15,9 @@ export class ListingBootstrapUseCaseService {
 
   async initialize(params: ListingBootstrapParams): Promise<void> {
     await params.onRefreshListingData();
-    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(async () => params.onRefreshListingData());
+    this.workspaceInteractionCoordinatorService.connectUpdatesSocket(async () =>
+      params.onRefreshListingData()
+    );
   }
 
   teardown(): void {

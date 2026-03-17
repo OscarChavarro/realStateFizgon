@@ -6,9 +6,7 @@ import { SessionCoordinatorService } from 'src/app/auth/services/session-coordin
   providedIn: 'root'
 })
 export class UserSessionManagementUseCaseService {
-  constructor(
-    private readonly listingSessionCoordinatorService: SessionCoordinatorService
-  ) {}
+  constructor(private readonly listingSessionCoordinatorService: SessionCoordinatorService) {}
 
   async logoutCurrentUser(http: HttpClient): Promise<void> {
     await this.listingSessionCoordinatorService.logoutAndReset(http);

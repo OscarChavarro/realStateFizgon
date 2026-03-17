@@ -6,7 +6,9 @@ import { ListingPropertyRow, PropertyLabelEntry } from 'src/app/listing/model/li
 class PropertyDetailPanelMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 
@@ -63,7 +65,12 @@ describe('PropertyDetailPanelComponent', () => {
 
   [
     { review: 'FAVOURITE', className: 'favourite', icon: 'check', textKey: 'REVIEW_FAVOURITE:en' },
-    { review: 'DISCHARGED', className: 'discharged', icon: 'close', textKey: 'REVIEW_DISCHARGED:en' },
+    {
+      review: 'DISCHARGED',
+      className: 'discharged',
+      icon: 'close',
+      textKey: 'REVIEW_DISCHARGED:en'
+    },
     { review: 'NEW', className: 'new', icon: 'flare', textKey: 'REVIEW_NEW:en' },
     { review: 'INVALID', className: 'new', icon: 'flare', textKey: 'REVIEW_NEW:en' }
   ].forEach(({ review, className, icon, textKey }) => {
@@ -89,11 +96,16 @@ describe('PropertyDetailPanelComponent', () => {
     // Arrange
     const i18nMock = PropertyDetailPanelMockFactory.createI18nMock();
     const component = PropertyDetailPanelMockFactory.createComponent(i18nMock);
-    component.propertyLabels = PropertyDetailPanelMockFactory.createLabels('NEW', 'persisted-comment');
+    component.propertyLabels = PropertyDetailPanelMockFactory.createLabels(
+      'NEW',
+      'persisted-comment'
+    );
 
     // Action
     const persisted = component.getDraftComment('p-1');
-    component.onDraftCommentInput('p-1', { target: { value: 'draft-comment' } } as unknown as Event);
+    component.onDraftCommentInput('p-1', {
+      target: { value: 'draft-comment' }
+    } as unknown as Event);
     const drafted = component.getDraftComment('p-1');
 
     // Assert
@@ -133,7 +145,9 @@ describe('PropertyDetailPanelComponent', () => {
     const component = PropertyDetailPanelMockFactory.createComponent(i18nMock);
     const property = PropertyDetailPanelMockFactory.createProperty();
     const emitSpy = spyOn(component.propertyCommentSave, 'emit');
-    component.onDraftCommentInput(property.propertyId, { target: { value: '  comment value  ' } } as unknown as Event);
+    component.onDraftCommentInput(property.propertyId, {
+      target: { value: '  comment value  ' }
+    } as unknown as Event);
 
     // Action
     component.onDraftCommentBlur(property);
@@ -287,7 +301,9 @@ describe('PropertyDetailPanelComponent', () => {
     // Arrange
     const i18nMock = PropertyDetailPanelMockFactory.createI18nMock();
     const component = PropertyDetailPanelMockFactory.createComponent(i18nMock);
-    component.propertyLabels = [{ propertyId: 'p-1', labels: { comment: 123 as unknown as string } }];
+    component.propertyLabels = [
+      { propertyId: 'p-1', labels: { comment: 123 as unknown as string } }
+    ];
 
     // Action
     const result = component.getDraftComment('p-1');

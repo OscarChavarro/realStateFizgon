@@ -1,5 +1,9 @@
 import { Component, HostListener, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-property-mini-image-carousel',
@@ -68,7 +72,8 @@ export class PropertyMiniImageCarouselComponent implements OnChanges {
       return;
     }
 
-    this.selectedImageIndex = (this.selectedImageIndex - 1 + this.imageUrls.length) % this.imageUrls.length;
+    this.selectedImageIndex =
+      (this.selectedImageIndex - 1 + this.imageUrls.length) % this.imageUrls.length;
   }
 
   selectNextImage(): void {
@@ -85,9 +90,11 @@ export class PropertyMiniImageCarouselComponent implements OnChanges {
     }
 
     const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
+    return (
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable
+    );
   }
 }

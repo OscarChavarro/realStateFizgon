@@ -25,10 +25,16 @@ export class SessionCoordinatorService {
 
     await this.listingQueryOrchestratorService.loadUserPreferences(http);
 
-    if (this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB' && !this.appShellStateService.canMaintainDatabase()) {
+    if (
+      this.appShellStateService.activeTab() === 'DATABASE_MAINTENANCE_TAB' &&
+      !this.appShellStateService.canMaintainDatabase()
+    ) {
       this.appShellStateService.activeTab.set('DASHBOARD');
     }
-    if (this.appShellStateService.activeTab() === 'USERS_TAB' && this.appShellStateService.canEditUsers()) {
+    if (
+      this.appShellStateService.activeTab() === 'USERS_TAB' &&
+      this.appShellStateService.canEditUsers()
+    ) {
       await this.loadUsers(http);
     }
   }
@@ -63,10 +69,7 @@ export class SessionCoordinatorService {
     }
 
     this.appShellStateService.usersLoading.set(true);
-    const deleted = await this.listingAuthFacadeService.deleteUser(
-      http,
-      userId
-    );
+    const deleted = await this.listingAuthFacadeService.deleteUser(http, userId);
     if (deleted) {
       await this.loadUsers(http);
       return;

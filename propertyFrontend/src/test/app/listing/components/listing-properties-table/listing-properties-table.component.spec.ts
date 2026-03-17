@@ -25,18 +25,25 @@ class ListingPropertiesTableMockFactory {
     };
   }
 
-  static createSortCriteria(criteria: Array<{ sortBy: SortField; sortOrder: 'asc' | 'desc' }>): SortCriterion[] {
+  static createSortCriteria(
+    criteria: Array<{ sortBy: SortField; sortOrder: 'asc' | 'desc' }>
+  ): SortCriterion[] {
     return criteria.map((item) => ({ ...item }));
   }
 
-  static createPropertyLabels(labels: Array<{ propertyId: string; review?: string }>): PropertyLabelEntry[] {
+  static createPropertyLabels(
+    labels: Array<{ propertyId: string; review?: string }>
+  ): PropertyLabelEntry[] {
     return labels.map((item) => ({
       propertyId: item.propertyId,
       labels: item.review ? ({ review: item.review } as PropertyLabelEntry['labels']) : {}
     }));
   }
 
-  static createMouseEventWithStopPropagation(): { event: MouseEvent; stopPropagationSpy: jasmine.Spy } {
+  static createMouseEventWithStopPropagation(): {
+    event: MouseEvent;
+    stopPropagationSpy: jasmine.Spy;
+  } {
     const stopPropagationSpy = jasmine.createSpy('stopPropagation');
     const event = { stopPropagation: stopPropagationSpy } as unknown as MouseEvent;
     return { event, stopPropagationSpy };
@@ -97,7 +104,8 @@ class ListingPropertiesTableMockFactory {
     container.appendChild(table);
     (component as any).tableWrapperContainer = {
       nativeElement: {
-        querySelector: (selector: string) => (selector === '.spreadsheet-table-scroll' ? container : null)
+        querySelector: (selector: string) =>
+          selector === '.spreadsheet-table-scroll' ? container : null
       }
     };
 
@@ -156,7 +164,8 @@ describe('ListingPropertiesTableComponent', () => {
   it('onPropertyReviewCellClick should stop propagation and emit property', () => {
     // Arrange
     const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'review-id' });
-    const { event, stopPropagationSpy } = ListingPropertiesTableMockFactory.createMouseEventWithStopPropagation();
+    const { event, stopPropagationSpy } =
+      ListingPropertiesTableMockFactory.createMouseEventWithStopPropagation();
     const emitSpy = spyOn(component.propertyReviewToggle, 'emit');
 
     // Action
@@ -221,7 +230,9 @@ describe('ListingPropertiesTableComponent', () => {
 
   it('isPropertyRowLocked should return false when keys differ', () => {
     // Arrange
-    const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'unlocked-id' });
+    const property = ListingPropertiesTableMockFactory.createProperty({
+      propertyId: 'unlocked-id'
+    });
     component.lockedRowKey = 'different-key';
 
     // Action
@@ -232,12 +243,22 @@ describe('ListingPropertiesTableComponent', () => {
   });
 
   [
-    { sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }], sortBy: 'title' as const, expected: 'asc' as const },
-    { sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }], sortBy: 'price' as const, expected: null }
+    {
+      sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }],
+      sortBy: 'title' as const,
+      expected: 'asc' as const
+    },
+    {
+      sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }],
+      sortBy: 'price' as const,
+      expected: null
+    }
   ].forEach(({ sortCriteria, sortBy, expected }) => {
     it(`getSortDirection should return ${String(expected)} for ${sortBy}`, () => {
       // Arrange
-      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(sortCriteria as any);
+      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(
+        sortCriteria as any
+      );
 
       // Action
       const direction = component.getSortDirection(sortBy);
@@ -248,13 +269,23 @@ describe('ListingPropertiesTableComponent', () => {
   });
 
   [
-    { sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }], sortBy: 'title' as const, expected: 'arrow_upward' },
-    { sortCriteria: [{ sortBy: 'title', sortOrder: 'desc' }], sortBy: 'title' as const, expected: 'arrow_downward' },
+    {
+      sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }],
+      sortBy: 'title' as const,
+      expected: 'arrow_upward'
+    },
+    {
+      sortCriteria: [{ sortBy: 'title', sortOrder: 'desc' }],
+      sortBy: 'title' as const,
+      expected: 'arrow_downward'
+    },
     { sortCriteria: [], sortBy: 'title' as const, expected: 'swap_vert' }
   ].forEach(({ sortCriteria, sortBy, expected }) => {
     it(`getSortIcon should return ${expected}`, () => {
       // Arrange
-      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(sortCriteria as any);
+      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(
+        sortCriteria as any
+      );
 
       // Action
       const icon = component.getSortIcon(sortBy);
@@ -283,7 +314,9 @@ describe('ListingPropertiesTableComponent', () => {
   ].forEach(({ sortCriteria, sortBy, expected }) => {
     it(`getSortAriaLabel should return "${expected}"`, () => {
       // Arrange
-      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(sortCriteria as any);
+      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(
+        sortCriteria as any
+      );
       component.selectedLanguage = 'en';
 
       // Action
@@ -303,11 +336,17 @@ describe('ListingPropertiesTableComponent', () => {
       sortBy: 'title' as const,
       expected: 2
     },
-    { sortCriteria: [{ sortBy: 'price', sortOrder: 'asc' }], sortBy: 'title' as const, expected: null }
+    {
+      sortCriteria: [{ sortBy: 'price', sortOrder: 'asc' }],
+      sortBy: 'title' as const,
+      expected: null
+    }
   ].forEach(({ sortCriteria, sortBy, expected }) => {
     it(`getSortPriority should return ${String(expected)} for ${sortBy}`, () => {
       // Arrange
-      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(sortCriteria as any);
+      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(
+        sortCriteria as any
+      );
 
       // Action
       const priority = component.getSortPriority(sortBy);
@@ -326,7 +365,11 @@ describe('ListingPropertiesTableComponent', () => {
       sortBy: 'title' as const,
       expected: true
     },
-    { sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }], sortBy: 'title' as const, expected: false },
+    {
+      sortCriteria: [{ sortBy: 'title', sortOrder: 'asc' }],
+      sortBy: 'title' as const,
+      expected: false
+    },
     {
       sortCriteria: [
         { sortBy: 'price', sortOrder: 'asc' },
@@ -338,7 +381,9 @@ describe('ListingPropertiesTableComponent', () => {
   ].forEach(({ sortCriteria, sortBy, expected }) => {
     it(`shouldShowSortPriority should be ${expected} for ${sortBy}`, () => {
       // Arrange
-      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(sortCriteria as any);
+      component.sortCriteria = ListingPropertiesTableMockFactory.createSortCriteria(
+        sortCriteria as any
+      );
 
       // Action
       const result = component.shouldShowSortPriority(sortBy);
@@ -417,7 +462,9 @@ describe('ListingPropertiesTableComponent', () => {
   ].forEach(({ title, rowTop, rowHeight, scrollTop, clientHeight, headerHeight, expectedTop }) => {
     it(`scrollPropertyIntoView should scroll when ${title}`, () => {
       // Arrange
-      const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'scroll-id' });
+      const property = ListingPropertiesTableMockFactory.createProperty({
+        propertyId: 'scroll-id'
+      });
       const rowKey = component.trackProperty(0, property);
       const scrollToSpy = ListingPropertiesTableMockFactory.attachScrollContainer(component, {
         rows: [{ rowKey, offsetTop: rowTop, offsetHeight: rowHeight }],
@@ -460,7 +507,9 @@ describe('ListingPropertiesTableComponent', () => {
 
   it('scrollPropertyIntoView should not scroll when row is already in focus area', () => {
     // Arrange
-    const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'focused-row' });
+    const property = ListingPropertiesTableMockFactory.createProperty({
+      propertyId: 'focused-row'
+    });
     const rowKey = component.trackProperty(0, property);
     const scrollToSpy = ListingPropertiesTableMockFactory.attachScrollContainer(component, {
       rows: [{ rowKey, offsetTop: 250, offsetHeight: 40 }],
@@ -478,7 +527,9 @@ describe('ListingPropertiesTableComponent', () => {
 
   it('scrollPropertyIntoView should fallback header height to zero when table header is missing', () => {
     // Arrange
-    const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'no-header-row' });
+    const property = ListingPropertiesTableMockFactory.createProperty({
+      propertyId: 'no-header-row'
+    });
     const rowKey = component.trackProperty(0, property);
     const scrollToSpy = ListingPropertiesTableMockFactory.attachScrollContainer(component, {
       rows: [{ rowKey, offsetTop: 20, offsetHeight: 30 }],
@@ -520,7 +571,9 @@ describe('ListingPropertiesTableComponent', () => {
     it(`review helpers should return class "${expectedClass}" and icon "${expectedIcon}"`, () => {
       // Arrange
       const property = ListingPropertiesTableMockFactory.createProperty({ propertyId: 'p-1' });
-      component.propertyLabels = ListingPropertiesTableMockFactory.createPropertyLabels(labels as any);
+      component.propertyLabels = ListingPropertiesTableMockFactory.createPropertyLabels(
+        labels as any
+      );
 
       // Action
       const reviewClass = component.getReviewClass(property);

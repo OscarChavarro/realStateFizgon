@@ -9,7 +9,9 @@ describe('ApiRuntimeConfigService', () => {
 
   it('whenNotConfigured_getters_shouldReturnDefaults', () => {
     expect(service.getBackendBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL);
-    expect(service.getStaticMediaBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL);
+    expect(service.getStaticMediaBaseUrl()).toBe(
+      ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+    );
   });
 
   it('whenConfigurationHasWhitespacesAndSlashes_setConfiguration_shouldNormalizeValues', () => {
@@ -29,7 +31,9 @@ describe('ApiRuntimeConfigService', () => {
     });
 
     expect(service.getBackendBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL);
-    expect(service.getStaticMediaBaseUrl()).toBe(ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL);
+    expect(service.getStaticMediaBaseUrl()).toBe(
+      ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL
+    );
   });
 
   it('whenResolveBackendUrlReceivesAbsoluteUrl_shouldReturnOriginalUrl', () => {
@@ -54,7 +58,13 @@ describe('ApiRuntimeConfigService', () => {
   });
 
   it('whenShouldRouteToBackendReceivesSupportedRelativePaths_shouldReturnTrue', () => {
-    const routablePaths = ['/auth/session', '/properties', 'properties', '/properties/count', '/removeDanglingImages'];
+    const routablePaths = [
+      '/auth/session',
+      '/properties',
+      'properties',
+      '/properties/count',
+      '/removeDanglingImages'
+    ];
 
     routablePaths.forEach((path) => {
       expect(service.shouldRouteToBackend(path)).toBeTrue();

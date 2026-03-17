@@ -6,7 +6,9 @@ import { PropertyLocationComponent } from 'src/app/property/components/property-
 class PropertyLocationComponentMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 

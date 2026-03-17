@@ -5,10 +5,7 @@ import { SortCriterion, SortField } from 'src/app/listing/model/listing.types';
   providedIn: 'root'
 })
 export class SortCriteriaService {
-  cycleSortCriteria(
-    currentCriteria: SortCriterion[],
-    sortBy: SortField
-  ): SortCriterion[] {
+  cycleSortCriteria(currentCriteria: SortCriterion[], sortBy: SortField): SortCriterion[] {
     const updated = [...currentCriteria];
     const existingIndex = updated.findIndex((criterion) => criterion.sortBy === sortBy);
 

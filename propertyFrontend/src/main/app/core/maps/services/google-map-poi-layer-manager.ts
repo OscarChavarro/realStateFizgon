@@ -75,7 +75,11 @@ export class GoogleMapPoiLayerManager {
       label: 'PROPERTY_LOCATION_LAYER_METRO_STATIONS',
       mapFeatureStyles: [
         { featureType: 'transit.station', elementType: 'labels', stylers: [{ visibility: 'on' }] },
-        { featureType: 'transit.station', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
+        {
+          featureType: 'transit.station',
+          elementType: 'geometry',
+          stylers: [{ visibility: 'on' }]
+        }
       ]
     },
     {
@@ -134,4 +138,3 @@ export class GoogleMapPoiLayerManager {
     });
   }
 }
-

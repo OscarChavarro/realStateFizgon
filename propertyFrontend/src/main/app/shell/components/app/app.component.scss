@@ -81,11 +81,7 @@ app-listing-map-tab {
   width: 2px;
   height: 48px;
   border-radius: 999px;
-  background: repeating-linear-gradient(
-    to bottom,
-    #8fa3bf 0 4px,
-    transparent 4px 8px
-  );
+  background: repeating-linear-gradient(to bottom, #8fa3bf 0 4px, transparent 4px 8px);
   opacity: 0.9;
 }
 
@@ -94,11 +90,7 @@ app-listing-map-tab {
 }
 
 .workspace-splitter:hover::before {
-  background: repeating-linear-gradient(
-    to bottom,
-    #5f7fa7 0 4px,
-    transparent 4px 8px
-  );
+  background: repeating-linear-gradient(to bottom, #5f7fa7 0 4px, transparent 4px 8px);
 }
 
 app-maintenance-panel,

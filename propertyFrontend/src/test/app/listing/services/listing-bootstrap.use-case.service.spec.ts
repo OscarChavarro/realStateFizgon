@@ -18,7 +18,10 @@ describe('ListingBootstrapUseCaseService', () => {
     TestBed.configureTestingModule({
       providers: [
         ListingBootstrapUseCaseService,
-        { provide: WorkspaceInteractionCoordinatorService, useValue: workspaceInteractionCoordinatorServiceMock }
+        {
+          provide: WorkspaceInteractionCoordinatorService,
+          useValue: workspaceInteractionCoordinatorServiceMock
+        }
       ]
     });
 
@@ -31,7 +34,8 @@ describe('ListingBootstrapUseCaseService', () => {
 
     // Action
     await service.initialize({ onRefreshListingData: refreshSpy });
-    const callback = workspaceInteractionCoordinatorServiceMock.connectUpdatesSocket.calls.mostRecent().args[0];
+    const callback =
+      workspaceInteractionCoordinatorServiceMock.connectUpdatesSocket.calls.mostRecent().args[0];
     await callback();
 
     // Assert

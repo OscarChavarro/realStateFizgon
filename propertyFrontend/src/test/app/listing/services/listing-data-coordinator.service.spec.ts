@@ -20,8 +20,12 @@ class ListingDataCoordinatorServiceMockFactory {
       saveFiltersPreference: jasmine.createSpy('saveFiltersPreference').and.resolveTo(undefined),
       loadUserPreferences: jasmine.createSpy('loadUserPreferences').and.resolveTo(null),
       persistSelectedLanguage: jasmine.createSpy('persistSelectedLanguage'),
-      toggleSortCriteria: jasmine.createSpy('toggleSortCriteria').and.returnValue([{ sortBy: 'price', sortOrder: 'asc' }]),
-      runMaintenanceOperation: jasmine.createSpy('runMaintenanceOperation').and.resolveTo('operation-result')
+      toggleSortCriteria: jasmine
+        .createSpy('toggleSortCriteria')
+        .and.returnValue([{ sortBy: 'price', sortOrder: 'asc' }]),
+      runMaintenanceOperation: jasmine
+        .createSpy('runMaintenanceOperation')
+        .and.resolveTo('operation-result')
     };
   }
 
@@ -44,11 +48,16 @@ class ListingDataCoordinatorServiceMockFactory {
 
 describe('ListingDataCoordinatorService', () => {
   let service: ListingDataCoordinatorService;
-  let listingStateFacadeServiceMock: ReturnType<typeof ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock>;
-  let appShellStateMock: ReturnType<typeof ListingDataCoordinatorServiceMockFactory.createAppShellStateMock>;
+  let listingStateFacadeServiceMock: ReturnType<
+    typeof ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock
+  >;
+  let appShellStateMock: ReturnType<
+    typeof ListingDataCoordinatorServiceMockFactory.createAppShellStateMock
+  >;
 
   beforeEach(() => {
-    listingStateFacadeServiceMock = ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock();
+    listingStateFacadeServiceMock =
+      ListingDataCoordinatorServiceMockFactory.createListingStateFacadeMock();
     appShellStateMock = ListingDataCoordinatorServiceMockFactory.createAppShellStateMock();
 
     TestBed.configureTestingModule({
@@ -74,7 +83,12 @@ describe('ListingDataCoordinatorService', () => {
     expect(appShellStateMock.loading()).toBeFalse();
     expect(appShellStateMock.count()).toBe(15);
     expect(appShellStateMock.allProperties()).toEqual([{ propertyId: 'p1' }]);
-    expect(appShellStateMock.pagination()).toEqual({ page: 2, pageSize: 100, totalElements: 33, totalPages: 1 });
+    expect(appShellStateMock.pagination()).toEqual({
+      page: 2,
+      pageSize: 100,
+      totalElements: 33,
+      totalPages: 1
+    });
     expect(onAfterRefresh).toHaveBeenCalledTimes(1);
   });
 
@@ -125,7 +139,10 @@ describe('ListingDataCoordinatorService', () => {
     appShellStateMock.authenticatedUser.set({ id: 'user-1' });
 
     // Action
-    const changed = await service.handleFiltersChange({} as any, { ...currentFilters, minPrice: '1200' });
+    const changed = await service.handleFiltersChange({} as any, {
+      ...currentFilters,
+      minPrice: '1200'
+    });
 
     // Assert
     expect(changed).toBeTrue();
@@ -164,8 +181,13 @@ describe('ListingDataCoordinatorService', () => {
     expect(appShellStateMock.pagination().pageSize).toBe(500);
     expect(appShellStateMock.filters().showClosed).toBeFalse();
     expect(appShellStateMock.sortCriteria()).toEqual([{ sortBy: 'price', sortOrder: 'asc' }]);
-    expect(appShellStateMock.propertyLabels()).toEqual([{ propertyId: 'p-1', labels: { review: 'NEW' } }]);
-    expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledOnceWith('selected-language', 'sp');
+    expect(appShellStateMock.propertyLabels()).toEqual([
+      { propertyId: 'p-1', labels: { review: 'NEW' } }
+    ]);
+    expect(listingStateFacadeServiceMock.persistSelectedLanguage).toHaveBeenCalledOnceWith(
+      'selected-language',
+      'sp'
+    );
   });
 
   it('whenLoadingPreferencesFails_loadUserPreferences_shouldFallbackToDefaultsWithoutThrowing', async () => {

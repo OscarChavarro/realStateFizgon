@@ -41,7 +41,9 @@
   <div class="top-bar-actions">
     <div class="property-count-chip">
       <span class="count-label">{{ t('SHOWING_PROPERTIES') }}:</span>
-      <span class="count-value" [class.loading]="loading">{{ visibleCount }} / {{ totalCount }}</span>
+      <span class="count-value" [class.loading]="loading"
+        >{{ visibleCount }} / {{ totalCount }}</span
+      >
     </div>
 
     <app-listing-filter-menu

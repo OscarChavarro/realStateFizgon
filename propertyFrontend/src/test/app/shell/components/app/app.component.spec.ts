@@ -5,9 +5,16 @@ import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthBootstrapUseCaseService } from 'src/app/auth/services/auth-bootstrap.use-case.service';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
-import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import {
+  ListingFiltersState,
+  createDefaultListingFilters
+} from 'src/app/listing/model/filters/listing-filters.model';
 import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
-import { ListingPropertyRow, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
+import {
+  ListingPropertyRow,
+  PropertyLabelEntry,
+  SortCriterion
+} from 'src/app/listing/model/listing.types';
 import { ListingBootstrapUseCaseService } from 'src/app/listing/services/listing-bootstrap.use-case.service';
 import { ListingInteractionUseCaseService } from 'src/app/listing/services/listing-interaction.use-case.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
@@ -20,12 +27,16 @@ import { AppShellStateService } from 'src/app/shell/services/app-shell-state.ser
 import { ShellInputInteractionUseCaseService } from 'src/app/shell/services/shell-input-interaction.use-case.service';
 
 class AuthFacadeServiceMock {
-  readonly buildGoogleLoginUrl = jasmine.createSpy('buildGoogleLoginUrl').and.returnValue('https://accounts.google.com/o/oauth2/v2/auth');
+  readonly buildGoogleLoginUrl = jasmine
+    .createSpy('buildGoogleLoginUrl')
+    .and.returnValue('https://accounts.google.com/o/oauth2/v2/auth');
 }
 
 class WorkspaceInteractionCoordinatorServiceMock {
   readonly cycleLayout = jasmine.createSpy('cycleLayout');
-  readonly getWorkspaceColumns = jasmine.createSpy('getWorkspaceColumns').and.returnValue('1fr 8px 1fr');
+  readonly getWorkspaceColumns = jasmine
+    .createSpy('getWorkspaceColumns')
+    .and.returnValue('1fr 8px 1fr');
   readonly getCycleIcon = jasmine.createSpy('getCycleIcon').and.returnValue('view_sidebar');
   readonly toggleFullscreen = jasmine.createSpy('toggleFullscreen');
 }
@@ -46,7 +57,9 @@ class PropertySelectionServiceMock {
 }
 
 class ListingQueryOrchestratorServiceMock {
-  readonly readFilteredTotalElementsFromSession = jasmine.createSpy('readFilteredTotalElementsFromSession').and.returnValue(17);
+  readonly readFilteredTotalElementsFromSession = jasmine
+    .createSpy('readFilteredTotalElementsFromSession')
+    .and.returnValue(17);
   readonly refreshListingData = jasmine.createSpy('refreshListingData').and.resolveTo(undefined);
   readonly handleFiltersChange = jasmine.createSpy('handleFiltersChange').and.resolveTo(undefined);
   readonly loadUserPreferences = jasmine.createSpy('loadUserPreferences').and.resolveTo(undefined);
@@ -57,7 +70,9 @@ class ListingQueryOrchestratorServiceMock {
 }
 
 class ListingInteractionUseCaseServiceMock {
-  readonly togglePropertyReview = jasmine.createSpy('togglePropertyReview').and.resolveTo(undefined);
+  readonly togglePropertyReview = jasmine
+    .createSpy('togglePropertyReview')
+    .and.resolveTo(undefined);
   readonly savePropertyComment = jasmine.createSpy('savePropertyComment').and.resolveTo(undefined);
 }
 
@@ -74,7 +89,9 @@ class AppShellCommandsUseCaseServiceMock {
   readonly onLogoutRequested = jasmine.createSpy('onLogoutRequested');
   readonly onDeleteUserRequested = jasmine.createSpy('onDeleteUserRequested');
   readonly onMaintenanceOperationRequested = jasmine.createSpy('onMaintenanceOperationRequested');
-  readonly loadUsersForManagement = jasmine.createSpy('loadUsersForManagement').and.resolveTo(undefined);
+  readonly loadUsersForManagement = jasmine
+    .createSpy('loadUsersForManagement')
+    .and.resolveTo(undefined);
 }
 
 class AppShellStateServiceMock {
@@ -92,14 +109,20 @@ class AppShellStateServiceMock {
   readonly filteredTotalElements = signal(0);
   readonly visibleCount = computed(() => this.filteredTotalElements());
   readonly selectedLanguage = signal<'en' | 'sp'>('en');
-  readonly activeTab = signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD');
+  readonly activeTab = signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>(
+    'DASHBOARD'
+  );
   readonly googleLoginEnabled = signal(true);
   readonly authenticatedUser = signal<AuthenticatedUser | null>(null);
-  readonly canEditUsers = computed(() => this.authenticatedUser()?.permissions.includes('canEditUsers') === true);
-  readonly canMaintainDatabase = computed(() => this.authenticatedUser()?.permissions.includes('canMaintainDatabase') === true);
-  readonly authenticatedUserAvatarUrl = computed(() => (
+  readonly canEditUsers = computed(
+    () => this.authenticatedUser()?.permissions.includes('canEditUsers') === true
+  );
+  readonly canMaintainDatabase = computed(
+    () => this.authenticatedUser()?.permissions.includes('canMaintainDatabase') === true
+  );
+  readonly authenticatedUserAvatarUrl = computed(() =>
     this.authenticatedUser() ? `${this.backendBaseUrl()}/auth/google/avatar` : null
-  ));
+  );
   readonly users = signal<AuthUserListItem[]>([]);
   readonly usersLoading = signal(false);
   readonly propertyLabels = signal<PropertyLabelEntry[]>([]);
@@ -250,14 +273,11 @@ describe('AppComponent', () => {
 
   it('ngOnInit should call bootstrap services with compact contracts', async () => {
     // Arrange
-    const {
-      component,
-      appShellState,
-      authBootstrap,
-      listingBootstrap,
-      listingQueryOrchestrator
-    } = await AppComponentMockFactory.createComponent();
-    const refreshListingDataSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(undefined);
+    const { component, appShellState, authBootstrap, listingBootstrap, listingQueryOrchestrator } =
+      await AppComponentMockFactory.createComponent();
+    const refreshListingDataSpy = spyOn<any>(component, 'refreshListingData').and.resolveTo(
+      undefined
+    );
 
     // Action
     await component.ngOnInit();
@@ -291,12 +311,14 @@ describe('AppComponent', () => {
   [
     {
       methodName: 'onPropertyRowHover',
-      invoke: (component: AppComponent, property: ListingPropertyRow) => component.onPropertyRowHover(property),
+      invoke: (component: AppComponent, property: ListingPropertyRow) =>
+        component.onPropertyRowHover(property),
       expectedSpy: 'onRowHover'
     },
     {
       methodName: 'onPropertyRowClick',
-      invoke: (component: AppComponent, property: ListingPropertyRow) => component.onPropertyRowClick(property),
+      invoke: (component: AppComponent, property: ListingPropertyRow) =>
+        component.onPropertyRowClick(property),
       expectedSpy: 'onRowClick'
     }
   ].forEach(({ methodName, invoke, expectedSpy }) => {
@@ -336,15 +358,17 @@ describe('AppComponent', () => {
     },
     {
       methodName: 'onPropertyReviewToggle',
-      invoke: (component: AppComponent) => component.onPropertyReviewToggle(AppComponentMockFactory.createProperty()),
+      invoke: (component: AppComponent) =>
+        component.onPropertyReviewToggle(AppComponentMockFactory.createProperty()),
       privateMethod: 'togglePropertyReview'
     },
     {
       methodName: 'onPropertyCommentSave',
-      invoke: (component: AppComponent) => component.onPropertyCommentSave({
-        property: AppComponentMockFactory.createProperty(),
-        comment: 'comment'
-      }),
+      invoke: (component: AppComponent) =>
+        component.onPropertyCommentSave({
+          property: AppComponentMockFactory.createProperty(),
+          comment: 'comment'
+        }),
       privateMethod: 'savePropertyComment'
     }
   ].forEach(({ methodName, invoke, privateMethod }) => {
@@ -363,7 +387,8 @@ describe('AppComponent', () => {
 
   it('should delegate workspace layout, fullscreen and splitter interactions', async () => {
     // Arrange
-    const { component, shellInputInteraction, workspaceInteraction } = await AppComponentMockFactory.createComponent();
+    const { component, shellInputInteraction, workspaceInteraction } =
+      await AppComponentMockFactory.createComponent();
     const mouseEvent = new MouseEvent('mousedown');
 
     // Action
@@ -383,14 +408,13 @@ describe('AppComponent', () => {
 
   it('should delegate tab, language, maintenance, logout and user deletion commands with callback contracts', async () => {
     // Arrange
-    const {
-      component,
-      appShellCommands,
-      appShellState
-    } = await AppComponentMockFactory.createComponent();
-    appShellState.authenticatedUser.set(AppComponentMockFactory.createAuthenticatedUser({
-      permissions: ['canEditUsers', 'canMaintainDatabase']
-    }));
+    const { component, appShellCommands, appShellState } =
+      await AppComponentMockFactory.createComponent();
+    appShellState.authenticatedUser.set(
+      AppComponentMockFactory.createAuthenticatedUser({
+        permissions: ['canEditUsers', 'canMaintainDatabase']
+      })
+    );
     const operation = appShellState.maintenanceOperations[0];
 
     // Action
@@ -409,8 +433,12 @@ describe('AppComponent', () => {
     expect(appShellCommands.onTabChange.calls.mostRecent().args[1]).toBe('USERS_TAB');
     expect(appShellCommands.onLanguageChange.calls.mostRecent().args[1]).toBe('sp');
     expect(appShellCommands.onLanguageChange.calls.mostRecent().args[2]).toBe('selectedLanguage');
-    expect(appShellCommands.onDeleteUserRequested.calls.mostRecent().args[1]).toBe('managed-user-1');
-    expect(appShellCommands.onMaintenanceOperationRequested.calls.mostRecent().args[0]).toBe(operation);
+    expect(appShellCommands.onDeleteUserRequested.calls.mostRecent().args[1]).toBe(
+      'managed-user-1'
+    );
+    expect(appShellCommands.onMaintenanceOperationRequested.calls.mostRecent().args[0]).toBe(
+      operation
+    );
   });
 
   it('onGoogleLoginRequested should build login URL and navigate browser', async () => {
@@ -452,13 +480,17 @@ describe('AppComponent', () => {
     component.onWindowMouseUp();
 
     // Assert
-    expect(shellInputInteraction.onWindowMouseMove).toHaveBeenCalledOnceWith(moveEvent, component.workspaceContainer);
+    expect(shellInputInteraction.onWindowMouseMove).toHaveBeenCalledOnceWith(
+      moveEvent,
+      component.workspaceContainer
+    );
     expect(shellInputInteraction.onWindowMouseUp).toHaveBeenCalled();
   });
 
   it('onWindowKeyDown should pass keyboard context and support callbacks with and without detail panel', async () => {
     // Arrange
-    const { component, appShellState, shellInputInteraction } = await AppComponentMockFactory.createComponent();
+    const { component, appShellState, shellInputInteraction } =
+      await AppComponentMockFactory.createComponent();
     const property = AppComponentMockFactory.createProperty();
     appShellState.allProperties.set([property]);
     appShellState.selectedProperty.set(property);
@@ -492,10 +524,7 @@ describe('AppComponent', () => {
 
   it('refreshListingData should delegate to query orchestrator', async () => {
     // Arrange
-    const {
-      component,
-      listingQueryOrchestrator
-    } = await AppComponentMockFactory.createComponent();
+    const { component, listingQueryOrchestrator } = await AppComponentMockFactory.createComponent();
 
     // Action
     await (component as any).refreshListingData();
@@ -518,7 +547,10 @@ describe('AppComponent', () => {
     await (component as any).handleFiltersChange(nextFilters);
 
     // Assert
-    expect(listingQueryOrchestrator.handleFiltersChange).toHaveBeenCalledWith(jasmine.any(Object), nextFilters);
+    expect(listingQueryOrchestrator.handleFiltersChange).toHaveBeenCalledWith(
+      jasmine.any(Object),
+      nextFilters
+    );
   });
 
   it('loadUserPreferences should delegate to query orchestrator', async () => {
@@ -534,17 +566,16 @@ describe('AppComponent', () => {
 
   it('togglePropertyReview and savePropertyComment should execute interaction callbacks', async () => {
     // Arrange
-    const {
-      component,
-      appShellState,
-      listingInteractionUseCase
-    } = await AppComponentMockFactory.createComponent();
+    const { component, appShellState, listingInteractionUseCase } =
+      await AppComponentMockFactory.createComponent();
     const property = AppComponentMockFactory.createProperty({ propertyId: 'property-9' });
     appShellState.authenticatedUser.set(AppComponentMockFactory.createAuthenticatedUser());
     appShellState.propertyLabels.set([{ propertyId: 'property-9', labels: { review: 'NEW' } }]);
     listingInteractionUseCase.togglePropertyReview.and.callFake(async (params: any) => {
       params.getPropertyLabels();
-      params.setPropertyLabels([{ propertyId: params.propertyId, labels: { review: 'FAVOURITE' } }]);
+      params.setPropertyLabels([
+        { propertyId: params.propertyId, labels: { review: 'FAVOURITE' } }
+      ]);
     });
     listingInteractionUseCase.savePropertyComment.and.callFake(async (params: any) => {
       const current = params.getPropertyLabels();
@@ -581,5 +612,4 @@ describe('AppComponent', () => {
     expect(listingQueryOrchestrator.changePage).toHaveBeenCalled();
     expect(listingQueryOrchestrator.changePageSize).toHaveBeenCalled();
   });
-
 });

@@ -1,13 +1,26 @@
 @if (isOpen) {
   <div class="location-dialog-backdrop" role="presentation">
-    <section class="location-dialog" role="dialog" aria-modal="true" [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')">
+    <section
+      class="location-dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')"
+    >
       <header class="location-dialog-toolbar">
         <div class="location-dialog-toolbar-side-left">
           <button
             type="button"
             class="location-layer-panel-toggle"
-            [attr.aria-label]="isLayerPanelVisible ? t('PROPERTY_LOCATION_PANEL_HIDE') : t('PROPERTY_LOCATION_PANEL_SHOW')"
-            [title]="isLayerPanelVisible ? t('PROPERTY_LOCATION_PANEL_HIDE') : t('PROPERTY_LOCATION_PANEL_SHOW')"
+            [attr.aria-label]="
+              isLayerPanelVisible
+                ? t('PROPERTY_LOCATION_PANEL_HIDE')
+                : t('PROPERTY_LOCATION_PANEL_SHOW')
+            "
+            [title]="
+              isLayerPanelVisible
+                ? t('PROPERTY_LOCATION_PANEL_HIDE')
+                : t('PROPERTY_LOCATION_PANEL_SHOW')
+            "
             (click)="onLayerPanelToggleClick()"
           >
             <span class="material-symbols-outlined">

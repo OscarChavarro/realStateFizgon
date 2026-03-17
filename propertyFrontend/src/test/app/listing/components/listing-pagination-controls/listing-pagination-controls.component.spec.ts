@@ -5,7 +5,12 @@ import { ListingPaginationControlsComponent } from 'src/app/listing/components/l
 class ListingPaginationControlsMockFactory {
   static configureState(
     component: ListingPaginationControlsComponent,
-    state: Partial<Pick<ListingPaginationControlsComponent, 'page' | 'totalPages' | 'pageSize' | 'loading' | 'selectedLanguage'>>
+    state: Partial<
+      Pick<
+        ListingPaginationControlsComponent,
+        'page' | 'totalPages' | 'pageSize' | 'loading' | 'selectedLanguage'
+      >
+    >
   ): void {
     component.page = state.page ?? component.page;
     component.totalPages = state.totalPages ?? component.totalPages;
@@ -130,7 +135,11 @@ describe('ListingPaginationControlsComponent', () => {
 
   it('whenPreviousClickIsAllowed_shouldEmitPreviousPage', () => {
     // Arrange
-    ListingPaginationControlsMockFactory.configureState(component, { loading: false, page: 3, totalPages: 5 });
+    ListingPaginationControlsMockFactory.configureState(component, {
+      loading: false,
+      page: 3,
+      totalPages: 5
+    });
     const emitSpy = spyOn(component.pageChange, 'emit');
 
     // Action
@@ -142,7 +151,11 @@ describe('ListingPaginationControlsComponent', () => {
 
   it('whenPreviousClickIsBlocked_shouldNotEmitPageChange', () => {
     // Arrange
-    ListingPaginationControlsMockFactory.configureState(component, { loading: false, page: 1, totalPages: 5 });
+    ListingPaginationControlsMockFactory.configureState(component, {
+      loading: false,
+      page: 1,
+      totalPages: 5
+    });
     const emitSpy = spyOn(component.pageChange, 'emit');
 
     // Action
@@ -154,7 +167,11 @@ describe('ListingPaginationControlsComponent', () => {
 
   it('whenNextClickIsAllowed_shouldEmitNextPage', () => {
     // Arrange
-    ListingPaginationControlsMockFactory.configureState(component, { loading: false, page: 2, totalPages: 5 });
+    ListingPaginationControlsMockFactory.configureState(component, {
+      loading: false,
+      page: 2,
+      totalPages: 5
+    });
     const emitSpy = spyOn(component.pageChange, 'emit');
 
     // Action
@@ -166,7 +183,11 @@ describe('ListingPaginationControlsComponent', () => {
 
   it('whenNextClickIsBlocked_shouldNotEmitPageChange', () => {
     // Arrange
-    ListingPaginationControlsMockFactory.configureState(component, { loading: true, page: 2, totalPages: 5 });
+    ListingPaginationControlsMockFactory.configureState(component, {
+      loading: true,
+      page: 2,
+      totalPages: 5
+    });
     const emitSpy = spyOn(component.pageChange, 'emit');
 
     // Action

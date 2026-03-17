@@ -209,9 +209,7 @@ describe('ListingFilterMenuComponent', () => {
     const outsideTarget = document.createElement('div');
 
     // Action
-    component.onDocumentClick(
-      ListingFilterMenuMockFactory.createMouseEvent(outsideTarget)
-    );
+    component.onDocumentClick(ListingFilterMenuMockFactory.createMouseEvent(outsideTarget));
 
     // Assert
     expect(component.menuOpen()).toBeFalse();
@@ -222,9 +220,7 @@ describe('ListingFilterMenuComponent', () => {
     component.menuOpen.set(true);
 
     // Action
-    component.onDocumentClick(
-      ListingFilterMenuMockFactory.createMouseEvent(null)
-    );
+    component.onDocumentClick(ListingFilterMenuMockFactory.createMouseEvent(null));
 
     // Assert
     expect(component.menuOpen()).toBeFalse();

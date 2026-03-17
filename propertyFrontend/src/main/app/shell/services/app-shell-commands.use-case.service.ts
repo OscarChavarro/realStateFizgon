@@ -35,7 +35,11 @@ export class AppShellCommandsUseCaseService {
     }
   }
 
-  onLanguageChange(http: HttpClient, language: SupportedLanguage, selectedLanguageKey: string): void {
+  onLanguageChange(
+    http: HttpClient,
+    language: SupportedLanguage,
+    selectedLanguageKey: string
+  ): void {
     this.appShellStateService.selectedLanguage.set(language);
     this.listingStateFacadeService.persistSelectedLanguage(selectedLanguageKey, language);
     void this.listingDataCoordinatorService.saveLanguagePreference(http, language);

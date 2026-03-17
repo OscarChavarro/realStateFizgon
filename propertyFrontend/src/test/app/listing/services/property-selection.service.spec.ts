@@ -131,7 +131,9 @@ describe('PropertySelectionService', () => {
   ].forEach(({ rows, expectedPropertyId, expectedLockNull }) => {
     it(`syncAfterRefresh should fallback to first row strategy for rows length ${rows.length}`, () => {
       // Arrange
-      service.selectedProperty.set(PropertySelectionMockFactory.createRow({ propertyId: 'missing-selected' }));
+      service.selectedProperty.set(
+        PropertySelectionMockFactory.createRow({ propertyId: 'missing-selected' })
+      );
       service.lockedSelectedPropertyKey.set(null);
 
       // Action

@@ -15,9 +15,7 @@
             "outputPath": "dist/property-frontend",
             "index": "src/main/index.html",
             "browser": "src/main/main.ts",
-            "polyfills": [
-              "zone.js"
-            ],
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -30,13 +28,9 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/main/styles.scss"
-            ],
+            "styles": ["src/main/styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/main"
-              ]
+              "includePaths": ["src/main"]
             }
           },
           "configurations": {
@@ -74,16 +68,10 @@
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "main": "src/test/test.ts",
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
+            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.cjs",
-            "include": [
-              "src/test/**/*.spec.ts",
-              "src/main/app/**/*.ts"
-            ],
+            "include": ["src/test/**/*.spec.ts", "src/main/app/**/*.ts"],
             "assets": [
               {
                 "glob": "secrets.json",
@@ -95,14 +83,16 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/main/styles.scss"
-            ],
+            "styles": ["src/main/styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/main"
-              ]
+              "includePaths": ["src/main"]
             }
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
           }
         }
       }

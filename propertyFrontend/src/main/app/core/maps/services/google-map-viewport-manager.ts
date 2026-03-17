@@ -7,10 +7,7 @@ import {
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 
 export class GoogleMapViewportManager {
-  resolveViewport(
-    properties: GoogleMapProperty[],
-    singlePropertyZoom: number
-  ): GoogleMapViewport {
+  resolveViewport(properties: GoogleMapProperty[], singlePropertyZoom: number): GoogleMapViewport {
     if (properties.length <= 1) {
       return {
         center: { lat: properties[0].latitude, lng: properties[0].longitude },
@@ -63,7 +60,10 @@ export class GoogleMapViewportManager {
     });
   }
 
-  refreshMapViewport(mapInstance: GoogleMapWithCenter | null, googleMaps: GoogleMapsApi | null): void {
+  refreshMapViewport(
+    mapInstance: GoogleMapWithCenter | null,
+    googleMaps: GoogleMapsApi | null
+  ): void {
     if (!mapInstance) {
       return;
     }

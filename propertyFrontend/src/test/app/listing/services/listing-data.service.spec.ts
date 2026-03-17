@@ -62,7 +62,7 @@ describe('ListingDataService', () => {
     const result = await service.loadBackendConfiguration(httpMock as any);
 
     // Assert
-    expect(result.backendBaseUrl).toBe('http://192.168.1.110:4200');
+    expect(result.backendBaseUrl).toBe('http://localhost:4200');
     expect(result.staticMediaBaseUrl).toBe('http://localhost:666/');
     expect(result.googleMapsApiKey).toBeNull();
     expect(result.googleMapsMapId).toBeNull();
@@ -101,7 +101,7 @@ describe('ListingDataService', () => {
     const result = await service.loadBackendConfiguration(httpMock as any);
 
     // Assert
-    expect(result.backendBaseUrl).toBe('http://192.168.1.110:4200');
+    expect(result.backendBaseUrl).toBe('http://localhost:4200');
     expect(result.staticMediaBaseUrl).toBe('http://localhost:666/');
     expect(result.googleMapsApiKey).toBeNull();
     expect(result.googleMapsMapId).toBeNull();
@@ -164,10 +164,12 @@ describe('ListingDataService', () => {
   it('loadListingData should retry using page size limit extracted from error', async () => {
     // Arrange
     const filters = createDefaultListingFilters();
-    httpMock.queueError(new HttpErrorResponse({
-      status: 400,
-      error: 'pageSize cannot be greater than total properties (7)'
-    }));
+    httpMock.queueError(
+      new HttpErrorResponse({
+        status: 400,
+        error: 'pageSize cannot be greater than total properties (7)'
+      })
+    );
     httpMock.queueResponse({
       error: null,
       data: [],
@@ -250,11 +252,17 @@ describe('ListingDataService', () => {
 
   [
     {
-      error: new HttpErrorResponse({ status: 400, error: { error: 'pageSize cannot be greater than total properties (9)' } }),
+      error: new HttpErrorResponse({
+        status: 400,
+        error: { error: 'pageSize cannot be greater than total properties (9)' }
+      }),
       expected: 9
     },
     {
-      error: new HttpErrorResponse({ status: 400, error: { message: 'pageSize cannot be greater than total properties (0)' } }),
+      error: new HttpErrorResponse({
+        status: 400,
+        error: { message: 'pageSize cannot be greater than total properties (0)' }
+      }),
       expected: 1
     },
     (() => {
@@ -316,8 +324,20 @@ describe('ListingDataService', () => {
     ];
 
     // Action
-    const withPagination = (service as any).buildPropertiesEndpointUrl(sortCriteria, filters, 3, 500, true) as string;
-    const withoutPagination = (service as any).buildPropertiesEndpointUrl([], filters, 1, 100, false) as string;
+    const withPagination = (service as any).buildPropertiesEndpointUrl(
+      sortCriteria,
+      filters,
+      3,
+      500,
+      true
+    ) as string;
+    const withoutPagination = (service as any).buildPropertiesEndpointUrl(
+      [],
+      filters,
+      1,
+      100,
+      false
+    ) as string;
 
     // Assert
     expect(withPagination).toContain('/properties?');
@@ -346,7 +366,13 @@ describe('ListingDataService', () => {
     };
 
     // Action
-    const endpoint = (service as any).buildPropertiesEndpointUrl([], filters, 1, 100, true) as string;
+    const endpoint = (service as any).buildPropertiesEndpointUrl(
+      [],
+      filters,
+      1,
+      100,
+      true
+    ) as string;
 
     // Assert
     expect(endpoint).toContain('showClosed=false');

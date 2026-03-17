@@ -18,35 +18,45 @@ describe('UserPreferencesService', () => {
     // Arrange
     const service = new UserPreferencesService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
-    (http.get as jasmine.Spy).and.returnValue(of({
-      language: ' SP ',
-      pageSize: '500',
-      showClosed: '0',
-      showNew: 'yes',
-      showFavourite: 0,
-      showRejected: 1,
-      minPublicationDate: '2026-03-01',
-      maxPublicationDate: '2026-02-30',
-      minPrice: '€ 1.400',
-      maxPrice: 1500.4,
-      sortCriteria: [
-        { sortBy: 'title', sortOrder: 'desc' },
-        { sortBy: 'title', sortOrder: 'asc' },
-        { sortBy: 'publicationDate', order: 'desc' },
-        { sortBy: 'price', sortOrder: 'invalid' },
-        { sortBy: 'mainFeatures.area', sortOrder: 'asc' },
-        { sortBy: 1, sortOrder: 'asc' },
-        null
-      ],
-      propertyLabels: [
-        'invalid',
-        { propertyId: '  ', labels: {} },
-        { propertyId: 'p-1', labels: null },
-        { propertyId: ' p-2 ', labels: { review: ' favourite ', comment: '  hello  ', extra: true, propertyComments: 'legacy' } },
-        { propertyId: 'p-3', labels: { review: 'invalid', propertyComments: '  from legacy  ' } },
-        { propertyId: 'p-4', labels: { comment: 100 } }
-      ]
-    }));
+    (http.get as jasmine.Spy).and.returnValue(
+      of({
+        language: ' SP ',
+        pageSize: '500',
+        showClosed: '0',
+        showNew: 'yes',
+        showFavourite: 0,
+        showRejected: 1,
+        minPublicationDate: '2026-03-01',
+        maxPublicationDate: '2026-02-30',
+        minPrice: '€ 1.400',
+        maxPrice: 1500.4,
+        sortCriteria: [
+          { sortBy: 'title', sortOrder: 'desc' },
+          { sortBy: 'title', sortOrder: 'asc' },
+          { sortBy: 'publicationDate', order: 'desc' },
+          { sortBy: 'price', sortOrder: 'invalid' },
+          { sortBy: 'mainFeatures.area', sortOrder: 'asc' },
+          { sortBy: 1, sortOrder: 'asc' },
+          null
+        ],
+        propertyLabels: [
+          'invalid',
+          { propertyId: '  ', labels: {} },
+          { propertyId: 'p-1', labels: null },
+          {
+            propertyId: ' p-2 ',
+            labels: {
+              review: ' favourite ',
+              comment: '  hello  ',
+              extra: true,
+              propertyComments: 'legacy'
+            }
+          },
+          { propertyId: 'p-3', labels: { review: 'invalid', propertyComments: '  from legacy  ' } },
+          { propertyId: 'p-4', labels: { comment: 100 } }
+        ]
+      })
+    );
 
     // Action
     const result = await service.loadPreferences(http);
@@ -176,11 +186,13 @@ describe('UserPreferencesService', () => {
     // Arrange
     const service = new UserPreferencesService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
-    (http.post as jasmine.Spy).and.returnValue(of({
-      propertyLabels: [
-        { propertyId: 'p-1', labels: { review: 'discharged', propertyComments: '  saved  ' } }
-      ]
-    }));
+    (http.post as jasmine.Spy).and.returnValue(
+      of({
+        propertyLabels: [
+          { propertyId: 'p-1', labels: { review: 'discharged', propertyComments: '  saved  ' } }
+        ]
+      })
+    );
 
     // Action
     const result = await service.setPropertyReview(http, 'p-1', 'FAVOURITE');
@@ -202,9 +214,11 @@ describe('UserPreferencesService', () => {
     // Arrange
     const service = new UserPreferencesService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
-    (http.post as jasmine.Spy).and.returnValue(of({
-      propertyLabels: [{ propertyId: 'p-2', labels: { comment: ' kept ' } }]
-    }));
+    (http.post as jasmine.Spy).and.returnValue(
+      of({
+        propertyLabels: [{ propertyId: 'p-2', labels: { comment: ' kept ' } }]
+      })
+    );
 
     // Action
     const result = await service.setPropertyComment(http, 'p-2', 'message');

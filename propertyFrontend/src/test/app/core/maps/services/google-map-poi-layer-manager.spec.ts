@@ -118,11 +118,12 @@ describe('GoogleMapPoiLayerManager', () => {
 
     // Action
     const styles = manager.buildMapStyles();
-    const duplicateMatches = styles.filter((rule) => (
-      rule.featureType === 'poi.business'
-      && rule.elementType === 'labels'
-      && rule.stylers.some((styler) => styler.visibility === 'on')
-    ));
+    const duplicateMatches = styles.filter(
+      (rule) =>
+        rule.featureType === 'poi.business' &&
+        rule.elementType === 'labels' &&
+        rule.stylers.some((styler) => styler.visibility === 'on')
+    );
 
     // Assert
     expect(duplicateMatches.length).toBe(1);

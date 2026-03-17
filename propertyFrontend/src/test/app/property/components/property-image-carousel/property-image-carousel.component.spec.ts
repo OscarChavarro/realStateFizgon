@@ -21,11 +21,12 @@ describe('PropertyImageCarouselComponent', () => {
   let requestAnimationFrameSpy: jasmine.Spy;
 
   beforeEach(() => {
-    requestAnimationFrameSpy = spyOn(window, 'requestAnimationFrame')
-      .and.callFake((callback: FrameRequestCallback) => {
+    requestAnimationFrameSpy = spyOn(window, 'requestAnimationFrame').and.callFake(
+      (callback: FrameRequestCallback) => {
         callback(0);
         return 1;
-      });
+      }
+    );
   });
 
   it('ngOnChanges should reset selected image when property or image list changes', () => {
@@ -66,8 +67,8 @@ describe('PropertyImageCarouselComponent', () => {
     component.onWindowKeyDown(noImagesEvent);
 
     // Assert
-    expect((preventedEvent.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
-    expect((noImagesEvent.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+    expect(preventedEvent.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
+    expect(noImagesEvent.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
     expect(component.selectedImageIndex).toBe(0);
   });
 
@@ -91,7 +92,7 @@ describe('PropertyImageCarouselComponent', () => {
       component.onWindowKeyDown(event);
 
       // Assert
-      expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+      expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
       expect(component.selectedImageIndex).toBe(1);
     });
   });
@@ -101,8 +102,12 @@ describe('PropertyImageCarouselComponent', () => {
     const component = PropertyImageCarouselComponentMockFactory.createComponent();
     component.localImageUrls = ['one', 'two', 'three'];
     component.selectedImageIndex = 1;
-    const leftEvent = PropertyImageCarouselComponentMockFactory.createKeyboardEvent({ key: 'ArrowLeft' });
-    const rightEvent = PropertyImageCarouselComponentMockFactory.createKeyboardEvent({ key: 'ArrowRight' });
+    const leftEvent = PropertyImageCarouselComponentMockFactory.createKeyboardEvent({
+      key: 'ArrowLeft'
+    });
+    const rightEvent = PropertyImageCarouselComponentMockFactory.createKeyboardEvent({
+      key: 'ArrowRight'
+    });
 
     // Action
     component.onWindowKeyDown(leftEvent);
@@ -111,8 +116,8 @@ describe('PropertyImageCarouselComponent', () => {
     const afterRight = component.selectedImageIndex;
 
     // Assert
-    expect((leftEvent.preventDefault as jasmine.Spy)).toHaveBeenCalledTimes(1);
-    expect((rightEvent.preventDefault as jasmine.Spy)).toHaveBeenCalledTimes(1);
+    expect(leftEvent.preventDefault as jasmine.Spy).toHaveBeenCalledTimes(1);
+    expect(rightEvent.preventDefault as jasmine.Spy).toHaveBeenCalledTimes(1);
     expect(afterLeft).toBe(0);
     expect(afterRight).toBe(1);
   });
@@ -128,7 +133,7 @@ describe('PropertyImageCarouselComponent', () => {
     component.onWindowKeyDown(event);
 
     // Assert
-    expect((event.preventDefault as jasmine.Spy)).not.toHaveBeenCalled();
+    expect(event.preventDefault as jasmine.Spy).not.toHaveBeenCalled();
     expect(component.selectedImageIndex).toBe(1);
   });
 

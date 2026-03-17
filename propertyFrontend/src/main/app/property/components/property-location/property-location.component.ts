@@ -1,5 +1,19 @@
-import { Component, EventEmitter, HostListener, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  Component,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  inject
+} from '@angular/core';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 
@@ -36,7 +50,12 @@ export class PropertyLocationComponent implements OnChanges {
       }, 0);
     }
 
-    if (changes['propertyTitle'] || changes['latitude'] || changes['longitude'] || changes['isUnavailable']) {
+    if (
+      changes['propertyTitle'] ||
+      changes['latitude'] ||
+      changes['longitude'] ||
+      changes['isUnavailable']
+    ) {
       this.mapProperties = this.buildMapProperties();
     }
   }
@@ -67,25 +86,27 @@ export class PropertyLocationComponent implements OnChanges {
     const latitude = this.latitude;
     const longitude = this.longitude;
     if (
-      typeof latitude !== 'number'
-      || typeof longitude !== 'number'
-      || !Number.isFinite(latitude)
-      || !Number.isFinite(longitude)
+      typeof latitude !== 'number' ||
+      typeof longitude !== 'number' ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
     ) {
       return [];
     }
 
-    return [{
-      id: this.propertyTitle || 'selected-property',
-      propertyId: '',
-      title: this.propertyTitle || '-',
-      price: '-',
-      latitude,
-      longitude,
-      closed: this.isUnavailable === true,
-      review: 'NEW',
-      imageUrls: []
-    }];
+    return [
+      {
+        id: this.propertyTitle || 'selected-property',
+        propertyId: '',
+        title: this.propertyTitle || '-',
+        price: '-',
+        latitude,
+        longitude,
+        closed: this.isUnavailable === true,
+        review: 'NEW',
+        imageUrls: []
+      }
+    ];
   }
 
   private syncLayerPanelStateFromMap(): void {

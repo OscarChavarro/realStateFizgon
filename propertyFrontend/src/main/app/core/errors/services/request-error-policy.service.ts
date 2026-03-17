@@ -187,8 +187,9 @@ export class RequestErrorPolicyService {
       }
 
       if (typeof error.error === 'object' && error.error !== null) {
-        const messageValue = (error.error as { message?: unknown; error?: unknown }).message
-          ?? (error.error as { message?: unknown; error?: unknown }).error;
+        const messageValue =
+          (error.error as { message?: unknown; error?: unknown }).message ??
+          (error.error as { message?: unknown; error?: unknown }).error;
         if (typeof messageValue === 'string' && messageValue.trim().length > 0) {
           return messageValue.trim();
         }

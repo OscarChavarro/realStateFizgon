@@ -34,11 +34,15 @@ class ListingPriceRangeFilterHttpClientMock {
 
 class ListingPriceRangeFilterStateFactory {
   static resetCachedRange(): void {
-    (ListingPriceRangeFilterComponent as unknown as { cachedPriceRange: unknown }).cachedPriceRange = null;
+    (
+      ListingPriceRangeFilterComponent as unknown as { cachedPriceRange: unknown }
+    ).cachedPriceRange = null;
   }
 
   static setCachedRange(range: { minPrice: number; maxPrice: number } | null): void {
-    (ListingPriceRangeFilterComponent as unknown as { cachedPriceRange: unknown }).cachedPriceRange = range;
+    (
+      ListingPriceRangeFilterComponent as unknown as { cachedPriceRange: unknown }
+    ).cachedPriceRange = range;
   }
 
   static configureRange(
@@ -58,7 +62,9 @@ class ListingPriceRangeFilterStateFactory {
     component.sliderMaxPrice.set(state.sliderMaxPrice);
   }
 
-  static createChanges(changes: Partial<Record<'minPrice' | 'maxPrice', [string, string]>>): SimpleChanges {
+  static createChanges(
+    changes: Partial<Record<'minPrice' | 'maxPrice', [string, string]>>
+  ): SimpleChanges {
     const result: SimpleChanges = {};
     if (changes.minPrice) {
       result['minPrice'] = new SimpleChange(changes.minPrice[0], changes.minPrice[1], false);
@@ -105,8 +111,14 @@ describe('ListingPriceRangeFilterComponent', () => {
   });
 
   [
-    { changes: ListingPriceRangeFilterStateFactory.createChanges({ minPrice: ['', '10'] }), expectedCalls: 1 },
-    { changes: ListingPriceRangeFilterStateFactory.createChanges({ maxPrice: ['', '99'] }), expectedCalls: 1 },
+    {
+      changes: ListingPriceRangeFilterStateFactory.createChanges({ minPrice: ['', '10'] }),
+      expectedCalls: 1
+    },
+    {
+      changes: ListingPriceRangeFilterStateFactory.createChanges({ maxPrice: ['', '99'] }),
+      expectedCalls: 1
+    },
     { changes: {} as SimpleChanges, expectedCalls: 0 }
   ].forEach(({ changes, expectedCalls }) => {
     it(`ngOnChanges should call syncSliderRangeWithInputs ${expectedCalls} times for changes set`, () => {

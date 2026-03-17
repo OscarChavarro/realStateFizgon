@@ -34,10 +34,8 @@ export class InteractionShortcutsService {
       return;
     }
 
-    const isPlainFullscreenToggle = event.key.toLowerCase() === 'f'
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey;
+    const isPlainFullscreenToggle =
+      event.key.toLowerCase() === 'f' && !event.ctrlKey && !event.metaKey && !event.altKey;
     if (isPlainFullscreenToggle) {
       if (event.repeat) {
         return;
@@ -85,10 +83,8 @@ export class InteractionShortcutsService {
       return;
     }
 
-    const isPlainLocationToggle = event.key.toLowerCase() === 'm'
-      && !event.ctrlKey
-      && !event.metaKey
-      && !event.altKey;
+    const isPlainLocationToggle =
+      event.key.toLowerCase() === 'm' && !event.ctrlKey && !event.metaKey && !event.altKey;
     if (isPlainLocationToggle) {
       if (context.activeTab !== 'DASHBOARD' || !context.selectedProperty) {
         return;
@@ -99,7 +95,10 @@ export class InteractionShortcutsService {
     }
   }
 
-  scrollSelectedPropertyRow(property: ListingPropertyRow | null, scroller?: PropertyRowScroller): void {
+  scrollSelectedPropertyRow(
+    property: ListingPropertyRow | null,
+    scroller?: PropertyRowScroller
+  ): void {
     if (!property || !scroller) {
       return;
     }
@@ -115,9 +114,11 @@ export class InteractionShortcutsService {
     }
 
     const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
+    return (
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable
+    );
   }
 }

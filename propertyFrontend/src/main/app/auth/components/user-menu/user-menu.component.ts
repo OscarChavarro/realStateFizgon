@@ -1,6 +1,20 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output, SimpleChanges, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  SimpleChanges,
+  inject,
+  signal
+} from '@angular/core';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-user-menu',

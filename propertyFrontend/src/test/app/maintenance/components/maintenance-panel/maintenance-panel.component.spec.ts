@@ -6,7 +6,9 @@ import { I18nService } from 'src/app/core/i18n/services/i18n.service';
 class MaintenancePanelComponentMockFactory {
   static createI18nMock() {
     return {
-      get: jasmine.createSpy('get').and.callFake((id: string, language: string) => `${id}:${language}`)
+      get: jasmine
+        .createSpy('get')
+        .and.callFake((id: string, language: string) => `${id}:${language}`)
     };
   }
 

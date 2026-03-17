@@ -4,7 +4,11 @@ import {
   PropertyLabelEntry,
   PropertyReviewLabel
 } from 'src/app/listing/model/listing.types';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 import { PropertyImageCarouselComponent } from 'src/app/property/components/property-image-carousel/property-image-carousel.component';
 import { PropertyLocationComponent } from 'src/app/property/components/property-location/property-location.component';
 
@@ -27,7 +31,10 @@ export class PropertyDetailPanelComponent {
   @Input() reviewEnabled = false;
   @Input() propertyLabels: PropertyLabelEntry[] = [];
   @Output() readonly propertyReviewToggle = new EventEmitter<ListingPropertyRow>();
-  @Output() readonly propertyCommentSave = new EventEmitter<{ property: ListingPropertyRow; comment: string }>();
+  @Output() readonly propertyCommentSave = new EventEmitter<{
+    property: ListingPropertyRow;
+    comment: string;
+  }>();
   isLocationDialogOpen = false;
 
   t(id: TranslationKey): string {
@@ -98,11 +105,11 @@ export class PropertyDetailPanelComponent {
   }
 
   getGeoLatitude(property: ListingPropertyRow | null): number | null {
-    return this.hasGeoLocationHint(property) ? property?.geoLocationHint?.lat ?? null : null;
+    return this.hasGeoLocationHint(property) ? (property?.geoLocationHint?.lat ?? null) : null;
   }
 
   getGeoLongitude(property: ListingPropertyRow | null): number | null {
-    return this.hasGeoLocationHint(property) ? property?.geoLocationHint?.lon ?? null : null;
+    return this.hasGeoLocationHint(property) ? (property?.geoLocationHint?.lon ?? null) : null;
   }
 
   openLocationDialog(): void {

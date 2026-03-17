@@ -113,7 +113,7 @@ export class PropertyImageCarouselComponent implements OnChanges {
       const targetWidth = targetButton.offsetWidth;
       const stripWidth = strip.clientWidth;
       const maxScrollLeft = Math.max(0, strip.scrollWidth - stripWidth);
-      const centeredScrollLeft = targetLeft - (stripWidth / 2) + (targetWidth / 2);
+      const centeredScrollLeft = targetLeft - stripWidth / 2 + targetWidth / 2;
       const nextScrollLeft = Math.min(maxScrollLeft, Math.max(0, centeredScrollLeft));
 
       strip.scrollTo({
@@ -129,9 +129,11 @@ export class PropertyImageCarouselComponent implements OnChanges {
     }
 
     const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
+    return (
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable
+    );
   }
 }

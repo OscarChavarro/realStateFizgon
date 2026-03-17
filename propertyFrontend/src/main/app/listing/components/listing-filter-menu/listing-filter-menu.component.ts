@@ -1,10 +1,23 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  inject,
+  signal
+} from '@angular/core';
 import {
   ListingFiltersState,
   createDefaultListingFilters
 } from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingPriceRangeFilterComponent } from 'src/app/listing/components/listing-price-range-filter/listing-price-range-filter.component';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-listing-filter-menu',

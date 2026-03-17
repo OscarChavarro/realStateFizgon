@@ -1,6 +1,9 @@
 import { Injectable } from '@angular/core';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
-import { FrontendSecrets, ListingConfiguration } from 'src/app/listing/model/listing-data.payload.types';
+import {
+  FrontendSecrets,
+  ListingConfiguration
+} from 'src/app/listing/model/listing-data.payload.types';
 
 @Injectable({
   providedIn: 'root'

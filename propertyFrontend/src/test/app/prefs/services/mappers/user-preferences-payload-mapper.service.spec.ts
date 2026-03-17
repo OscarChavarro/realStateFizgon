@@ -24,7 +24,15 @@ describe('UserPreferencesPayloadMapperService', () => {
         { sortBy: 'mainFeatures.area', sortOrder: 'asc' }
       ],
       propertyLabels: [
-        { propertyId: ' p-2 ', labels: { review: ' favourite ', comment: '  hello  ', extra: true, propertyComments: 'legacy' } },
+        {
+          propertyId: ' p-2 ',
+          labels: {
+            review: ' favourite ',
+            comment: '  hello  ',
+            extra: true,
+            propertyComments: 'legacy'
+          }
+        },
         { propertyId: 'p-3', labels: { review: 'invalid', propertyComments: '  from legacy  ' } }
       ]
     };

@@ -14,7 +14,9 @@ class WorkspaceInteractionCoordinatorMockFactory {
       rightPanelHidden: jasmine.createSpy('rightPanelHidden').and.returnValue(false),
       startResize: jasmine.createSpy('startResize'),
       cycleLayout: jasmine.createSpy('cycleLayout'),
-      getWorkspaceColumns: jasmine.createSpy('getWorkspaceColumns').and.returnValue('grid-template'),
+      getWorkspaceColumns: jasmine
+        .createSpy('getWorkspaceColumns')
+        .and.returnValue('grid-template'),
       getCycleIcon: jasmine.createSpy('getCycleIcon').and.returnValue('vertical_split'),
       updateResizeFromMouse: jasmine.createSpy('updateResizeFromMouse'),
       stopResize: jasmine.createSpy('stopResize')
@@ -42,25 +44,42 @@ class WorkspaceInteractionCoordinatorMockFactory {
 
   static createApiRuntimeConfigServiceMock() {
     return {
-      getBackendBaseUrl: jasmine.createSpy('getBackendBaseUrl').and.returnValue('http://localhost:8081')
+      getBackendBaseUrl: jasmine
+        .createSpy('getBackendBaseUrl')
+        .and.returnValue('http://localhost:8081')
     };
   }
 }
 
 describe('WorkspaceInteractionCoordinatorService', () => {
   let service: WorkspaceInteractionCoordinatorService;
-  let workspaceLayoutServiceMock: ReturnType<typeof WorkspaceInteractionCoordinatorMockFactory.createWorkspaceLayoutServiceMock>;
-  let interactionShortcutsServiceMock: ReturnType<typeof WorkspaceInteractionCoordinatorMockFactory.createInteractionShortcutsServiceMock>;
-  let browserFullscreenServiceMock: ReturnType<typeof WorkspaceInteractionCoordinatorMockFactory.createBrowserFullscreenServiceMock>;
-  let propertySelectionServiceMock: ReturnType<typeof WorkspaceInteractionCoordinatorMockFactory.createPropertySelectionServiceMock>;
-  let apiRuntimeConfigServiceMock: ReturnType<typeof WorkspaceInteractionCoordinatorMockFactory.createApiRuntimeConfigServiceMock>;
+  let workspaceLayoutServiceMock: ReturnType<
+    typeof WorkspaceInteractionCoordinatorMockFactory.createWorkspaceLayoutServiceMock
+  >;
+  let interactionShortcutsServiceMock: ReturnType<
+    typeof WorkspaceInteractionCoordinatorMockFactory.createInteractionShortcutsServiceMock
+  >;
+  let browserFullscreenServiceMock: ReturnType<
+    typeof WorkspaceInteractionCoordinatorMockFactory.createBrowserFullscreenServiceMock
+  >;
+  let propertySelectionServiceMock: ReturnType<
+    typeof WorkspaceInteractionCoordinatorMockFactory.createPropertySelectionServiceMock
+  >;
+  let apiRuntimeConfigServiceMock: ReturnType<
+    typeof WorkspaceInteractionCoordinatorMockFactory.createApiRuntimeConfigServiceMock
+  >;
 
   beforeEach(() => {
-    workspaceLayoutServiceMock = WorkspaceInteractionCoordinatorMockFactory.createWorkspaceLayoutServiceMock();
-    interactionShortcutsServiceMock = WorkspaceInteractionCoordinatorMockFactory.createInteractionShortcutsServiceMock();
-    browserFullscreenServiceMock = WorkspaceInteractionCoordinatorMockFactory.createBrowserFullscreenServiceMock();
-    propertySelectionServiceMock = WorkspaceInteractionCoordinatorMockFactory.createPropertySelectionServiceMock();
-    apiRuntimeConfigServiceMock = WorkspaceInteractionCoordinatorMockFactory.createApiRuntimeConfigServiceMock();
+    workspaceLayoutServiceMock =
+      WorkspaceInteractionCoordinatorMockFactory.createWorkspaceLayoutServiceMock();
+    interactionShortcutsServiceMock =
+      WorkspaceInteractionCoordinatorMockFactory.createInteractionShortcutsServiceMock();
+    browserFullscreenServiceMock =
+      WorkspaceInteractionCoordinatorMockFactory.createBrowserFullscreenServiceMock();
+    propertySelectionServiceMock =
+      WorkspaceInteractionCoordinatorMockFactory.createPropertySelectionServiceMock();
+    apiRuntimeConfigServiceMock =
+      WorkspaceInteractionCoordinatorMockFactory.createApiRuntimeConfigServiceMock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -201,7 +220,10 @@ describe('WorkspaceInteractionCoordinatorService', () => {
     service.handleWindowMouseMove(event, container);
 
     // Assert
-    expect(workspaceLayoutServiceMock.updateResizeFromMouse).toHaveBeenCalledOnceWith(event, container);
+    expect(workspaceLayoutServiceMock.updateResizeFromMouse).toHaveBeenCalledOnceWith(
+      event,
+      container
+    );
   });
 
   it('handleWindowMouseUp should delegate to workspace layout service', () => {
@@ -246,7 +268,8 @@ describe('WorkspaceInteractionCoordinatorService', () => {
       onTogglePropertyLocationDialog: locationSpy,
       scroller
     });
-    const delegatedContext = interactionShortcutsServiceMock.handleWindowKeyDown.calls.mostRecent().args[0];
+    const delegatedContext =
+      interactionShortcutsServiceMock.handleWindowKeyDown.calls.mostRecent().args[0];
     delegatedContext.onKeyboardSelect(1);
     delegatedContext.onToggleFullscreen();
     delegatedContext.onTogglePropertyReview(selectedProperty);
@@ -255,11 +278,17 @@ describe('WorkspaceInteractionCoordinatorService', () => {
 
     // Assert
     expect(interactionShortcutsServiceMock.handleWindowKeyDown).toHaveBeenCalled();
-    expect(propertySelectionServiceMock.selectByKeyboard).toHaveBeenCalledWith([selectedProperty], 1);
+    expect(propertySelectionServiceMock.selectByKeyboard).toHaveBeenCalledWith(
+      [selectedProperty],
+      1
+    );
     expect(browserFullscreenServiceMock.toggleFullscreen).toHaveBeenCalled();
     expect(reviewSpy).toHaveBeenCalledWith(selectedProperty);
     expect(locationSpy).toHaveBeenCalled();
-    expect(interactionShortcutsServiceMock.scrollSelectedPropertyRow).toHaveBeenCalledWith(selectedProperty, scroller);
+    expect(interactionShortcutsServiceMock.scrollSelectedPropertyRow).toHaveBeenCalledWith(
+      selectedProperty,
+      scroller
+    );
   });
 
   it('toggleFullscreen should delegate to browser fullscreen service', () => {

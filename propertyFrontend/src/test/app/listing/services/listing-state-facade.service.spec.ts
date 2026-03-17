@@ -8,15 +8,24 @@ import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.
 
 describe('ListingStateFacadeService', () => {
   let service: ListingStateFacadeService;
-  let listingDataServiceMock: { loadBackendConfiguration: jasmine.Spy; loadListingData: jasmine.Spy };
+  let listingDataServiceMock: {
+    loadBackendConfiguration: jasmine.Spy;
+    loadListingData: jasmine.Spy;
+  };
   let userPreferencesServiceMock: { saveFilters: jasmine.Spy; loadPreferences: jasmine.Spy };
   let sortCriteriaServiceMock: { cycleSortCriteria: jasmine.Spy };
   let maintenanceOperationRunnerServiceMock: { runOperation: jasmine.Spy };
 
   beforeEach(() => {
     listingDataServiceMock = {
-      loadBackendConfiguration: jasmine.createSpy('loadBackendConfiguration').and.resolveTo({ backendBaseUrl: 'b' }),
-      loadListingData: jasmine.createSpy('loadListingData').and.resolveTo({ count: 0, properties: [], pagination: { page: 1, pageSize: 100, totalElements: 0, totalPages: 0 } })
+      loadBackendConfiguration: jasmine
+        .createSpy('loadBackendConfiguration')
+        .and.resolveTo({ backendBaseUrl: 'b' }),
+      loadListingData: jasmine.createSpy('loadListingData').and.resolveTo({
+        count: 0,
+        properties: [],
+        pagination: { page: 1, pageSize: 100, totalElements: 0, totalPages: 0 }
+      })
     };
     userPreferencesServiceMock = {
       saveFilters: jasmine.createSpy('saveFilters').and.resolveTo(undefined),
@@ -35,7 +44,10 @@ describe('ListingStateFacadeService', () => {
         { provide: ListingDataService, useValue: listingDataServiceMock },
         { provide: UserPreferencesService, useValue: userPreferencesServiceMock },
         { provide: SortCriteriaService, useValue: sortCriteriaServiceMock },
-        { provide: MaintenanceOperationRunnerService, useValue: maintenanceOperationRunnerServiceMock }
+        {
+          provide: MaintenanceOperationRunnerService,
+          useValue: maintenanceOperationRunnerServiceMock
+        }
       ]
     });
 
@@ -99,7 +111,13 @@ describe('ListingStateFacadeService', () => {
     await service.refreshListingData(http, sortCriteria as any, filters, 2, 500);
 
     // Assert
-    expect(listingDataServiceMock.loadListingData).toHaveBeenCalledOnceWith(http, sortCriteria, filters, 2, 500);
+    expect(listingDataServiceMock.loadListingData).toHaveBeenCalledOnceWith(
+      http,
+      sortCriteria,
+      filters,
+      2,
+      500
+    );
   });
 
   it('areFiltersChanged should return false when filters are equal', () => {
@@ -147,7 +165,13 @@ describe('ListingStateFacadeService', () => {
     await service.saveFiltersPreference(http, filters, 'en', sortCriteria as any, 100);
 
     // Assert
-    expect(userPreferencesServiceMock.saveFilters).toHaveBeenCalledOnceWith(http, filters, 'en', sortCriteria, 100);
+    expect(userPreferencesServiceMock.saveFilters).toHaveBeenCalledOnceWith(
+      http,
+      filters,
+      'en',
+      sortCriteria,
+      100
+    );
   });
 
   it('loadUserPreferences should delegate to preferences service', async () => {
@@ -169,7 +193,10 @@ describe('ListingStateFacadeService', () => {
     service.toggleSortCriteria(currentSortCriteria as any, 'price');
 
     // Assert
-    expect(sortCriteriaServiceMock.cycleSortCriteria).toHaveBeenCalledOnceWith(currentSortCriteria, 'price');
+    expect(sortCriteriaServiceMock.cycleSortCriteria).toHaveBeenCalledOnceWith(
+      currentSortCriteria,
+      'price'
+    );
   });
 
   it('runMaintenanceOperation should delegate to maintenance operation runner', async () => {
@@ -181,6 +208,9 @@ describe('ListingStateFacadeService', () => {
     await service.runMaintenanceOperation(operation, http);
 
     // Assert
-    expect(maintenanceOperationRunnerServiceMock.runOperation).toHaveBeenCalledOnceWith(operation, http);
+    expect(maintenanceOperationRunnerServiceMock.runOperation).toHaveBeenCalledOnceWith(
+      operation,
+      http
+    );
   });
 });

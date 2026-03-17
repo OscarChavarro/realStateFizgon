@@ -10,8 +10,12 @@ class AuthFacadeServiceMockFactory {
 
   static createSessionApiMock() {
     return {
-      loadGoogleLoginAvailability: jasmine.createSpy('loadGoogleLoginAvailability').and.resolveTo(true),
-      buildGoogleLoginUrl: jasmine.createSpy('buildGoogleLoginUrl').and.returnValue('http://backend/auth/google/login?returnTo=x'),
+      loadGoogleLoginAvailability: jasmine
+        .createSpy('loadGoogleLoginAvailability')
+        .and.resolveTo(true),
+      buildGoogleLoginUrl: jasmine
+        .createSpy('buildGoogleLoginUrl')
+        .and.returnValue('http://backend/auth/google/login?returnTo=x'),
       loadCurrentUser: jasmine.createSpy('loadCurrentUser').and.resolveTo(null),
       logout: jasmine.createSpy('logout').and.resolveTo(undefined)
     };
@@ -109,7 +113,11 @@ describe('AuthFacadeService', () => {
       const sessionApi = AuthFacadeServiceMockFactory.createSessionApiMock();
       const usersApi = AuthFacadeServiceMockFactory.createUsersApiMock();
       const runtimeConfig = AuthFacadeServiceMockFactory.createRuntimeConfigMock(backendBaseUrl);
-      const facade = new AuthFacadeService(sessionApi as any, usersApi as any, runtimeConfig as any);
+      const facade = new AuthFacadeService(
+        sessionApi as any,
+        usersApi as any,
+        runtimeConfig as any
+      );
       const warnSpy = spyOn(console, 'warn');
 
       // Action

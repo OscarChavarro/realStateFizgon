@@ -33,7 +33,9 @@ class FakeDestroyRef implements DestroyRef {
 class AuthBootstrapUseCaseServiceMockFactory {
   static createListingStateFacadeMock() {
     return {
-      loadSelectedLanguageFromSession: jasmine.createSpy('loadSelectedLanguageFromSession').and.returnValue('sp'),
+      loadSelectedLanguageFromSession: jasmine
+        .createSpy('loadSelectedLanguageFromSession')
+        .and.returnValue('sp'),
       loadBackendConfiguration: jasmine.createSpy('loadBackendConfiguration').and.resolveTo({
         backendBaseUrl: 'http://backend-from-config:8081',
         staticMediaBaseUrl: 'http://media-from-config/',
@@ -46,21 +48,29 @@ class AuthBootstrapUseCaseServiceMockFactory {
   static createRuntimeConfigMock() {
     return {
       setConfiguration: jasmine.createSpy('setConfiguration'),
-      getBackendBaseUrl: jasmine.createSpy('getBackendBaseUrl').and.returnValue('http://api.local:8081'),
-      getStaticMediaBaseUrl: jasmine.createSpy('getStaticMediaBaseUrl').and.returnValue('http://static.local/')
+      getBackendBaseUrl: jasmine
+        .createSpy('getBackendBaseUrl')
+        .and.returnValue('http://api.local:8081'),
+      getStaticMediaBaseUrl: jasmine
+        .createSpy('getStaticMediaBaseUrl')
+        .and.returnValue('http://static.local/')
     };
   }
 
   static createAuthFacadeMock() {
     return {
       warnIfAuthHostMismatch: jasmine.createSpy('warnIfAuthHostMismatch'),
-      loadGoogleLoginAvailability: jasmine.createSpy('loadGoogleLoginAvailability').and.resolveTo(true)
+      loadGoogleLoginAvailability: jasmine
+        .createSpy('loadGoogleLoginAvailability')
+        .and.resolveTo(true)
     };
   }
 
   static createSessionCoordinatorMock() {
     return {
-      loadCurrentUserAndApplyState: jasmine.createSpy('loadCurrentUserAndApplyState').and.resolveTo(undefined)
+      loadCurrentUserAndApplyState: jasmine
+        .createSpy('loadCurrentUserAndApplyState')
+        .and.resolveTo(undefined)
     };
   }
 
@@ -91,7 +101,9 @@ class AuthBootstrapUseCaseServiceMockFactory {
       googleLoginEnabled: signal(false),
       authenticatedUser: signal<any>(null),
       users: signal<any[]>([]),
-      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>('DASHBOARD')
+      activeTab: signal<'DASHBOARD' | 'MAP_TAB' | 'DATABASE_MAINTENANCE_TAB' | 'USERS_TAB'>(
+        'DASHBOARD'
+      )
     };
   }
 }
@@ -99,12 +111,15 @@ class AuthBootstrapUseCaseServiceMockFactory {
 describe('AuthBootstrapUseCaseService', () => {
   it('whenInitializing_initialize_shouldConfigureRuntimeAndLoadSession', async () => {
     // Arrange
-    const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
+    const listingStateFacade =
+      AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
-    const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const sessionCoordinator =
+      AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
-    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const listingQueryOrchestrator =
+      AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
     const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
     const service = new AuthBootstrapUseCaseService(
       listingStateFacade as unknown as ListingStateFacadeService,
@@ -122,7 +137,9 @@ describe('AuthBootstrapUseCaseService', () => {
     await service.initialize(http, destroyRef, 'localhost', 'selected-language');
 
     // Assert
-    expect(listingStateFacade.loadSelectedLanguageFromSession).toHaveBeenCalledOnceWith('selected-language');
+    expect(listingStateFacade.loadSelectedLanguageFromSession).toHaveBeenCalledOnceWith(
+      'selected-language'
+    );
     expect(appShellState.selectedLanguage()).toBe('sp');
     expect(listingStateFacade.loadBackendConfiguration).toHaveBeenCalledOnceWith(http);
     expect(runtimeConfig.setConfiguration).toHaveBeenCalledTimes(1);
@@ -138,12 +155,15 @@ describe('AuthBootstrapUseCaseService', () => {
 
   it('whenUnauthorizedArrivesAndUserIsUnauthenticated_initialize_shouldIgnoreEvent', async () => {
     // Arrange
-    const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
+    const listingStateFacade =
+      AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
-    const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const sessionCoordinator =
+      AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
-    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const listingQueryOrchestrator =
+      AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
     const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
     const service = new AuthBootstrapUseCaseService(
       listingStateFacade as unknown as ListingStateFacadeService,
@@ -156,7 +176,12 @@ describe('AuthBootstrapUseCaseService', () => {
     );
 
     // Action
-    await service.initialize({} as any, new FakeDestroyRef() as unknown as DestroyRef, 'localhost', 'selected-language');
+    await service.initialize(
+      {} as any,
+      new FakeDestroyRef() as unknown as DestroyRef,
+      'localhost',
+      'selected-language'
+    );
     sessionEvents.unauthorizedSubject.next();
 
     // Assert
@@ -172,12 +197,15 @@ describe('AuthBootstrapUseCaseService', () => {
   ].forEach(({ tab, shouldSetDashboard }) => {
     it(`whenUnauthorizedArrivesOn${tab}_initialize_shouldResetSessionState`, async () => {
       // Arrange
-      const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
+      const listingStateFacade =
+        AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
       const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
       const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
-      const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
+      const sessionCoordinator =
+        AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
       const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
-      const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+      const listingQueryOrchestrator =
+        AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
       const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
       appShellState.activeTab.set(tab as any);
       appShellState.authenticatedUser.set({ id: 'user-1' });
@@ -194,7 +222,12 @@ describe('AuthBootstrapUseCaseService', () => {
       const http = {} as any;
 
       // Action
-      await service.initialize(http, new FakeDestroyRef() as unknown as DestroyRef, 'localhost', 'selected-language');
+      await service.initialize(
+        http,
+        new FakeDestroyRef() as unknown as DestroyRef,
+        'localhost',
+        'selected-language'
+      );
       sessionEvents.unauthorizedSubject.next();
 
       // Assert
@@ -212,12 +245,15 @@ describe('AuthBootstrapUseCaseService', () => {
 
   it('whenDestroyRefIsDestroyed_initialize_shouldUnsubscribeUnauthorizedListener', async () => {
     // Arrange
-    const listingStateFacade = AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
+    const listingStateFacade =
+      AuthBootstrapUseCaseServiceMockFactory.createListingStateFacadeMock();
     const runtimeConfig = AuthBootstrapUseCaseServiceMockFactory.createRuntimeConfigMock();
     const authFacade = AuthBootstrapUseCaseServiceMockFactory.createAuthFacadeMock();
-    const sessionCoordinator = AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const sessionCoordinator =
+      AuthBootstrapUseCaseServiceMockFactory.createSessionCoordinatorMock();
     const sessionEvents = AuthBootstrapUseCaseServiceMockFactory.createSessionEventsMock();
-    const listingQueryOrchestrator = AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
+    const listingQueryOrchestrator =
+      AuthBootstrapUseCaseServiceMockFactory.createListingQueryOrchestratorMock();
     const appShellState = AuthBootstrapUseCaseServiceMockFactory.createAppShellStateMock();
     appShellState.authenticatedUser.set({ id: 'user-1' });
     const service = new AuthBootstrapUseCaseService(
@@ -232,7 +268,12 @@ describe('AuthBootstrapUseCaseService', () => {
     const destroyRef = new FakeDestroyRef();
 
     // Action
-    await service.initialize({} as any, destroyRef as unknown as DestroyRef, 'localhost', 'selected-language');
+    await service.initialize(
+      {} as any,
+      destroyRef as unknown as DestroyRef,
+      'localhost',
+      'selected-language'
+    );
     destroyRef.destroy();
     sessionEvents.unauthorizedSubject.next();
 

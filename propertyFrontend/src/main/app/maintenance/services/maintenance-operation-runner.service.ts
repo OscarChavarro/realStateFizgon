@@ -6,10 +6,7 @@ import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database
   providedIn: 'root'
 })
 export class MaintenanceOperationRunnerService {
-  async runOperation(
-    operation: DatabaseMaintenanceOperation,
-    http: HttpClient
-  ): Promise<string> {
+  async runOperation(operation: DatabaseMaintenanceOperation, http: HttpClient): Promise<string> {
     try {
       const result = await operation.execute(http);
       return JSON.stringify(

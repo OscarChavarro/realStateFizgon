@@ -24,9 +24,7 @@ type SavePropertyCommentParams = {
   providedIn: 'root'
 })
 export class ListingInteractionUseCaseService {
-  constructor(
-    private readonly propertyLabelsFacadeService: PropertyLabelsFacadeService
-  ) {}
+  constructor(private readonly propertyLabelsFacadeService: PropertyLabelsFacadeService) {}
 
   async togglePropertyReview(params: TogglePropertyReviewParams): Promise<void> {
     if (!params.isAuthenticated) {

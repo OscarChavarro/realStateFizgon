@@ -36,7 +36,9 @@ class InteractionShortcutsMockFactory {
     };
   }
 
-  static createKeyboardEvent(init: KeyboardEventInit & { key?: string; code?: string }): KeyboardEvent {
+  static createKeyboardEvent(
+    init: KeyboardEventInit & { key?: string; code?: string }
+  ): KeyboardEvent {
     const event = new KeyboardEvent('keydown', init);
     return event;
   }
@@ -49,15 +51,14 @@ describe('InteractionShortcutsService', () => {
     service = new InteractionShortcutsService();
   });
 
-  [
-    'INPUT',
-    'TEXTAREA',
-    'SELECT'
-  ].forEach((tagName) => {
+  ['INPUT', 'TEXTAREA', 'SELECT'].forEach((tagName) => {
     it(`handleWindowKeyDown should ignore typing target ${tagName}`, () => {
       // Arrange
       const event = InteractionShortcutsMockFactory.createKeyboardEvent({ key: 'ArrowUp' });
-      Object.defineProperty(event, 'target', { value: document.createElement(tagName), configurable: true });
+      Object.defineProperty(event, 'target', {
+        value: document.createElement(tagName),
+        configurable: true
+      });
       const context = InteractionShortcutsMockFactory.createContext({ event });
 
       // Action
@@ -135,7 +136,10 @@ describe('InteractionShortcutsService', () => {
 
   it('handleWindowKeyDown should return when event is repeat after fullscreen checks', () => {
     // Arrange
-    const event = InteractionShortcutsMockFactory.createKeyboardEvent({ key: 'ArrowDown', repeat: true });
+    const event = InteractionShortcutsMockFactory.createKeyboardEvent({
+      key: 'ArrowDown',
+      repeat: true
+    });
     const context = InteractionShortcutsMockFactory.createContext({ event });
 
     // Action
@@ -193,7 +197,9 @@ describe('InteractionShortcutsService', () => {
     // Arrange
     const event = InteractionShortcutsMockFactory.createKeyboardEvent({ key: 'ArrowDown' });
     const preventDefaultSpy = spyOn(event, 'preventDefault');
-    const selected = InteractionShortcutsMockFactory.createProperty({ propertyId: 'selected-down' });
+    const selected = InteractionShortcutsMockFactory.createProperty({
+      propertyId: 'selected-down'
+    });
     const context = InteractionShortcutsMockFactory.createContext({
       event,
       onKeyboardSelect: jasmine.createSpy('onKeyboardSelect').and.returnValue(selected)
@@ -221,14 +227,32 @@ describe('InteractionShortcutsService', () => {
   });
 
   [
-    { activeTab: 'MAP_TAB', isAuthenticated: true, selectedProperty: InteractionShortcutsMockFactory.createProperty(), called: false },
-    { activeTab: 'DASHBOARD', isAuthenticated: false, selectedProperty: InteractionShortcutsMockFactory.createProperty(), called: false },
+    {
+      activeTab: 'MAP_TAB',
+      isAuthenticated: true,
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      isAuthenticated: false,
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      called: false
+    },
     { activeTab: 'DASHBOARD', isAuthenticated: true, selectedProperty: null, called: false },
-    { activeTab: 'DASHBOARD', isAuthenticated: true, selectedProperty: InteractionShortcutsMockFactory.createProperty(), called: true }
+    {
+      activeTab: 'DASHBOARD',
+      isAuthenticated: true,
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      called: true
+    }
   ].forEach(({ activeTab, isAuthenticated, selectedProperty, called }) => {
     it(`handleWindowKeyDown should handle Space with expected call=${called}`, () => {
       // Arrange
-      const event = InteractionShortcutsMockFactory.createKeyboardEvent({ key: ' ', code: 'Space' });
+      const event = InteractionShortcutsMockFactory.createKeyboardEvent({
+        key: ' ',
+        code: 'Space'
+      });
       const preventDefaultSpy = spyOn(event, 'preventDefault');
       const context = InteractionShortcutsMockFactory.createContext({
         event,
@@ -247,16 +271,63 @@ describe('InteractionShortcutsService', () => {
   });
 
   [
-    { activeTab: 'MAP_TAB', selectedProperty: InteractionShortcutsMockFactory.createProperty(), ctrlKey: false, metaKey: false, altKey: false, called: false },
-    { activeTab: 'DASHBOARD', selectedProperty: null, ctrlKey: false, metaKey: false, altKey: false, called: false },
-    { activeTab: 'DASHBOARD', selectedProperty: InteractionShortcutsMockFactory.createProperty(), ctrlKey: true, metaKey: false, altKey: false, called: false },
-    { activeTab: 'DASHBOARD', selectedProperty: InteractionShortcutsMockFactory.createProperty(), ctrlKey: false, metaKey: true, altKey: false, called: false },
-    { activeTab: 'DASHBOARD', selectedProperty: InteractionShortcutsMockFactory.createProperty(), ctrlKey: false, metaKey: false, altKey: true, called: false },
-    { activeTab: 'DASHBOARD', selectedProperty: InteractionShortcutsMockFactory.createProperty(), ctrlKey: false, metaKey: false, altKey: false, called: true }
+    {
+      activeTab: 'MAP_TAB',
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      selectedProperty: null,
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      ctrlKey: true,
+      metaKey: false,
+      altKey: false,
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      ctrlKey: false,
+      metaKey: true,
+      altKey: false,
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      ctrlKey: false,
+      metaKey: false,
+      altKey: true,
+      called: false
+    },
+    {
+      activeTab: 'DASHBOARD',
+      selectedProperty: InteractionShortcutsMockFactory.createProperty(),
+      ctrlKey: false,
+      metaKey: false,
+      altKey: false,
+      called: true
+    }
   ].forEach(({ activeTab, selectedProperty, ctrlKey, metaKey, altKey, called }) => {
     it(`handleWindowKeyDown should handle plain m with expected call=${called}`, () => {
       // Arrange
-      const event = InteractionShortcutsMockFactory.createKeyboardEvent({ key: 'm', ctrlKey, metaKey, altKey });
+      const event = InteractionShortcutsMockFactory.createKeyboardEvent({
+        key: 'm',
+        ctrlKey,
+        metaKey,
+        altKey
+      });
       const preventDefaultSpy = spyOn(event, 'preventDefault');
       const context = InteractionShortcutsMockFactory.createContext({
         event,

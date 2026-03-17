@@ -62,7 +62,9 @@ describe('ListingMapTabComponent', () => {
 
   it('whenPropertyLabelsSetterReceivesNonArray_shouldResetLabelsAndKeepDefaultReview', () => {
     // Arrange
-    component.properties = [ListingMapTabMockFactory.createPropertyRow({ propertyId: 'p-default-review' })];
+    component.properties = [
+      ListingMapTabMockFactory.createPropertyRow({ propertyId: 'p-default-review' })
+    ];
 
     // Action
     component.propertyLabels = null as unknown as [];
@@ -101,7 +103,10 @@ describe('ListingMapTabComponent', () => {
       }),
       ListingMapTabMockFactory.createPropertyRow({
         propertyId: 'invalid-string-number',
-        geoLocationHint: { lat: 'not-a-number' as unknown as number, lon: '-3.51' as unknown as number }
+        geoLocationHint: {
+          lat: 'not-a-number' as unknown as number,
+          lon: '-3.51' as unknown as number
+        }
       }),
       ListingMapTabMockFactory.createPropertyRow({
         propertyId: 'invalid-decimal',
@@ -127,7 +132,11 @@ describe('ListingMapTabComponent', () => {
     component.properties = rows;
 
     // Assert
-    expect(component.mapProperties.map((item) => item.propertyId)).toEqual(['number', 'string', 'decimal']);
+    expect(component.mapProperties.map((item) => item.propertyId)).toEqual([
+      'number',
+      'string',
+      'decimal'
+    ]);
     expect(component.mapProperties[0].latitude).toBe(40.1);
     expect(component.mapProperties[1].latitude).toBe(40.2);
     expect(component.mapProperties[2].latitude).toBe(40.3);
@@ -137,7 +146,9 @@ describe('ListingMapTabComponent', () => {
     it(`whenLabelReviewIs${review}_shouldMapSameReview`, () => {
       // Arrange
       const row = ListingMapTabMockFactory.createPropertyRow({ propertyId: `property-${review}` });
-      component.propertyLabels = [ListingMapTabMockFactory.createLabel(`property-${review}`, review)];
+      component.propertyLabels = [
+        ListingMapTabMockFactory.createLabel(`property-${review}`, review)
+      ];
 
       // Action
       component.properties = [row];
@@ -150,9 +161,14 @@ describe('ListingMapTabComponent', () => {
 
   it('whenLabelReviewIsUnknown_shouldFallbackToNew', () => {
     // Arrange
-    const row = ListingMapTabMockFactory.createPropertyRow({ propertyId: 'property-unknown-review' });
+    const row = ListingMapTabMockFactory.createPropertyRow({
+      propertyId: 'property-unknown-review'
+    });
     component.propertyLabels = [
-      ListingMapTabMockFactory.createLabelWithRawReview('property-unknown-review', 'NOT_SUPPORTED_REVIEW')
+      ListingMapTabMockFactory.createLabelWithRawReview(
+        'property-unknown-review',
+        'NOT_SUPPORTED_REVIEW'
+      )
     ];
 
     // Action
@@ -178,7 +194,7 @@ describe('ListingMapTabComponent', () => {
         bedrooms: '2',
         unavailable: true,
         localImageUrls: ['a.jpg', ' ', 'b.jpg', 2 as unknown as string],
-        geoLocationHint: { lat: 40.41, lon: -3.70 }
+        geoLocationHint: { lat: 40.41, lon: -3.7 }
       }),
       ListingMapTabMockFactory.createPropertyRow({
         propertyId: '',

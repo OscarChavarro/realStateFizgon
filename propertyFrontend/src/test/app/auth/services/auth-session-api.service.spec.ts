@@ -150,7 +150,8 @@ describe('AuthSessionApiService', () => {
 
   it('buildGoogleLoginUrl should compose backend URL and encoded returnTo query parameter', () => {
     // Arrange
-    const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock('http://localhost:8081');
+    const runtimeConfig =
+      AuthSessionApiServiceMockFactory.createRuntimeConfigMock('http://localhost:8081');
     const service = new AuthSessionApiService(runtimeConfig);
     const returnTo = 'http://localhost:4200/?next=/dashboard map';
 

@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { ListingTopBarComponent } from 'src/app/listing/components/listing-top-bar/listing-top-bar.component';
-import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import {
+  ListingFiltersState,
+  createDefaultListingFilters
+} from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingTab } from 'src/app/listing/model/listing.types';
 
 class ListingTopBarMockFactory {

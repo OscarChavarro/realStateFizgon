@@ -34,7 +34,9 @@
                   (click)="onSortToggle('publicationDate')"
                   [attr.aria-label]="getSortAriaLabel('publicationDate')"
                 >
-                  <span class="material-symbols-outlined">{{ getSortIcon('publicationDate') }}</span>
+                  <span class="material-symbols-outlined">{{
+                    getSortIcon('publicationDate')
+                  }}</span>
                 </button>
                 @if (shouldShowSortPriority('publicationDate')) {
                   <span class="sort-priority">{{ getSortPriority('publicationDate') }}</span>
@@ -70,10 +72,16 @@
         @if (properties.length === 0) {
           <tr>
             <td class="row-index-cell">{{ getDisplayRowIndex(0) }}</td>
-            <td [attr.colspan]="reviewEnabled ? 4 : 3" class="empty-row">{{ t('NO_PROPERTIES_FOUND') }}</td>
+            <td [attr.colspan]="reviewEnabled ? 4 : 3" class="empty-row">
+              {{ t('NO_PROPERTIES_FOUND') }}
+            </td>
           </tr>
         } @else {
-          @for (property of properties; track trackProperty($index, property); let rowIndex = $index) {
+          @for (
+            property of properties;
+            track trackProperty($index, property);
+            let rowIndex = $index
+          ) {
             <tr
               class="property-row"
               [attr.data-row-key]="trackProperty(rowIndex, property)"

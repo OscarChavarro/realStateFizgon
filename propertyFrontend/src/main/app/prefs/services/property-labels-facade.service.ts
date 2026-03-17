@@ -1,17 +1,22 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.service';
-import { PropertyLabelEntry, PropertyLabels, PropertyReviewLabel } from 'src/app/listing/model/listing.types';
+import {
+  PropertyLabelEntry,
+  PropertyLabels,
+  PropertyReviewLabel
+} from 'src/app/listing/model/listing.types';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PropertyLabelsFacadeService {
-  constructor(
-    private readonly listingUserPreferencesService: UserPreferencesService
-  ) {}
+  constructor(private readonly listingUserPreferencesService: UserPreferencesService) {}
 
-  getPropertyReviewLabel(propertyLabels: PropertyLabelEntry[], propertyId: string): PropertyReviewLabel {
+  getPropertyReviewLabel(
+    propertyLabels: PropertyLabelEntry[],
+    propertyId: string
+  ): PropertyReviewLabel {
     const entry = propertyLabels.find((item) => item.propertyId === propertyId);
     const review = entry?.labels.review;
     if (review === 'NEW' || review === 'FAVOURITE' || review === 'DISCHARGED') {

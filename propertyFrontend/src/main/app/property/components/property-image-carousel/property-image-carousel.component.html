@@ -16,10 +16,7 @@
           [class.selected]="index === selectedImageIndex"
           (click)="selectImage(index)"
         >
-          <img
-            [src]="buildLocalImageSrc(localImageUrl)"
-            [alt]="propertyId + '/' + localImageUrl"
-          />
+          <img [src]="buildLocalImageSrc(localImageUrl)" [alt]="propertyId + '/' + localImageUrl" />
         </button>
       }
     </div>

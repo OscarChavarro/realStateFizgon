@@ -33,7 +33,11 @@
           <th>{{ t('PRICE') }}</th>
           <td>{{ property.price }}</td>
           <th>{{ t('PUBLICATION_DATE') }}</th>
-          <td>{{ property.publicationDate ? getPublicationDateExtended(property.publicationDate) : '-' }}</td>
+          <td>
+            {{
+              property.publicationDate ? getPublicationDateExtended(property.publicationDate) : '-'
+            }}
+          </td>
         </tr>
         <tr>
           <th>{{ t('LOCATION') }}</th>
@@ -66,7 +70,9 @@
                 [attr.aria-label]="t('REVIEW_COLUMN')"
                 (click)="onPropertyReviewToggleClick(property)"
               >
-                <span class="material-symbols-outlined">{{ getReviewIcon(property.propertyId) }}</span>
+                <span class="material-symbols-outlined">{{
+                  getReviewIcon(property.propertyId)
+                }}</span>
                 <span>{{ getReviewText(property.propertyId) }}</span>
               </button>
             </td>
@@ -96,7 +102,9 @@
 
     <div class="description-block">
       <label class="description-label">{{ t('DESCRIPTION') }}</label>
-      <textarea class="description-textarea" readonly>{{ property.advertiserComment || '-' }}</textarea>
+      <textarea class="description-textarea" readonly>{{
+        property.advertiserComment || '-'
+      }}</textarea>
     </div>
   </section>
 } @else {

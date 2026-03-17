@@ -7,7 +7,11 @@ import {
   createDefaultListingFilters
 } from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingFilterMenuComponent } from 'src/app/listing/components/listing-filter-menu/listing-filter-menu.component';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 
 @Component({
   selector: 'app-listing-top-bar',

@@ -13,7 +13,11 @@ import {
   inject
 } from '@angular/core';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import { I18nService, SupportedLanguage, TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import {
+  I18nService,
+  SupportedLanguage,
+  TranslationKey
+} from 'src/app/core/i18n/services/i18n.service';
 import {
   GoogleMapLayerId,
   GoogleMapVisualStyleId,
@@ -116,12 +120,12 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
-      changes['properties']
-      || changes['googleMapsApiKey']
-      || changes['googleMapsMapId']
-      || changes['zoom']
-      || changes['preserveViewportOnPropertiesChange']
-      || changes['interactionEnabled']
+      changes['properties'] ||
+      changes['googleMapsApiKey'] ||
+      changes['googleMapsMapId'] ||
+      changes['zoom'] ||
+      changes['preserveViewportOnPropertiesChange'] ||
+      changes['interactionEnabled']
     ) {
       setTimeout(() => {
         void this.initializeMapIfReady();
@@ -255,7 +259,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.mapLoadError = null;
       this.renderMarkers(mappableProperties, googleMaps);
       if (!this.preserveViewportOnPropertiesChange) {
-        this.applyViewportToMap(this.viewportManager.resolveViewport(mappableProperties, this.zoom));
+        this.applyViewportToMap(
+          this.viewportManager.resolveViewport(mappableProperties, this.zoom)
+        );
       }
       if (!this.interactionEnabled) {
         this.clearSelectionState();
@@ -289,10 +295,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private getMappableProperties(): GoogleMapProperty[] {
-    return this.properties.filter((property) => (
-      Number.isFinite(property.latitude)
-      && Number.isFinite(property.longitude)
-    ));
+    return this.properties.filter(
+      (property) => Number.isFinite(property.latitude) && Number.isFinite(property.longitude)
+    );
   }
 
   private async renderMap(properties: GoogleMapProperty[]): Promise<void> {
@@ -360,23 +365,23 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.updateSelectedTargetMarker();
   }
 
-  private applyViewportToMap(viewport: { center: { lat: number; lng: number }; zoom: number }): void {
+  private applyViewportToMap(viewport: {
+    center: { lat: number; lng: number };
+    zoom: number;
+  }): void {
     this.viewportManager.applyViewportToMap(this.mapInstance, viewport);
   }
 
   private buildConfigSignature(): string {
-    return [
-      this.googleMapsApiKey ?? '',
-      this.googleMapsMapId ?? '',
-      String(this.zoom)
-    ].join('::');
+    return [this.googleMapsApiKey ?? '', this.googleMapsMapId ?? '', String(this.zoom)].join('::');
   }
 
   private buildPropertiesSignature(properties: GoogleMapProperty[]): string {
     return properties
-      .map((property) => (
-        `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}:${property.review ?? 'NEW'}`
-      ))
+      .map(
+        (property) =>
+          `${property.id}:${property.latitude}:${property.longitude}:${property.title}:${property.closed === true ? 'closed' : 'open'}:${property.review ?? 'NEW'}`
+      )
       .join('|');
   }
 
@@ -554,5 +559,4 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       mapInstance: this.mapInstance
     };
   }
-
 }

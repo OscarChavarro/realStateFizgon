@@ -16,8 +16,9 @@ export class ListingPropertiesPayloadMapperService {
     if (typeof error.error === 'string') {
       candidates.push(error.error);
     } else if (typeof error.error === 'object' && error.error !== null) {
-      const nestedMessage = (error.error as { error?: unknown; message?: unknown }).error
-        ?? (error.error as { error?: unknown; message?: unknown }).message;
+      const nestedMessage =
+        (error.error as { error?: unknown; message?: unknown }).error ??
+        (error.error as { error?: unknown; message?: unknown }).message;
       if (typeof nestedMessage === 'string') {
         candidates.push(nestedMessage);
       }
@@ -27,7 +28,9 @@ export class ListingPropertiesPayloadMapperService {
     }
 
     for (const message of candidates) {
-      const match = message.match(/pageSize\s+cannot\s+be\s+greater\s+than\s+total\s+properties\s+\((\d+)\)/i);
+      const match = message.match(
+        /pageSize\s+cannot\s+be\s+greater\s+than\s+total\s+properties\s+\((\d+)\)/i
+      );
       if (!match) {
         continue;
       }
@@ -45,32 +48,31 @@ export class ListingPropertiesPayloadMapperService {
   mapPropertiesForListing(rawRows: PropertiesResponse['data']): ListingPropertyRow[] {
     return rawRows.map((row) => {
       const closedByValue = row.closedBy ?? row.closedby ?? row.closed_by;
-      const closedByExistsFromPayload = (
-        Object.prototype.hasOwnProperty.call(row, 'closedBy')
-        || Object.prototype.hasOwnProperty.call(row, 'closedby')
-        || Object.prototype.hasOwnProperty.call(row, 'closed_by')
-        || Object.prototype.hasOwnProperty.call(row, 'closedByExists')
-      );
+      const closedByExistsFromPayload =
+        Object.prototype.hasOwnProperty.call(row, 'closedBy') ||
+        Object.prototype.hasOwnProperty.call(row, 'closedby') ||
+        Object.prototype.hasOwnProperty.call(row, 'closed_by') ||
+        Object.prototype.hasOwnProperty.call(row, 'closedByExists');
 
       const publicationDate = this.toDateTimeString(row.publicationDate);
       const publicationDateShort = this.toDateOnlyString(row.publicationDate);
-      const propertyId = row.propertyId === undefined || row.propertyId === null
-        ? ''
-        : String(row.propertyId);
+      const propertyId =
+        row.propertyId === undefined || row.propertyId === null ? '' : String(row.propertyId);
 
-      const title = typeof row.title === 'string' && row.title.trim().length > 0
-        ? row.title.trim()
-        : '-';
+      const title =
+        typeof row.title === 'string' && row.title.trim().length > 0 ? row.title.trim() : '-';
       const url = typeof row.url === 'string' ? row.url.trim() : '';
-      const location = typeof row.location === 'string' && row.location.trim().length > 0
-        ? row.location.trim()
-        : '';
-      const advertiserComment = typeof row.advertiserComment === 'string' && row.advertiserComment.trim().length > 0
-        ? row.advertiserComment.trim()
-        : (typeof row.description === 'string' ? row.description.trim() : '');
-      const price = row.price === null || row.price === undefined
-        ? '-'
-        : String(row.price);
+      const location =
+        typeof row.location === 'string' && row.location.trim().length > 0
+          ? row.location.trim()
+          : '';
+      const advertiserComment =
+        typeof row.advertiserComment === 'string' && row.advertiserComment.trim().length > 0
+          ? row.advertiserComment.trim()
+          : typeof row.description === 'string'
+            ? row.description.trim()
+            : '';
+      const price = row.price === null || row.price === undefined ? '-' : String(row.price);
       const area = this.normalizeMainFeatureValue(row.mainFeatures?.area);
       const bedrooms = this.normalizeMainFeatureValue(row.mainFeatures?.bedrooms);
       const geoLocationHint = this.parseGeoLocationHint(row.geoLocationHint);
@@ -178,7 +180,9 @@ export class ListingPropertiesPayloadMapperService {
     return localUrls;
   }
 
-  parseGeoLocationHint(value: PropertiesResponse['data'][number]['geoLocationHint']): GeoLocationHint | null {
+  parseGeoLocationHint(
+    value: PropertiesResponse['data'][number]['geoLocationHint']
+  ): GeoLocationHint | null {
     if (!value || typeof value !== 'object') {
       return null;
     }
@@ -268,7 +272,12 @@ export class ListingPropertiesPayloadMapperService {
       if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
         return true;
       }
-      if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === '') {
+      if (
+        normalized === 'false' ||
+        normalized === '0' ||
+        normalized === 'no' ||
+        normalized === ''
+      ) {
         return false;
       }
     }

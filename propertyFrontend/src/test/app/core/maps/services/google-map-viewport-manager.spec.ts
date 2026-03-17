@@ -1,16 +1,18 @@
 import { GoogleMapViewportManager } from 'src/app/core/maps/services/google-map-viewport-manager';
 
 class GoogleMapViewportManagerMockFactory {
-  static createProperty(overrides: Partial<{
-    id: string;
-    propertyId: string;
-    title: string;
-    price: string;
-    latitude: number;
-    longitude: number;
-    review: 'NEW' | 'FAVOURITE' | 'DISCHARGED';
-    imageUrls: string[];
-  }> = {}) {
+  static createProperty(
+    overrides: Partial<{
+      id: string;
+      propertyId: string;
+      title: string;
+      price: string;
+      latitude: number;
+      longitude: number;
+      review: 'NEW' | 'FAVOURITE' | 'DISCHARGED';
+      imageUrls: string[];
+    }> = {}
+  ) {
     return {
       id: 'property-1',
       propertyId: '1',
@@ -25,7 +27,10 @@ class GoogleMapViewportManagerMockFactory {
   }
 
   static createMapWithCenter(
-    center: { lat: (() => number) | number; lng: (() => number) | number } | null = { lat: 40.4, lng: -3.7 }
+    center: { lat: (() => number) | number; lng: (() => number) | number } | null = {
+      lat: 40.4,
+      lng: -3.7
+    }
   ) {
     return {
       setOptions: jasmine.createSpy('setOptions'),
@@ -62,8 +67,18 @@ describe('GoogleMapViewportManager', () => {
     // Arrange
     const properties = [
       GoogleMapViewportManagerMockFactory.createProperty({ latitude: 40.0, longitude: -4.0 }),
-      GoogleMapViewportManagerMockFactory.createProperty({ id: 'p2', propertyId: '2', latitude: 42.0, longitude: -2.0 }),
-      GoogleMapViewportManagerMockFactory.createProperty({ id: 'p3', propertyId: '3', latitude: 41.0, longitude: -3.0 })
+      GoogleMapViewportManagerMockFactory.createProperty({
+        id: 'p2',
+        propertyId: '2',
+        latitude: 42.0,
+        longitude: -2.0
+      }),
+      GoogleMapViewportManagerMockFactory.createProperty({
+        id: 'p3',
+        propertyId: '3',
+        latitude: 41.0,
+        longitude: -3.0
+      })
     ];
 
     // Action
@@ -95,7 +110,10 @@ describe('GoogleMapViewportManager', () => {
   it('centerMapOnProperty should skip null map and set center when map exists', () => {
     // Arrange
     const mapInstance = GoogleMapViewportManagerMockFactory.createMapWithCenter();
-    const property = GoogleMapViewportManagerMockFactory.createProperty({ latitude: 50.5, longitude: -1.2 });
+    const property = GoogleMapViewportManagerMockFactory.createProperty({
+      latitude: 50.5,
+      longitude: -1.2
+    });
 
     // Action
     manager.centerMapOnProperty(null as any, property);
@@ -141,7 +159,10 @@ describe('GoogleMapViewportManager', () => {
 
   it('refreshMapViewport should set center without triggering resize when googleMaps.event is missing', () => {
     // Arrange
-    const mapInstance = GoogleMapViewportManagerMockFactory.createMapWithCenter({ lat: 40.2, lng: -3.8 });
+    const mapInstance = GoogleMapViewportManagerMockFactory.createMapWithCenter({
+      lat: 40.2,
+      lng: -3.8
+    });
 
     // Action
     manager.refreshMapViewport(mapInstance as any, null as any);

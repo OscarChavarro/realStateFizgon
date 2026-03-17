@@ -7,7 +7,7 @@ import {
   PropertyLabels,
   PropertyReviewLabel,
   SortCriterion,
-  SortDirection,
+  SortDirection
 } from 'src/app/listing/model/listing.types';
 import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
 import { UserPreferencesPayload } from 'src/app/prefs/model/user-preferences-payload.type';
@@ -23,9 +23,7 @@ export class UserPreferencesService {
     private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
   ) {}
 
-  async loadPreferences(
-    http: HttpClient
-  ): Promise<{
+  async loadPreferences(http: HttpClient): Promise<{
     language: SupportedLanguage;
     pageSize: number;
     filters: ListingFiltersState;
@@ -58,7 +56,12 @@ export class UserPreferencesService {
         await firstValueFrom(
           http.post(
             '/auth/preferences',
-            this.userPreferencesPayloadMapperService.buildSaveFiltersPayload(filters, language, sortCriteria, pageSize)
+            this.userPreferencesPayloadMapperService.buildSaveFiltersPayload(
+              filters,
+              language,
+              sortCriteria,
+              pageSize
+            )
           )
         );
       }
@@ -88,18 +91,18 @@ export class UserPreferencesService {
   ): Promise<PropertyLabelEntry[]> {
     const response = await this.requestErrorPolicyService.executeOrThrow({
       operation: 'prefs.setPropertyLabels',
-      request: async () => firstValueFrom(
-        http.post<UserPreferencesPayload>(
-          '/auth/preferences/setPropertyLabels',
-          {
+      request: async () =>
+        firstValueFrom(
+          http.post<UserPreferencesPayload>('/auth/preferences/setPropertyLabels', {
             propertyId,
             labels
-          }
+          })
         )
-      )
     });
 
-    return this.userPreferencesPayloadMapperService.normalizePropertyLabels(response.propertyLabels);
+    return this.userPreferencesPayloadMapperService.normalizePropertyLabels(
+      response.propertyLabels
+    );
   }
 
   private toBoolean(value: unknown, fallback: boolean): boolean {

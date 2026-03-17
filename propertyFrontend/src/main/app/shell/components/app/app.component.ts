@@ -1,5 +1,14 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject
+} from '@angular/core';
 import { UsersPanelComponent } from 'src/app/auth/components/users-panel/users-panel.component';
 import { MaintenancePanelComponent } from 'src/app/maintenance/components/maintenance-panel/maintenance-panel.component';
 import { ListingPropertiesTableComponent } from 'src/app/listing/components/listing-properties-table/listing-properties-table.component';
@@ -46,18 +55,23 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly destroyRef = inject(DestroyRef);
   private readonly listingAuthFacadeService = inject(AuthFacadeService);
-  private readonly workspaceInteractionCoordinatorService = inject(WorkspaceInteractionCoordinatorService);
+  private readonly workspaceInteractionCoordinatorService = inject(
+    WorkspaceInteractionCoordinatorService
+  );
   private readonly authBootstrapUseCaseService = inject(AuthBootstrapUseCaseService);
   private readonly listingBootstrapUseCaseService = inject(ListingBootstrapUseCaseService);
   private readonly propertySelectionService = inject(PropertySelectionService);
   private readonly listingQueryOrchestratorService = inject(ListingQueryOrchestratorService);
   private readonly listingInteractionUseCaseService = inject(ListingInteractionUseCaseService);
-  private readonly shellInputInteractionUseCaseService = inject(ShellInputInteractionUseCaseService);
+  private readonly shellInputInteractionUseCaseService = inject(
+    ShellInputInteractionUseCaseService
+  );
   private readonly appShellStateService = inject(AppShellStateService);
   private readonly appShellCommandsUseCaseService = inject(AppShellCommandsUseCaseService);
 
   @ViewChild('workspaceContainer') workspaceContainer?: ElementRef<HTMLDivElement>;
-  @ViewChild(ListingPropertiesTableComponent) listingPropertiesTable?: ListingPropertiesTableComponent;
+  @ViewChild(ListingPropertiesTableComponent)
+  listingPropertiesTable?: ListingPropertiesTableComponent;
   @ViewChild(PropertyDetailPanelComponent) propertyDetailPanel?: PropertyDetailPanelComponent;
 
   readonly count = this.appShellStateService.count;
@@ -88,7 +102,9 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly rightPanelHidden = this.appShellStateService.rightPanelHidden;
 
   async ngOnInit(): Promise<void> {
-    this.filteredTotalElements.set(this.listingQueryOrchestratorService.readFilteredTotalElementsFromSession());
+    this.filteredTotalElements.set(
+      this.listingQueryOrchestratorService.readFilteredTotalElementsFromSession()
+    );
 
     await this.authBootstrapUseCaseService.initialize(
       this.http,
@@ -111,7 +127,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   onLanguageChange(language: SupportedLanguage): void {
-    this.appShellCommandsUseCaseService.onLanguageChange(this.http, language, AppComponent.SELECTED_LANGUAGE_KEY);
+    this.appShellCommandsUseCaseService.onLanguageChange(
+      this.http,
+      language,
+      AppComponent.SELECTED_LANGUAGE_KEY
+    );
   }
 
   onFiltersChange(filters: ListingFiltersState): void {
@@ -245,7 +265,10 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  private async savePropertyComment(property: ListingPropertyRow, commentRaw: string): Promise<void> {
+  private async savePropertyComment(
+    property: ListingPropertyRow,
+    commentRaw: string
+  ): Promise<void> {
     await this.listingInteractionUseCaseService.savePropertyComment({
       http: this.http,
       propertyId: property.propertyId,

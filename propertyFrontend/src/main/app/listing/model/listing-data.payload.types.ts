@@ -1,4 +1,8 @@
-import { GeoLocationHint, ListingPropertyRow, SortCriterion } from 'src/app/listing/model/listing.types';
+import {
+  GeoLocationHint,
+  ListingPropertyRow,
+  SortCriterion
+} from 'src/app/listing/model/listing.types';
 import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
 
@@ -39,11 +43,14 @@ export type PropertiesResponse = {
       area?: string | number | null;
       bedrooms?: string | number | null;
     } | null;
-    images?: Array<string | {
-      url?: string;
-      localUrl?: string | null;
-      title?: string | null;
-    }>;
+    images?: Array<
+      | string
+      | {
+          url?: string;
+          localUrl?: string | null;
+          title?: string | null;
+        }
+    >;
     geoLocationHint?: {
       lat?: number | string | null;
       lon?: number | string | null;

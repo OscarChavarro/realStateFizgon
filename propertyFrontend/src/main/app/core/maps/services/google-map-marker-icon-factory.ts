@@ -3,9 +3,7 @@ import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.m
 export class GoogleMapMarkerIconFactory {
   buildPropertyMarkerIconDataUrl(property: GoogleMapProperty): string {
     const isClosed = property.closed === true;
-    const baseColor = isClosed
-      ? '#4b5563'
-      : this.resolveReviewMarkerColor(property.review);
+    const baseColor = isClosed ? '#4b5563' : this.resolveReviewMarkerColor(property.review);
     const glyph = isClosed
       ? '<text x="19" y="25.5" text-anchor="middle" dominant-baseline="middle" font-size="16" fill="#ffffff">☠</text>'
       : `

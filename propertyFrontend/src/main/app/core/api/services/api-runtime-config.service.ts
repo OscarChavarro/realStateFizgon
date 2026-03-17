@@ -9,7 +9,7 @@ type RuntimeConfiguration = {
   providedIn: 'root'
 })
 export class ApiRuntimeConfigService {
-  static readonly DEFAULT_BACKEND_BASE_URL = 'http://192.168.1.110:4200';
+  static readonly DEFAULT_BACKEND_BASE_URL = 'http://localhost:4200';
   static readonly DEFAULT_STATIC_MEDIA_BASE_URL = 'http://localhost:666/';
 
   private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
@@ -47,9 +47,11 @@ export class ApiRuntimeConfigService {
       return false;
     }
 
-    return normalizedPath.startsWith('/auth/')
-      || normalizedPath.startsWith('/properties')
-      || normalizedPath.startsWith('/removeDanglingImages');
+    return (
+      normalizedPath.startsWith('/auth/') ||
+      normalizedPath.startsWith('/properties') ||
+      normalizedPath.startsWith('/removeDanglingImages')
+    );
   }
 
   private normalizeBackendBaseUrl(value: string): string {

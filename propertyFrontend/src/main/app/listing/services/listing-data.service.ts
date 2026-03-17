@@ -1,7 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { GeoLocationHint, ListingPropertyRow, SortCriterion } from 'src/app/listing/model/listing.types';
+import {
+  GeoLocationHint,
+  ListingPropertyRow,
+  SortCriterion
+} from 'src/app/listing/model/listing.types';
 import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
 import {
   ListingConfiguration,
@@ -42,7 +46,8 @@ export class ListingDataService {
     pageSize: number
   ): Promise<ListingDataResult> {
     const normalizedPage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
-    const normalizedPageSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.floor(pageSize) : 100;
+    const normalizedPageSize =
+      Number.isFinite(pageSize) && pageSize >= 1 ? Math.floor(pageSize) : 100;
 
     try {
       let response: PropertiesResponse;
@@ -75,27 +80,20 @@ export class ListingDataService {
             'fallback-to-minimal-pagination',
             error
           );
-          response = await this.loadPropertiesPage(
-            http,
-            sortCriteria,
-            filters,
-            1,
-            1
-          );
+          response = await this.loadPropertiesPage(http, sortCriteria, filters, 1, 1);
         }
       }
       const fallbackCount = response.pagination.totalElements ?? response.data.length;
       const totalCount = await this.loadTotalCount(http, fallbackCount);
       const filteredTotalElements = response.pagination.totalElements ?? response.data.length;
-      const responsePage = Number.isFinite(response.pagination.page) && response.pagination.page >= 1
-        ? response.pagination.page
-        : normalizedPage;
-      const totalPages = filteredTotalElements > 0
-        ? Math.ceil(filteredTotalElements / normalizedPageSize)
-        : 0;
-      const normalizedOutputPage = totalPages > 0
-        ? Math.min(Math.max(responsePage, 1), totalPages)
-        : 1;
+      const responsePage =
+        Number.isFinite(response.pagination.page) && response.pagination.page >= 1
+          ? response.pagination.page
+          : normalizedPage;
+      const totalPages =
+        filteredTotalElements > 0 ? Math.ceil(filteredTotalElements / normalizedPageSize) : 0;
+      const normalizedOutputPage =
+        totalPages > 0 ? Math.min(Math.max(responsePage, 1), totalPages) : 1;
 
       return {
         count: totalCount,
@@ -207,11 +205,12 @@ export class ListingDataService {
   ): Promise<PropertiesResponse> {
     return this.requestErrorPolicyService.executeOrThrow({
       operation: 'listing.loadListingData.properties',
-      request: async () => firstValueFrom(
-        http.get<PropertiesResponse>(
-          this.buildPropertiesEndpointUrl(sortCriteria, filters, page, pageSize, true)
-        )
-      ),
+      request: async () =>
+        firstValueFrom(
+          http.get<PropertiesResponse>(
+            this.buildPropertiesEndpointUrl(sortCriteria, filters, page, pageSize, true)
+          )
+        ),
       maxAttempts: 1,
       notifyOnFailure: false
     });
@@ -233,7 +232,9 @@ export class ListingDataService {
     return this.listingPropertiesPayloadMapperService.extractLocalImageUrls(images);
   }
 
-  private parseGeoLocationHint(value: PropertiesResponse['data'][number]['geoLocationHint']): GeoLocationHint | null {
+  private parseGeoLocationHint(
+    value: PropertiesResponse['data'][number]['geoLocationHint']
+  ): GeoLocationHint | null {
     return this.listingPropertiesPayloadMapperService.parseGeoLocationHint(value);
   }
 
@@ -246,6 +247,10 @@ export class ListingDataService {
   }
 
   private isUnavailable(closedBy: unknown, isClosed: unknown, closedByExists: unknown): boolean {
-    return this.listingPropertiesPayloadMapperService.isUnavailable(closedBy, isClosed, closedByExists);
+    return this.listingPropertiesPayloadMapperService.isUnavailable(
+      closedBy,
+      isClosed,
+      closedByExists
+    );
   }
 }

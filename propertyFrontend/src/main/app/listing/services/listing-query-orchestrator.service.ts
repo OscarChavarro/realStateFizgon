@@ -1,6 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { ListingFiltersState, createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
+import {
+  ListingFiltersState,
+  createDefaultListingFilters
+} from 'src/app/listing/model/filters/listing-filters.model';
 import {
   DASHBOARD_PAGE_SIZE_OPTIONS,
   ListingPaginationState,
@@ -35,11 +38,13 @@ export class ListingQueryOrchestratorService {
   }
 
   persistFilteredTotalElementsInSession(totalElements: number): void {
-    const normalized = Number.isFinite(totalElements) && totalElements >= 0
-      ? Math.floor(totalElements)
-      : 0;
+    const normalized =
+      Number.isFinite(totalElements) && totalElements >= 0 ? Math.floor(totalElements) : 0;
     this.appShellStateService.filteredTotalElements.set(normalized);
-    sessionStorage.setItem(ListingQueryOrchestratorService.FILTERED_TOTAL_ELEMENTS_KEY, String(normalized));
+    sessionStorage.setItem(
+      ListingQueryOrchestratorService.FILTERED_TOTAL_ELEMENTS_KEY,
+      String(normalized)
+    );
   }
 
   async refreshListingData(http: HttpClient): Promise<void> {
@@ -52,12 +57,12 @@ export class ListingQueryOrchestratorService {
       pageSize: requestPageSize
     };
 
-    await this.listingDataCoordinatorService.refreshListingData(
-      http,
-      requestPagination,
-      () => this.propertySelectionService.syncAfterRefresh(this.appShellStateService.properties())
+    await this.listingDataCoordinatorService.refreshListingData(http, requestPagination, () =>
+      this.propertySelectionService.syncAfterRefresh(this.appShellStateService.properties())
     );
-    this.persistFilteredTotalElementsInSession(this.appShellStateService.pagination().totalElements);
+    this.persistFilteredTotalElementsInSession(
+      this.appShellStateService.pagination().totalElements
+    );
   }
 
   async handleFiltersChange(http: HttpClient, nextFilters: ListingFiltersState): Promise<void> {
@@ -115,7 +120,10 @@ export class ListingQueryOrchestratorService {
       page: 1,
       pageSize: normalized
     });
-    await this.listingDataCoordinatorService.saveLanguagePreference(http, this.appShellStateService.selectedLanguage());
+    await this.listingDataCoordinatorService.saveLanguagePreference(
+      http,
+      this.appShellStateService.selectedLanguage()
+    );
     await this.refreshListingData(http);
   }
 

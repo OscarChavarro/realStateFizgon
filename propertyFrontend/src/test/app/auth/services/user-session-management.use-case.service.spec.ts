@@ -19,8 +19,11 @@ class UserSessionManagementUseCaseServiceMockFactory {
 describe('UserSessionManagementUseCaseService', () => {
   it('whenLoggingOut_logoutCurrentUser_shouldDelegateToSessionCoordinator', async () => {
     // Arrange
-    const coordinator = UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
-    const service = new UserSessionManagementUseCaseService(coordinator as unknown as SessionCoordinatorService);
+    const coordinator =
+      UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const service = new UserSessionManagementUseCaseService(
+      coordinator as unknown as SessionCoordinatorService
+    );
     const http = UserSessionManagementUseCaseServiceMockFactory.createHttpClientMock();
 
     // Action
@@ -32,8 +35,11 @@ describe('UserSessionManagementUseCaseService', () => {
 
   it('whenLoadingUsers_loadUsers_shouldDelegateToSessionCoordinator', async () => {
     // Arrange
-    const coordinator = UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
-    const service = new UserSessionManagementUseCaseService(coordinator as unknown as SessionCoordinatorService);
+    const coordinator =
+      UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const service = new UserSessionManagementUseCaseService(
+      coordinator as unknown as SessionCoordinatorService
+    );
     const http = UserSessionManagementUseCaseServiceMockFactory.createHttpClientMock();
 
     // Action
@@ -45,8 +51,11 @@ describe('UserSessionManagementUseCaseService', () => {
 
   it('whenDeletingUser_deleteUserAndRefresh_shouldDelegateToSessionCoordinator', async () => {
     // Arrange
-    const coordinator = UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
-    const service = new UserSessionManagementUseCaseService(coordinator as unknown as SessionCoordinatorService);
+    const coordinator =
+      UserSessionManagementUseCaseServiceMockFactory.createSessionCoordinatorMock();
+    const service = new UserSessionManagementUseCaseService(
+      coordinator as unknown as SessionCoordinatorService
+    );
     const http = UserSessionManagementUseCaseServiceMockFactory.createHttpClientMock();
 
     // Action

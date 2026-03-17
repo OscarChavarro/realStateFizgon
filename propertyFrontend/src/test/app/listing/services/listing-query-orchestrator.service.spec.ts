@@ -2,7 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import { createDefaultListingPaginationState } from 'src/app/listing/model/pagination/listing-pagination.model';
-import { ListingPropertyRow, PropertyLabelEntry, SortCriterion } from 'src/app/listing/model/listing.types';
+import {
+  ListingPropertyRow,
+  PropertyLabelEntry,
+  SortCriterion
+} from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
 import { PropertySelectionService } from 'src/app/listing/services/property-selection.service';
@@ -56,7 +60,9 @@ describe('ListingQueryOrchestratorService', () => {
   let propertySelectionServiceMock: {
     syncAfterRefresh: jasmine.Spy;
   };
-  let appShellStateMock: ReturnType<typeof ListingQueryOrchestratorMockFactory.createAppShellStateMock>;
+  let appShellStateMock: ReturnType<
+    typeof ListingQueryOrchestratorMockFactory.createAppShellStateMock
+  >;
 
   beforeEach(() => {
     listingDataCoordinatorServiceMock = {
@@ -131,7 +137,12 @@ describe('ListingQueryOrchestratorService', () => {
     listingDataCoordinatorServiceMock.refreshListingData.and.callFake(
       async (_http: unknown, _pagination: unknown, onAfterRefresh?: () => void) => {
         appShellStateMock.allProperties.set([property]);
-        appShellStateMock.pagination.set({ page: 2, pageSize: 100, totalElements: 23, totalPages: 1 });
+        appShellStateMock.pagination.set({
+          page: 2,
+          pageSize: 100,
+          totalElements: 23,
+          totalPages: 1
+        });
         onAfterRefresh?.();
       }
     );
@@ -177,7 +188,10 @@ describe('ListingQueryOrchestratorService', () => {
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({} as any, { ...createDefaultListingFilters(), showClosed: false });
+    await service.handleFiltersChange({} as any, {
+      ...createDefaultListingFilters(),
+      showClosed: false
+    });
 
     // Assert
     expect(refreshSpy).not.toHaveBeenCalled();
@@ -189,7 +203,10 @@ describe('ListingQueryOrchestratorService', () => {
     const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
     // Action
-    await service.handleFiltersChange({} as any, { ...createDefaultListingFilters(), showClosed: false });
+    await service.handleFiltersChange({} as any, {
+      ...createDefaultListingFilters(),
+      showClosed: false
+    });
 
     // Assert
     expect(listingDataCoordinatorServiceMock.handleFiltersChange).toHaveBeenCalled();
@@ -206,7 +223,10 @@ describe('ListingQueryOrchestratorService', () => {
 
     // Assert
     expect(appShellStateMock.pagination().page).toBe(1);
-    expect(listingDataCoordinatorServiceMock.toggleSortAndRefresh).toHaveBeenCalledOnceWith({} as any, 'price');
+    expect(listingDataCoordinatorServiceMock.toggleSortAndRefresh).toHaveBeenCalledOnceWith(
+      {} as any,
+      'price'
+    );
     expect(refreshSpy).toHaveBeenCalled();
   });
 
@@ -262,7 +282,12 @@ describe('ListingQueryOrchestratorService', () => {
   ].forEach(({ pageSize, currentPageSize, shouldReturn }) => {
     it(`whenChangingPageSize_changePageSize_shouldHandleValue${String(pageSize)}`, async () => {
       // Arrange
-      appShellStateMock.pagination.set({ page: 3, pageSize: currentPageSize, totalElements: 0, totalPages: 0 });
+      appShellStateMock.pagination.set({
+        page: 3,
+        pageSize: currentPageSize,
+        totalElements: 0,
+        totalPages: 0
+      });
       const refreshSpy = spyOn(service, 'refreshListingData').and.resolveTo(undefined);
 
       // Action
@@ -273,8 +298,16 @@ describe('ListingQueryOrchestratorService', () => {
         expect(listingDataCoordinatorServiceMock.saveLanguagePreference).not.toHaveBeenCalled();
         expect(refreshSpy).not.toHaveBeenCalled();
       } else {
-        expect(appShellStateMock.pagination()).toEqual({ page: 1, pageSize: 500, totalElements: 0, totalPages: 0 });
-        expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalledOnceWith({} as any, 'en');
+        expect(appShellStateMock.pagination()).toEqual({
+          page: 1,
+          pageSize: 500,
+          totalElements: 0,
+          totalPages: 0
+        });
+        expect(listingDataCoordinatorServiceMock.saveLanguagePreference).toHaveBeenCalledOnceWith(
+          {} as any,
+          'en'
+        );
         expect(refreshSpy).toHaveBeenCalled();
       }
     });
@@ -290,16 +323,25 @@ describe('ListingQueryOrchestratorService', () => {
     // Assert
     expect(appShellStateMock.filteredTotalElements()).toBe(0);
     expect(sessionStorage.getItem('filteredTotalElements')).toBe('0');
-    expect(listingDataCoordinatorServiceMock.loadUserPreferences).toHaveBeenCalledOnceWith({} as any, 'selectedLanguage');
+    expect(listingDataCoordinatorServiceMock.loadUserPreferences).toHaveBeenCalledOnceWith(
+      {} as any,
+      'selectedLanguage'
+    );
   });
 
   it('whenResettingGuestState_resetGuestListingState_shouldRestoreDefaultsAndPersistTotal', () => {
     // Arrange
-    appShellStateMock.filters.set({ ...createDefaultListingFilters(), showClosed: false, minPrice: '1000' });
+    appShellStateMock.filters.set({
+      ...createDefaultListingFilters(),
+      showClosed: false,
+      minPrice: '1000'
+    });
     appShellStateMock.pagination.set({ page: 9, pageSize: 500, totalElements: 30, totalPages: 3 });
     appShellStateMock.filteredTotalElements.set(30);
     appShellStateMock.sortCriteria.set([{ sortBy: 'price', sortOrder: 'desc' }]);
-    appShellStateMock.propertyLabels.set([{ propertyId: 'property-1', labels: { review: 'DISCHARGED' } }]);
+    appShellStateMock.propertyLabels.set([
+      { propertyId: 'property-1', labels: { review: 'DISCHARGED' } }
+    ]);
 
     // Action
     service.resetGuestListingState();

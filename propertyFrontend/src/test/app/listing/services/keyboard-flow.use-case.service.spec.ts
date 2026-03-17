@@ -16,7 +16,10 @@ describe('KeyboardFlowUseCaseService', () => {
     TestBed.configureTestingModule({
       providers: [
         KeyboardFlowUseCaseService,
-        { provide: WorkspaceInteractionCoordinatorService, useValue: workspaceInteractionCoordinatorServiceMock }
+        {
+          provide: WorkspaceInteractionCoordinatorService,
+          useValue: workspaceInteractionCoordinatorServiceMock
+        }
       ]
     });
 
@@ -40,6 +43,8 @@ describe('KeyboardFlowUseCaseService', () => {
     service.handleWindowKeyDown(params);
 
     // Assert
-    expect(workspaceInteractionCoordinatorServiceMock.handleWindowKeyDown).toHaveBeenCalledOnceWith(params);
+    expect(workspaceInteractionCoordinatorServiceMock.handleWindowKeyDown).toHaveBeenCalledOnceWith(
+      params
+    );
   });
 });

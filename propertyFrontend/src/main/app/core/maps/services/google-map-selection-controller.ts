@@ -30,7 +30,8 @@ export class GoogleMapSelectionController {
       return null;
     }
 
-    const selected = properties.find((item) => item.id === this.selectedPropertySummary?.id) ?? null;
+    const selected =
+      properties.find((item) => item.id === this.selectedPropertySummary?.id) ?? null;
     this.selectedPropertySummary = selected;
     return selected;
   }
@@ -79,19 +80,21 @@ export class GoogleMapSelectionController {
     return { type: 'selected', property: selected };
   }
 
-  private selectByKeyboard(delta: -1 | 1, mappableProperties: GoogleMapProperty[]): GoogleMapProperty | null {
+  private selectByKeyboard(
+    delta: -1 | 1,
+    mappableProperties: GoogleMapProperty[]
+  ): GoogleMapProperty | null {
     if (mappableProperties.length === 0) {
       return null;
     }
 
     const currentId = this.selectedPropertySummary?.id ?? null;
-    const currentIndex = currentId === null
-      ? -1
-      : mappableProperties.findIndex((property) => property.id === currentId);
+    const currentIndex =
+      currentId === null
+        ? -1
+        : mappableProperties.findIndex((property) => property.id === currentId);
 
-    const startIndex = currentIndex >= 0
-      ? currentIndex
-      : (delta === 1 ? -1 : 0);
+    const startIndex = currentIndex >= 0 ? currentIndex : delta === 1 ? -1 : 0;
     const nextIndex = (startIndex + delta + mappableProperties.length) % mappableProperties.length;
     const selected = mappableProperties[nextIndex];
 
@@ -105,9 +108,11 @@ export class GoogleMapSelectionController {
     }
 
     const tagName = target.tagName.toLowerCase();
-    return tagName === 'input'
-      || tagName === 'textarea'
-      || tagName === 'select'
-      || target.isContentEditable;
+    return (
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable
+    );
   }
 }

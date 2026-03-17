@@ -6,8 +6,8 @@
         <button
           type="button"
           class="location-trigger"
-          [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')"
-          [title]="t('PROPERTY_LOCATION_OPEN')"
+          [attr.aria-label]="t('map.PROPERTY_LOCATION_OPEN')"
+          [title]="t('map.PROPERTY_LOCATION_OPEN')"
           (click)="openLocationDialog()"
         >
           <span class="material-symbols-outlined">map</span>
@@ -30,9 +30,9 @@
     <table class="detail-meta-table">
       <tbody>
         <tr>
-          <th>{{ t('PRICE') }}</th>
+          <th>{{ t('listing.PRICE') }}</th>
           <td>{{ property.price }}</td>
-          <th>{{ t('PUBLICATION_DATE') }}</th>
+          <th>{{ t('listing.PUBLICATION_DATE') }}</th>
           <td>
             {{
               property.publicationDate ? getPublicationDateExtended(property.publicationDate) : '-'
@@ -40,9 +40,9 @@
           </td>
         </tr>
         <tr>
-          <th>{{ t('LOCATION') }}</th>
+          <th>{{ t('property.LOCATION') }}</th>
           <td>{{ property.location || '-' }}</td>
-          <th>{{ t('PROPERTY_DETAIL_SOURCE') }}</th>
+          <th>{{ t('property.PROPERTY_DETAIL_SOURCE') }}</th>
           <td class="url">
             @if (property.url) {
               <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
@@ -52,14 +52,14 @@
           </td>
         </tr>
         <tr>
-          <th>{{ t('AREA') }}</th>
+          <th>{{ t('listing.AREA') }}</th>
           <td>{{ getAreaDisplay(property) }}</td>
-          <th>{{ t('BEDROOMS') }}</th>
+          <th>{{ t('listing.BEDROOMS') }}</th>
           <td>{{ getBedroomsDisplay(property) }}</td>
         </tr>
         @if (reviewEnabled) {
           <tr>
-            <th>{{ t('REVIEW_COLUMN') }}</th>
+            <th>{{ t('listing.REVIEW_COLUMN') }}</th>
             <td>
               <button
                 type="button"
@@ -67,7 +67,7 @@
                 [class.new]="getReviewClass(property.propertyId) === 'new'"
                 [class.favourite]="getReviewClass(property.propertyId) === 'favourite'"
                 [class.discharged]="getReviewClass(property.propertyId) === 'discharged'"
-                [attr.aria-label]="t('REVIEW_COLUMN')"
+                [attr.aria-label]="t('listing.REVIEW_COLUMN')"
                 (click)="onPropertyReviewToggleClick(property)"
               >
                 <span class="material-symbols-outlined">{{
@@ -76,13 +76,13 @@
                 <span>{{ getReviewText(property.propertyId) }}</span>
               </button>
             </td>
-            <th>{{ t('COMMENT') }}</th>
+            <th>{{ t('listing.COMMENT') }}</th>
             <td>
               <textarea
                 class="detail-comment-input"
                 rows="2"
                 [value]="getDraftComment(property.propertyId)"
-                [placeholder]="t('COMMENT_PLACEHOLDER')"
+                [placeholder]="t('listing.COMMENT_PLACEHOLDER')"
                 (input)="onDraftCommentInput(property.propertyId, $event)"
                 (blur)="onDraftCommentBlur(property)"
               ></textarea>
@@ -101,7 +101,7 @@
     </div>
 
     <div class="description-block">
-      <label class="description-label">{{ t('DESCRIPTION') }}</label>
+      <label class="description-label">{{ t('property.DESCRIPTION') }}</label>
       <textarea class="description-textarea" readonly>{{
         property.advertiserComment || '-'
       }}</textarea>

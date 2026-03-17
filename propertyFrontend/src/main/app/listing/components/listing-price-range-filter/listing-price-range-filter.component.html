@@ -1,9 +1,9 @@
 <div class="price-range-filter">
-  <div class="price-range-title">{{ t('PRICE_RANGE') }}</div>
+  <div class="price-range-title">{{ t('listing.PRICE_RANGE') }}</div>
 
   <div class="price-range-inputs">
     <label class="price-input-group">
-      <span class="price-input-label">{{ t('MIN_PRICE') }}</span>
+      <span class="price-input-label">{{ t('listing.MIN_PRICE') }}</span>
       <input
         type="text"
         inputmode="numeric"
@@ -15,7 +15,7 @@
     </label>
 
     <label class="price-input-group">
-      <span class="price-input-label">{{ t('MAX_PRICE') }}</span>
+      <span class="price-input-label">{{ t('listing.MAX_PRICE') }}</span>
       <input
         type="text"
         inputmode="numeric"
@@ -28,7 +28,7 @@
   </div>
 
   @if (loading()) {
-    <div class="price-range-hint">{{ t('LOADING_PRICE_RANGE') }}</div>
+    <div class="price-range-hint">{{ t('listing.LOADING_PRICE_RANGE') }}</div>
   } @else if (hasRange()) {
     <div class="price-slider">
       <div class="price-slider-track"></div>
@@ -52,6 +52,6 @@
       />
     </div>
   } @else {
-    <div class="price-range-hint">{{ t('PRICE_RANGE_NOT_AVAILABLE') }}</div>
+    <div class="price-range-hint">{{ t('listing.PRICE_RANGE_NOT_AVAILABLE') }}</div>
   }
 </div>

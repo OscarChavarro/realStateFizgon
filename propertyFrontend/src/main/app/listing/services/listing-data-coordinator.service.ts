@@ -8,7 +8,7 @@ import { ListingPaginationState } from 'src/app/listing/model/pagination/listing
 import { SortToggleRequest } from 'src/app/listing/model/listing.types';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';
 

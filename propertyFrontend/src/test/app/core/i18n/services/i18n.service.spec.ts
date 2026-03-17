@@ -1,73 +1,25 @@
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { I18N_KEYS } from 'src/app/core/i18n/translations/i18n-keys.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+
+function flattenTranslationKeys(): TranslationKey[] {
+  const namespaces = Object.values(I18N_KEYS) as ReadonlyArray<Record<string, TranslationKey>>;
+  return namespaces.flatMap((namespaceEntries) =>
+    Object.values(namespaceEntries)
+  ) as TranslationKey[];
+}
 
 describe('I18nService', () => {
   let service: I18nService;
 
   const languages: SupportedLanguage[] = ['en', 'sp'];
-  const allKeys: readonly TranslationKey[] = [
-    'DASHBOARD',
-    'DATABASE_MAINTENANCE_TAB',
-    'USERS_TAB',
-    'LANGUAGE_EN',
-    'LANGUAGE_SP',
-    'FILTERS',
-    'SHOW_CLOSED_PROPERTIES',
-    'SHOW_REVIEW_NEW',
-    'SHOW_REVIEW_FAVOURITE',
-    'SHOW_REVIEW_REJECTED',
-    'MIN_PUBLICATION_DATE',
-    'MAX_PUBLICATION_DATE',
-    'PRICE_RANGE',
-    'MIN_PRICE',
-    'MAX_PRICE',
-    'LOADING_PRICE_RANGE',
-    'PRICE_RANGE_NOT_AVAILABLE',
-    'SHOWING_PROPERTIES',
-    'FULLSCREEN',
-    'CYCLE_LAYOUT',
-    'USER_MENU',
-    'LOGIN_WITH_GOOGLE',
-    'GOOGLE_LOGIN_NOT_CONFIGURED',
-    'SIGNED_IN_USER',
-    'LOGOUT',
-    'USER_ROLE',
-    'USER_NAME',
-    'USER_EMAIL',
-    'USER_PERMISSIONS',
-    'USER_LAST_LOGIN',
-    'ACTIONS',
-    'DELETE_USER',
-    'DELETE_USER_CURRENT_DISABLED',
-    'LOADING_USERS',
-    'NO_USERS_FOUND',
-    'PUBLICATION_DATE',
-    'TITLE',
-    'PRICE',
-    'REVIEW_COLUMN',
-    'REVIEW_NEW',
-    'REVIEW_FAVOURITE',
-    'REVIEW_DISCHARGED',
-    'COMMENT',
-    'COMMENT_PLACEHOLDER',
-    'LOCATION',
-    'PROPERTY_DETAIL_SOURCE',
-    'DESCRIPTION',
-    'SORT_ASC',
-    'SORT_DESC',
-    'SORT_DISABLED',
-    'NO_PROPERTIES_FOUND',
-    'REMOVE_DANGLING_IMAGES',
-    'OPERATION_RESULT'
-  ];
+  const allKeys = flattenTranslationKeys();
 
   const explicitCases: ReadonlyArray<{ key: TranslationKey; en: string; sp: string }> = [
-    { key: 'DASHBOARD', en: 'Listing', sp: 'Listado' },
-    { key: 'REVIEW_DISCHARGED', en: 'Rejected', sp: 'Rechazado' },
-    { key: 'PUBLICATION_DATE', en: 'Published on', sp: 'Publicado en' }
+    { key: I18N_KEYS.shell.DASHBOARD, en: 'Listing', sp: 'Listado' },
+    { key: I18N_KEYS.listing.REVIEW_DISCHARGED, en: 'Rejected', sp: 'Rechazado' },
+    { key: I18N_KEYS.listing.PUBLICATION_DATE, en: 'Published on', sp: 'Publicado en' }
   ];
 
   beforeEach(() => {
@@ -92,6 +44,13 @@ describe('I18nService', () => {
   });
 
   it('whenInvalidKey_get_shouldThrowTypeError', () => {
-    expect(() => service.get('NOT_A_REAL_KEY' as TranslationKey, 'en')).toThrow();
+    expect(() => service.get('invalid.UNKNOWN' as TranslationKey, 'en')).toThrow();
+  });
+
+  it('whenKeyIsMissingInValidNamespace_get_shouldThrowMissingTranslationError', () => {
+    const missingKey = 'shell.UNKNOWN_KEY' as TranslationKey;
+    expect(() => service.get(missingKey, 'en')).toThrowError(
+      `[I18nService] Missing translation for key "${missingKey}".`
+    );
   });
 });

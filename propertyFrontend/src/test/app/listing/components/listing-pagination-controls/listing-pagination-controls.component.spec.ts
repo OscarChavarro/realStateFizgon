@@ -256,8 +256,8 @@ describe('ListingPaginationControlsComponent', () => {
   });
 
   [
-    { language: 'en' as const, key: 'PAGINATION_PAGE' as const, expected: 'Page' },
-    { language: 'sp' as const, key: 'PAGINATION_PAGE' as const, expected: 'Página' }
+    { language: 'en' as const, key: 'listing.PAGINATION_PAGE' as const, expected: 'Page' },
+    { language: 'sp' as const, key: 'listing.PAGINATION_PAGE' as const, expected: 'Página' }
   ].forEach(({ language, key, expected }) => {
     it(`whenLanguageIs${language}_tShouldReturnLocalizedText`, () => {
       // Arrange

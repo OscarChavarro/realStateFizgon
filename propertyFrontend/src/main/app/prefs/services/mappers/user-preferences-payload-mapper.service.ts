@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { ListingFiltersState } from 'src/app/listing/model/filters/listing-filters.model';
 import { DASHBOARD_PAGE_SIZE_OPTIONS } from 'src/app/listing/model/pagination/listing-pagination.model';
 import {

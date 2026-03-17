@@ -6,7 +6,7 @@
       [class.active]="activeTab === 'DASHBOARD'"
       (click)="selectTab('DASHBOARD')"
     >
-      {{ t('DASHBOARD') }}
+      {{ t('shell.DASHBOARD') }}
     </button>
     <button
       type="button"
@@ -14,7 +14,7 @@
       [class.active]="activeTab === 'MAP_TAB'"
       (click)="selectTab('MAP_TAB')"
     >
-      {{ t('MAP_TAB') }}
+      {{ t('shell.MAP_TAB') }}
     </button>
     @if (canMaintainDatabase) {
       <button
@@ -23,7 +23,7 @@
         [class.active]="activeTab === 'DATABASE_MAINTENANCE_TAB'"
         (click)="selectTab('DATABASE_MAINTENANCE_TAB')"
       >
-        {{ t('DATABASE_MAINTENANCE_TAB') }}
+        {{ t('shell.DATABASE_MAINTENANCE_TAB') }}
       </button>
     }
     @if (canEditUsers) {
@@ -33,14 +33,14 @@
         [class.active]="activeTab === 'USERS_TAB'"
         (click)="selectTab('USERS_TAB')"
       >
-        {{ t('USERS_TAB') }}
+        {{ t('shell.USERS_TAB') }}
       </button>
     }
   </nav>
 
   <div class="top-bar-actions">
     <div class="property-count-chip">
-      <span class="count-label">{{ t('SHOWING_PROPERTIES') }}:</span>
+      <span class="count-label">{{ t('shell.SHOWING_PROPERTIES') }}:</span>
       <span class="count-value" [class.loading]="loading"
         >{{ visibleCount }} / {{ totalCount }}</span
       >
@@ -57,8 +57,8 @@
       <button
         type="button"
         class="layout-cycle-trigger"
-        [attr.aria-label]="t('CYCLE_LAYOUT')"
-        [attr.title]="t('CYCLE_LAYOUT')"
+        [attr.aria-label]="t('shell.CYCLE_LAYOUT')"
+        [attr.title]="t('shell.CYCLE_LAYOUT')"
         (click)="onLayoutCycleButtonClick()"
       >
         <span class="material-symbols-outlined">{{ layoutCycleIcon }}</span>
@@ -68,8 +68,8 @@
     <button
       type="button"
       class="fullscreen-trigger"
-      [attr.aria-label]="t('FULLSCREEN')"
-      [attr.title]="t('FULLSCREEN')"
+      [attr.aria-label]="t('shell.FULLSCREEN')"
+      [attr.title]="t('shell.FULLSCREEN')"
       (click)="onFullscreenButtonClick()"
     >
       <span class="material-symbols-outlined">fullscreen</span>
@@ -82,8 +82,8 @@
         [value]="selectedLanguage"
         (change)="onLanguageSelect($any($event.target).value)"
       >
-        <option value="en">{{ t('LANGUAGE_EN') }}</option>
-        <option value="sp">{{ t('LANGUAGE_SP') }}</option>
+        <option value="en">{{ t('shell.LANGUAGE_EN') }}</option>
+        <option value="sp">{{ t('shell.LANGUAGE_SP') }}</option>
       </select>
     </div>
 

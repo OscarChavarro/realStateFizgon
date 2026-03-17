@@ -4,7 +4,7 @@ import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database
 
 class TestMaintenanceOperation extends DatabaseMaintenanceOperation {
   constructor(endpointPath: string) {
-    super('REMOVE_DANGLING_IMAGES', endpointPath);
+    super('maintenance.REMOVE_DANGLING_IMAGES', endpointPath);
   }
 }
 

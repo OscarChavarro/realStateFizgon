@@ -238,8 +238,8 @@ describe('ListingFilterMenuComponent', () => {
   });
 
   [
-    { language: 'en' as const, key: 'FILTERS' as const, expected: 'Filters' },
-    { language: 'sp' as const, key: 'FILTERS' as const, expected: 'Filtros' }
+    { language: 'en' as const, key: 'listing.FILTERS' as const, expected: 'Filters' },
+    { language: 'sp' as const, key: 'listing.FILTERS' as const, expected: 'Filtros' }
   ].forEach(({ language, key, expected }) => {
     it(`t should return "${expected}" when language is ${language}`, () => {
       // Arrange

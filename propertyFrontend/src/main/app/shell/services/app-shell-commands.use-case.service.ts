@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { UserSessionManagementUseCaseService } from 'src/app/auth/services/user-session-management.use-case.service';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { ListingTab } from 'src/app/listing/model/listing.types';
 import { ListingDataCoordinatorService } from 'src/app/listing/services/listing-data-coordinator.service';
 import { ListingStateFacadeService } from 'src/app/listing/services/listing-state-facade.service';

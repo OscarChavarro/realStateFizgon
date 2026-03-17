@@ -600,8 +600,8 @@ describe('ListingPropertiesTableComponent', () => {
   });
 
   [
-    { language: 'en' as const, key: 'TITLE' as const, expected: 'Title' },
-    { language: 'sp' as const, key: 'TITLE' as const, expected: 'Título' }
+    { language: 'en' as const, key: 'listing.TITLE' as const, expected: 'Title' },
+    { language: 'sp' as const, key: 'listing.TITLE' as const, expected: 'Título' }
   ].forEach(({ language, key, expected }) => {
     it(`t should return ${expected} in ${language}`, () => {
       // Arrange

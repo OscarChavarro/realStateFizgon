@@ -9,7 +9,7 @@ import {
   SortCriterion,
   SortDirection
 } from 'src/app/listing/model/listing.types';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { UserPreferencesPayload } from 'src/app/prefs/model/user-preferences-payload.type';
 import { UserPreferencesPayloadMapperService } from 'src/app/prefs/services/mappers/user-preferences-payload-mapper.service';
 import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';

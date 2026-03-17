@@ -56,23 +56,33 @@ describe('PropertyDetailPanelComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('PRICE');
+    const result = component.t('listing.PRICE');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('PRICE', 'sp');
-    expect(result).toBe('PRICE:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('listing.PRICE', 'sp');
+    expect(result).toBe('listing.PRICE:sp');
   });
 
   [
-    { review: 'FAVOURITE', className: 'favourite', icon: 'check', textKey: 'REVIEW_FAVOURITE:en' },
+    {
+      review: 'FAVOURITE',
+      className: 'favourite',
+      icon: 'check',
+      textKey: 'listing.REVIEW_FAVOURITE:en'
+    },
     {
       review: 'DISCHARGED',
       className: 'discharged',
       icon: 'close',
-      textKey: 'REVIEW_DISCHARGED:en'
+      textKey: 'listing.REVIEW_DISCHARGED:en'
     },
-    { review: 'NEW', className: 'new', icon: 'flare', textKey: 'REVIEW_NEW:en' },
-    { review: 'INVALID', className: 'new', icon: 'flare', textKey: 'REVIEW_NEW:en' }
+    { review: 'NEW', className: 'new', icon: 'flare', textKey: 'listing.REVIEW_NEW:en' },
+    {
+      review: 'INVALID',
+      className: 'new',
+      icon: 'flare',
+      textKey: 'listing.REVIEW_NEW:en'
+    }
   ].forEach(({ review, className, icon, textKey }) => {
     it(`review helpers should map "${review}" correctly`, () => {
       // Arrange

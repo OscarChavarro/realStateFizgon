@@ -215,11 +215,11 @@ describe('UserMenuComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('USER_MENU');
+    const result = component.t('auth.USER_MENU');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('USER_MENU', 'sp');
-    expect(result).toBe('USER_MENU:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('auth.USER_MENU', 'sp');
+    expect(result).toBe('auth.USER_MENU:sp');
   });
 
   [
@@ -236,9 +236,9 @@ describe('UserMenuComponent', () => {
     },
     {
       user: UserMenuComponentMockFactory.createUser({ name: '   ', email: '   ' }),
-      expected: 'SIGNED_IN_USER:en'
+      expected: 'auth.SIGNED_IN_USER:en'
     },
-    { user: null, expected: 'SIGNED_IN_USER:en' }
+    { user: null, expected: 'auth.SIGNED_IN_USER:en' }
   ].forEach(({ user, expected }) => {
     it(`displayName should resolve to "${expected}"`, () => {
       // Arrange

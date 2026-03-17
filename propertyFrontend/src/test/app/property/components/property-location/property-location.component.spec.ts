@@ -224,10 +224,10 @@ describe('PropertyLocationComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('PROPERTY_LOCATION_OPEN');
+    const result = component.t('map.PROPERTY_LOCATION_OPEN');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('PROPERTY_LOCATION_OPEN', 'sp');
-    expect(result).toBe('PROPERTY_LOCATION_OPEN:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('map.PROPERTY_LOCATION_OPEN', 'sp');
+    expect(result).toBe('map.PROPERTY_LOCATION_OPEN:sp');
   });
 });

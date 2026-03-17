@@ -151,7 +151,9 @@ class GoogleMapSelectionControllerMock {
 }
 
 class GoogleMapPoiLayerManagerMock {
-  readonly layerOptions = [{ id: 'business', label: 'PROPERTY_LOCATION_LAYER_BUSINESS' as const }];
+  readonly layerOptions = [
+    { id: 'business', label: 'map.PROPERTY_LOCATION_LAYER_BUSINESS' as const }
+  ];
   isLayerEnabled = jasmine.createSpy('isLayerEnabled').and.returnValue(true);
   toggleLayer = jasmine.createSpy('toggleLayer');
   buildMapStyles = jasmine
@@ -275,7 +277,7 @@ describe('GoogleMapComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const translated = component.t('PROPERTY_LOCATION_LAYERS_TITLE');
+    const translated = component.t('map.PROPERTY_LOCATION_LAYERS_TITLE');
 
     // Assert
     expect(translated).toBe('Capas');

@@ -177,8 +177,8 @@ describe('ListingTopBarComponent', () => {
   });
 
   [
-    { language: 'en' as const, key: 'SHOWING_PROPERTIES' as const, expected: 'Showing' },
-    { language: 'sp' as const, key: 'SHOWING_PROPERTIES' as const, expected: 'Mostrando' }
+    { language: 'en' as const, key: 'shell.SHOWING_PROPERTIES' as const, expected: 'Showing' },
+    { language: 'sp' as const, key: 'shell.SHOWING_PROPERTIES' as const, expected: 'Mostrando' }
   ].forEach(({ language, key, expected }) => {
     it(`t should return translated value "${expected}" for ${language}`, () => {
       // Arrange

@@ -17,11 +17,9 @@ import {
   SortToggleRequest
 } from 'src/app/listing/model/listing.types';
 import { ListingPaginationControlsComponent } from 'src/app/listing/components/listing-pagination-controls/listing-pagination-controls.component';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 
 @Component({
   selector: 'app-listing-properties-table',
@@ -108,12 +106,12 @@ export class ListingPropertiesTableComponent {
   getSortAriaLabel(sortBy: SortField): string {
     const direction = this.getSortDirection(sortBy);
     if (direction === 'asc') {
-      return `${this.t('SORT_DESC')} ${this.getSortFieldLabel(sortBy)}`;
+      return `${this.t('listing.SORT_DESC')} ${this.getSortFieldLabel(sortBy)}`;
     }
     if (direction === 'desc') {
-      return `${this.t('SORT_DISABLED')} ${this.getSortFieldLabel(sortBy)}`;
+      return `${this.t('listing.SORT_DISABLED')} ${this.getSortFieldLabel(sortBy)}`;
     }
-    return `${this.t('SORT_ASC')} ${this.getSortFieldLabel(sortBy)}`;
+    return `${this.t('listing.SORT_ASC')} ${this.getSortFieldLabel(sortBy)}`;
   }
 
   getSortPriority(sortBy: SortField): number | null {
@@ -210,12 +208,12 @@ export class ListingPropertiesTableComponent {
 
   private getSortFieldLabel(sortBy: SortField): string {
     if (sortBy === 'title') {
-      return this.t('TITLE');
+      return this.t('listing.TITLE');
     }
     if (sortBy === 'publicationDate') {
-      return this.t('PUBLICATION_DATE');
+      return this.t('listing.PUBLICATION_DATE');
     }
-    return this.t('PRICE');
+    return this.t('listing.PRICE');
   }
 
   private getPropertyRowKey(property: ListingPropertyRow): string {

@@ -1,23 +1,23 @@
 <section class="users-panel">
   <header class="users-panel-header">
-    <h2>{{ t('USERS_TAB') }}</h2>
+    <h2>{{ t('shell.USERS_TAB') }}</h2>
   </header>
 
   @if (loading) {
-    <p class="users-empty">{{ t('LOADING_USERS') }}</p>
+    <p class="users-empty">{{ t('auth.LOADING_USERS') }}</p>
   } @else if (users.length === 0) {
-    <p class="users-empty">{{ t('NO_USERS_FOUND') }}</p>
+    <p class="users-empty">{{ t('auth.NO_USERS_FOUND') }}</p>
   } @else {
     <div class="users-table-wrapper">
       <table class="users-table">
         <thead>
           <tr>
-            <th>{{ t('USER_NAME') }}</th>
-            <th>{{ t('USER_EMAIL') }}</th>
-            <th>{{ t('USER_ROLE') }}</th>
-            <th>{{ t('USER_PERMISSIONS') }}</th>
-            <th>{{ t('USER_LAST_LOGIN') }}</th>
-            <th>{{ t('ACTIONS') }}</th>
+            <th>{{ t('auth.USER_NAME') }}</th>
+            <th>{{ t('auth.USER_EMAIL') }}</th>
+            <th>{{ t('auth.USER_ROLE') }}</th>
+            <th>{{ t('auth.USER_PERMISSIONS') }}</th>
+            <th>{{ t('auth.USER_LAST_LOGIN') }}</th>
+            <th>{{ t('auth.ACTIONS') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -34,11 +34,13 @@
                   class="delete-user-button"
                   [disabled]="isCurrentUser(user)"
                   [title]="
-                    isCurrentUser(user) ? t('DELETE_USER_CURRENT_DISABLED') : t('DELETE_USER')
+                    isCurrentUser(user)
+                      ? t('auth.DELETE_USER_CURRENT_DISABLED')
+                      : t('auth.DELETE_USER')
                   "
                   (click)="onDeleteUser(user.id)"
                 >
-                  {{ t('DELETE_USER') }}
+                  {{ t('auth.DELETE_USER') }}
                 </button>
               </td>
             </tr>

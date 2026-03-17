@@ -9,11 +9,9 @@ import {
   ViewChild,
   inject
 } from '@angular/core';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
 

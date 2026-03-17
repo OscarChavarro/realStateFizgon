@@ -10,11 +10,9 @@ import {
   signal
 } from '@angular/core';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 
 @Component({
   selector: 'app-user-menu',
@@ -99,7 +97,7 @@ export class UserMenuComponent {
       return email;
     }
 
-    return this.t('SIGNED_IN_USER');
+    return this.t('auth.SIGNED_IN_USER');
   }
 
   get displayRole(): string {

@@ -4,8 +4,8 @@
     class="user-trigger"
     [class.open]="menuOpen()"
     [attr.aria-expanded]="menuOpen()"
-    [attr.aria-label]="t('USER_MENU')"
-    [attr.title]="t('USER_MENU')"
+    [attr.aria-label]="t('auth.USER_MENU')"
+    [attr.title]="t('auth.USER_MENU')"
     aria-haspopup="true"
     (click)="onToggleMenu()"
   >
@@ -25,13 +25,13 @@
             <div class="user-email">{{ authenticatedUser.email }}</div>
           }
           @if (shouldShowRole) {
-            <div class="user-role">{{ t('USER_ROLE') }}: {{ displayRole }}</div>
+            <div class="user-role">{{ t('auth.USER_ROLE') }}: {{ displayRole }}</div>
           }
         </div>
 
         <button type="button" class="logout-button" (click)="onLogoutClick()">
           <span class="material-symbols-outlined" aria-hidden="true">logout</span>
-          <span>{{ t('LOGOUT') }}</span>
+          <span>{{ t('auth.LOGOUT') }}</span>
         </button>
       } @else {
         <button
@@ -41,11 +41,11 @@
           (click)="onGoogleLoginClick()"
         >
           <span class="google-icon" aria-hidden="true">G</span>
-          <span>{{ t('LOGIN_WITH_GOOGLE') }}</span>
+          <span>{{ t('auth.LOGIN_WITH_GOOGLE') }}</span>
         </button>
 
         @if (!googleLoginEnabled) {
-          <p class="google-login-hint">{{ t('GOOGLE_LOGIN_NOT_CONFIGURED') }}</p>
+          <p class="google-login-hint">{{ t('auth.GOOGLE_LOGIN_NOT_CONFIGURED') }}</p>
         }
       }
     </div>

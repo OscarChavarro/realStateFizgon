@@ -28,7 +28,7 @@ import { ListingBootstrapUseCaseService } from 'src/app/listing/services/listing
 import { ListingQueryOrchestratorService } from 'src/app/listing/services/listing-query-orchestrator.service';
 import { ListingInteractionUseCaseService } from 'src/app/listing/services/listing-interaction.use-case.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { PropertyDetailPanelComponent } from 'src/app/property/components/property-detail-panel/property-detail-panel.component';
 import { ShellInputInteractionUseCaseService } from 'src/app/shell/services/shell-input-interaction.use-case.service';
 import { AppShellStateService } from 'src/app/shell/services/app-shell-state.service';

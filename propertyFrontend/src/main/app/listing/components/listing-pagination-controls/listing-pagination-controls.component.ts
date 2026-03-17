@@ -1,10 +1,8 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { DASHBOARD_PAGE_SIZE_OPTIONS } from 'src/app/listing/model/pagination/listing-pagination.model';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 
 @Component({
   selector: 'app-listing-pagination-controls',

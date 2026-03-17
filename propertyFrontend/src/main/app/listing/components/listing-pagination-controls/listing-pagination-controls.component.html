@@ -1,13 +1,15 @@
 <div class="pagination-bar">
   <div class="pagination-summary">
     <span
-      >{{ t('PAGINATION_PAGE') }} {{ normalizedCurrentPage() }} {{ t('PAGINATION_OF') }}
-      {{ totalPages }}</span
+      >{{ t('listing.PAGINATION_PAGE') }} {{ normalizedCurrentPage() }}
+      {{ t('listing.PAGINATION_OF') }} {{ totalPages }}</span
     >
   </div>
 
   <div class="pagination-controls">
-    <label class="page-size-label" for="page-size-select">{{ t('PAGINATION_PAGE_SIZE') }}</label>
+    <label class="page-size-label" for="page-size-select">{{
+      t('listing.PAGINATION_PAGE_SIZE')
+    }}</label>
     <select
       id="page-size-select"
       class="page-size-select"
@@ -25,7 +27,7 @@
       class="pagination-nav-button"
       [disabled]="!canGoPrevious()"
       (click)="onPreviousClick()"
-      [attr.aria-label]="t('PAGINATION_PREVIOUS')"
+      [attr.aria-label]="t('listing.PAGINATION_PREVIOUS')"
     >
       <span class="material-symbols-outlined">chevron_left</span>
     </button>
@@ -49,7 +51,7 @@
       class="pagination-nav-button"
       [disabled]="!canGoNext()"
       (click)="onNextClick()"
-      [attr.aria-label]="t('PAGINATION_NEXT')"
+      [attr.aria-label]="t('listing.PAGINATION_NEXT')"
     >
       <span class="material-symbols-outlined">chevron_right</span>
     </button>

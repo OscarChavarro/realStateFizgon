@@ -4,7 +4,7 @@
       class="location-dialog"
       role="dialog"
       aria-modal="true"
-      [attr.aria-label]="t('PROPERTY_LOCATION_OPEN')"
+      [attr.aria-label]="t('map.PROPERTY_LOCATION_OPEN')"
     >
       <header class="location-dialog-toolbar">
         <div class="location-dialog-toolbar-side-left">
@@ -13,13 +13,13 @@
             class="location-layer-panel-toggle"
             [attr.aria-label]="
               isLayerPanelVisible
-                ? t('PROPERTY_LOCATION_PANEL_HIDE')
-                : t('PROPERTY_LOCATION_PANEL_SHOW')
+                ? t('map.PROPERTY_LOCATION_PANEL_HIDE')
+                : t('map.PROPERTY_LOCATION_PANEL_SHOW')
             "
             [title]="
               isLayerPanelVisible
-                ? t('PROPERTY_LOCATION_PANEL_HIDE')
-                : t('PROPERTY_LOCATION_PANEL_SHOW')
+                ? t('map.PROPERTY_LOCATION_PANEL_HIDE')
+                : t('map.PROPERTY_LOCATION_PANEL_SHOW')
             "
             (click)="onLayerPanelToggleClick()"
           >
@@ -35,7 +35,7 @@
           <button
             type="button"
             class="location-dialog-close"
-            [attr.aria-label]="t('PROPERTY_LOCATION_CLOSE')"
+            [attr.aria-label]="t('map.PROPERTY_LOCATION_CLOSE')"
             (click)="onCloseClick()"
           >
             <span class="material-symbols-outlined">close</span>

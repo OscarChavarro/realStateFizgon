@@ -42,10 +42,10 @@ describe('MaintenancePanelComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('DATABASE_MAINTENANCE_TAB');
+    const result = component.t('shell.DATABASE_MAINTENANCE_TAB');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('DATABASE_MAINTENANCE_TAB', 'sp');
-    expect(result).toBe('DATABASE_MAINTENANCE_TAB:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('shell.DATABASE_MAINTENANCE_TAB', 'sp');
+    expect(result).toBe('shell.DATABASE_MAINTENANCE_TAB:sp');
   });
 });

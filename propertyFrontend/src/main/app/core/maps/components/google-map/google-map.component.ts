@@ -4,8 +4,8 @@ import {
   Component,
   ElementRef,
   HostListener,
-  NgZone,
   Input,
+  NgZone,
   OnChanges,
   OnDestroy,
   SimpleChanges,
@@ -13,11 +13,9 @@ import {
   inject
 } from '@angular/core';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import {
   GoogleMapLayerId,
   GoogleMapVisualStyleId,
@@ -98,9 +96,9 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   layerPanelWidthPx = 220;
   readonly layerOptions = this.poiLayerManager.layerOptions;
   readonly mapVisualStyleOptions: GoogleMapVisualStyleOption[] = [
-    { id: 'vector', label: 'PROPERTY_LOCATION_STYLE_VECTOR' },
-    { id: 'satellite', label: 'PROPERTY_LOCATION_STYLE_SATELLITE' },
-    { id: 'hybrid', label: 'PROPERTY_LOCATION_STYLE_HYBRID' }
+    { id: 'vector', label: 'map.PROPERTY_LOCATION_STYLE_VECTOR' },
+    { id: 'satellite', label: 'map.PROPERTY_LOCATION_STYLE_SATELLITE' },
+    { id: 'hybrid', label: 'map.PROPERTY_LOCATION_STYLE_HYBRID' }
   ];
   selectedMapVisualStyle: GoogleMapVisualStyleId = 'hybrid';
 
@@ -208,7 +206,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     const mappableProperties = this.getMappableProperties();
     if (!mappableProperties.length) {
-      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_MISSING_COORDINATES');
+      this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_MISSING_COORDINATES');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
@@ -219,7 +217,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     if (!this.googleMapsApiKey) {
-      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_NOT_CONFIGURED');
+      this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_NOT_CONFIGURED');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
@@ -236,7 +234,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         if (interactionChanged) {
           const googleMaps = this.runtimeLoader.getGoogleMaps();
           if (!googleMaps) {
-            this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+            this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_LOAD_ERROR');
             return;
           }
 
@@ -252,7 +250,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
       const googleMaps = this.runtimeLoader.getGoogleMaps();
       if (!googleMaps) {
-        this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+        this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_LOAD_ERROR');
         return;
       }
 
@@ -285,7 +283,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       }
     } catch (error) {
       console.error('[GoogleMapComponent] Google Maps initialization failed.', error);
-      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+      this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_LOAD_ERROR');
       this.mapRenderSignature = null;
       this.propertiesRenderSignature = null;
       this.markerInteractionEnabledSnapshot = null;
@@ -304,7 +302,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const googleMaps = this.runtimeLoader.getGoogleMaps();
     const mapContainer = this.mapContainerRef?.nativeElement;
     if (!googleMaps || !mapContainer) {
-      this.mapLoadError = this.t('PROPERTY_LOCATION_MAP_LOAD_ERROR');
+      this.mapLoadError = this.t('map.PROPERTY_LOCATION_MAP_LOAD_ERROR');
       return;
     }
 

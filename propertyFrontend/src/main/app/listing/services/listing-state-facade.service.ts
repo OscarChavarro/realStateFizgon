@@ -13,7 +13,7 @@ import { ListingPaginationState } from 'src/app/listing/model/pagination/listing
 import { MaintenanceOperationRunnerService } from 'src/app/maintenance/services/maintenance-operation-runner.service';
 import { SortCriteriaService } from 'src/app/listing/services/sort-criteria.service';
 import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database-maintenance-operation';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 
 @Injectable({
   providedIn: 'root'

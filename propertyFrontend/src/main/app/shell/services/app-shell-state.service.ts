@@ -2,7 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import {
   ListingFiltersState,
   createDefaultListingFilters

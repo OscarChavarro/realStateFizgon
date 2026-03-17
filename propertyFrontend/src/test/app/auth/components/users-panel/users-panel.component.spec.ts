@@ -54,11 +54,11 @@ describe('UsersPanelComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('USERS_TAB');
+    const result = component.t('shell.USERS_TAB');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('USERS_TAB', 'sp');
-    expect(result).toBe('USERS_TAB:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('shell.USERS_TAB', 'sp');
+    expect(result).toBe('shell.USERS_TAB:sp');
   });
 
   [

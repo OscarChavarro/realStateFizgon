@@ -2,6 +2,6 @@ import { DatabaseMaintenanceOperation } from 'src/app/maintenance/model/database
 
 export class RemoveDanglingImagesOperation extends DatabaseMaintenanceOperation {
   constructor() {
-    super('REMOVE_DANGLING_IMAGES', '/removeDanglingImages');
+    super('maintenance.REMOVE_DANGLING_IMAGES', '/removeDanglingImages');
   }
 }

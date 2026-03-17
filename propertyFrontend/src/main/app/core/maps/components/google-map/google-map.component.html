@@ -3,7 +3,7 @@
     <aside class="google-map-layer-panel" [style.width.px]="layerPanelWidthPx">
       <div class="google-map-layer-group">
         <header class="google-map-layer-panel-header">
-          <h3>{{ t('PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
+          <h3>{{ t('map.PROPERTY_LOCATION_LAYERS_TITLE') }}</h3>
         </header>
         <div class="google-map-layer-list">
           @for (layer of layerOptions; track layer.id) {
@@ -21,7 +21,7 @@
 
       <div class="google-map-layer-group">
         <header class="google-map-layer-panel-header">
-          <h3>{{ t('PROPERTY_LOCATION_STYLES_TITLE') }}</h3>
+          <h3>{{ t('map.PROPERTY_LOCATION_STYLES_TITLE') }}</h3>
         </header>
         <div class="google-map-style-list">
           @for (styleOption of mapVisualStyleOptions; track styleOption.id) {

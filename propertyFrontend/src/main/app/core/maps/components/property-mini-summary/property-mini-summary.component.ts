@@ -1,9 +1,7 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { PropertyMiniImageCarouselComponent } from 'src/app/core/maps/components/property-mini-image-carousel/property-mini-image-carousel.component';
 import {
   GoogleMapProperty,
@@ -59,11 +57,11 @@ export class PropertyMiniSummaryComponent {
 
   private reviewToTranslation(review: GoogleMapPropertyReview): string {
     if (review === 'FAVOURITE') {
-      return this.t('REVIEW_FAVOURITE');
+      return this.t('listing.REVIEW_FAVOURITE');
     }
     if (review === 'DISCHARGED') {
-      return this.t('REVIEW_DISCHARGED');
+      return this.t('listing.REVIEW_DISCHARGED');
     }
-    return this.t('REVIEW_NEW');
+    return this.t('listing.REVIEW_NEW');
   }
 }

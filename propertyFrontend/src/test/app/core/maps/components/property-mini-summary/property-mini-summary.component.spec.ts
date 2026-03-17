@@ -52,11 +52,11 @@ describe('PropertyMiniSummaryComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('REVIEW_NEW');
+    const result = component.t('listing.REVIEW_NEW');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('REVIEW_NEW', 'sp');
-    expect(result).toBe('REVIEW_NEW:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('listing.REVIEW_NEW', 'sp');
+    expect(result).toBe('listing.REVIEW_NEW:sp');
   });
 
   [
@@ -64,15 +64,20 @@ describe('PropertyMiniSummaryComponent', () => {
       review: 'FAVOURITE',
       expectedClass: 'favourite',
       expectedIcon: 'check',
-      expectedText: 'REVIEW_FAVOURITE:en'
+      expectedText: 'listing.REVIEW_FAVOURITE:en'
     },
     {
       review: 'DISCHARGED',
       expectedClass: 'discharged',
       expectedIcon: 'close',
-      expectedText: 'REVIEW_DISCHARGED:en'
+      expectedText: 'listing.REVIEW_DISCHARGED:en'
     },
-    { review: 'NEW', expectedClass: 'new', expectedIcon: 'flare', expectedText: 'REVIEW_NEW:en' }
+    {
+      review: 'NEW',
+      expectedClass: 'new',
+      expectedIcon: 'flare',
+      expectedText: 'listing.REVIEW_NEW:en'
+    }
   ].forEach(({ review, expectedClass, expectedIcon, expectedText }) => {
     it(`review helpers should map ${review}`, () => {
       // Arrange

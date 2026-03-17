@@ -4,11 +4,9 @@ import {
   PropertyLabelEntry,
   PropertyReviewLabel
 } from 'src/app/listing/model/listing.types';
-import {
-  I18nService,
-  SupportedLanguage,
-  TranslationKey
-} from 'src/app/core/i18n/services/i18n.service';
+import { I18nService } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import { PropertyImageCarouselComponent } from 'src/app/property/components/property-image-carousel/property-image-carousel.component';
 import { PropertyLocationComponent } from 'src/app/property/components/property-location/property-location.component';
 
@@ -66,12 +64,12 @@ export class PropertyDetailPanelComponent {
   getReviewText(propertyId: string): string {
     const review = this.getReview(propertyId);
     if (review === 'FAVOURITE') {
-      return this.t('REVIEW_FAVOURITE');
+      return this.t('listing.REVIEW_FAVOURITE');
     }
     if (review === 'DISCHARGED') {
-      return this.t('REVIEW_DISCHARGED');
+      return this.t('listing.REVIEW_DISCHARGED');
     }
-    return this.t('REVIEW_NEW');
+    return this.t('listing.REVIEW_NEW');
   }
 
   getDraftComment(propertyId: string): string {

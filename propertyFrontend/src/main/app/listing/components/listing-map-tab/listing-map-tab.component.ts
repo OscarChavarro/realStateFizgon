@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { GoogleMapComponent } from 'src/app/core/maps/components/google-map/google-map.component';
 import { GoogleMapProperty } from 'src/app/core/maps/model/google-map-property.model';
-import { SupportedLanguage } from 'src/app/core/i18n/services/i18n.service';
+import { SupportedLanguage } from 'src/app/core/i18n/types/supported-language.type';
 import {
   ListingPropertyRow,
   PropertyLabelEntry,

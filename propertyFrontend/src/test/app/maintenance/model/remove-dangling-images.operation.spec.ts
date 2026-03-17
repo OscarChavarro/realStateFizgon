@@ -23,7 +23,7 @@ describe('RemoveDanglingImagesOperation', () => {
     const result = await operation.execute(http);
 
     // Assert
-    expect(operation.i18nId).toBe('REMOVE_DANGLING_IMAGES');
+    expect(operation.i18nId).toBe('maintenance.REMOVE_DANGLING_IMAGES');
     expect(http.get).toHaveBeenCalledTimes(1);
     expect((http.get as jasmine.Spy).calls.mostRecent().args).toEqual([
       '/removeDanglingImages',

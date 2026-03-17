@@ -328,8 +328,8 @@ describe('ListingPriceRangeFilterComponent', () => {
   });
 
   [
-    { language: 'en' as const, key: 'MIN_PRICE' as const, expected: 'Min price' },
-    { language: 'sp' as const, key: 'MIN_PRICE' as const, expected: 'Precio mínimo' }
+    { language: 'en' as const, key: 'listing.MIN_PRICE' as const, expected: 'Min price' },
+    { language: 'sp' as const, key: 'listing.MIN_PRICE' as const, expected: 'Precio mínimo' }
   ].forEach(({ language, key, expected }) => {
     it(`t should return translation in ${language}`, () => {
       // Arrange

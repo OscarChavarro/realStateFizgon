@@ -1,4 +1,4 @@
-import { TranslationKey } from 'src/app/core/i18n/services/i18n.service';
+import { TranslationKey } from 'src/app/core/i18n/translations/translations-by-namespace.const';
 
 export type GoogleMapLayerId = 'business' | 'hospitals' | 'metroStations' | 'schools';
 

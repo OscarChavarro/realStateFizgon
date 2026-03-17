@@ -56,7 +56,7 @@ export class GoogleMapPoiLayerManager {
   readonly layerOptions: GoogleMapLayerOption[] = [
     {
       id: 'business',
-      label: 'PROPERTY_LOCATION_LAYER_BUSINESS',
+      label: 'map.PROPERTY_LOCATION_LAYER_BUSINESS',
       mapFeatureStyles: [
         { featureType: 'poi.business', elementType: 'labels', stylers: [{ visibility: 'on' }] },
         { featureType: 'poi.business', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
@@ -64,7 +64,7 @@ export class GoogleMapPoiLayerManager {
     },
     {
       id: 'hospitals',
-      label: 'PROPERTY_LOCATION_LAYER_HOSPITALS',
+      label: 'map.PROPERTY_LOCATION_LAYER_HOSPITALS',
       mapFeatureStyles: [
         { featureType: 'poi.medical', elementType: 'labels', stylers: [{ visibility: 'on' }] },
         { featureType: 'poi.medical', elementType: 'geometry', stylers: [{ visibility: 'on' }] }
@@ -72,7 +72,7 @@ export class GoogleMapPoiLayerManager {
     },
     {
       id: 'metroStations',
-      label: 'PROPERTY_LOCATION_LAYER_METRO_STATIONS',
+      label: 'map.PROPERTY_LOCATION_LAYER_METRO_STATIONS',
       mapFeatureStyles: [
         { featureType: 'transit.station', elementType: 'labels', stylers: [{ visibility: 'on' }] },
         {
@@ -84,7 +84,7 @@ export class GoogleMapPoiLayerManager {
     },
     {
       id: 'schools',
-      label: 'PROPERTY_LOCATION_LAYER_SCHOOLS',
+      label: 'map.PROPERTY_LOCATION_LAYER_SCHOOLS',
       mapFeatureStyles: [
         { featureType: 'poi.school', elementType: 'labels', stylers: [{ visibility: 'on' }] },
         { featureType: 'poi.school', elementType: 'geometry', stylers: [{ visibility: 'on' }] }

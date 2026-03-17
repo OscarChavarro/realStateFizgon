@@ -6,7 +6,7 @@
           <th class="row-index-header"></th>
           <th class="price-header">
             <div class="th-content">
-              <span>{{ t('TITLE') }}</span>
+              <span>{{ t('listing.TITLE') }}</span>
               <div class="sort-controls">
                 <button
                   type="button"
@@ -25,7 +25,7 @@
           </th>
           <th>
             <div class="th-content">
-              <span>{{ t('PUBLICATION_DATE') }}</span>
+              <span>{{ t('listing.PUBLICATION_DATE') }}</span>
               <div class="sort-controls">
                 <button
                   type="button"
@@ -46,7 +46,7 @@
           </th>
           <th>
             <div class="th-content">
-              <span>{{ t('PRICE') }}</span>
+              <span>{{ t('listing.PRICE') }}</span>
               <div class="sort-controls">
                 <button
                   type="button"
@@ -64,7 +64,7 @@
             </div>
           </th>
           @if (reviewEnabled) {
-            <th class="review-header">{{ t('REVIEW_COLUMN') }}</th>
+            <th class="review-header">{{ t('listing.REVIEW_COLUMN') }}</th>
           }
         </tr>
       </thead>
@@ -73,7 +73,7 @@
           <tr>
             <td class="row-index-cell">{{ getDisplayRowIndex(0) }}</td>
             <td [attr.colspan]="reviewEnabled ? 4 : 3" class="empty-row">
-              {{ t('NO_PROPERTIES_FOUND') }}
+              {{ t('listing.NO_PROPERTIES_FOUND') }}
             </td>
           </tr>
         } @else {
@@ -108,7 +108,7 @@
                     [class.favourite]="getReviewClass(property) === 'favourite'"
                     [class.discharged]="getReviewClass(property) === 'discharged'"
                     (click)="onPropertyReviewCellClick($event, property)"
-                    [attr.aria-label]="t('REVIEW_COLUMN')"
+                    [attr.aria-label]="t('listing.REVIEW_COLUMN')"
                   >
                     <span class="material-symbols-outlined">{{ getReviewIcon(property) }}</span>
                   </button>

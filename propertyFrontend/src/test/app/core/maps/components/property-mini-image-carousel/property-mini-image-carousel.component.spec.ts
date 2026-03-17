@@ -167,11 +167,11 @@ describe('PropertyMiniImageCarouselComponent', () => {
     component.selectedLanguage = 'sp';
 
     // Action
-    const result = component.t('PROPERTY_MINI_CAROUSEL_NEXT_IMAGE');
+    const result = component.t('map.PROPERTY_MINI_CAROUSEL_NEXT_IMAGE');
 
     // Assert
-    expect(i18nMock.get).toHaveBeenCalledOnceWith('PROPERTY_MINI_CAROUSEL_NEXT_IMAGE', 'sp');
-    expect(result).toBe('PROPERTY_MINI_CAROUSEL_NEXT_IMAGE:sp');
+    expect(i18nMock.get).toHaveBeenCalledOnceWith('map.PROPERTY_MINI_CAROUSEL_NEXT_IMAGE', 'sp');
+    expect(result).toBe('map.PROPERTY_MINI_CAROUSEL_NEXT_IMAGE:sp');
   });
 
   it('hasImages should reflect image list state', () => {

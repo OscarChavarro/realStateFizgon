@@ -17,7 +17,7 @@
   <section class="property-mini-summary-content">
     <h4 class="property-mini-summary-title">{{ property.title }}</h4>
     <p class="property-mini-summary-price">
-      <strong>{{ property.price }} € / {{ t('PROPERTY_MINI_SUMMARY_MONTH_UNIT') }}</strong>
+      <strong>{{ property.price }} € / {{ t('property.PROPERTY_MINI_SUMMARY_MONTH_UNIT') }}</strong>
     </p>
     @if (property.area || property.bedrooms) {
       <p class="property-mini-summary-features">
@@ -36,7 +36,7 @@
       </p>
     }
     <p class="property-mini-summary-source">
-      <span>{{ t('PROPERTY_DETAIL_SOURCE') }}: </span>
+      <span>{{ t('property.PROPERTY_DETAIL_SOURCE') }}: </span>
       @if (property.url) {
         <a [href]="property.url" target="_blank" rel="noopener noreferrer">Idealista</a>
       } @else {

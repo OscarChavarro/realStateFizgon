@@ -15,7 +15,7 @@ export class AuthFacadeService {
     private readonly authSessionApiService: AuthSessionApiService,
     private readonly authUsersService: AuthUsersService,
     private readonly apiRuntimeConfigService: ApiRuntimeConfigService,
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
   async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {

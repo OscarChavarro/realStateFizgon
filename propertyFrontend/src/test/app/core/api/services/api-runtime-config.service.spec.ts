@@ -1,10 +1,11 @@
 import { ApiRuntimeConfigService } from 'src/app/core/api/services/api-runtime-config.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 describe('ApiRuntimeConfigService', () => {
   let service: ApiRuntimeConfigService;
 
   beforeEach(() => {
-    service = new ApiRuntimeConfigService();
+    service = new ApiRuntimeConfigService(new RequestErrorPolicyService());
   });
 
   it('whenNotConfigured_getters_shouldReturnDefaults', () => {

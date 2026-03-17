@@ -19,8 +19,8 @@ import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-
 })
 export class UserPreferencesService {
   constructor(
-    private readonly userPreferencesPayloadMapperService: UserPreferencesPayloadMapperService = new UserPreferencesPayloadMapperService(),
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+    private readonly userPreferencesPayloadMapperService: UserPreferencesPayloadMapperService,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
   async loadPreferences(http: HttpClient): Promise<{

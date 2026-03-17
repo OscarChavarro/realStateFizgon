@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthFacadeService } from 'src/app/auth/services/auth-facade.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 class AuthFacadeServiceMockFactory {
   static createHttpClientMock() {
@@ -66,7 +67,12 @@ describe('AuthFacadeService', () => {
     const sessionApi = AuthFacadeServiceMockFactory.createSessionApiMock();
     const usersApi = AuthFacadeServiceMockFactory.createUsersApiMock();
     const runtimeConfig = AuthFacadeServiceMockFactory.createRuntimeConfigMock();
-    const facade = new AuthFacadeService(sessionApi as any, usersApi as any, runtimeConfig as any);
+    const facade = new AuthFacadeService(
+      sessionApi as any,
+      usersApi as any,
+      runtimeConfig as any,
+      new RequestErrorPolicyService()
+    );
     const http = AuthFacadeServiceMockFactory.createHttpClientMock();
     const authUser = AuthFacadeServiceMockFactory.createAuthenticatedUser();
     const managedUsers = [AuthFacadeServiceMockFactory.createManagedUser()];
@@ -116,7 +122,8 @@ describe('AuthFacadeService', () => {
       const facade = new AuthFacadeService(
         sessionApi as any,
         usersApi as any,
-        runtimeConfig as any
+        runtimeConfig as any,
+        new RequestErrorPolicyService()
       );
       const warnSpy = spyOn(console, 'warn');
 
@@ -137,7 +144,12 @@ describe('AuthFacadeService', () => {
     const sessionApi = AuthFacadeServiceMockFactory.createSessionApiMock();
     const usersApi = AuthFacadeServiceMockFactory.createUsersApiMock();
     const runtimeConfig = AuthFacadeServiceMockFactory.createRuntimeConfigMock('::not-a-url::');
-    const facade = new AuthFacadeService(sessionApi as any, usersApi as any, runtimeConfig as any);
+    const facade = new AuthFacadeService(
+      sessionApi as any,
+      usersApi as any,
+      runtimeConfig as any,
+      new RequestErrorPolicyService()
+    );
     const warnSpy = spyOn(console, 'warn');
 
     // Action

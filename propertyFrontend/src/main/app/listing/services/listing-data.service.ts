@@ -22,9 +22,9 @@ import { ListingPropertiesPayloadMapperService } from 'src/app/listing/services/
 })
 export class ListingDataService {
   constructor(
-    private readonly listingConfigurationPayloadMapperService: ListingConfigurationPayloadMapperService = new ListingConfigurationPayloadMapperService(),
-    private readonly listingPropertiesPayloadMapperService: ListingPropertiesPayloadMapperService = new ListingPropertiesPayloadMapperService(),
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+    private readonly listingConfigurationPayloadMapperService: ListingConfigurationPayloadMapperService,
+    private readonly listingPropertiesPayloadMapperService: ListingPropertiesPayloadMapperService,
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
   async loadBackendConfiguration(http: HttpClient): Promise<ListingConfiguration> {

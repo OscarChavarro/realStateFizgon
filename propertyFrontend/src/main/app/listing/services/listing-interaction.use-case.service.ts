@@ -27,7 +27,7 @@ type SavePropertyCommentParams = {
 export class ListingInteractionUseCaseService {
   constructor(
     private readonly propertyLabelsFacadeService: PropertyLabelsFacadeService,
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
   async togglePropertyReview(params: TogglePropertyReviewParams): Promise<void> {

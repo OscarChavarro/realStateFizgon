@@ -16,7 +16,7 @@ type CurrentUserResponse = {
 export class AuthSessionApiService {
   constructor(
     private readonly apiRuntimeConfigService: ApiRuntimeConfigService,
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
+    private readonly requestErrorPolicyService: RequestErrorPolicyService
   ) {}
 
   async loadGoogleLoginAvailability(http: HttpClient): Promise<boolean> {

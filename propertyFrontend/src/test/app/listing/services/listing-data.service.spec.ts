@@ -1,7 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import { ListingDataService } from 'src/app/listing/services/listing-data.service';
+import { ListingConfigurationPayloadMapperService } from 'src/app/listing/services/mappers/listing-configuration-payload-mapper.service';
+import { ListingPropertiesPayloadMapperService } from 'src/app/listing/services/mappers/listing-properties-payload-mapper.service';
 
 class ListingDataHttpMock {
   readonly getCalls: string[] = [];
@@ -30,7 +33,11 @@ describe('ListingDataService', () => {
   let httpMock: ListingDataHttpMock;
 
   beforeEach(() => {
-    service = new ListingDataService();
+    service = new ListingDataService(
+      new ListingConfigurationPayloadMapperService(),
+      new ListingPropertiesPayloadMapperService(),
+      new RequestErrorPolicyService()
+    );
     httpMock = new ListingDataHttpMock();
   });
 

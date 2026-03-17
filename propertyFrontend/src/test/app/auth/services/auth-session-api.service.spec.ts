@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { AuthenticatedUser } from 'src/app/auth/model/authenticated-user.model';
 import { AuthSessionApiService } from 'src/app/auth/services/auth-session-api.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 class AuthSessionApiServiceMockFactory {
   static createHttpClientMock() {
@@ -36,7 +37,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
 
     // Action
     (http.get as jasmine.Spy).and.returnValue(of({ enabled: true }));
@@ -61,7 +62,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
@@ -75,7 +76,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
       of({ enabled: true })
@@ -93,7 +94,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
     const user = AuthSessionApiServiceMockFactory.createUser();
 
     // Action
@@ -119,7 +120,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
     // Action
@@ -133,7 +134,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const http = AuthSessionApiServiceMockFactory.createHttpClientMock();
     const runtimeConfig = AuthSessionApiServiceMockFactory.createRuntimeConfigMock();
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
 
     // Action
     (http.post as jasmine.Spy).and.returnValue(of({}));
@@ -152,7 +153,7 @@ describe('AuthSessionApiService', () => {
     // Arrange
     const runtimeConfig =
       AuthSessionApiServiceMockFactory.createRuntimeConfigMock('http://localhost:8081');
-    const service = new AuthSessionApiService(runtimeConfig);
+    const service = new AuthSessionApiService(runtimeConfig, new RequestErrorPolicyService());
     const returnTo = 'http://localhost:4200/?next=/dashboard map';
 
     // Action

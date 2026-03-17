@@ -12,9 +12,7 @@ type AuthUsersResponse = {
   providedIn: 'root'
 })
 export class AuthUsersService {
-  constructor(
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
-  ) {}
+  constructor(private readonly requestErrorPolicyService: RequestErrorPolicyService) {}
 
   async loadUsers(http: HttpClient): Promise<AuthUserListItem[]> {
     try {

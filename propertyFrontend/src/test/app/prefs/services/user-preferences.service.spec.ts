@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 import { createDefaultListingFilters } from 'src/app/listing/model/filters/listing-filters.model';
 import { UserPreferencesService } from 'src/app/prefs/services/user-preferences.service';
+import { UserPreferencesPayloadMapperService } from 'src/app/prefs/services/mappers/user-preferences-payload-mapper.service';
 
 class UserPreferencesServiceMockFactory {
   static createHttpClientMock() {
@@ -14,9 +16,15 @@ class UserPreferencesServiceMockFactory {
 }
 
 describe('UserPreferencesService', () => {
+  const createService = (): UserPreferencesService =>
+    new UserPreferencesService(
+      new UserPreferencesPayloadMapperService(),
+      new RequestErrorPolicyService()
+    );
+
   it('loadPreferences should normalize payload values', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.get as jasmine.Spy).and.returnValue(
       of({
@@ -100,7 +108,7 @@ describe('UserPreferencesService', () => {
 
   it('loadPreferences should return null on request error', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
@@ -113,7 +121,7 @@ describe('UserPreferencesService', () => {
 
   it('loadPreferences should retry transient errors before succeeding', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.get as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
@@ -137,7 +145,7 @@ describe('UserPreferencesService', () => {
 
   it('saveFilters should post normalized filters payload', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     const filters = createDefaultListingFilters();
     filters.showClosed = false;
@@ -184,7 +192,7 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyReview should post labels and normalize response', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.post as jasmine.Spy).and.returnValue(
       of({
@@ -212,7 +220,7 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyComment should post comment labels and normalize response', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.post as jasmine.Spy).and.returnValue(
       of({
@@ -233,7 +241,7 @@ describe('UserPreferencesService', () => {
 
   it('setPropertyComment should retry transient post failures before returning labels', async () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
     const http = UserPreferencesServiceMockFactory.createHttpClientMock();
     (http.post as jasmine.Spy).and.returnValues(
       throwError(() => new HttpErrorResponse({ status: 503, error: 'temporarily unavailable' })),
@@ -264,7 +272,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, fallback, expected }) => {
     it(`toBoolean should map ${String(value)} to ${String(expected)}`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toBoolean(value, fallback);
@@ -282,7 +290,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, fallback, expected }) => {
     it(`toSupportedLanguage should map ${String(value)} to ${expected}`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toSupportedLanguage(value, fallback);
@@ -301,7 +309,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, expected }) => {
     it(`toDateOnlyString should map ${String(value)} to "${expected}"`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toDateOnlyString(value);
@@ -321,7 +329,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, expected }) => {
     it(`toIntegerString should map ${String(value).slice(0, 20)} to "${expected}"`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toIntegerString(value);
@@ -342,7 +350,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, fallback, expected }) => {
     it(`toPageSize should map value=${String(value)} and fallback=${fallback} to ${expected}`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toPageSize(value, fallback);
@@ -354,7 +362,7 @@ describe('UserPreferencesService', () => {
 
   it('normalizePropertyLabels should return empty array when value is not an array', () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
 
     // Action
     const result = (service as any).normalizePropertyLabels({});
@@ -365,7 +373,7 @@ describe('UserPreferencesService', () => {
 
   it('normalizeSortCriteria should normalize sort list and ignore invalid entries', () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
 
     // Action
     const result = (service as any).normalizeSortCriteria([
@@ -388,7 +396,7 @@ describe('UserPreferencesService', () => {
 
   it('normalizeSortCriteria should return empty array when value is not an array', () => {
     // Arrange
-    const service = new UserPreferencesService();
+    const service = createService();
 
     // Action
     const result = (service as any).normalizeSortCriteria(null);
@@ -405,7 +413,7 @@ describe('UserPreferencesService', () => {
   ].forEach(({ value, fallback, expected }) => {
     it(`toSortDirection should map ${String(value)} to ${expected}`, () => {
       // Arrange
-      const service = new UserPreferencesService();
+      const service = createService();
 
       // Action
       const result = (service as any).toSortDirection(value, fallback);

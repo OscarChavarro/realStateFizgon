@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { AuthUserListItem } from 'src/app/auth/model/auth-user-list-item.model';
 import { AuthUsersService } from 'src/app/auth/services/auth-users.service';
+import { RequestErrorPolicyService } from 'src/app/core/errors/services/request-error-policy.service';
 
 class AuthUsersServiceMockFactory {
   static createHttpClientMock() {
@@ -26,9 +27,12 @@ class AuthUsersServiceMockFactory {
 }
 
 describe('AuthUsersService', () => {
+  const createService = (): AuthUsersService =>
+    new AuthUsersService(new RequestErrorPolicyService());
+
   it('loadUsers should return users when response contains an array', async () => {
     // Arrange
-    const service = new AuthUsersService();
+    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
     const users = [AuthUsersServiceMockFactory.createUser()];
     (http.get as jasmine.Spy).and.returnValue(of({ users }));
@@ -48,7 +52,7 @@ describe('AuthUsersService', () => {
   ].forEach(({ response, label }) => {
     it(`loadUsers should return empty array for ${label}`, async () => {
       // Arrange
-      const service = new AuthUsersService();
+      const service = createService();
       const http = AuthUsersServiceMockFactory.createHttpClientMock();
       (http.get as jasmine.Spy).and.returnValue(of(response));
 
@@ -62,7 +66,7 @@ describe('AuthUsersService', () => {
 
   it('loadUsers should return empty array on request error', async () => {
     // Arrange
-    const service = new AuthUsersService();
+    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
     (http.get as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 
@@ -75,7 +79,7 @@ describe('AuthUsersService', () => {
 
   it('deleteUser should call encoded endpoint and return true on success', async () => {
     // Arrange
-    const service = new AuthUsersService();
+    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
     (http.delete as jasmine.Spy).and.returnValue(of({}));
 
@@ -89,7 +93,7 @@ describe('AuthUsersService', () => {
 
   it('deleteUser should return false on request error', async () => {
     // Arrange
-    const service = new AuthUsersService();
+    const service = createService();
     const http = AuthUsersServiceMockFactory.createHttpClientMock();
     (http.delete as jasmine.Spy).and.returnValue(throwError(() => new Error('boom')));
 

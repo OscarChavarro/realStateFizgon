@@ -16,9 +16,7 @@ export class ApiRuntimeConfigService {
   private backendBaseUrl = ApiRuntimeConfigService.DEFAULT_BACKEND_BASE_URL;
   private staticMediaBaseUrl = ApiRuntimeConfigService.DEFAULT_STATIC_MEDIA_BASE_URL;
 
-  constructor(
-    private readonly requestErrorPolicyService: RequestErrorPolicyService = new RequestErrorPolicyService()
-  ) {}
+  constructor(private readonly requestErrorPolicyService: RequestErrorPolicyService) {}
 
   setConfiguration(configuration: RuntimeConfiguration): void {
     this.backendBaseUrl = this.normalizeBackendBaseUrl(configuration.backendBaseUrl);

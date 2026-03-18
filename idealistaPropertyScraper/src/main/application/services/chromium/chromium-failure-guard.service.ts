@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/recover-from-browser-failure.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
@@ -16,10 +12,7 @@ export class ChromiumFailureGuardService {
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
-    private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
-    private readonly chromiumCdpReadinessService: ChromiumCdpReadinessService,
-    private readonly chromiumGeolocationService: ChromiumGeolocationService,
-    private readonly scraperStateMachineService: ScraperStateMachineService
+    private readonly recoverFromBrowserFailureUseCase: RecoverFromBrowserFailureUseCase
   ) {}
 
   async handleUnexpectedChromeExit(params: {
@@ -73,31 +66,9 @@ export class ChromiumFailureGuardService {
     }
 
     this.recoveryInProgress = true;
-    const waitSeconds = Math.floor(params.browserFailureRecoveryWaitMs / 1000);
-
-    this.logger.error(`Browser failure detected: ${params.reason}`);
-    this.chromiumProcessLifecycleService.stopChromiumProcess();
-    await this.chromiumPageSyncService.sleep(1000);
-    this.chromiumProcessLifecycleService.forceKillChromiumProcess();
-    this.logger.error(
-      `Browser will be restarted after waiting ${waitSeconds} seconds.`
-    );
 
     try {
-      await this.chromiumPageSyncService.sleep(params.browserFailureRecoveryWaitMs);
-      if (params.isShuttingDown()) {
-        return;
-      }
-
-      await this.chromiumProcessLifecycleService.launchChromiumProcess(
-        params.cdpPort,
-        params.onUnexpectedExit,
-        params.isShuttingDown
-      );
-      await this.chromiumCdpReadinessService.waitForReadyEndpoint(params.cdpHost, params.cdpPort);
-      await this.chromiumGeolocationService.grantStartupPermissions(params.cdpHost, params.cdpPort);
-      this.scraperStateMachineService.setState(ScraperState.IDLE);
-      this.logger.log('Browser restart completed. Scraper state was set to IDLE.');
+      await this.recoverFromBrowserFailureUseCase.execute(params);
     } catch (error) {
       this.logger.error(`Browser restart failed: ${toErrorMessage(error)}`);
     } finally {

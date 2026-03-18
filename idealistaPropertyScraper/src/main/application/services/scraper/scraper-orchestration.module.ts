@@ -17,6 +17,7 @@ import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
+import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-m
     ScraperOrchestratorService,
     UpdateExistingPropertiesFlowService,
     ExecuteMainSearchFormUseCase,
+    PrepareSearchResultsUseCase,
     MainPageService,
     SearchResultsPreparationService,
     ScraperBootstrapService

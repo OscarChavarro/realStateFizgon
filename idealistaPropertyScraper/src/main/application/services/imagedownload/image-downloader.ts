@@ -1,18 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { Property } from 'src/domain/property/property.model';
-import { DownloadedIncomingImage } from 'src/application/services/imagedownload/downloaded-incoming-image.type';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
-import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
-import { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
 import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/network-enabled-cdp-client.type';
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
+import { FinalizePropertyImagesUseCase } from 'src/application/usecases/finalize-property-images.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
@@ -21,19 +16,14 @@ import { sleep } from 'src/infrastructure/sleep';
 @Injectable()
 export class ImageDownloader {
   private readonly logger = new Logger(ImageDownloader.name);
-  private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
-  private static readonly MISSING_IMAGE_RECOVERY_WAIT_MS = 4000;
-  private static readonly DIRECT_DOWNLOAD_MAX_ATTEMPTS = 3;
-  private static readonly DIRECT_DOWNLOAD_RETRY_WAIT_MS = 300;
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly scraperConfig: ScraperConfig,
     private readonly imageDownloadPathService: ImageDownloadPathService,
     private readonly imageUrlRulesService: ImageUrlRulesService,
-    private readonly imageFileNameService: ImageFileNameService,
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,
-    private readonly imagePendingQueuePublisherService: ImagePendingQueuePublisherService
+    private readonly finalizePropertyImagesUseCase: FinalizePropertyImagesUseCase
   ) {}
 
   async validateImageDownloadFolder(): Promise<void> {
@@ -76,7 +66,7 @@ export class ImageDownloader {
       this.imageNetworkCaptureService.trackLoadingFinished(
         client.Network,
         event as NetworkLoadingFinishedEvent,
-        async (payload) => this.persistCapturedImage(payload),
+        async (payload) => this.finalizePropertyImagesUseCase.persistCapturedImage(payload),
         this.logger
       );
     });
@@ -95,184 +85,6 @@ export class ImageDownloader {
   }
 
   async movePropertyImagesFromIncoming(property: Property): Promise<void> {
-    const propertyId = this.imageUrlRulesService.extractPropertyIdFromUrl(property.url);
-    if (!propertyId) {
-      this.logger.error(`Unable to extract property id from URL: ${property.url}`);
-      return;
-    }
-
-    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
-    const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.scraperConfig.imageDownloadFolder), propertyId);
-    await mkdir(propertyFolderPath, { recursive: true });
-    let recoverySyncPerformed = false;
-
-    for (const image of property.images) {
-      if (!this.imageUrlRulesService.shouldTrackImageUrl(image.url)) {
-        continue;
-      }
-
-      const key = this.imageUrlRulesService.extractCanonicalImageKey(image.url);
-      if (!key) {
-        this.logger.error(`Image URL cannot be normalized to a key: ${image.url}`);
-        continue;
-      }
-
-      let selectedFile = this.consumeIncomingImageByKey(key);
-      if (!selectedFile && !recoverySyncPerformed) {
-        recoverySyncPerformed = true;
-        await this.waitForPendingImageDownloads(ImageDownloader.MISSING_IMAGE_RECOVERY_WAIT_MS);
-        await this.waitForImageNetworkSettled(ImageDownloader.MISSING_IMAGE_RECOVERY_WAIT_MS, 1000);
-        selectedFile = this.consumeIncomingImageByKey(key);
-      }
-
-      if (!selectedFile) {
-        const fallbackStored = await this.downloadImageDirectlyToPropertyFolder(image.url, propertyFolderPath);
-        if (!fallbackStored) {
-          this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
-          await this.imagePendingQueuePublisherService.publishPendingImageUrl(image.url, propertyId);
-        }
-        continue;
-      }
-
-      const sourcePath = selectedFile.path;
-      const targetFilename = this.imageFileNameService.buildCompatibleTargetFilename(image.url, selectedFile.extension);
-      const targetPath = join(propertyFolderPath, targetFilename);
-
-      try {
-        if (await this.imageFileNameService.pathExists(targetPath)) {
-          this.logger.log(`Image already exists. Skipping overwrite for URL: ${image.url}`);
-          await rm(sourcePath, { force: true });
-          continue;
-        }
-
-        await rename(sourcePath, targetPath);
-      } catch {
-        this.logger.error(`Failed moving image for URL: ${image.url}`);
-      }
-    }
-
-    await this.moveRemainingIncomingToLeftovers(incomingFolderPath);
-    this.incomingImagesByKey.clear();
-    this.imageNetworkCaptureService.resetPendingRequests();
+    await this.finalizePropertyImagesUseCase.execute(property);
   }
-
-  private consumeIncomingImageByKey(key: string): DownloadedIncomingImage | undefined {
-    const candidates = this.incomingImagesByKey.get(key);
-    if (!candidates || candidates.length === 0) {
-      return undefined;
-    }
-
-    const selected = candidates.shift();
-    if (candidates.length === 0) {
-      this.incomingImagesByKey.delete(key);
-    } else {
-      this.incomingImagesByKey.set(key, candidates);
-    }
-
-    return selected;
-  }
-
-  private async downloadImageDirectlyToPropertyFolder(
-    imageUrl: string,
-    propertyFolderPath: string
-  ): Promise<boolean> {
-    const resolvedExtension = this.imageFileNameService.resolveImageExtension(imageUrl, '');
-    const targetFilename = this.imageFileNameService.buildCompatibleTargetFilename(
-      imageUrl,
-      resolvedExtension
-    );
-    const targetPath = join(propertyFolderPath, targetFilename);
-
-    if (await this.imageFileNameService.pathExists(targetPath)) {
-      this.logger.log(`Image already exists. Skipping overwrite for URL: ${imageUrl}`);
-      return true;
-    }
-
-    for (let attempt = 1; attempt <= ImageDownloader.DIRECT_DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
-      try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          if (response.status === 404) {
-            return false;
-          }
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const body = await response.arrayBuffer();
-        const bytes = Buffer.from(body);
-        if (bytes.length === 0) {
-          throw new Error('Empty image body');
-        }
-
-        await writeFile(targetPath, bytes);
-        this.logger.warn(`Image captured via direct-download fallback for URL: ${imageUrl}`);
-        return true;
-      } catch (error) {
-        const isLastAttempt = attempt === ImageDownloader.DIRECT_DOWNLOAD_MAX_ATTEMPTS;
-        if (isLastAttempt) {
-          this.logger.warn(
-            `Direct-download fallback failed for "${imageUrl}": ${toErrorMessage(error)}`
-          );
-          return false;
-        }
-        await sleep(ImageDownloader.DIRECT_DOWNLOAD_RETRY_WAIT_MS);
-      }
-    }
-
-    return false;
-  }
-
-  private async persistCapturedImage(payload: ImageResponseBodyPayload): Promise<void> {
-    const { url, mimeType, body } = payload;
-    if (!this.imageUrlRulesService.shouldTrackImageUrl(url) || this.imageUrlRulesService.isSvgImage(url, mimeType)) {
-      return;
-    }
-
-    const bytes = body.base64Encoded
-      ? Buffer.from(body.body, 'base64')
-      : Buffer.from(body.body, 'binary');
-    if (bytes.length === 0) {
-      return;
-    }
-
-    const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
-    const filename = this.imageFileNameService.buildImageFilename(url, mimeType);
-    const filepath = join(incomingFolderPath, filename);
-    await writeFile(filepath, bytes);
-
-    const key = this.imageUrlRulesService.extractCanonicalImageKey(url);
-    if (!key) {
-      return;
-    }
-
-    const extension = this.imageFileNameService.resolveImageExtension(url, mimeType);
-    const list = this.incomingImagesByKey.get(key) ?? [];
-    list.push({
-      url,
-      path: filepath,
-      extension
-    });
-    this.incomingImagesByKey.set(key, list);
-  }
-
-  private async moveRemainingIncomingToLeftovers(incomingFolderPath: string): Promise<void> {
-    const leftoversFolderPath = this.imageDownloadPathService.getLeftoversFolderPath(this.scraperConfig.imageDownloadFolder);
-    await mkdir(leftoversFolderPath, { recursive: true });
-    const entries = await readdir(incomingFolderPath, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const entryPath = join(incomingFolderPath, entry.name);
-      if (entry.isFile()) {
-        const targetPath = join(leftoversFolderPath, entry.name);
-        await rm(targetPath, { force: true });
-        await rename(entryPath, targetPath);
-        continue;
-      }
-
-      if (entry.isDirectory()) {
-        await rm(entryPath, { recursive: true, force: true });
-      }
-    }
-  }
-
 }

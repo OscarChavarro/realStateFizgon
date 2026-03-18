@@ -27,6 +27,9 @@ export class MongoPropertyUpsertService {
         { url: normalizedProperty.url },
         {
           $set: upsertSetDocument,
+          $unset: {
+            closedBy: ''
+          },
           $setOnInsert: {
             importedBy: now,
             ...(publicationDate ? { publicationDate } : {})
@@ -42,7 +45,10 @@ export class MongoPropertyUpsertService {
       await collection.updateOne(
         { url: normalizedProperty.url },
         {
-          $set: this.toSetDocument(normalizedProperty, now)
+          $set: this.toSetDocument(normalizedProperty, now),
+          $unset: {
+            closedBy: ''
+          }
         },
         { upsert: false }
       );
@@ -69,7 +75,10 @@ export class MongoPropertyUpsertService {
       await collection.updateOne(
         { url: normalizedProperty.url },
         {
-          $set: this.toSetDocument(normalizedProperty, now)
+          $set: this.toSetDocument(normalizedProperty, now),
+          $unset: {
+            closedBy: ''
+          }
         },
         { upsert: false }
       );

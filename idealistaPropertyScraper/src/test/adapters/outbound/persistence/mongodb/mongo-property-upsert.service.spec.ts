@@ -44,6 +44,9 @@ describe('MongoPropertyUpsertService', () => {
       { url: 'https://www.idealista.com/inmueble/123456789/' },
       expect.objectContaining({
         $set: expect.objectContaining({ propertyId: '123456789' }),
+        $unset: {
+          closedBy: ''
+        },
         $setOnInsert: expect.objectContaining({
           importedBy: expect.any(Date),
           publicationDate: expect.any(Date)
@@ -113,7 +116,10 @@ describe('MongoPropertyUpsertService', () => {
         $set: expect.objectContaining({
           propertyId: '123456789',
           updatedBy: expect.any(Date)
-        })
+        }),
+        $unset: {
+          closedBy: ''
+        }
       }),
       { upsert: false }
     );
@@ -183,7 +189,11 @@ describe('MongoPropertyUpsertService', () => {
     expect(collection.updateOne).toHaveBeenNthCalledWith(
       2,
       { url: 'https://www.idealista.com/inmueble/1/' },
-      expect.any(Object),
+      expect.objectContaining({
+        $unset: {
+          closedBy: ''
+        }
+      }),
       { upsert: false }
     );
     expect(collection.updateOne).toHaveBeenNthCalledWith(
@@ -240,10 +250,35 @@ describe('MongoPropertyUpsertService', () => {
     expect(collection.updateOne).toHaveBeenNthCalledWith(
       2,
       { url: 'https://www.idealista.com/inmueble/1/' },
-      expect.any(Object),
+      expect.objectContaining({
+        $unset: {
+          closedBy: ''
+        }
+      }),
       { upsert: false }
     );
     expect(result).toEqual({ isNew: false });
+  });
+
+  it('whenPropertyWasPreviouslyClosed_saveProperty_shouldUnsetClosedByDuringPrimaryUpsert', async () => {
+    // Arrange
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 0 }))
+    };
+    const service = createService();
+    // Action
+    await service.saveProperty(collection as never, createProperty('https://www.idealista.com/inmueble/300/', '300'));
+    // Assert
+    expect(collection.updateOne).toHaveBeenNthCalledWith(
+      1,
+      { url: 'https://www.idealista.com/inmueble/300/' },
+      expect.objectContaining({
+        $unset: {
+          closedBy: ''
+        }
+      }),
+      { upsert: true }
+    );
   });
 
   it('whenUnexpectedWriteErrorOccurs_saveProperty_shouldRethrowError', async () => {

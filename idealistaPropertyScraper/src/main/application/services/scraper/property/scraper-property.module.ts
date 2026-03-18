@@ -12,6 +12,7 @@ import { PropertyDetailNavigationService } from 'src/application/services/scrape
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
+import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     PropertyDetailNavigationService,
     PropertyDetailInteractionService,
     PropertyDetailDomExtractorService,
+    PersistPropertyDetailAndAssetsUseCase,
     PropertyDetailStorageService,
     PropertyDetailPageService,
     PropertyListPageService

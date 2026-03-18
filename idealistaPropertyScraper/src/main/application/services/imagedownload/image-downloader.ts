@@ -22,6 +22,9 @@ import { sleep } from 'src/infrastructure/sleep';
 export class ImageDownloader {
   private readonly logger = new Logger(ImageDownloader.name);
   private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
+  private static readonly MISSING_IMAGE_RECOVERY_WAIT_MS = 4000;
+  private static readonly DIRECT_DOWNLOAD_MAX_ATTEMPTS = 3;
+  private static readonly DIRECT_DOWNLOAD_RETRY_WAIT_MS = 300;
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
@@ -101,6 +104,7 @@ export class ImageDownloader {
     const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
     const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.scraperConfig.imageDownloadFolder), propertyId);
     await mkdir(propertyFolderPath, { recursive: true });
+    let recoverySyncPerformed = false;
 
     for (const image of property.images) {
       if (!this.imageUrlRulesService.shouldTrackImageUrl(image.url)) {
@@ -113,18 +117,20 @@ export class ImageDownloader {
         continue;
       }
 
-      const candidates = this.incomingImagesByKey.get(key);
-
-      if (!candidates || candidates.length === 0) {
-        this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
-        await this.imagePendingQueuePublisherService.publishPendingImageUrl(image.url, propertyId);
-        continue;
+      let selectedFile = this.consumeIncomingImageByKey(key);
+      if (!selectedFile && !recoverySyncPerformed) {
+        recoverySyncPerformed = true;
+        await this.waitForPendingImageDownloads(ImageDownloader.MISSING_IMAGE_RECOVERY_WAIT_MS);
+        await this.waitForImageNetworkSettled(ImageDownloader.MISSING_IMAGE_RECOVERY_WAIT_MS, 1000);
+        selectedFile = this.consumeIncomingImageByKey(key);
       }
 
-      const selectedFile = candidates.shift();
       if (!selectedFile) {
-        this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
-        await this.imagePendingQueuePublisherService.publishPendingImageUrl(image.url, propertyId);
+        const fallbackStored = await this.downloadImageDirectlyToPropertyFolder(image.url, propertyFolderPath);
+        if (!fallbackStored) {
+          this.logger.error(`Image URL was not downloaded and cannot be moved: ${image.url}`);
+          await this.imagePendingQueuePublisherService.publishPendingImageUrl(image.url, propertyId);
+        }
         continue;
       }
 
@@ -148,6 +154,72 @@ export class ImageDownloader {
     await this.moveRemainingIncomingToLeftovers(incomingFolderPath);
     this.incomingImagesByKey.clear();
     this.imageNetworkCaptureService.resetPendingRequests();
+  }
+
+  private consumeIncomingImageByKey(key: string): DownloadedIncomingImage | undefined {
+    const candidates = this.incomingImagesByKey.get(key);
+    if (!candidates || candidates.length === 0) {
+      return undefined;
+    }
+
+    const selected = candidates.shift();
+    if (candidates.length === 0) {
+      this.incomingImagesByKey.delete(key);
+    } else {
+      this.incomingImagesByKey.set(key, candidates);
+    }
+
+    return selected;
+  }
+
+  private async downloadImageDirectlyToPropertyFolder(
+    imageUrl: string,
+    propertyFolderPath: string
+  ): Promise<boolean> {
+    const resolvedExtension = this.imageFileNameService.resolveImageExtension(imageUrl, '');
+    const targetFilename = this.imageFileNameService.buildCompatibleTargetFilename(
+      imageUrl,
+      resolvedExtension
+    );
+    const targetPath = join(propertyFolderPath, targetFilename);
+
+    if (await this.imageFileNameService.pathExists(targetPath)) {
+      this.logger.log(`Image already exists. Skipping overwrite for URL: ${imageUrl}`);
+      return true;
+    }
+
+    for (let attempt = 1; attempt <= ImageDownloader.DIRECT_DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          if (response.status === 404) {
+            return false;
+          }
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const body = await response.arrayBuffer();
+        const bytes = Buffer.from(body);
+        if (bytes.length === 0) {
+          throw new Error('Empty image body');
+        }
+
+        await writeFile(targetPath, bytes);
+        this.logger.warn(`Image captured via direct-download fallback for URL: ${imageUrl}`);
+        return true;
+      } catch (error) {
+        const isLastAttempt = attempt === ImageDownloader.DIRECT_DOWNLOAD_MAX_ATTEMPTS;
+        if (isLastAttempt) {
+          this.logger.warn(
+            `Direct-download fallback failed for "${imageUrl}": ${toErrorMessage(error)}`
+          );
+          return false;
+        }
+        await sleep(ImageDownloader.DIRECT_DOWNLOAD_RETRY_WAIT_MS);
+      }
+    }
+
+    return false;
   }
 
   private async persistCapturedImage(payload: ImageResponseBodyPayload): Promise<void> {

@@ -68,7 +68,7 @@ export class PendingImageDownloadService implements OnModuleInit {
     } catch (error) {
       const nodeError = error as NodeJS.ErrnoException;
       if (nodeError.code === 'EEXIST') {
-        this.logger.log(`Image already exists. Skipping overwrite for URL: ${payload.url}`);
+        this.logger.log(`Skipping existing: ${payload.url}`);
         return;
       }
 

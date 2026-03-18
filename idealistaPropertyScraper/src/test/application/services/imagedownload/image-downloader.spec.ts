@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
@@ -14,6 +14,9 @@ import { Property } from 'src/domain/property/property.model';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
+
+const originalFetch = globalThis.fetch;
+const fetchMock = jest.fn<(input: string | URL, init?: RequestInit) => Promise<Response>>();
 
 jest.mock('node:fs/promises', () => ({
   mkdir: jest.fn(async () => undefined),
@@ -126,13 +129,38 @@ function createService() {
     log: jest.fn<(message: string) => void>(),
     error: jest.fn<(message: string) => void>()
   };
+  fileName.buildImageFilename.mockReturnValue('captured.bin');
+  fileName.resolveImageExtension.mockReturnValue('.jpg');
+  fileName.buildCompatibleTargetFilename.mockImplementation(
+    (_url: string, extension: string) => `image${extension || '.img'}`
+  );
+  fileName.pathExists.mockResolvedValue(false);
   (service as unknown as { logger: typeof logger }).logger = logger;
   return { service, pathService, urlRules, fileName, networkCapture, pendingPublisher, logger };
 }
 
 describe('ImageDownloader', () => {
   beforeEach(() => {
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: fetchMock
+    });
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 404,
+      arrayBuffer: async () => new ArrayBuffer(0)
+    } as Response);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: originalFetch
+    });
   });
 
   it('whenFolderIsWritable_validateImageDownloadFolder_shouldReturnWithoutRetry', async () => {
@@ -327,9 +355,37 @@ describe('ImageDownloader', () => {
     // Action
     await service.movePropertyImagesFromIncoming(property);
     // Assert
+    expect(fetchMock).toHaveBeenCalledWith('https://img/a.jpg');
     expect(pendingPublisher.publishPendingImageUrl).toHaveBeenCalledWith('https://img/a.jpg', '777');
     expect(moveRemainingSpy).toHaveBeenCalledWith('/tmp/images/incoming');
     expect(networkCapture.resetPendingRequests).toHaveBeenCalledTimes(1);
+  });
+
+  it('whenImageCandidateIsMissingAndDirectFallbackSucceeds_movePropertyImagesFromIncoming_shouldWriteDirectlyAndSkipPendingQueue', async () => {
+    // Arrange
+    const { service, urlRules, pathService, fileName, pendingPublisher } = createService();
+    urlRules.extractPropertyIdFromUrl.mockReturnValue('778');
+    pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
+    pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
+    urlRules.shouldTrackImageUrl.mockReturnValue(true);
+    urlRules.extractCanonicalImageKey.mockReturnValue('key-778');
+    fileName.buildCompatibleTargetFilename.mockReturnValue('fallback-778.jpg');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer
+    } as Response);
+    jest.spyOn(
+      service as unknown as { moveRemainingIncomingToLeftovers: (incomingPath: string) => Promise<void> },
+      'moveRemainingIncomingToLeftovers'
+    ).mockResolvedValue(undefined);
+    const property = createProperty('https://www.idealista.com/inmueble/778/', [new PropertyImage('https://img/missing.jpg', null)]);
+    // Action
+    await service.movePropertyImagesFromIncoming(property);
+    // Assert
+    expect(fetchMock).toHaveBeenCalledWith('https://img/missing.jpg');
+    expect(writeFile).toHaveBeenCalledWith('/tmp/images/download/778/fallback-778.jpg', Buffer.from([1, 2, 3]));
+    expect(pendingPublisher.publishPendingImageUrl).not.toHaveBeenCalled();
   });
 
   it('whenImageIsNotTrackable_movePropertyImagesFromIncoming_shouldSkipImageProcessing', async () => {
@@ -604,5 +660,115 @@ describe('ImageDownloader', () => {
     expect(mkdir).toHaveBeenCalledWith('/tmp/images/leftovers', { recursive: true });
     expect(rename).not.toHaveBeenCalled();
     expect(rm).not.toHaveBeenCalledWith('/tmp/images/incoming/socket-a', { recursive: true, force: true });
+  });
+
+  it('whenMultipleCandidatesExist_consumeIncomingImageByKey_shouldKeepRemainingCandidatesMapped', () => {
+    // Arrange
+    const { service } = createService();
+    const map = (service as unknown as {
+      incomingImagesByKey: Map<string, Array<{ url: string; path: string; extension: string }>>;
+    }).incomingImagesByKey;
+    map.set('canonical-multi', [
+      { url: 'https://img/a.jpg', path: '/tmp/a.jpg', extension: 'jpg' },
+      { url: 'https://img/b.jpg', path: '/tmp/b.jpg', extension: 'jpg' }
+    ]);
+    // Action
+    const selected = (service as unknown as {
+      consumeIncomingImageByKey: (key: string) => { url: string; path: string; extension: string } | undefined;
+    }).consumeIncomingImageByKey('canonical-multi');
+    // Assert
+    expect(selected?.path).toBe('/tmp/a.jpg');
+    expect(map.get('canonical-multi')?.length).toBe(1);
+    expect(map.get('canonical-multi')?.[0]?.path).toBe('/tmp/b.jpg');
+  });
+
+  it('whenFallbackTargetAlreadyExists_downloadImageDirectlyToPropertyFolder_shouldSkipFetchAndReturnTrue', async () => {
+    // Arrange
+    const { service, fileName, logger } = createService();
+    fileName.resolveImageExtension.mockReturnValue('.jpg');
+    fileName.buildCompatibleTargetFilename.mockReturnValue('already.jpg');
+    fileName.pathExists.mockResolvedValue(true);
+    // Action
+    const result = await (service as unknown as {
+      downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
+    }).downloadImageDirectlyToPropertyFolder('https://img/exists.jpg', '/tmp/download/123');
+    // Assert
+    expect(result).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(logger.log).toHaveBeenCalledWith('Image already exists. Skipping overwrite for URL: https://img/exists.jpg');
+  });
+
+  it('whenFallbackReturnsNon404BeforeSuccess_downloadImageDirectlyToPropertyFolder_shouldRetryAndThenPersistImage', async () => {
+    // Arrange
+    const { service, fileName } = createService();
+    fileName.resolveImageExtension.mockReturnValue('.jpg');
+    fileName.buildCompatibleTargetFilename.mockReturnValue('retry-success.jpg');
+    fileName.pathExists.mockResolvedValue(false);
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        arrayBuffer: async () => new ArrayBuffer(0)
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => Uint8Array.from([7, 8, 9]).buffer
+      } as Response);
+    // Action
+    const result = await (service as unknown as {
+      downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
+    }).downloadImageDirectlyToPropertyFolder('https://img/retry-success.jpg', '/tmp/download/123');
+    // Assert
+    expect(result).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledWith(300);
+    expect(writeFile).toHaveBeenCalledWith('/tmp/download/123/retry-success.jpg', Buffer.from([7, 8, 9]));
+  });
+
+  it('whenFallbackGetsEmptyBodyAcrossAttempts_downloadImageDirectlyToPropertyFolder_shouldReturnFalseOnLastAttempt', async () => {
+    // Arrange
+    const { service, fileName, logger } = createService();
+    fileName.resolveImageExtension.mockReturnValue('.jpg');
+    fileName.buildCompatibleTargetFilename.mockReturnValue('empty-body.jpg');
+    fileName.pathExists.mockResolvedValue(false);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => new ArrayBuffer(0)
+    } as Response);
+    // Action
+    const result = await (service as unknown as {
+      downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
+    }).downloadImageDirectlyToPropertyFolder('https://img/empty-body.jpg', '/tmp/download/123');
+    // Assert
+    expect(result).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledWith(300);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Direct-download fallback failed for "https://img/empty-body.jpg"')
+    );
+  });
+
+  it('whenDirectFallbackAttemptsAreConfiguredAsZero_downloadImageDirectlyToPropertyFolder_shouldReturnFalseWithoutLoop', async () => {
+    // Arrange
+    const { service, fileName } = createService();
+    fileName.resolveImageExtension.mockReturnValue('.jpg');
+    fileName.buildCompatibleTargetFilename.mockReturnValue('no-loop.jpg');
+    fileName.pathExists.mockResolvedValue(false);
+    const originalAttempts = (ImageDownloader as unknown as { DIRECT_DOWNLOAD_MAX_ATTEMPTS: number }).DIRECT_DOWNLOAD_MAX_ATTEMPTS;
+    (ImageDownloader as unknown as { DIRECT_DOWNLOAD_MAX_ATTEMPTS: number }).DIRECT_DOWNLOAD_MAX_ATTEMPTS = 0;
+    let result = true;
+    try {
+      // Action
+      result = await (service as unknown as {
+        downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
+      }).downloadImageDirectlyToPropertyFolder('https://img/no-loop.jpg', '/tmp/download/123');
+    } finally {
+      (ImageDownloader as unknown as { DIRECT_DOWNLOAD_MAX_ATTEMPTS: number }).DIRECT_DOWNLOAD_MAX_ATTEMPTS = originalAttempts;
+    }
+    // Assert
+    expect(result).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

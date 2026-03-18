@@ -84,6 +84,9 @@ describe('PropertyDetailInteractionService', () => {
       if (expression.includes('more-photos')) {
         return false;
       }
+      if (expression.includes('__fizgonImagePreloadQueue')) {
+        return 0;
+      }
       if (expression.includes('main.detail-container')) {
         return { total: 0, loaded: 0 };
       }
@@ -105,6 +108,9 @@ describe('PropertyDetailInteractionService', () => {
         clickChecks += 1;
         return clickChecks === 1;
       }
+      if (expression.includes('__fizgonImagePreloadQueue')) {
+        return 3;
+      }
       if (expression.includes('main.detail-container')) {
         return { total: 2, loaded: 2 };
       }
@@ -123,6 +129,9 @@ describe('PropertyDetailInteractionService', () => {
     const runtime = createRuntimeWithEvaluator((expression) => {
       if (expression.includes('more-photos')) {
         return false;
+      }
+      if (expression.includes('__fizgonImagePreloadQueue')) {
+        return 2;
       }
       if (expression.includes('main.detail-container')) {
         return { total: 5, loaded: 2 };
@@ -150,6 +159,9 @@ describe('PropertyDetailInteractionService', () => {
       if (expression.includes('more-photos')) {
         return false;
       }
+      if (expression.includes('__fizgonImagePreloadQueue')) {
+        return 2;
+      }
       if (expression.includes('main.detail-container')) {
         turn += 1;
         return { total: 10, loaded: turn % 2 === 0 ? 2 : 1 };
@@ -160,5 +172,26 @@ describe('PropertyDetailInteractionService', () => {
     await service.revealDetailMedia(runtime);
     // Assert
     expect(logger.warn).toHaveBeenCalledWith('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
+  });
+
+  it('whenPreloadQueueContainsUrls_revealDetailMedia_shouldWaitForNetworkKickoffBeforeLoadCheck', async () => {
+    // Arrange
+    const { service } = createService();
+    const runtime = createRuntimeWithEvaluator((expression) => {
+      if (expression.includes('more-photos')) {
+        return false;
+      }
+      if (expression.includes('__fizgonImagePreloadQueue')) {
+        return 4;
+      }
+      if (expression.includes('main.detail-container')) {
+        return { total: 4, loaded: 4 };
+      }
+      return true;
+    });
+    // Action
+    await service.revealDetailMedia(runtime);
+    // Assert
+    expect(sleep).toHaveBeenCalledWith(200);
   });
 });

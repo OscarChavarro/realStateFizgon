@@ -10,6 +10,7 @@ export class PropertyDetailInteractionService {
   private static readonly DETAIL_CONTAINER_SELECTOR = 'main.detail-container';
   private static readonly SIDE_CONTENT_SELECTOR = '#side-content';
   private static readonly IMG_ELEMENT_SELECTOR = 'img';
+  private static readonly PICTURE_SOURCE_SELECTOR = 'source[srcset]';
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
 
   constructor(
@@ -28,6 +29,7 @@ export class PropertyDetailInteractionService {
   async revealDetailMedia(runtime: RuntimeClient): Promise<void> {
     await this.scrollPageToBottomAndBackToTop(runtime);
     await this.extendAllPhotos(runtime);
+    await this.requestAllDetailImages(runtime);
     await this.waitForImagesToLoad(runtime);
   }
 
@@ -64,8 +66,7 @@ export class PropertyDetailInteractionService {
         let loaded = 0;
         for (const img of images) {
           const hasDecodedBitmap = img.complete && img.naturalWidth > 0;
-          const hasServiceUrl = Boolean((img.getAttribute('data-service') || '').trim());
-          const isLoaded = hasDecodedBitmap || hasServiceUrl;
+          const isLoaded = hasDecodedBitmap;
           if (isLoaded) {
             loaded += 1;
           }
@@ -101,6 +102,90 @@ export class PropertyDetailInteractionService {
     }
 
     this.logger.warn('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
+  }
+
+  private async requestAllDetailImages(runtime: RuntimeClient): Promise<void> {
+    const queuedCount = await this.evaluateExpression<number>(runtime, `(() => {
+      const detailContainer = document.querySelector(${JSON.stringify(PropertyDetailInteractionService.DETAIL_CONTAINER_SELECTOR)});
+      if (!detailContainer) {
+        return 0;
+      }
+
+      const isInsideSideContent = (element) =>
+        element && typeof element.closest === 'function' && element.closest(${JSON.stringify(PropertyDetailInteractionService.SIDE_CONTENT_SELECTOR)});
+      const normalizeCandidate = (value) => {
+        const normalized = (value || '').split(',')[0].trim().split(' ')[0].trim();
+        return normalized;
+      };
+      const queue = [];
+      const imageElements = Array.from(detailContainer.querySelectorAll(${JSON.stringify(PropertyDetailInteractionService.IMG_ELEMENT_SELECTOR)}))
+        .filter((img) => !isInsideSideContent(img));
+
+      for (const img of imageElements) {
+        if (img && typeof img.setAttribute === 'function') {
+          img.setAttribute('loading', 'eager');
+          img.setAttribute('decoding', 'sync');
+        }
+
+        const candidates = [];
+        const dataService = (img.getAttribute('data-service') || '').trim();
+        const dataSrc = (img.getAttribute('data-src') || '').trim();
+        const currentSrc = (img.currentSrc || '').trim();
+        const src = (img.getAttribute('src') || '').trim();
+        if (dataService) {
+          candidates.push(dataService);
+        }
+        if (dataSrc) {
+          candidates.push(dataSrc);
+        }
+        if (currentSrc) {
+          candidates.push(currentSrc);
+        }
+        if (src) {
+          candidates.push(src);
+        }
+
+        const picture = img.closest('picture');
+        if (picture) {
+          const sources = picture.querySelectorAll(${JSON.stringify(PropertyDetailInteractionService.PICTURE_SOURCE_SELECTOR)});
+          for (const source of sources) {
+            const srcset = (source.getAttribute('srcset') || '').trim();
+            if (srcset) {
+              candidates.push(srcset);
+            }
+          }
+        }
+
+        for (const candidate of candidates) {
+          const normalizedCandidate = normalizeCandidate(candidate);
+          if (!normalizedCandidate) {
+            continue;
+          }
+
+          queue.push(normalizedCandidate);
+          if (!src && dataService && typeof img.setAttribute === 'function') {
+            img.setAttribute('src', dataService);
+          }
+          break;
+        }
+      }
+
+      const uniqueUrls = Array.from(new Set(queue));
+      const preloadQueue = [];
+      for (const url of uniqueUrls) {
+        const preloaded = new Image();
+        preloaded.decoding = 'async';
+        preloaded.loading = 'eager';
+        preloaded.src = url;
+        preloadQueue.push(preloaded);
+      }
+      window.__fizgonImagePreloadQueue = preloadQueue;
+      return uniqueUrls.length;
+    })()`);
+
+    if (queuedCount > 0) {
+      await sleep(Math.max(200, this.scraperConfig.propertyDetailPageScrollIntervalMs));
+    }
   }
 
   private async scrollPageToBottomAndBackToTop(runtime: RuntimeClient): Promise<void> {

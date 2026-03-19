@@ -14,6 +14,7 @@ import { PropertyDetailStorageService } from 'src/application/services/scraper/p
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { MarkPropertyClosedUseCase } from 'src/application/usecases/mark-property-closed.use-case';
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
+import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/publish-new-property-notification.use-case';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
@@ -36,6 +37,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     PropertyDetailInteractionService,
     PropertyDetailDomExtractorService,
     MarkPropertyClosedUseCase,
+    PublishNewPropertyNotificationUseCase,
     PersistPropertyDetailAndAssetsUseCase,
     ProcessDiscoveredPropertyUrlsUseCase,
     RevalidateExistingPropertyUrlsUseCase,

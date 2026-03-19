@@ -1,15 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
+import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/publish-new-property-notification.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 
-class QueuePublisherPortMockForPersistPropertyDetailAndAssetsUseCase {
-  readonly publishJsonToQueue = jest.fn<(queueName: string, payload: unknown) => Promise<void>>();
+class PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase {
+  readonly execute = jest.fn<(property: Property) => Promise<void>>();
 }
 
 class PropertyPersistencePortMockForPersistPropertyDetailAndAssetsUseCase {
@@ -42,15 +42,15 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     // Arrange
     const mongo = new PropertyPersistencePortMockForPersistPropertyDetailAndAssetsUseCase();
     mongo.saveProperty.mockResolvedValue({ isNew: true });
-    const queuePublisher = new QueuePublisherPortMockForPersistPropertyDetailAndAssetsUseCase();
-    queuePublisher.publishJsonToQueue.mockResolvedValue(undefined);
+    const publishNewPropertyNotificationUseCase = new PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase();
+    publishNewPropertyNotificationUseCase.execute.mockResolvedValue(undefined);
     const imageDownloader = new ImageDownloaderMockForPersistPropertyDetailAndAssetsUseCase();
     imageDownloader.waitForImageNetworkSettled.mockResolvedValue(undefined);
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
-      queuePublisher as unknown as QueuePublisherPort,
+      publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloader
     );
     const property = createProperty();
@@ -59,14 +59,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     // Assert
     expect(imageDownloader.waitForImageNetworkSettled).toHaveBeenCalledTimes(1);
     expect(mongo.saveProperty).toHaveBeenCalledWith(property);
-    expect(queuePublisher.publishJsonToQueue).toHaveBeenCalledWith(
-      'outgoing-notification-messages',
-      expect.objectContaining({
-        url: property.url,
-        title: property.title,
-        type: 'IDEALISTA_UPDATE'
-      })
-    );
+    expect(publishNewPropertyNotificationUseCase.execute).toHaveBeenCalledWith(property);
     expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledTimes(1);
     expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledWith(property);
   });
@@ -75,48 +68,41 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     // Arrange
     const mongo = new PropertyPersistencePortMockForPersistPropertyDetailAndAssetsUseCase();
     mongo.saveProperty.mockResolvedValue({ isNew: false });
-    const queuePublisher = new QueuePublisherPortMockForPersistPropertyDetailAndAssetsUseCase();
+    const publishNewPropertyNotificationUseCase = new PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase();
     const imageDownloader = new ImageDownloaderMockForPersistPropertyDetailAndAssetsUseCase();
     imageDownloader.waitForImageNetworkSettled.mockResolvedValue(undefined);
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
-      queuePublisher as unknown as QueuePublisherPort,
+      publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloader
     );
     // Action
     await useCase.execute(createProperty());
     // Assert
-    expect(queuePublisher.publishJsonToQueue).not.toHaveBeenCalled();
+    expect(publishNewPropertyNotificationUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('whenNotificationPublishFails_execute_shouldLogErrorAndContinuePipeline', async () => {
+  it('whenNotificationUseCaseCompletes_execute_shouldContinueImagePipeline', async () => {
     // Arrange
     const mongo = new PropertyPersistencePortMockForPersistPropertyDetailAndAssetsUseCase();
     mongo.saveProperty.mockResolvedValue({ isNew: true });
-    const queuePublisher = new QueuePublisherPortMockForPersistPropertyDetailAndAssetsUseCase();
-    queuePublisher.publishJsonToQueue.mockRejectedValue(new Error('broker down'));
+    const publishNewPropertyNotificationUseCase = new PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase();
+    publishNewPropertyNotificationUseCase.execute.mockResolvedValue(undefined);
     const imageDownloader = new ImageDownloaderMockForPersistPropertyDetailAndAssetsUseCase();
     imageDownloader.waitForImageNetworkSettled.mockResolvedValue(undefined);
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
-      queuePublisher as unknown as QueuePublisherPort,
+      publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloader
     );
-    const loggerErrorSpy = jest.spyOn(
-      (useCase as unknown as { logger: { error: (message: string) => void } }).logger,
-      'error'
-    ).mockImplementation(() => undefined);
     // Action
     await useCase.execute(createProperty());
     // Assert
-    expect(queuePublisher.publishJsonToQueue).toHaveBeenCalledTimes(1);
-    expect(loggerErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Property was stored in MongoDB but notification publish failed')
-    );
+    expect(publishNewPropertyNotificationUseCase.execute).toHaveBeenCalledTimes(1);
     expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledTimes(1);
     expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledTimes(1);
   });

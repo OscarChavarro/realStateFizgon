@@ -1,22 +1,17 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Property } from 'src/domain/property/property.model';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
+import { MarkPropertyClosedUseCase } from 'src/application/usecases/mark-property-closed.use-case';
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
 
 @Injectable()
 export class PropertyDetailStorageService {
-  private readonly logger = new Logger(PropertyDetailStorageService.name);
-
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort,
+    private readonly markPropertyClosedUseCase: MarkPropertyClosedUseCase,
     private readonly persistPropertyDetailAndAssetsUseCase: PersistPropertyDetailAndAssetsUseCase
   ) {}
 
   async markPropertyClosed(url: string, closedBy?: Date): Promise<void> {
-    this.logger.warn(`Property URL is no longer available (deactivated-detail): ${url}`);
-    await this.propertyPersistencePort.saveClosedProperty(url, closedBy);
+    await this.markPropertyClosedUseCase.execute(url, closedBy);
   }
 
   async savePropertyWithImages(property: Property): Promise<void> {

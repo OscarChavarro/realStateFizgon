@@ -1,16 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
-import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
+import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class ScraperOrchestratorService {
@@ -20,13 +18,12 @@ export class ScraperOrchestratorService {
   constructor(
     private readonly scraperConfig: ScraperConfig,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
-    private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
-    private readonly scraperStateLoopService: ScraperStateLoopService,
     private readonly imageDownloader: ImageDownloader,
     private readonly scrapeNewPropertiesFlowService: ScrapeNewPropertiesFlowService,
-    private readonly updateExistingPropertiesFlowService: UpdateExistingPropertiesFlowService
+    private readonly updateExistingPropertiesFlowService: UpdateExistingPropertiesFlowService,
+    private readonly runScraperStateLoopUseCase: RunScraperStateLoopUseCase
   ) {}
 
   start(params: {
@@ -36,21 +33,15 @@ export class ScraperOrchestratorService {
     onUnexpectedChromeExit: (code: number | null, signal: NodeJS.Signals | null) => void;
     browserFailureRecoveryWaitMs: number;
   }): void {
-    this.scraperStateLoopService.start({
+    this.runScraperStateLoopUseCase.execute({
+      cdpHost: params.cdpHost,
+      cdpPort: params.cdpPort,
+      isShuttingDown: params.isShuttingDown,
+      onUnexpectedChromeExit: params.onUnexpectedChromeExit,
+      browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
       onScrapingForNewProperties: async () => this.runScrapeNewPropertiesCycle(params.cdpHost, params.cdpPort),
       onUpdatingProperties: async () => this.runUpdateExistingPropertiesCycle(params.cdpHost, params.cdpPort),
-      onLoopError: async (error: unknown) => {
-        await this.chromiumFailureGuardService.recoverFromFailure({
-          reason: `Scraper state loop failed. ${toErrorMessage(error)}`,
-          cdpHost: params.cdpHost,
-          cdpPort: params.cdpPort,
-          browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
-          isShuttingDown: params.isShuttingDown,
-          onUnexpectedExit: params.onUnexpectedChromeExit
-        });
-        this.scheduleLoopRestart(params);
-      },
-      isShuttingDown: params.isShuttingDown
+      onAfterRecovery: () => this.scheduleLoopRestart(params)
     });
   }
 

@@ -19,6 +19,7 @@ import { UpdateExistingPropertiesFlowService } from 'src/application/services/sc
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
 import { PrepareHomeSearchUseCase } from 'src/application/usecases/prepare-home-search.use-case';
+import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
 
 @Module({
@@ -42,6 +43,7 @@ import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-se
     BootstrapChromiumSessionUseCase,
     ExecuteMainSearchFormUseCase,
     PrepareHomeSearchUseCase,
+    RunScraperStateLoopUseCase,
     PrepareSearchResultsUseCase,
     MainPageService,
     SearchResultsPreparationService,

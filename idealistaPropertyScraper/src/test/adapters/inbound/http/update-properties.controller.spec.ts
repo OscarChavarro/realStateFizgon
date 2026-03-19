@@ -1,31 +1,30 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { UpdatePropertiesController } from 'src/adapters/inbound/http/update-properties.controller';
+import { RequestScrapePropertiesUseCase } from 'src/application/usecases/request-scrape-properties.use-case';
 import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/request-update-properties.use-case';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
-class ScraperStateMachineServiceMock {
-  readonly enqueueScrapePropertiesRequest = jest.fn<() => number>();
-  readonly getCurrentState = jest.fn<() => ScraperState>();
+class RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController {
+  readonly execute = jest.fn<() => { status: string; state: ScraperState; pendingRequests: number }>();
 }
 
-class RequestUpdatePropertiesUseCaseMock {
+class RequestScrapePropertiesUseCaseMockForUpdatePropertiesController {
   readonly execute = jest.fn<() => { status: string; state: ScraperState; pendingRequests: number }>();
 }
 
 describe('UpdatePropertiesController', () => {
   it('whenUpdateEndpointIsCalled_requestUpdateProperties_shouldDelegateToRequestUpdatePropertiesUseCase', () => {
     // Arrange
-    const requestUpdatePropertiesUseCase = new RequestUpdatePropertiesUseCaseMock();
+    const requestUpdatePropertiesUseCase = new RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController();
     requestUpdatePropertiesUseCase.execute.mockReturnValue({
       status: 'queued',
       state: ScraperState.UPDATING_PROPERTIES,
       pendingRequests: 3
     });
-    const machine = new ScraperStateMachineServiceMock();
+    const requestScrapePropertiesUseCase = new RequestScrapePropertiesUseCaseMockForUpdatePropertiesController();
     const controller = new UpdatePropertiesController(
       requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesUseCase,
-      machine as unknown as ScraperStateMachineService
+      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesUseCase
     );
     // Action
     const result = controller.requestUpdateProperties();
@@ -36,17 +35,21 @@ describe('UpdatePropertiesController', () => {
       pendingRequests: 3
     });
     expect(requestUpdatePropertiesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(requestScrapePropertiesUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('whenScrapeEndpointIsCalled_requestScrapeProperties_shouldQueueScrapeState', () => {
+  it('whenScrapeEndpointIsCalled_requestScrapeProperties_shouldDelegateToRequestScrapePropertiesUseCase', () => {
     // Arrange
-    const requestUpdatePropertiesUseCase = new RequestUpdatePropertiesUseCaseMock();
-    const machine = new ScraperStateMachineServiceMock();
-    machine.enqueueScrapePropertiesRequest.mockReturnValue(2);
-    machine.getCurrentState.mockReturnValue(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+    const requestUpdatePropertiesUseCase = new RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController();
+    const requestScrapePropertiesUseCase = new RequestScrapePropertiesUseCaseMockForUpdatePropertiesController();
+    requestScrapePropertiesUseCase.execute.mockReturnValue({
+      status: 'queued',
+      state: ScraperState.SCRAPING_FOR_NEW_PROPERTIES,
+      pendingRequests: 2
+    });
     const controller = new UpdatePropertiesController(
       requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesUseCase,
-      machine as unknown as ScraperStateMachineService
+      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesUseCase
     );
     // Action
     const result = controller.requestScrapeProperties();
@@ -56,6 +59,7 @@ describe('UpdatePropertiesController', () => {
       state: ScraperState.SCRAPING_FOR_NEW_PROPERTIES,
       pendingRequests: 2
     });
-    expect(machine.enqueueScrapePropertiesRequest).toHaveBeenCalledTimes(1);
+    expect(requestScrapePropertiesUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(requestUpdatePropertiesUseCase.execute).not.toHaveBeenCalled();
   });
 });

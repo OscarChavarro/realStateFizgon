@@ -1,17 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
-
-class PropertyDetailPageServiceMockForPropertyListPageService {
-  readonly loadPropertyUrl = jest.fn<(client: CdpClient, url: string) => Promise<void>>();
-  readonly loadPropertyUrlFromDatabase = jest.fn<(client: CdpClient, url: string) => Promise<void>>();
-}
+import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
 
 class ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService {
+  readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
+}
+
+class RevalidateExistingPropertyUrlsUseCaseMockForPropertyListPageService {
   readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
 }
 
@@ -27,20 +24,17 @@ function createClient(): CdpClient {
 }
 
 function createService() {
-  const propertyPersistencePort = new PropertyPersistencePortMock();
-  const propertyDetailPageService = new PropertyDetailPageServiceMockForPropertyListPageService();
   const processDiscoveredPropertyUrlsUseCase = new ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService();
+  const revalidateExistingPropertyUrlsUseCase = new RevalidateExistingPropertyUrlsUseCaseMockForPropertyListPageService();
   const service = new PropertyListPageService(
-    propertyPersistencePort as unknown as PropertyPersistencePort,
-    propertyDetailPageService as unknown as PropertyDetailPageService,
-    processDiscoveredPropertyUrlsUseCase as unknown as ProcessDiscoveredPropertyUrlsUseCase
+    processDiscoveredPropertyUrlsUseCase as unknown as ProcessDiscoveredPropertyUrlsUseCase,
+    revalidateExistingPropertyUrlsUseCase as unknown as RevalidateExistingPropertyUrlsUseCase
   );
 
   return {
     service,
-    propertyPersistencePort,
-    propertyDetailPageService,
-    processDiscoveredPropertyUrlsUseCase
+    processDiscoveredPropertyUrlsUseCase,
+    revalidateExistingPropertyUrlsUseCase
   };
 }
 
@@ -132,34 +126,44 @@ describe('PropertyListPageService', () => {
     );
   });
 
-  it('whenProcessedCacheIsReset_resetProcessedUrlsForCurrentSearch_shouldAllowExistingUrlToBeRevalidatedAgain', async () => {
+  it('whenRevalidatingExistingUrls_processExistingUrls_shouldDelegateToUseCaseWithInternalProcessedSet', async () => {
     // Arrange
-    const { service, propertyDetailPageService, propertyPersistencePort } = createService();
+    const { service, revalidateExistingPropertyUrlsUseCase } = createService();
     const client = createClient();
-    propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
-    propertyPersistencePort.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
-    const url = 'https://idealista.com/inmueble/20/';
+    const urls = ['https://idealista.com/inmueble/21/'];
+    revalidateExistingPropertyUrlsUseCase.execute.mockResolvedValue(undefined);
     // Action
-    await service.processExistingUrls(client, [url]);
-    service.resetProcessedUrlsForCurrentSearch();
-    await service.processExistingUrls(client, [url]);
+    await service.processExistingUrls(client, urls);
     // Assert
-    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(2);
-    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(2);
+    expect(revalidateExistingPropertyUrlsUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(revalidateExistingPropertyUrlsUseCase.execute).toHaveBeenCalledWith(
+      client,
+      urls,
+      expect.any(Set)
+    );
   });
 
-  it('whenRevalidatingExistingUrls_processExistingUrls_shouldTouchLastTimeVisitedOnlyOnceForDuplicatedUrl', async () => {
+  it('whenProcessedCacheIsReset_resetProcessedUrlsForCurrentSearch_shouldClearSharedProcessedSetInstance', async () => {
     // Arrange
-    const { service, propertyDetailPageService, propertyPersistencePort } = createService();
+    const { service, revalidateExistingPropertyUrlsUseCase } = createService();
     const client = createClient();
-    propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
-    propertyPersistencePort.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
-    const url = 'https://idealista.com/inmueble/4/';
+    const processedSetSizesBeforeMutation: number[] = [];
+    revalidateExistingPropertyUrlsUseCase.execute.mockImplementation(async (_client, urls, processedUrls) => {
+      processedSetSizesBeforeMutation.push(processedUrls.size);
+      for (const url of urls) {
+        processedUrls.add(url);
+      }
+    });
+    const url = 'https://idealista.com/inmueble/22/';
     // Action
-    await service.processExistingUrls(client, [url, url]);
+    await service.processExistingUrls(client, [url]);
+    const firstSetRef = revalidateExistingPropertyUrlsUseCase.execute.mock.calls[0][2];
+    service.resetProcessedUrlsForCurrentSearch();
+    await service.processExistingUrls(client, [url]);
+    const secondSetRef = revalidateExistingPropertyUrlsUseCase.execute.mock.calls[1][2];
     // Assert
-    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(1);
-    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(1);
-    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledWith(url);
+    expect(firstSetRef).toBe(secondSetRef);
+    expect(processedSetSizesBeforeMutation).toEqual([0, 0]);
+    expect(secondSetRef.size).toBe(1);
   });
 });

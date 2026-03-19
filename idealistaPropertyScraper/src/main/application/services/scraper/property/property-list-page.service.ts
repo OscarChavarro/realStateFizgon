@@ -1,9 +1,7 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
+import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
 
 @Injectable()
 export class PropertyListPageService {
@@ -11,10 +9,8 @@ export class PropertyListPageService {
   private readonly processedUrlsSinceLastSearch = new Set<string>();
 
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort,
-    private readonly propertyDetailPageService: PropertyDetailPageService,
-    private readonly processDiscoveredPropertyUrlsUseCase: ProcessDiscoveredPropertyUrlsUseCase
+    private readonly processDiscoveredPropertyUrlsUseCase: ProcessDiscoveredPropertyUrlsUseCase,
+    private readonly revalidateExistingPropertyUrlsUseCase: RevalidateExistingPropertyUrlsUseCase
   ) {}
 
   async getPropertyUrls(client: CdpClient): Promise<string[]> {
@@ -75,16 +71,10 @@ export class PropertyListPageService {
   }
 
   async processExistingUrls(client: CdpClient, urls: string[]): Promise<void> {
-    for (const url of urls) {
-      if (this.processedUrlsSinceLastSearch.has(url)) {
-        this.logger.log(`URL already processed in current search cycle, skipping update: ${url}`);
-        continue;
-      }
-
-      this.logger.log(`Revalidating existing property: ${url}`);
-      await this.propertyDetailPageService.loadPropertyUrlFromDatabase(client, url);
-      await this.propertyPersistencePort.touchPropertyLastTimeVisited(url);
-      this.processedUrlsSinceLastSearch.add(url);
-    }
+    await this.revalidateExistingPropertyUrlsUseCase.execute(
+      client,
+      urls,
+      this.processedUrlsSinceLastSearch
+    );
   }
 }

@@ -1,10 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
+import { RunStartupPreChecksUseCase } from 'src/application/usecases/run-startup-pre-checks.use-case';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
-    private readonly infrastructurePreCheckService: InfrastructurePreCheckService,
+    private readonly runStartupPreChecksUseCase: RunStartupPreChecksUseCase,
     private readonly homeSearchPreparationFlowService: HomeSearchPreparationFlowService,
     private readonly scraperOrchestratorService: ScraperOrchestratorService,
     private readonly bootstrapChromiumSessionUseCase: BootstrapChromiumSessionUseCase
@@ -26,7 +26,7 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     const onUnexpectedExit = this.createUnexpectedChromeExitHandler();
     try {
-      await this.infrastructurePreCheckService.runBeforeScraperStartup();
+      await this.runStartupPreChecksUseCase.execute();
       await this.bootstrapChromiumSessionUseCase.execute({
         cdpHost: this.cdpHost,
         cdpPort: this.cdpPort,

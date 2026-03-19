@@ -22,6 +22,7 @@ import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/use
 import { PrepareHomeSearchUseCase } from 'src/application/usecases/prepare-home-search.use-case';
 import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
+import { RunStartupPreChecksUseCase } from 'src/application/usecases/run-startup-pre-checks.use-case';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-se
     PrepareHomeSearchUseCase,
     RunScraperStateLoopUseCase,
     PrepareSearchResultsUseCase,
+    RunStartupPreChecksUseCase,
     MainPageService,
     SearchResultsPreparationService,
     ScraperBootstrapService

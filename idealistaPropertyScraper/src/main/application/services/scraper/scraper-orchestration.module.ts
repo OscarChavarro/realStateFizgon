@@ -18,6 +18,7 @@ import { ScraperOrchestratorService } from 'src/application/services/scraper/scr
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
+import { PrepareHomeSearchUseCase } from 'src/application/usecases/prepare-home-search.use-case';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
 
 @Module({
@@ -40,6 +41,7 @@ import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-se
     UpdateExistingPropertiesFlowService,
     BootstrapChromiumSessionUseCase,
     ExecuteMainSearchFormUseCase,
+    PrepareHomeSearchUseCase,
     PrepareSearchResultsUseCase,
     MainPageService,
     SearchResultsPreparationService,

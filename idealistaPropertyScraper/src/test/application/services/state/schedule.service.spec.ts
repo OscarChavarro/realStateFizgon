@@ -1,99 +1,42 @@
-import { describe, expect, it } from '@jest/globals';
-import { jest } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import { ScheduleService } from 'src/application/services/state/schedule.service';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
+import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/promote-idle-to-scheduled-scrape.use-case';
 
-function createService(params?: {
-  initialState?: ScraperState;
-  reScrapeIntervalMs?: number;
-}): {
-  scheduleService: ScheduleService;
-  stateMachineService: ScraperStateMachineService;
-} {
-  const config = new ScraperConfigMock({
-    initialScraperState: params?.initialState ?? ScraperState.IDLE,
-    reScrapeIntervalMs: params?.reScrapeIntervalMs ?? 900000
-  });
-  const stateMachineService = new ScraperStateMachineService(config as unknown as ScraperConfig);
+class PromoteIdleToScheduledScrapeUseCaseMockForScheduleService {
+  readonly execute = jest.fn<(nowMs?: number) => boolean>();
+}
+
+function createService() {
+  const promoteIdleToScheduledScrapeUseCase = new PromoteIdleToScheduledScrapeUseCaseMockForScheduleService();
   const scheduleService = new ScheduleService(
-    stateMachineService,
-    config as unknown as ScraperConfig
+    promoteIdleToScheduledScrapeUseCase as unknown as PromoteIdleToScheduledScrapeUseCase
   );
-  return { scheduleService, stateMachineService };
+
+  return { scheduleService, promoteIdleToScheduledScrapeUseCase };
 }
 
 describe('ScheduleService', () => {
-  it('whenStateIsNotIdle_promoteIdleToScheduledScrapeIfDue_shouldKeepCurrentStateWithoutChanges', () => {
+  it('whenNowIsProvided_promoteIdleToScheduledScrapeIfDue_shouldDelegateToUseCaseWithProvidedNow', () => {
     // Arrange
-    const { scheduleService, stateMachineService } = createService({
-      initialState: ScraperState.UPDATING_PROPERTIES,
-      reScrapeIntervalMs: 1000
-    });
+    const { scheduleService, promoteIdleToScheduledScrapeUseCase } = createService();
+    promoteIdleToScheduledScrapeUseCase.execute.mockReturnValue(true);
     // Action
-    const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue(2000);
-    // Assert
-    expect(promoted).toBe(false);
-    expect(stateMachineService.getCurrentState()).toBe(ScraperState.UPDATING_PROPERTIES);
-  });
-
-  it('whenIdleIntervalIsNotReached_promoteIdleToScheduledScrapeIfDue_shouldRemainIdle', () => {
-    // Arrange
-    const { scheduleService, stateMachineService } = createService({
-      initialState: ScraperState.IDLE,
-      reScrapeIntervalMs: 1000
-    });
-    const lastIdleAt = stateMachineService.getLastIdleReachedAtMs() ?? 0;
-    // Action
-    const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue(lastIdleAt + 999);
-    // Assert
-    expect(promoted).toBe(false);
-    expect(stateMachineService.getCurrentState()).toBe(ScraperState.IDLE);
-  });
-
-  it('whenIdleIntervalIsReached_promoteIdleToScheduledScrapeIfDue_shouldSwitchToScrapingForNewProperties', () => {
-    // Arrange
-    const { scheduleService, stateMachineService } = createService({
-      initialState: ScraperState.IDLE,
-      reScrapeIntervalMs: 1000
-    });
-    const lastIdleAt = stateMachineService.getLastIdleReachedAtMs() ?? 0;
-    // Action
-    const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue(lastIdleAt + 1000);
+    const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue(1234);
     // Assert
     expect(promoted).toBe(true);
-    expect(stateMachineService.getCurrentState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
+    expect(promoteIdleToScheduledScrapeUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(promoteIdleToScheduledScrapeUseCase.execute).toHaveBeenCalledWith(1234);
   });
 
-  it('whenNowParameterIsOmitted_promoteIdleToScheduledScrapeIfDue_shouldUseDateNowDefaultValue', () => {
+  it('whenNowIsOmitted_promoteIdleToScheduledScrapeIfDue_shouldDelegateToUseCaseWithUndefinedNow', () => {
     // Arrange
-    const { scheduleService, stateMachineService } = createService({
-      initialState: ScraperState.IDLE,
-      reScrapeIntervalMs: 1000
-    });
-    const lastIdleAt = stateMachineService.getLastIdleReachedAtMs() ?? 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(lastIdleAt + 1000);
+    const { scheduleService, promoteIdleToScheduledScrapeUseCase } = createService();
+    promoteIdleToScheduledScrapeUseCase.execute.mockReturnValue(false);
     // Action
     const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue();
     // Assert
-    expect(promoted).toBe(true);
-    expect(stateMachineService.getCurrentState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
-    nowSpy.mockRestore();
-  });
-
-  it('whenIdleTimestampIsUnavailable_promoteIdleToScheduledScrapeIfDue_shouldSkipPromotion', () => {
-    // Arrange
-    const { scheduleService, stateMachineService } = createService({
-      initialState: ScraperState.IDLE,
-      reScrapeIntervalMs: 1000
-    });
-    (stateMachineService as unknown as { lastIdleReachedAtMs: number | null }).lastIdleReachedAtMs = null;
-    // Action
-    const promoted = scheduleService.promoteIdleToScheduledScrapeIfDue(5000);
-    // Assert
     expect(promoted).toBe(false);
-    expect(stateMachineService.getCurrentState()).toBe(ScraperState.IDLE);
+    expect(promoteIdleToScheduledScrapeUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(promoteIdleToScheduledScrapeUseCase.execute).toHaveBeenCalledWith(undefined);
   });
 });

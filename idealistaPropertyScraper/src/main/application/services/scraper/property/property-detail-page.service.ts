@@ -8,6 +8,7 @@ import { PropertyDetailDomExtractorService } from 'src/application/services/scra
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
+import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
 
 @Injectable()
 export class PropertyDetailPageService {
@@ -21,21 +22,14 @@ export class PropertyDetailPageService {
     private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
     private readonly domExtractorService: PropertyDetailDomExtractorService,
     private readonly geoCoordinateHintService: GeoCoordinateHintService,
-    private readonly storageService: PropertyDetailStorageService
+    private readonly storageService: PropertyDetailStorageService,
+    private readonly loadPropertyDetailFromResultsUseCase: LoadPropertyDetailFromResultsUseCase
   ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
-    const clicked = await this.navigationService.clickPropertyLinkFromResults(client.Runtime, url);
-    if (!clicked) {
-      throw new Error(`Property URL is not visible in current results DOM and cannot be clicked: ${url}`);
-    }
-
-    try {
-      await this.navigationService.waitForDetailUrlAndDomComplete(client.Runtime, url);
+    await this.loadPropertyDetailFromResultsUseCase.execute(client, url, async () => {
       await this.processLoadedPropertyDetail(client, url, 'ALWAYS');
-    } finally {
-      await this.navigationService.goBackToSearchResults(client.Runtime);
-    }
+    });
   }
 
   async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {

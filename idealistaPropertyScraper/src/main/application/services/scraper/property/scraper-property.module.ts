@@ -15,6 +15,7 @@ import { PropertyListPageService } from 'src/application/services/scraper/proper
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
+import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     PersistPropertyDetailAndAssetsUseCase,
     ProcessDiscoveredPropertyUrlsUseCase,
     RevalidateExistingPropertyUrlsUseCase,
+    LoadPropertyDetailFromResultsUseCase,
     PropertyDetailStorageService,
     PropertyDetailPageService,
     PropertyListPageService

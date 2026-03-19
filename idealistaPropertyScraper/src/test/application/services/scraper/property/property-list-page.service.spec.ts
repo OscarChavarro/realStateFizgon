@@ -1,13 +1,18 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
+import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
+import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
-class PropertyDetailPageServiceMock {
+class PropertyDetailPageServiceMockForPropertyListPageService {
   readonly loadPropertyUrl = jest.fn<(client: CdpClient, url: string) => Promise<void>>();
   readonly loadPropertyUrlFromDatabase = jest.fn<(client: CdpClient, url: string) => Promise<void>>();
+}
+
+class ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService {
+  readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
 }
 
 function createClient(): CdpClient {
@@ -21,15 +26,28 @@ function createClient(): CdpClient {
   };
 }
 
+function createService() {
+  const propertyPersistencePort = new PropertyPersistencePortMock();
+  const propertyDetailPageService = new PropertyDetailPageServiceMockForPropertyListPageService();
+  const processDiscoveredPropertyUrlsUseCase = new ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService();
+  const service = new PropertyListPageService(
+    propertyPersistencePort as unknown as PropertyPersistencePort,
+    propertyDetailPageService as unknown as PropertyDetailPageService,
+    processDiscoveredPropertyUrlsUseCase as unknown as ProcessDiscoveredPropertyUrlsUseCase
+  );
+
+  return {
+    service,
+    propertyPersistencePort,
+    propertyDetailPageService,
+    processDiscoveredPropertyUrlsUseCase
+  };
+}
+
 describe('PropertyListPageService', () => {
   it('whenRuntimeReturnsStringArray_getPropertyUrls_shouldReturnOnlyStringUrls', async () => {
     // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
+    const { service } = createService();
     const client: CdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
@@ -57,12 +75,7 @@ describe('PropertyListPageService', () => {
 
   it('whenRuntimeReturnsException_getPropertyUrls_shouldThrowError', async () => {
     // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
+    const { service } = createService();
     const client: CdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
@@ -81,12 +94,7 @@ describe('PropertyListPageService', () => {
 
   it('whenRuntimeReturnsNonArray_getPropertyUrls_shouldReturnEmptyArray', async () => {
     // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
+    const { service } = createService();
     const client: CdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
@@ -107,92 +115,51 @@ describe('PropertyListPageService', () => {
     expect(urls).toEqual([]);
   });
 
-  it('whenProcessedCacheIsReset_resetProcessedUrlsForCurrentSearch_shouldAllowUrlToBeProcessedAgain', async () => {
+  it('whenProcessingDiscoveredUrls_processUrls_shouldDelegateToUseCaseWithInternalProcessedSet', async () => {
     // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
+    const { service, processDiscoveredPropertyUrlsUseCase } = createService();
     const client = createClient();
-    mongo.isOpenPropertyByUrl.mockResolvedValue(false);
+    const urls = ['https://idealista.com/inmueble/20/'];
+    processDiscoveredPropertyUrlsUseCase.execute.mockResolvedValue(undefined);
     // Action
-    await service.processUrls(client, ['https://idealista.com/inmueble/20/']);
+    await service.processUrls(client, urls);
+    // Assert
+    expect(processDiscoveredPropertyUrlsUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(processDiscoveredPropertyUrlsUseCase.execute).toHaveBeenCalledWith(
+      client,
+      urls,
+      expect.any(Set)
+    );
+  });
+
+  it('whenProcessedCacheIsReset_resetProcessedUrlsForCurrentSearch_shouldAllowExistingUrlToBeRevalidatedAgain', async () => {
+    // Arrange
+    const { service, propertyDetailPageService, propertyPersistencePort } = createService();
+    const client = createClient();
+    propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
+    propertyPersistencePort.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
+    const url = 'https://idealista.com/inmueble/20/';
+    // Action
+    await service.processExistingUrls(client, [url]);
     service.resetProcessedUrlsForCurrentSearch();
-    await service.processUrls(client, ['https://idealista.com/inmueble/20/']);
+    await service.processExistingUrls(client, [url]);
     // Assert
-    expect(detail.loadPropertyUrl).toHaveBeenCalledTimes(2);
+    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(2);
+    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(2);
   });
 
-  it('whenUrlAppearsTwiceInCurrentCycle_processUrls_shouldProcessItOnlyOnce', async () => {
+  it('whenRevalidatingExistingUrls_processExistingUrls_shouldTouchLastTimeVisitedOnlyOnceForDuplicatedUrl', async () => {
     // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
+    const { service, propertyDetailPageService, propertyPersistencePort } = createService();
     const client = createClient();
-    mongo.isOpenPropertyByUrl.mockResolvedValue(false);
+    propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
+    propertyPersistencePort.touchPropertyLastTimeVisited.mockResolvedValue(undefined);
+    const url = 'https://idealista.com/inmueble/4/';
     // Action
-    await service.processUrls(client, ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/1/']);
+    await service.processExistingUrls(client, [url, url]);
     // Assert
-    expect(mongo.isOpenPropertyByUrl).toHaveBeenCalledTimes(1);
-    expect(detail.loadPropertyUrl).toHaveBeenCalledTimes(1);
-    expect(detail.loadPropertyUrl).toHaveBeenCalledWith(client, 'https://idealista.com/inmueble/1/');
-  });
-
-  it('whenUrlAlreadyExistsAsOpen_processUrls_shouldTouchLastTimeVisitedAndSkipDetailNavigation', async () => {
-    // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
-    const client = createClient();
-    mongo.isOpenPropertyByUrl.mockResolvedValue(true);
-    // Action
-    await service.processUrls(client, ['https://idealista.com/inmueble/2/']);
-    // Assert
-    expect(mongo.touchPropertyLastTimeVisited).toHaveBeenCalledWith('https://idealista.com/inmueble/2/');
-    expect(detail.loadPropertyUrl).not.toHaveBeenCalled();
-  });
-
-  it('whenUrlIsNew_processUrls_shouldLoadDetailAndKeepProcessedCacheForLaterCalls', async () => {
-    // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
-    const client = createClient();
-    mongo.isOpenPropertyByUrl.mockResolvedValue(false);
-    // Action
-    await service.processUrls(client, ['https://idealista.com/inmueble/3/']);
-    await service.processUrls(client, ['https://idealista.com/inmueble/3/']);
-    // Assert
-    expect(mongo.isOpenPropertyByUrl).toHaveBeenCalledTimes(1);
-    expect(detail.loadPropertyUrl).toHaveBeenCalledTimes(1);
-    expect(mongo.touchPropertyLastTimeVisited).not.toHaveBeenCalled();
-  });
-
-  it('whenRevalidatingExistingUrls_processExistingUrls_shouldTouchLastTimeVisitedForEachProcessedUrl', async () => {
-    // Arrange
-    const mongo = new PropertyPersistencePortMock();
-    const detail = new PropertyDetailPageServiceMock();
-    const service = new PropertyListPageService(
-      mongo as unknown as PropertyPersistencePort,
-      detail as unknown as PropertyDetailPageService
-    );
-    const client = createClient();
-    // Action
-    await service.processExistingUrls(client, ['https://idealista.com/inmueble/4/', 'https://idealista.com/inmueble/4/']);
-    // Assert
-    expect(detail.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(1);
-    expect(mongo.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(1);
-    expect(mongo.touchPropertyLastTimeVisited).toHaveBeenCalledWith('https://idealista.com/inmueble/4/');
+    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(1);
+    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(1);
+    expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledWith(url);
   });
 });

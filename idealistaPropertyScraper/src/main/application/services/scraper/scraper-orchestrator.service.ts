@@ -6,7 +6,7 @@ import { ChromiumNetworkHeadersService } from 'src/application/services/chromium
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
-import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/execute-update-existing-properties-cycle.use-case';
 import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
@@ -22,7 +22,7 @@ export class ScraperOrchestratorService {
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
     private readonly imageDownloader: ImageDownloader,
     private readonly scrapeNewPropertiesFlowService: ScrapeNewPropertiesFlowService,
-    private readonly updateExistingPropertiesFlowService: UpdateExistingPropertiesFlowService,
+    private readonly executeUpdateExistingPropertiesCycleUseCase: ExecuteUpdateExistingPropertiesCycleUseCase,
     private readonly runScraperStateLoopUseCase: RunScraperStateLoopUseCase
   ) {}
 
@@ -77,9 +77,7 @@ export class ScraperOrchestratorService {
   }
 
   private async runUpdateExistingPropertiesCycle(cdpHost: string, cdpPort: number): Promise<void> {
-    await this.withHardenedClient(cdpHost, cdpPort, 'UPDATING_PROPERTIES', async (client) => {
-      await this.updateExistingPropertiesFlowService.execute(client);
-    });
+    await this.executeUpdateExistingPropertiesCycleUseCase.execute(cdpHost, cdpPort);
   }
 
   private async withHardenedClient(

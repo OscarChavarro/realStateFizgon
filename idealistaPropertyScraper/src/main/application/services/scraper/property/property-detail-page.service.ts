@@ -9,6 +9,7 @@ import { PropertyDetailInteractionService } from 'src/application/services/scrap
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/revalidate-property-detail-from-database.use-case';
 
 @Injectable()
 export class PropertyDetailPageService {
@@ -23,7 +24,8 @@ export class PropertyDetailPageService {
     private readonly domExtractorService: PropertyDetailDomExtractorService,
     private readonly geoCoordinateHintService: GeoCoordinateHintService,
     private readonly storageService: PropertyDetailStorageService,
-    private readonly loadPropertyDetailFromResultsUseCase: LoadPropertyDetailFromResultsUseCase
+    private readonly loadPropertyDetailFromResultsUseCase: LoadPropertyDetailFromResultsUseCase,
+    private readonly revalidatePropertyDetailFromDatabaseUseCase: RevalidatePropertyDetailFromDatabaseUseCase
   ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
@@ -33,12 +35,9 @@ export class PropertyDetailPageService {
   }
 
   async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {
-    try {
-      await this.navigationService.navigateDirectlyToUrl(client.Runtime, url);
+    await this.revalidatePropertyDetailFromDatabaseUseCase.execute(client, url, async () => {
       await this.processLoadedPropertyDetail(client, url, 'ONLY_WHEN_MISSING_IN_DB');
-    } finally {
-      await this.navigationService.goBackToSearchResults(client.Runtime);
-    }
+    });
   }
 
   private async processLoadedPropertyDetail(

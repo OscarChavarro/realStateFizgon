@@ -9,6 +9,7 @@ import { PropertyDetailNavigationService } from 'src/application/services/scrape
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/revalidate-property-detail-from-database.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
@@ -54,6 +55,10 @@ class LoadPropertyDetailFromResultsUseCaseMockForDetailPage {
   readonly execute = jest.fn<(client: CdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
 }
 
+class RevalidatePropertyDetailFromDatabaseUseCaseMockForDetailPage {
+  readonly execute = jest.fn<(client: CdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
+}
+
 function createClient(): CdpClient {
   return {
     Page: {
@@ -89,6 +94,7 @@ function createService() {
   const geoCoordinateHint = new GeoCoordinateHintServiceMockForDetailPage();
   const storage = new PropertyDetailStorageServiceMockForDetailPage();
   const loadPropertyDetailFromResultsUseCase = new LoadPropertyDetailFromResultsUseCaseMockForDetailPage();
+  const revalidatePropertyDetailFromDatabaseUseCase = new RevalidatePropertyDetailFromDatabaseUseCaseMockForDetailPage();
 
   const service = new PropertyDetailPageService(
     cookie as unknown as CookieApprovalDialogScraperService,
@@ -98,7 +104,8 @@ function createService() {
     extractor as unknown as PropertyDetailDomExtractorService,
     geoCoordinateHint as unknown as GeoCoordinateHintService,
     storage as unknown as PropertyDetailStorageService,
-    loadPropertyDetailFromResultsUseCase as unknown as LoadPropertyDetailFromResultsUseCase
+    loadPropertyDetailFromResultsUseCase as unknown as LoadPropertyDetailFromResultsUseCase,
+    revalidatePropertyDetailFromDatabaseUseCase as unknown as RevalidatePropertyDetailFromDatabaseUseCase
   );
 
   return {
@@ -110,7 +117,8 @@ function createService() {
     extractor,
     geoCoordinateHint,
     storage,
-    loadPropertyDetailFromResultsUseCase
+    loadPropertyDetailFromResultsUseCase,
+    revalidatePropertyDetailFromDatabaseUseCase
   };
 }
 
@@ -237,12 +245,22 @@ describe('PropertyDetailPageService', () => {
 
   it('whenDetailIsActiveAndExtractedFromDatabase_loadPropertyUrlFromDatabase_shouldEnrichOnlyWhenMissingGeoLocationHint', async () => {
     // Arrange
-    const { service, navigation, interaction, cookie, deactivated, extractor, geoCoordinateHint, storage } = createService();
+    const {
+      service,
+      revalidatePropertyDetailFromDatabaseUseCase,
+      interaction,
+      cookie,
+      deactivated,
+      extractor,
+      geoCoordinateHint,
+      storage
+    } = createService();
     const client = createClient();
     const rawProperty = createProperty('https://www.idealista.com/inmueble/3b/');
     const filteredProperty = createProperty('https://www.idealista.com/inmueble/3b/');
-    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
-    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    revalidatePropertyDetailFromDatabaseUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
+      await onDetailLoaded();
+    });
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
@@ -264,10 +282,18 @@ describe('PropertyDetailPageService', () => {
 
   it('whenExtractionFailsAndStillActive_loadPropertyUrlFromDatabase_shouldThrowAndNavigateBack', async () => {
     // Arrange
-    const { service, navigation, interaction, cookie, deactivated, extractor } = createService();
+    const {
+      service,
+      revalidatePropertyDetailFromDatabaseUseCase,
+      interaction,
+      cookie,
+      deactivated,
+      extractor
+    } = createService();
     const client = createClient();
-    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
-    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    revalidatePropertyDetailFromDatabaseUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
+      await onDetailLoaded();
+    });
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
@@ -279,16 +305,29 @@ describe('PropertyDetailPageService', () => {
     const action = service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/4/');
     // Assert
     await expect(action).rejects.toThrow('Property detail container was not found after loading URL: https://www.idealista.com/inmueble/4/');
-    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+    expect(revalidatePropertyDetailFromDatabaseUseCase.execute).toHaveBeenCalledWith(
+      client,
+      'https://www.idealista.com/inmueble/4/',
+      expect.any(Function)
+    );
   });
 
   it('whenExtractionFailsAndThenDeactivated_loadPropertyUrlFromDatabase_shouldMarkClosed', async () => {
     // Arrange
-    const { service, navigation, interaction, cookie, deactivated, extractor, storage } = createService();
+    const {
+      service,
+      revalidatePropertyDetailFromDatabaseUseCase,
+      interaction,
+      cookie,
+      deactivated,
+      extractor,
+      storage
+    } = createService();
     const client = createClient();
     const closedBy = new Date('2026-02-02T00:00:00.000Z');
-    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
-    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    revalidatePropertyDetailFromDatabaseUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
+      await onDetailLoaded();
+    });
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
@@ -301,15 +340,24 @@ describe('PropertyDetailPageService', () => {
     await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/5/');
     // Assert
     expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5/', closedBy);
-    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+    expect(revalidatePropertyDetailFromDatabaseUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
   it('whenExtractionFailsAndThenDeactivatedWithoutClosedDate_loadPropertyUrlFromDatabase_shouldMarkClosedWithUndefinedDate', async () => {
     // Arrange
-    const { service, navigation, interaction, cookie, deactivated, extractor, storage } = createService();
+    const {
+      service,
+      revalidatePropertyDetailFromDatabaseUseCase,
+      interaction,
+      cookie,
+      deactivated,
+      extractor,
+      storage
+    } = createService();
     const client = createClient();
-    navigation.navigateDirectlyToUrl.mockResolvedValue(undefined);
-    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    revalidatePropertyDetailFromDatabaseUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
+      await onDetailLoaded();
+    });
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
@@ -322,19 +370,22 @@ describe('PropertyDetailPageService', () => {
     await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/5b/');
     // Assert
     expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5b/', undefined);
-    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+    expect(revalidatePropertyDetailFromDatabaseUseCase.execute).toHaveBeenCalledTimes(1);
   });
 
-  it('whenDirectNavigationFails_loadPropertyUrlFromDatabase_shouldAlwaysReturnToSearchResults', async () => {
+  it('whenDatabaseRevalidationUseCaseFails_loadPropertyUrlFromDatabase_shouldPropagateError', async () => {
     // Arrange
-    const { service, navigation } = createService();
+    const { service, revalidatePropertyDetailFromDatabaseUseCase } = createService();
     const client = createClient();
-    navigation.navigateDirectlyToUrl.mockRejectedValue(new Error('navigation failed'));
-    navigation.goBackToSearchResults.mockResolvedValue(undefined);
+    revalidatePropertyDetailFromDatabaseUseCase.execute.mockRejectedValue(new Error('navigation failed'));
     // Action
     const action = service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/6/');
     // Assert
     await expect(action).rejects.toThrow('navigation failed');
-    expect(navigation.goBackToSearchResults).toHaveBeenCalledWith(client.Runtime);
+    expect(revalidatePropertyDetailFromDatabaseUseCase.execute).toHaveBeenCalledWith(
+      client,
+      'https://www.idealista.com/inmueble/6/',
+      expect.any(Function)
+    );
   });
 });

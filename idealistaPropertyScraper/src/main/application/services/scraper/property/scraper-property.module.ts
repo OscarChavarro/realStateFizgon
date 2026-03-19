@@ -16,6 +16,7 @@ import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/revalidate-property-detail-from-database.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     ProcessDiscoveredPropertyUrlsUseCase,
     RevalidateExistingPropertyUrlsUseCase,
     LoadPropertyDetailFromResultsUseCase,
+    RevalidatePropertyDetailFromDatabaseUseCase,
     PropertyDetailStorageService,
     PropertyDetailPageService,
     PropertyListPageService

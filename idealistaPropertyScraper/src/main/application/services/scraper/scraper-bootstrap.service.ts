@@ -1,12 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
+import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
@@ -17,21 +15,24 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
   private shuttingDown = false;
 
   constructor(
-    private readonly chromiumCdpReadinessService: ChromiumCdpReadinessService,
     private readonly chromiumProcessLifecycleService: ChromiumProcessLifecycleService,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
-    private readonly chromiumGeolocationService: ChromiumGeolocationService,
-    private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
     private readonly infrastructurePreCheckService: InfrastructurePreCheckService,
     private readonly homeSearchPreparationFlowService: HomeSearchPreparationFlowService,
-    private readonly scraperOrchestratorService: ScraperOrchestratorService
+    private readonly scraperOrchestratorService: ScraperOrchestratorService,
+    private readonly bootstrapChromiumSessionUseCase: BootstrapChromiumSessionUseCase
   ) {}
 
   async onModuleInit(): Promise<void> {
     const onUnexpectedExit = this.createUnexpectedChromeExitHandler();
     try {
       await this.infrastructurePreCheckService.runBeforeScraperStartup();
-      await this.launchChrome(onUnexpectedExit);
+      await this.bootstrapChromiumSessionUseCase.execute({
+        cdpHost: this.cdpHost,
+        cdpPort: this.cdpPort,
+        onUnexpectedExit,
+        isShuttingDown: () => this.shuttingDown
+      });
       await this.homeSearchPreparationFlowService.execute(this.cdpHost, this.cdpPort);
       this.scraperOrchestratorService.start({
         cdpHost: this.cdpHost,
@@ -66,20 +67,6 @@ export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     this.shuttingDown = true;
     this.chromiumProcessLifecycleService.stopChromiumProcess();
-  }
-
-  private async launchChrome(
-    onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void
-  ): Promise<void> {
-    await this.chromiumProcessLifecycleService.launchChromiumProcess(
-      this.cdpPort,
-      onUnexpectedExit,
-      () => this.shuttingDown
-    );
-    await this.chromiumCdpReadinessService.waitForReadyEndpoint(this.cdpHost, this.cdpPort);
-    await this.chromiumGeolocationService.grantStartupPermissions(this.cdpHost, this.cdpPort);
-    this.chromiumGeolocationService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
-    this.chromiumNetworkHeadersService.startTargetLoop(this.cdpHost, this.cdpPort, () => this.shuttingDown);
   }
 
   private createUnexpectedChromeExitHandler(): (code: number | null, signal: NodeJS.Signals | null) => void {

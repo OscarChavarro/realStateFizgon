@@ -30,6 +30,7 @@ import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/pr
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
+import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/r
     RunScraperStateLoopUseCase,
     PrepareSearchResultsUseCase,
     RunStartupPreChecksUseCase,
+    ValidateProxyAccessPreCheckUseCase,
     MainPageService,
     SearchResultsPreparationService,
     ScraperBootstrapService

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 
 function createClient(): CdpClient {
   const evaluateMock = jest.fn();
@@ -16,20 +16,20 @@ function createClient(): CdpClient {
   };
 }
 
-describe('FilterAvailableOptionExtractor', () => {
+describe('FilterAvailableOptionExtractorService', () => {
   it.each([
     {
-      operation: async (service: FilterAvailableOptionExtractor, client: CdpClient) => service.extractSingleSelectorDropdownOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractSingleSelectorDropdownOptions(client, '#a')
     },
     {
-      operation: async (service: FilterAvailableOptionExtractor, client: CdpClient) => service.extractMultipleSelectorOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractMultipleSelectorOptions(client, '#a')
     },
     {
-      operation: async (service: FilterAvailableOptionExtractor, client: CdpClient) => service.extractSingleSelectorOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractSingleSelectorOptions(client, '#a')
     }
   ])('whenRuntimeReturnsStringArray_$operation_shouldReturnArray', async ({ operation }) => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({ result: { value: ['A', 'B'] } });
@@ -41,7 +41,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenMinMaxValueIsMissing_extractMinMaxOptions_shouldReturnDefaultEmptySelections', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({ result: { value: undefined } });
@@ -53,7 +53,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenRuntimeThrowsException_extractMinMaxOptions_shouldThrowError', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({ exceptionDetails: { text: 'boom' } });
@@ -65,7 +65,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenMinMaxContainsMixedTypes_extractMinMaxOptions_shouldKeepOnlyStringOptions', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({
@@ -84,7 +84,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenMinMaxContainsNonArrayValues_extractMinMaxOptions_shouldFallbackToEmptyArrays', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({
@@ -103,7 +103,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenRuntimeArrayEvaluationFails_extractSingleSelectorOptions_shouldThrowError', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({ exceptionDetails: { text: 'boom' } });
@@ -115,7 +115,7 @@ describe('FilterAvailableOptionExtractor', () => {
 
   it('whenRuntimeReturnsNonArray_extractMultipleSelectorOptions_shouldReturnEmptyArray', async () => {
     // Arrange
-    const service = new FilterAvailableOptionExtractor();
+    const service = new FilterAvailableOptionExtractorService();
     const client = createClient();
     const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void };
     evaluateMock.mockResolvedValue({ result: { value: { invalid: true } } });

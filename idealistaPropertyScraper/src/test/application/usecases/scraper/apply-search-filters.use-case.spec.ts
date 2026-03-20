@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
 import { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
-import { FilterSelectedOptionExtractor } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
 import { Filter } from 'src/domain/filters/filter';
@@ -98,8 +98,8 @@ function createUseCase() {
   const scraperConfig = new ScraperConfigMockForApplySearchFiltersUseCase();
   const useCase = new ApplySearchFiltersUseCase(
     filterUpdate as unknown as FilterUpdateService,
-    available as unknown as FilterAvailableOptionExtractor,
-    selected as unknown as FilterSelectedOptionExtractor,
+    available as unknown as FilterAvailableOptionExtractorService,
+    selected as unknown as FilterSelectedOptionExtractorService,
     scraperConfig as unknown as ScraperConfig
   );
   const logger = {
@@ -347,8 +347,8 @@ describe('ApplySearchFiltersUseCase', () => {
     };
     const useCase = new ApplySearchFiltersUseCase(
       filterUpdate as unknown as FilterUpdateService,
-      available as unknown as FilterAvailableOptionExtractor,
-      selected as unknown as FilterSelectedOptionExtractor,
+      available as unknown as FilterAvailableOptionExtractorService,
+      selected as unknown as FilterSelectedOptionExtractorService,
       scraperConfig as unknown as ScraperConfig
     );
     // Action

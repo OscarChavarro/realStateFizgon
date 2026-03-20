@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
-import { FilterSelectedOptionExtractor } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
 import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
 import { Filter } from 'src/domain/filters/filter';
@@ -17,8 +17,8 @@ export class ApplySearchFiltersUseCase {
 
   constructor(
     private readonly filterUpdateService: FilterUpdateService,
-    private readonly filterAvailableOptionExtractor: FilterAvailableOptionExtractor,
-    private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractor,
+    private readonly filterAvailableOptionExtractor: FilterAvailableOptionExtractorService,
+    private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractorService,
     private readonly scraperConfig: ScraperConfig
   ) {
     this.applyConfiguredFilterDefinitions();

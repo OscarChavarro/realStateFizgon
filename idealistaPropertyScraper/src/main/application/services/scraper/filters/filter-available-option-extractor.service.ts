@@ -3,7 +3,7 @@ import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.t
 import { MinMaxOptions } from 'src/application/services/scraper/filters/min-max-options.type';
 
 @Injectable()
-export class FilterAvailableOptionExtractor {
+export class FilterAvailableOptionExtractorService {
   async extractSingleSelectorDropdownOptions(client: CdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,

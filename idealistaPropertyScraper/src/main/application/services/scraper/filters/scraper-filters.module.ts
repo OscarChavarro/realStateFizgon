@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
-import { FilterAvailableOptionExtractor } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
-import { FilterSelectedOptionExtractor } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
@@ -15,8 +15,8 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
   imports: [ConfigurationModule, ScraperChromiumModule],
   providers: [
     FilterLoaderDetectionService,
-    FilterAvailableOptionExtractor,
-    FilterSelectedOptionExtractor,
+    FilterAvailableOptionExtractorService,
+    FilterSelectedOptionExtractorService,
     FilterTextNormalizationService,
     FilterSelectionReaderService,
     FilterActionExecutorService,

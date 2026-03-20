@@ -3,6 +3,7 @@ import { ScraperStateLoopService } from 'src/application/services/state/scraper-
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { ScheduleService } from 'src/application/services/state/schedule.service';
 import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
+import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
@@ -11,6 +12,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     ScraperStateMachineService,
     PromoteIdleToScheduledScrapeUseCase,
     ScheduleService,
+    RunScraperStateLoopCoreUseCase,
     ScraperStateLoopService
   ],
   exports: [ScraperStateMachineService, ScheduleService, ScraperStateLoopService]

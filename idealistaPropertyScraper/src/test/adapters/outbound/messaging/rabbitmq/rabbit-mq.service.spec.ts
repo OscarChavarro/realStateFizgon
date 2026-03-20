@@ -3,7 +3,6 @@ import { EventEmitter } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { connect } from 'amqplib';
 import { RabbitMqService } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
-import { RabbitConfig } from 'infrastructure/config/settings/rabbit.config';
 import { RabbitConfigMock } from '../../../../support/mocks/rabbit-config.mock';
 
 jest.mock('amqplib', () => ({
@@ -63,7 +62,7 @@ describe('RabbitMqService', () => {
   it('whenUrlListIsEmpty_publishPropertyUrls_shouldReturnWithoutPublishing', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     muteServiceLogger(service);
     const publishWithRetrySpy = jest.spyOn(service as unknown as { publishWithRetry: () => Promise<void> }, 'publishWithRetry');
     // Action
@@ -75,7 +74,7 @@ describe('RabbitMqService', () => {
   it('whenBackpressureIsTriggered_publishJsonToQueue_shouldWaitForDrainBeforeConfirms', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     muteServiceLogger(service);
     const channel = createFakeChannel();
     channel.sendToQueue.mockImplementation(() => {
@@ -103,7 +102,7 @@ describe('RabbitMqService', () => {
   it('whenFirstPublishAttemptFails_publishWithRetry_shouldResetConnectionAndRetry', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     const logger = muteServiceLogger(service);
     const resetConnectionSpy = jest.spyOn(service as unknown as { resetConnection: () => Promise<void> }, 'resetConnection');
     let attempts = 0;
@@ -125,7 +124,7 @@ describe('RabbitMqService', () => {
   it('whenPublishPropertyUrlsFails_publishPropertyUrls_shouldPersistLocallyAndResetConnection', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     const logger = muteServiceLogger(service);
     const publishWithRetrySpy = jest.spyOn(service as unknown as { publishWithRetry: () => Promise<void> }, 'publishWithRetry')
       .mockRejectedValue(new Error('broker down'));
@@ -145,7 +144,7 @@ describe('RabbitMqService', () => {
   it('whenNotificationIsRequested_publishIdealistaUpdateNotification_shouldPublishExpectedPayload', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     muteServiceLogger(service);
     const publishJsonSpy = jest.spyOn(service, 'publishJsonToQueue').mockResolvedValue(undefined);
     // Action
@@ -161,7 +160,7 @@ describe('RabbitMqService', () => {
   it('whenModuleIsDestroyed_onModuleDestroy_shouldMarkShutdownAndResetConnection', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     muteServiceLogger(service);
     const resetConnectionSpy = jest.spyOn(service as unknown as { resetConnection: () => Promise<void> }, 'resetConnection')
       .mockResolvedValue(undefined);
@@ -173,7 +172,7 @@ describe('RabbitMqService', () => {
 
   it('whenConnectionEmitsClose_attachConnectionLifecycleHandlers_shouldResetConnectionAndChannelCaches', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     const connection = createFakeConnection(channel);
@@ -190,7 +189,7 @@ describe('RabbitMqService', () => {
 
   it('whenChannelEmitsClose_attachChannelLifecycleHandlers_shouldResetChannelCache', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     (service as unknown as { channel: FakeConfirmChannel | null }).channel = channel;
@@ -204,7 +203,7 @@ describe('RabbitMqService', () => {
 
   it('whenRetriesAreExhausted_publishWithRetry_shouldThrowOriginalError', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     muteServiceLogger(service);
     const publish = jest.fn(async () => {
       throw new Error('hard failure');
@@ -220,7 +219,7 @@ describe('RabbitMqService', () => {
 
   it('whenPersistingFallbackUrls_persistUrlsLocally_shouldWriteAuditLinesForEveryUrl', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     // Action
     (service as unknown as { persistUrlsLocally: (urls: string[], reason: string) => void })
@@ -233,7 +232,7 @@ describe('RabbitMqService', () => {
 
   it('whenClosingResourcesFails_resetConnection_shouldSwallowCloseErrorsAndClearCaches', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     muteServiceLogger(service);
     const channel = createFakeChannel();
     const connection = createFakeConnection(channel);
@@ -253,7 +252,7 @@ describe('RabbitMqService', () => {
   it('whenUrlsArePublished_publishPropertyUrls_shouldSendAllUrlsAndLogSuccess', async () => {
     // Arrange
     const config = new RabbitConfigMock();
-    const service = new RabbitMqService(config as unknown as RabbitConfig);
+    const service = new RabbitMqService(config);
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     const connection = createFakeConnection(channel);
@@ -272,7 +271,7 @@ describe('RabbitMqService', () => {
 
   it('whenChannelCacheExists_getChannel_shouldReturnCachedChannel', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const cachedChannel = createFakeChannel();
     (service as unknown as { channel: FakeConfirmChannel | null }).channel = cachedChannel;
     // Action
@@ -283,7 +282,7 @@ describe('RabbitMqService', () => {
 
   it('whenChannelPromiseExists_getChannel_shouldReusePendingChannelPromise', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const pendingChannel = createFakeChannel();
     (service as unknown as { channelPromise: Promise<FakeConfirmChannel> | null }).channelPromise = Promise.resolve(pendingChannel);
     // Action
@@ -305,7 +304,7 @@ describe('RabbitMqService', () => {
     }
   ])('whenConnectionCacheIsAvailable_getConnection_shouldReturnCachedConnection', async ({ setup }) => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const connection = createFakeConnection(createFakeChannel());
     setup(service, connection);
     // Action
@@ -325,7 +324,7 @@ describe('RabbitMqService', () => {
     }
   ])('whenConnectionErrorEventOccurs_attachConnectionLifecycleHandlers_shouldHandleOnlyActiveConnection', ({ active, expectedWarnings }) => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const connection = createFakeConnection(createFakeChannel());
     const otherConnection = createFakeConnection(createFakeChannel());
@@ -339,7 +338,7 @@ describe('RabbitMqService', () => {
 
   it('whenConnectionCloseEventIsFromStaleConnection_attachConnectionLifecycleHandlers_shouldIgnoreIt', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     const activeConnection = createFakeConnection(channel);
@@ -355,7 +354,7 @@ describe('RabbitMqService', () => {
 
   it('whenConnectionCloseEventOccursDuringShutdown_attachConnectionLifecycleHandlers_shouldSkipCloseWarning', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const connection = createFakeConnection(createFakeChannel());
     (service as unknown as { shuttingDown: boolean }).shuttingDown = true;
@@ -370,7 +369,7 @@ describe('RabbitMqService', () => {
 
   it('whenChannelCloseEventOccursDuringShutdown_attachChannelLifecycleHandlers_shouldSkipCloseWarning', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     (service as unknown as { shuttingDown: boolean }).shuttingDown = true;
@@ -385,7 +384,7 @@ describe('RabbitMqService', () => {
 
   it('whenChannelPromiseChangesBeforeResolution_getChannel_shouldKeepCurrentPromiseReference', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const channel = createFakeChannel();
     const delayedChannel = new Promise<FakeConfirmChannel>((resolve) => {
       setTimeout(() => resolve(channel), 0);
@@ -405,7 +404,7 @@ describe('RabbitMqService', () => {
 
   it('whenConnectionPromiseChangesBeforeResolution_getConnection_shouldKeepCurrentPromiseReference', async () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const channel = createFakeChannel();
     const connection = createFakeConnection(channel);
     const connectMock = connect as unknown as jest.MockedFunction<typeof connect>;
@@ -424,7 +423,7 @@ describe('RabbitMqService', () => {
 
   it('whenConnectionBlockedAndUnblocked_attachConnectionLifecycleHandlers_shouldLogBrokerState', () => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const connection = createFakeConnection(createFakeChannel());
     (service as unknown as { connection: FakeConnection | null }).connection = connection;
@@ -448,7 +447,7 @@ describe('RabbitMqService', () => {
     }
   ])('whenChannelErrorEventOccurs_attachChannelLifecycleHandlers_shouldHandleOnlyActiveChannel', ({ active, expectedWarnings }) => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     const otherChannel = createFakeChannel();
@@ -471,7 +470,7 @@ describe('RabbitMqService', () => {
     }
   ])('whenChannelCloseEventOccurs_attachChannelLifecycleHandlers_shouldHandleOnlyActiveChannel', ({ active, expectedWarnings }) => {
     // Arrange
-    const service = new RabbitMqService(new RabbitConfigMock() as unknown as RabbitConfig);
+    const service = new RabbitMqService(new RabbitConfigMock());
     const logger = muteServiceLogger(service);
     const channel = createFakeChannel();
     const otherChannel = createFakeChannel();

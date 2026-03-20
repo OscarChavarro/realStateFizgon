@@ -1,0 +1,1 @@
+export const RABBIT_SETTINGS_PORT = Symbol('RABBIT_SETTINGS_PORT');

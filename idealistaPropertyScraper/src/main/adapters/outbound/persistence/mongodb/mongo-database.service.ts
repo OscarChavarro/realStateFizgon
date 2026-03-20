@@ -1,13 +1,15 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
 import { Property } from 'domain/property/property.model';
 import { sleep } from 'infrastructure/sleep';
 import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { MONGO_SETTINGS_PORT } from 'ports/outbound/settings/mongo-settings.port.token';
+import type { MongoSettingsPort } from 'ports/outbound/settings/mongo-settings.port';
 import { MongoPriceMigrationService, PriceFixSummary } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
 import { MongoPropertyUpsertService } from 'adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
 import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
@@ -22,8 +24,10 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyWritePort,
   private propertiesCollection?: Collection<Property & Document>;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
-    private readonly mongoConfig: MongoConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeSettingsPort: ChromeSettingsPort,
+    @Inject(MONGO_SETTINGS_PORT)
+    private readonly mongoSettingsPort: MongoSettingsPort,
     private readonly mongoPriceMigrationService: MongoPriceMigrationService,
     private readonly mongoPropertyUpsertService: MongoPropertyUpsertService,
     private readonly mongoPropertyVisitService: MongoPropertyVisitService
@@ -118,7 +122,7 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyWritePort,
   }
 
   async validateConnectionOrExit(): Promise<void> {
-    const waitMs = this.chromeConfig.chromeBrowserLaunchRetryWaitMs;
+    const waitMs = this.chromeSettingsPort.chromeBrowserLaunchRetryWaitMs;
     const waitSeconds = Math.floor(waitMs / 1000);
 
     while (true) {
@@ -159,11 +163,11 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyWritePort,
       return;
     }
 
-    this.mongoClient = new MongoClient(this.mongoConfig.mongoConnectionUri);
+    this.mongoClient = new MongoClient(this.mongoSettingsPort.mongoConnectionUri);
     await this.mongoClient.connect();
-    this.database = this.mongoClient.db(this.mongoConfig.mongoDatabase);
+    this.database = this.mongoClient.db(this.mongoSettingsPort.mongoDatabase);
     this.propertiesCollection = this.database.collection<Property & Document>(MongoDatabaseService.PROPERTIES_COLLECTION);
-    this.logger.log(`Connected to MongoDB database "${this.mongoConfig.mongoDatabase}".`);
+    this.logger.log(`Connected to MongoDB database "${this.mongoSettingsPort.mongoDatabase}".`);
   }
 
   private async ensurePropertiesCollectionAndUrlIndex(): Promise<void> {

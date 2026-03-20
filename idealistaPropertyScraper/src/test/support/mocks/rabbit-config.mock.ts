@@ -1,3 +1,5 @@
+import type { RabbitSettingsPort } from 'ports/outbound/settings/rabbit-settings.port';
+
 type RabbitConfigMockOptions = {
   host?: string;
   port?: number;
@@ -7,7 +9,7 @@ type RabbitConfigMockOptions = {
   password?: string;
 };
 
-export class RabbitConfigMock {
+export class RabbitConfigMock implements RabbitSettingsPort {
   constructor(private readonly options: RabbitConfigMockOptions = {}) {}
 
   get rabbitMqHost(): string {

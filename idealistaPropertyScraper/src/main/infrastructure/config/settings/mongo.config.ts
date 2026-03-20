@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
+import type { MongoSettingsPort } from 'ports/outbound/settings/mongo-settings.port';
 
 @Injectable()
-export class MongoConfig {
+export class MongoConfig implements MongoSettingsPort {
   constructor(private readonly configurationSourceService: ConfigurationSourceService) {}
 
   get mongoHost(): string {

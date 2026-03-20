@@ -8,8 +8,7 @@ import { Property } from 'domain/property/property.model';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ChromeConfigMock } from '../../../../support/mocks/chrome-config.mock';
 import { MongoConfigMock } from '../../../../support/mocks/mongo-config.mock';
 import { sleep } from 'infrastructure/sleep';
@@ -70,8 +69,8 @@ function createService(
   mongoPropertyVisitService: MongoPropertyVisitServiceMock = new MongoPropertyVisitServiceMock()
 ): MongoDatabaseService {
   const service = new MongoDatabaseService(
-    new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig,
+    new ChromeConfigMock() as unknown as ChromeSettingsPort,
+    new MongoConfigMock(),
     mongoPriceMigrationService as never,
     mongoPropertyUpsertService as never,
     mongoPropertyVisitService as never
@@ -86,8 +85,8 @@ function createRawService(
   mongoPropertyVisitService: MongoPropertyVisitServiceMock = new MongoPropertyVisitServiceMock()
 ): MongoDatabaseService {
   return new MongoDatabaseService(
-    new ChromeConfigMock() as unknown as ChromeConfig,
-    new MongoConfigMock() as unknown as MongoConfig,
+    new ChromeConfigMock() as unknown as ChromeSettingsPort,
+    new MongoConfigMock(),
     mongoPriceMigrationService as never,
     mongoPropertyUpsertService as never,
     mongoPropertyVisitService as never

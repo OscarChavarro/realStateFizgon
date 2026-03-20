@@ -1,15 +1,20 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   UnauthorizedException
 } from '@nestjs/common';
 import { timingSafeEqual } from 'node:crypto';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { ENDPOINTS_AUTH_SETTINGS_PORT } from 'ports/outbound/settings/endpoints-auth-settings.port.token';
+import type { EndpointsAuthSettingsPort } from 'ports/outbound/settings/endpoints-auth-settings.port';
 
 @Injectable()
 export class EndpointsBasicAuthGuard implements CanActivate {
-  constructor(private readonly scraperConfig: ScraperConfig) {}
+  constructor(
+    @Inject(ENDPOINTS_AUTH_SETTINGS_PORT)
+    private readonly endpointsAuthSettingsPort: EndpointsAuthSettingsPort
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<{ headers?: Record<string, unknown> }>();
@@ -36,8 +41,8 @@ export class EndpointsBasicAuthGuard implements CanActivate {
     const providedUser = decodedCredentials.slice(0, separatorIndex);
     const providedPassword = decodedCredentials.slice(separatorIndex + 1);
 
-    const expectedUser = this.scraperConfig.endpointsUser;
-    const expectedPassword = this.scraperConfig.endpointsPassword;
+    const expectedUser = this.endpointsAuthSettingsPort.endpointsUser;
+    const expectedPassword = this.endpointsAuthSettingsPort.endpointsPassword;
     const userMatches = this.constantTimeEquals(providedUser, expectedUser);
     const passwordMatches = this.constantTimeEquals(providedPassword, expectedPassword);
 

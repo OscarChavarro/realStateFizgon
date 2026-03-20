@@ -1,4 +1,5 @@
 import { ScraperState } from 'domain/states/scraper-state.enum';
+import type { EndpointsAuthSettingsPort } from 'ports/outbound/settings/endpoints-auth-settings.port';
 
 type ScraperConfigMockOptions = {
   initialScraperState?: ScraperState;
@@ -7,7 +8,7 @@ type ScraperConfigMockOptions = {
   reScrapeIntervalMs?: number;
 };
 
-export class ScraperConfigMock {
+export class ScraperConfigMock implements EndpointsAuthSettingsPort {
   constructor(private readonly options: ScraperConfigMockOptions = {}) {}
 
   get initialScraperState(): ScraperState {

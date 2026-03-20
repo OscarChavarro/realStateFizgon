@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
+import type { RabbitSettingsPort } from 'ports/outbound/settings/rabbit-settings.port';
 
 @Injectable()
-export class RabbitConfig {
+export class RabbitConfig implements RabbitSettingsPort {
   constructor(private readonly configurationSourceService: ConfigurationSourceService) {}
 
   get rabbitMqHost(): string {

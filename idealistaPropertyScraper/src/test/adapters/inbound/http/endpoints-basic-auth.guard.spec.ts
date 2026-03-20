@@ -1,7 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { describe, expect, it, jest } from '@jest/globals';
 import { EndpointsBasicAuthGuard } from 'adapters/inbound/http/endpoints-basic-auth.guard';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { HttpExecutionContextMock } from '../../../support/mocks/http-execution-context.mock';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 
@@ -19,7 +18,7 @@ describe('EndpointsBasicAuthGuard', () => {
   ])('whenAuthorizationIsInvalid_canActivate_shouldThrowUnauthorized', ({ authorization }) => {
     // Arrange
     const config = new ScraperConfigMock({ endpointsUser: 'user', endpointsPassword: 'password' });
-    const guard = new EndpointsBasicAuthGuard(config as unknown as ScraperConfig);
+    const guard = new EndpointsBasicAuthGuard(config);
     const contextBuilder = new HttpExecutionContextMock({
       headers: authorization ? { authorization } : {}
     });
@@ -36,7 +35,7 @@ describe('EndpointsBasicAuthGuard', () => {
   it('whenAuthorizationIsValid_canActivate_shouldAllowRequest', () => {
     // Arrange
     const config = new ScraperConfigMock({ endpointsUser: 'user', endpointsPassword: 'password' });
-    const guard = new EndpointsBasicAuthGuard(config as unknown as ScraperConfig);
+    const guard = new EndpointsBasicAuthGuard(config);
     const contextBuilder = new HttpExecutionContextMock({
       headers: { authorization: basicAuthHeader('user', 'password') }
     });
@@ -50,7 +49,7 @@ describe('EndpointsBasicAuthGuard', () => {
   it('whenBasicPayloadIsEmpty_canActivate_shouldRejectWithInvalidPayloadMessage', () => {
     // Arrange
     const config = new ScraperConfigMock({ endpointsUser: 'user', endpointsPassword: 'password' });
-    const guard = new EndpointsBasicAuthGuard(config as unknown as ScraperConfig);
+    const guard = new EndpointsBasicAuthGuard(config);
     const contextBuilder = new HttpExecutionContextMock({
       headers: { authorization: 'Basic ' }
     });
@@ -67,7 +66,7 @@ describe('EndpointsBasicAuthGuard', () => {
   it('whenBase64DecodingThrows_canActivate_shouldRejectWithInvalidPayloadMessage', () => {
     // Arrange
     const config = new ScraperConfigMock({ endpointsUser: 'user', endpointsPassword: 'password' });
-    const guard = new EndpointsBasicAuthGuard(config as unknown as ScraperConfig);
+    const guard = new EndpointsBasicAuthGuard(config);
     const bufferSpy = jest.spyOn(Buffer, 'from').mockImplementation(() => {
       throw new Error('decode error');
     });

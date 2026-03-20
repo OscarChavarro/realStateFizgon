@@ -8,12 +8,14 @@ import { Property } from 'domain/property/property.model';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { FILE_SYSTEM_PORT } from 'ports/outbound/filesystem/file-system.port.token';
+import { HTTP_BINARY_DOWNLOAD_PORT } from 'ports/outbound/network/http-binary-download.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { DownloadedIncomingImage } from 'application/dto/imagedownload/downloaded-incoming-image.dto';
 import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
 import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
+import type { HttpBinaryDownloadPort } from 'ports/outbound/network/http-binary-download.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
@@ -34,6 +36,8 @@ export class FinalizePropertyImagesUseCase {
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,
     private readonly imagePendingQueuePublisherService: ImagePendingQueuePublisherService,
     @Inject(FILE_SYSTEM_PORT) private readonly fileSystemPort: FileSystemPort,
+    @Inject(HTTP_BINARY_DOWNLOAD_PORT)
+    private readonly httpBinaryDownloadPort: HttpBinaryDownloadPort,
     @Inject(ERROR_MESSAGE_PORT) private readonly errorMessagePort: ErrorMessagePort,
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
@@ -175,16 +179,15 @@ export class FinalizePropertyImagesUseCase {
 
     for (let attempt = 1; attempt <= FinalizePropertyImagesUseCase.DIRECT_DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
       try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-          if (response.status === 404) {
+        const download = await this.httpBinaryDownloadPort.download(imageUrl);
+        if (!download.ok) {
+          if (download.status === 404) {
             return false;
           }
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(`HTTP ${download.status}`);
         }
 
-        const body = await response.arrayBuffer();
-        const bytes = Buffer.from(body);
+        const bytes = download.bytes;
         if (bytes.length === 0) {
           throw new Error('Empty image body');
         }

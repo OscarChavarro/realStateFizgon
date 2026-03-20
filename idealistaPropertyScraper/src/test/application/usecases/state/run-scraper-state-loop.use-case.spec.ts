@@ -3,7 +3,7 @@ import { ChromiumFailureGuardService } from 'application/services/chromium/chrom
 import { RunScraperStateLoopCoreUseCase } from 'application/usecases/state/run-scraper-state-loop-core.use-case';
 import { RunScraperStateLoopUseCase } from 'application/usecases/state/run-scraper-state-loop.use-case';
 
-import type { ScraperStateLoopHandlers } from 'application/usecases/state/scraper-state-loop-handlers.port';
+import type { ScraperStateLoopHandlers } from 'application/dto/state/scraper-state-loop-handlers.contract';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 class RunScraperStateLoopCoreUseCaseMockForRunScraperStateLoopUseCase {

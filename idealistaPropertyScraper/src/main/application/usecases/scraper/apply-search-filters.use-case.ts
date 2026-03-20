@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger  } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { FilterAvailableOptionExtractorService } from 'application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractorService } from 'application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';

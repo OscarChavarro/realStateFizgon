@@ -10,12 +10,10 @@ import { PropertyFeatureGroup } from 'domain/property/property-feature-group.mod
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
 import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
+import type { HttpBinaryDownloadPort } from 'ports/outbound/network/http-binary-download.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
-
-const originalFetch = globalThis.fetch;
-const fetchMock = jest.fn<(input: string | URL, init?: RequestInit) => Promise<Response>>();
 
 class ScraperConfigMockForFinalizePropertyImagesUseCase {
   readonly imageDownloadFolder = '/tmp/images';
@@ -62,6 +60,10 @@ class FileSystemPortMock implements FileSystemPort {
   readonly writeFile = jest.fn<(path: string, bytes: Buffer) => Promise<void>>();
 }
 
+class HttpBinaryDownloadPortMock implements HttpBinaryDownloadPort {
+  readonly download = jest.fn<(url: string) => Promise<{ ok: boolean; status: number; bytes: Buffer }>>();
+}
+
 class SleepPortMock implements SleepPort {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();
 }
@@ -92,6 +94,7 @@ function createUseCase() {
   const networkCapture = new ImageNetworkCaptureServiceMock();
   const pendingPublisher = new ImagePendingQueuePublisherServiceMock();
   const fileSystem = new FileSystemPortMock();
+  const httpBinaryDownloadPort = new HttpBinaryDownloadPortMock();
   const errorMessagePort = new ErrorMessagePortMock();
   const sleepPort = new SleepPortMock();
   const useCase = new FinalizePropertyImagesUseCase(
@@ -102,6 +105,7 @@ function createUseCase() {
     networkCapture as unknown as ImageNetworkCaptureService,
     pendingPublisher as unknown as ImagePendingQueuePublisherService,
     fileSystem,
+    httpBinaryDownloadPort,
     errorMessagePort,
     sleepPort
   );
@@ -123,6 +127,7 @@ function createUseCase() {
   fileSystem.deleteFile.mockResolvedValue(undefined);
   fileSystem.deleteDirectory.mockResolvedValue(undefined);
   fileSystem.writeFile.mockResolvedValue(undefined);
+  httpBinaryDownloadPort.download.mockResolvedValue({ ok: false, status: 404, bytes: Buffer.alloc(0) });
   errorMessagePort.toErrorMessage.mockImplementation((error: unknown) =>
     error instanceof Error ? error.message : String(error)
   );
@@ -136,6 +141,7 @@ function createUseCase() {
     networkCapture,
     pendingPublisher,
     fileSystem,
+    httpBinaryDownloadPort,
     errorMessagePort,
     sleepPort,
     logger
@@ -144,26 +150,7 @@ function createUseCase() {
 
 describe('FinalizePropertyImagesUseCase', () => {
   beforeEach(() => {
-    Object.defineProperty(globalThis, 'fetch', {
-      configurable: true,
-      writable: true,
-      value: fetchMock
-    });
-    fetchMock.mockReset();
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 404,
-      arrayBuffer: async () => new ArrayBuffer(0)
-    } as Response);
     jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    Object.defineProperty(globalThis, 'fetch', {
-      configurable: true,
-      writable: true,
-      value: originalFetch
-    });
   });
 
   it('whenPropertyIdCannotBeExtracted_execute_shouldSkipProcessing', async () => {
@@ -180,7 +167,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenImageCandidateIsMissing_execute_shouldPublishPendingUrl', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName, pendingPublisher, networkCapture } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, pendingPublisher, networkCapture, httpBinaryDownloadPort } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue('777');
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
@@ -195,7 +182,7 @@ describe('FinalizePropertyImagesUseCase', () => {
     // Action
     await useCase.execute(property);
     // Assert
-    expect(fetchMock).toHaveBeenCalledWith('https://img/a.jpg');
+    expect(httpBinaryDownloadPort.download).toHaveBeenCalledWith('https://img/a.jpg');
     expect(pendingPublisher.publishPendingImageUrl).toHaveBeenCalledWith('https://img/a.jpg', '777');
     expect(moveRemainingSpy).toHaveBeenCalledWith('/tmp/images/incoming');
     expect(networkCapture.resetPendingRequests).toHaveBeenCalledTimes(1);
@@ -203,18 +190,18 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenImageCandidateIsMissingAndDirectFallbackSucceeds_execute_shouldWriteDirectlyAndSkipPendingQueue', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName, fileSystem, pendingPublisher } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem, pendingPublisher, httpBinaryDownloadPort } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue('778');
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.extractCanonicalImageKey.mockReturnValue('key-778');
     fileName.buildCompatibleTargetFilename.mockReturnValue('fallback-778.jpg');
-    fetchMock.mockResolvedValue({
+    httpBinaryDownloadPort.download.mockResolvedValue({
       ok: true,
       status: 200,
-      arrayBuffer: async () => Uint8Array.from([1, 2, 3]).buffer
-    } as Response);
+      bytes: Buffer.from([1, 2, 3])
+    });
     jest.spyOn(
       useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingPath: string) => Promise<void> },
       'moveRemainingIncomingToLeftovers'
@@ -223,7 +210,7 @@ describe('FinalizePropertyImagesUseCase', () => {
     // Action
     await useCase.execute(property);
     // Assert
-    expect(fetchMock).toHaveBeenCalledWith('https://img/missing.jpg');
+    expect(httpBinaryDownloadPort.download).toHaveBeenCalledWith('https://img/missing.jpg');
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/download/778/fallback-778.jpg', Buffer.from([1, 2, 3]));
     expect(pendingPublisher.publishPendingImageUrl).not.toHaveBeenCalled();
   });
@@ -511,7 +498,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenFallbackTargetAlreadyExists_downloadImageDirectlyToPropertyFolder_shouldSkipFetchAndReturnTrue', async () => {
     // Arrange
-    const { useCase, fileName, logger } = createUseCase();
+    const { useCase, fileName, logger, httpBinaryDownloadPort } = createUseCase();
     fileName.resolveImageExtension.mockReturnValue('.jpg');
     fileName.buildCompatibleTargetFilename.mockReturnValue('already.jpg');
     fileName.pathExists.mockResolvedValue(true);
@@ -521,56 +508,56 @@ describe('FinalizePropertyImagesUseCase', () => {
     }).downloadImageDirectlyToPropertyFolder('https://img/exists.jpg', '/tmp/download/123');
     // Assert
     expect(result).toBe(true);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(httpBinaryDownloadPort.download).not.toHaveBeenCalled();
     expect(logger.log).toHaveBeenCalledWith('Image already exists. Skipping overwrite for URL: https://img/exists.jpg');
   });
 
   it('whenFallbackReturnsNon404BeforeSuccess_downloadImageDirectlyToPropertyFolder_shouldRetryAndThenPersistImage', async () => {
     // Arrange
-    const { useCase, fileName, fileSystem, sleepPort } = createUseCase();
+    const { useCase, fileName, fileSystem, sleepPort, httpBinaryDownloadPort } = createUseCase();
     fileName.resolveImageExtension.mockReturnValue('.jpg');
     fileName.buildCompatibleTargetFilename.mockReturnValue('retry-success.jpg');
     fileName.pathExists.mockResolvedValue(false);
-    fetchMock
+    httpBinaryDownloadPort.download
       .mockResolvedValueOnce({
         ok: false,
         status: 500,
-        arrayBuffer: async () => new ArrayBuffer(0)
-      } as Response)
+        bytes: Buffer.alloc(0)
+      })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        arrayBuffer: async () => Uint8Array.from([7, 8, 9]).buffer
-      } as Response);
+        bytes: Buffer.from([7, 8, 9])
+      });
     // Action
     const result = await (useCase as unknown as {
       downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
     }).downloadImageDirectlyToPropertyFolder('https://img/retry-success.jpg', '/tmp/download/123');
     // Assert
     expect(result).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(httpBinaryDownloadPort.download).toHaveBeenCalledTimes(2);
     expect(sleepPort.sleep).toHaveBeenCalledWith(300);
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/download/123/retry-success.jpg', Buffer.from([7, 8, 9]));
   });
 
   it('whenFallbackGetsEmptyBodyAcrossAttempts_downloadImageDirectlyToPropertyFolder_shouldReturnFalseOnLastAttempt', async () => {
     // Arrange
-    const { useCase, fileName, logger, sleepPort } = createUseCase();
+    const { useCase, fileName, logger, sleepPort, httpBinaryDownloadPort } = createUseCase();
     fileName.resolveImageExtension.mockReturnValue('.jpg');
     fileName.buildCompatibleTargetFilename.mockReturnValue('empty-body.jpg');
     fileName.pathExists.mockResolvedValue(false);
-    fetchMock.mockResolvedValue({
+    httpBinaryDownloadPort.download.mockResolvedValue({
       ok: true,
       status: 200,
-      arrayBuffer: async () => new ArrayBuffer(0)
-    } as Response);
+      bytes: Buffer.alloc(0)
+    });
     // Action
     const result = await (useCase as unknown as {
       downloadImageDirectlyToPropertyFolder: (imageUrl: string, propertyFolderPath: string) => Promise<boolean>;
     }).downloadImageDirectlyToPropertyFolder('https://img/empty-body.jpg', '/tmp/download/123');
     // Assert
     expect(result).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(httpBinaryDownloadPort.download).toHaveBeenCalledTimes(3);
     expect(sleepPort.sleep).toHaveBeenCalledWith(300);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Direct-download fallback failed for "https://img/empty-body.jpg"')
@@ -579,7 +566,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenDirectFallbackAttemptsAreConfiguredAsZero_downloadImageDirectlyToPropertyFolder_shouldReturnFalseWithoutLoop', async () => {
     // Arrange
-    const { useCase, fileName } = createUseCase();
+    const { useCase, fileName, httpBinaryDownloadPort } = createUseCase();
     fileName.resolveImageExtension.mockReturnValue('.jpg');
     fileName.buildCompatibleTargetFilename.mockReturnValue('no-loop.jpg');
     fileName.pathExists.mockResolvedValue(false);
@@ -596,6 +583,6 @@ describe('FinalizePropertyImagesUseCase', () => {
     }
     // Assert
     expect(result).toBe(false);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(httpBinaryDownloadPort.download).not.toHaveBeenCalled();
   });
 });

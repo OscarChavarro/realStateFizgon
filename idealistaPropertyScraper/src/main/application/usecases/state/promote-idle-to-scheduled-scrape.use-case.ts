@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger  } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { ScraperState } from 'domain/states/scraper-state.enum';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';

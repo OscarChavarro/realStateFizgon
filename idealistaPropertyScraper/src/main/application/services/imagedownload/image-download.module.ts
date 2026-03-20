@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FileSystemModule } from 'adapters/outbound/filesystem/file-system.module';
 import { RabbitMqModule } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
+import { HttpBinaryDownloadModule } from 'adapters/outbound/network/http-binary-download.module';
 import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
 import { SleepModule } from 'adapters/outbound/timing/sleep.module';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
@@ -12,7 +13,7 @@ import { ImageUrlRulesService } from 'application/services/imagedownload/image-u
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
 
 @Module({
-  imports: [RabbitMqModule, FileSystemModule, ErrorMessageModule, SleepModule],
+  imports: [RabbitMqModule, FileSystemModule, HttpBinaryDownloadModule, ErrorMessageModule, SleepModule],
   providers: [
     ImageDownloadPathService,
     ImageUrlRulesService,

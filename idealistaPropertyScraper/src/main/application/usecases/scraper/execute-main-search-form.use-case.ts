@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger  } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';

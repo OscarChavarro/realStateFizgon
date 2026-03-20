@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger  } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';

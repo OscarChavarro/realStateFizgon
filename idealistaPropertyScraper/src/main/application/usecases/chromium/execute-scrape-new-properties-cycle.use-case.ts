@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger  } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';

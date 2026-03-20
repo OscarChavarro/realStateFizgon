@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
@@ -12,17 +11,10 @@ import { Property } from 'src/domain/property/property.model';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
+import type { FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
 
 const originalFetch = globalThis.fetch;
 const fetchMock = jest.fn<(input: string | URL, init?: RequestInit) => Promise<Response>>();
-
-jest.mock('node:fs/promises', () => ({
-  mkdir: jest.fn(async () => undefined),
-  readdir: jest.fn(async () => []),
-  rename: jest.fn(async () => undefined),
-  rm: jest.fn(async () => undefined),
-  writeFile: jest.fn(async () => undefined)
-}));
 
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
@@ -62,6 +54,15 @@ class ImagePendingQueuePublisherServiceMock {
   readonly publishPendingImageUrl = jest.fn<(url: string, propertyId: string) => Promise<void>>();
 }
 
+class FileSystemPortMock implements FileSystemPort {
+  readonly ensureDirectory = jest.fn<(path: string) => Promise<void>>();
+  readonly listEntries = jest.fn<(path: string) => Promise<Array<{ name: string; isFile: boolean; isDirectory: boolean }>>>();
+  readonly move = jest.fn<(sourcePath: string, targetPath: string) => Promise<void>>();
+  readonly deleteFile = jest.fn<(path: string) => Promise<void>>();
+  readonly deleteDirectory = jest.fn<(path: string) => Promise<void>>();
+  readonly writeFile = jest.fn<(path: string, bytes: Buffer) => Promise<void>>();
+}
+
 function createProperty(url: string, images: PropertyImage[]): Property {
   return new Property(
     '123',
@@ -83,13 +84,15 @@ function createUseCase() {
   const fileName = new ImageFileNameServiceMock();
   const networkCapture = new ImageNetworkCaptureServiceMock();
   const pendingPublisher = new ImagePendingQueuePublisherServiceMock();
+  const fileSystem = new FileSystemPortMock();
   const useCase = new FinalizePropertyImagesUseCase(
     new ScraperConfigMockForFinalizePropertyImagesUseCase() as unknown as ScraperConfig,
     pathService as unknown as ImageDownloadPathService,
     urlRules as unknown as ImageUrlRulesService,
     fileName as unknown as ImageFileNameService,
     networkCapture as unknown as ImageNetworkCaptureService,
-    pendingPublisher as unknown as ImagePendingQueuePublisherService
+    pendingPublisher as unknown as ImagePendingQueuePublisherService,
+    fileSystem
   );
   const logger = {
     warn: jest.fn<(message: string) => void>(),
@@ -102,8 +105,14 @@ function createUseCase() {
     (_url: string, extension: string) => `image${extension || '.img'}`
   );
   fileName.pathExists.mockResolvedValue(false);
+  fileSystem.ensureDirectory.mockResolvedValue(undefined);
+  fileSystem.listEntries.mockResolvedValue([]);
+  fileSystem.move.mockResolvedValue(undefined);
+  fileSystem.deleteFile.mockResolvedValue(undefined);
+  fileSystem.deleteDirectory.mockResolvedValue(undefined);
+  fileSystem.writeFile.mockResolvedValue(undefined);
   (useCase as unknown as { logger: typeof logger }).logger = logger;
-  return { useCase, pathService, urlRules, fileName, networkCapture, pendingPublisher, logger };
+  return { useCase, pathService, urlRules, fileName, networkCapture, pendingPublisher, fileSystem, logger };
 }
 
 describe('FinalizePropertyImagesUseCase', () => {
@@ -132,14 +141,14 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenPropertyIdCannotBeExtracted_execute_shouldSkipProcessing', async () => {
     // Arrange
-    const { useCase, urlRules, logger } = createUseCase();
+    const { useCase, urlRules, fileSystem, logger } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue(null);
     const property = createProperty('https://www.idealista.com/alquiler-viviendas/madrid/', []);
     // Action
     await useCase.execute(property);
     // Assert
     expect(logger.error).toHaveBeenCalledWith('Unable to extract property id from URL: https://www.idealista.com/alquiler-viviendas/madrid/');
-    expect(mkdir).not.toHaveBeenCalled();
+    expect(fileSystem.ensureDirectory).not.toHaveBeenCalled();
   });
 
   it('whenImageCandidateIsMissing_execute_shouldPublishPendingUrl', async () => {
@@ -167,7 +176,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenImageCandidateIsMissingAndDirectFallbackSucceeds_execute_shouldWriteDirectlyAndSkipPendingQueue', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName, pendingPublisher } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem, pendingPublisher } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue('778');
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
@@ -188,7 +197,7 @@ describe('FinalizePropertyImagesUseCase', () => {
     await useCase.execute(property);
     // Assert
     expect(fetchMock).toHaveBeenCalledWith('https://img/missing.jpg');
-    expect(writeFile).toHaveBeenCalledWith('/tmp/images/download/778/fallback-778.jpg', Buffer.from([1, 2, 3]));
+    expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/download/778/fallback-778.jpg', Buffer.from([1, 2, 3]));
     expect(pendingPublisher.publishPendingImageUrl).not.toHaveBeenCalled();
   });
 
@@ -253,7 +262,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenTargetAlreadyExists_execute_shouldDeleteSourceAndSkipRename', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName, networkCapture } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem, networkCapture } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue('888');
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
@@ -271,15 +280,15 @@ describe('FinalizePropertyImagesUseCase', () => {
     // Action
     await useCase.execute(property);
     // Assert
-    expect(rm).toHaveBeenCalledWith('/tmp/images/incoming/source.jpg', { force: true });
-    expect(rename).not.toHaveBeenCalled();
+    expect(fileSystem.deleteFile).toHaveBeenCalledWith('/tmp/images/incoming/source.jpg');
+    expect(fileSystem.move).not.toHaveBeenCalled();
     expect(moveRemainingSpy).toHaveBeenCalled();
     expect(networkCapture.resetPendingRequests).toHaveBeenCalled();
   });
 
   it('whenRenameFails_execute_shouldLogErrorAndContinue', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName, logger } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem, logger } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue('999');
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     pathService.getDownloadFolderPath.mockReturnValue('/tmp/images/download');
@@ -287,7 +296,7 @@ describe('FinalizePropertyImagesUseCase', () => {
     urlRules.extractCanonicalImageKey.mockReturnValue('key-3');
     fileName.buildCompatibleTargetFilename.mockReturnValue('img.jpg');
     fileName.pathExists.mockResolvedValue(false);
-    (rename as unknown as jest.Mock).mockImplementationOnce(async () => {
+    fileSystem.move.mockImplementationOnce(async () => {
       throw new Error('disk issue');
     });
     jest.spyOn(
@@ -305,7 +314,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenPersistCapturedImageReceivesValidBody_persistCapturedImage_shouldStoreImageAndCacheByKey', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.isSvgImage.mockReturnValue(false);
     urlRules.extractCanonicalImageKey.mockReturnValue('canonical-a');
@@ -320,14 +329,14 @@ describe('FinalizePropertyImagesUseCase', () => {
       body: { body: Buffer.from('abc').toString('base64'), base64Encoded: true }
     });
     // Assert
-    expect(writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured.bin', expect.any(Buffer));
+    expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured.bin', expect.any(Buffer));
     const cache = (useCase as unknown as { incomingImagesByKey: Map<string, Array<{ path: string }>> }).incomingImagesByKey;
     expect(cache.get('canonical-a')?.[0]?.path).toBe('/tmp/images/incoming/captured.bin');
   });
 
   it('whenPersistCapturedImageReceivesBinaryBody_persistCapturedImage_shouldDecodeUsingBinaryCodec', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.isSvgImage.mockReturnValue(false);
     urlRules.extractCanonicalImageKey.mockReturnValue('canonical-binary');
@@ -342,12 +351,12 @@ describe('FinalizePropertyImagesUseCase', () => {
       body: { body: 'abc', base64Encoded: false }
     });
     // Assert
-    expect(writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured-binary.bin', Buffer.from('abc', 'binary'));
+    expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured-binary.bin', Buffer.from('abc', 'binary'));
   });
 
   it('whenPersistCapturedImageIsUntrackable_persistCapturedImage_shouldSkipDiskWrite', async () => {
     // Arrange
-    const { useCase, urlRules } = createUseCase();
+    const { useCase, fileSystem, urlRules } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(false);
     // Action
     await useCase.persistCapturedImage({
@@ -357,12 +366,12 @@ describe('FinalizePropertyImagesUseCase', () => {
       body: { body: '', base64Encoded: false }
     });
     // Assert
-    expect(writeFile).not.toHaveBeenCalled();
+    expect(fileSystem.writeFile).not.toHaveBeenCalled();
   });
 
   it('whenPersistCapturedImageHasNoBytes_persistCapturedImage_shouldSkipDiskWrite', async () => {
     // Arrange
-    const { useCase, urlRules } = createUseCase();
+    const { useCase, fileSystem, urlRules } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.isSvgImage.mockReturnValue(false);
     // Action
@@ -373,12 +382,12 @@ describe('FinalizePropertyImagesUseCase', () => {
       body: { body: '', base64Encoded: true }
     });
     // Assert
-    expect(writeFile).not.toHaveBeenCalled();
+    expect(fileSystem.writeFile).not.toHaveBeenCalled();
   });
 
   it('whenPersistCapturedImageHasNoCanonicalKey_persistCapturedImage_shouldWriteFileWithoutCaching', async () => {
     // Arrange
-    const { useCase, urlRules, pathService, fileName } = createUseCase();
+    const { useCase, urlRules, pathService, fileName, fileSystem } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.isSvgImage.mockReturnValue(false);
     urlRules.extractCanonicalImageKey.mockReturnValue(null);
@@ -392,43 +401,43 @@ describe('FinalizePropertyImagesUseCase', () => {
       body: { body: Buffer.from('abc').toString('base64'), base64Encoded: true }
     });
     // Assert
-    expect(writeFile).toHaveBeenCalledWith('/tmp/images/incoming/no-key.bin', expect.any(Buffer));
+    expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/no-key.bin', expect.any(Buffer));
     const cache = (useCase as unknown as { incomingImagesByKey: Map<string, unknown> }).incomingImagesByKey;
     expect(cache.size).toBe(0);
   });
 
   it('whenIncomingEntriesContainFilesAndDirectories_moveRemainingIncomingToLeftovers_shouldMoveAndCleanEntries', async () => {
     // Arrange
-    const { useCase, pathService } = createUseCase();
+    const { useCase, fileSystem, pathService } = createUseCase();
     pathService.getLeftoversFolderPath.mockReturnValue('/tmp/images/leftovers');
-    (readdir as unknown as jest.Mock).mockImplementationOnce(async () => [
-      { name: 'a.jpg', isFile: () => true, isDirectory: () => false },
-      { name: 'folder-a', isFile: () => false, isDirectory: () => true }
+    fileSystem.listEntries.mockResolvedValueOnce([
+      { name: 'a.jpg', isFile: true, isDirectory: false },
+      { name: 'folder-a', isFile: false, isDirectory: true }
     ]);
     // Action
     await (useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingFolderPath: string) => Promise<void> })
       .moveRemainingIncomingToLeftovers('/tmp/images/incoming');
     // Assert
-    expect(mkdir).toHaveBeenCalledWith('/tmp/images/leftovers', { recursive: true });
-    expect(rm).toHaveBeenCalledWith('/tmp/images/leftovers/a.jpg', { force: true });
-    expect(rename).toHaveBeenCalledWith('/tmp/images/incoming/a.jpg', '/tmp/images/leftovers/a.jpg');
-    expect(rm).toHaveBeenCalledWith('/tmp/images/incoming/folder-a', { recursive: true, force: true });
+    expect(fileSystem.ensureDirectory).toHaveBeenCalledWith('/tmp/images/leftovers');
+    expect(fileSystem.deleteFile).toHaveBeenCalledWith('/tmp/images/leftovers/a.jpg');
+    expect(fileSystem.move).toHaveBeenCalledWith('/tmp/images/incoming/a.jpg', '/tmp/images/leftovers/a.jpg');
+    expect(fileSystem.deleteDirectory).toHaveBeenCalledWith('/tmp/images/incoming/folder-a');
   });
 
   it('whenIncomingEntryIsNeitherFileNorDirectory_moveRemainingIncomingToLeftovers_shouldIgnoreUnknownEntryType', async () => {
     // Arrange
-    const { useCase, pathService } = createUseCase();
+    const { useCase, fileSystem, pathService } = createUseCase();
     pathService.getLeftoversFolderPath.mockReturnValue('/tmp/images/leftovers');
-    (readdir as unknown as jest.Mock).mockImplementationOnce(async () => [
-      { name: 'socket-a', isFile: () => false, isDirectory: () => false }
+    fileSystem.listEntries.mockResolvedValueOnce([
+      { name: 'socket-a', isFile: false, isDirectory: false }
     ]);
     // Action
     await (useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingFolderPath: string) => Promise<void> })
       .moveRemainingIncomingToLeftovers('/tmp/images/incoming');
     // Assert
-    expect(mkdir).toHaveBeenCalledWith('/tmp/images/leftovers', { recursive: true });
-    expect(rename).not.toHaveBeenCalled();
-    expect(rm).not.toHaveBeenCalledWith('/tmp/images/incoming/socket-a', { recursive: true, force: true });
+    expect(fileSystem.ensureDirectory).toHaveBeenCalledWith('/tmp/images/leftovers');
+    expect(fileSystem.move).not.toHaveBeenCalled();
+    expect(fileSystem.deleteDirectory).not.toHaveBeenCalledWith('/tmp/images/incoming/socket-a');
   });
 
   it('whenMultipleCandidatesExist_consumeIncomingImageByKey_shouldKeepRemainingCandidatesMapped', () => {
@@ -491,7 +500,7 @@ describe('FinalizePropertyImagesUseCase', () => {
 
   it('whenFallbackReturnsNon404BeforeSuccess_downloadImageDirectlyToPropertyFolder_shouldRetryAndThenPersistImage', async () => {
     // Arrange
-    const { useCase, fileName } = createUseCase();
+    const { useCase, fileName, fileSystem } = createUseCase();
     fileName.resolveImageExtension.mockReturnValue('.jpg');
     fileName.buildCompatibleTargetFilename.mockReturnValue('retry-success.jpg');
     fileName.pathExists.mockResolvedValue(false);
@@ -514,7 +523,7 @@ describe('FinalizePropertyImagesUseCase', () => {
     expect(result).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledWith(300);
-    expect(writeFile).toHaveBeenCalledWith('/tmp/download/123/retry-success.jpg', Buffer.from([7, 8, 9]));
+    expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/download/123/retry-success.jpg', Buffer.from([7, 8, 9]));
   });
 
   it('whenFallbackGetsEmptyBodyAcrossAttempts_downloadImageDirectlyToPropertyFolder_shouldReturnFalseOnLastAttempt', async () => {

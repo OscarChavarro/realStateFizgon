@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { join } from 'node:path';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
@@ -10,9 +9,11 @@ import { Property } from 'src/domain/property/property.model';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
+import { FILE_SYSTEM_PORT } from 'src/ports/outbound/filesystem/file-system.port.token';
 
 import type { DownloadedIncomingImage } from 'src/application/dto/imagedownload/downloaded-incoming-image.dto';
 import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
+import type { FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
 @Injectable()
 export class FinalizePropertyImagesUseCase {
   private readonly logger = new Logger(FinalizePropertyImagesUseCase.name);
@@ -27,7 +28,8 @@ export class FinalizePropertyImagesUseCase {
     private readonly imageUrlRulesService: ImageUrlRulesService,
     private readonly imageFileNameService: ImageFileNameService,
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,
-    private readonly imagePendingQueuePublisherService: ImagePendingQueuePublisherService
+    private readonly imagePendingQueuePublisherService: ImagePendingQueuePublisherService,
+    @Inject(FILE_SYSTEM_PORT) private readonly fileSystemPort: FileSystemPort
   ) {}
 
   async execute(property: Property): Promise<void> {
@@ -39,7 +41,7 @@ export class FinalizePropertyImagesUseCase {
 
     const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
     const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.scraperConfig.imageDownloadFolder), propertyId);
-    await mkdir(propertyFolderPath, { recursive: true });
+    await this.fileSystemPort.ensureDirectory(propertyFolderPath);
     let recoverySyncPerformed = false;
 
     for (const image of property.images) {
@@ -77,11 +79,11 @@ export class FinalizePropertyImagesUseCase {
       try {
         if (await this.imageFileNameService.pathExists(targetPath)) {
           this.logger.log(`Image already exists. Skipping overwrite for URL: ${image.url}`);
-          await rm(sourcePath, { force: true });
+          await this.fileSystemPort.deleteFile(sourcePath);
           continue;
         }
 
-        await rename(sourcePath, targetPath);
+        await this.fileSystemPort.move(sourcePath, targetPath);
       } catch {
         this.logger.error(`Failed moving image for URL: ${image.url}`);
       }
@@ -108,7 +110,7 @@ export class FinalizePropertyImagesUseCase {
     const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
     const filename = this.imageFileNameService.buildImageFilename(url, mimeType);
     const filepath = join(incomingFolderPath, filename);
-    await writeFile(filepath, bytes);
+    await this.fileSystemPort.writeFile(filepath, bytes);
 
     const key = this.imageUrlRulesService.extractCanonicalImageKey(url);
     if (!key) {
@@ -181,7 +183,7 @@ export class FinalizePropertyImagesUseCase {
           throw new Error('Empty image body');
         }
 
-        await writeFile(targetPath, bytes);
+        await this.fileSystemPort.writeFile(targetPath, bytes);
         this.logger.warn(`Image captured via direct-download fallback for URL: ${imageUrl}`);
         return true;
       } catch (error) {
@@ -201,22 +203,21 @@ export class FinalizePropertyImagesUseCase {
 
   private async moveRemainingIncomingToLeftovers(incomingFolderPath: string): Promise<void> {
     const leftoversFolderPath = this.imageDownloadPathService.getLeftoversFolderPath(this.scraperConfig.imageDownloadFolder);
-    await mkdir(leftoversFolderPath, { recursive: true });
-    const entries = await readdir(incomingFolderPath, { withFileTypes: true });
+    await this.fileSystemPort.ensureDirectory(leftoversFolderPath);
+    const entries = await this.fileSystemPort.listEntries(incomingFolderPath);
 
     for (const entry of entries) {
       const entryPath = join(incomingFolderPath, entry.name);
-      if (entry.isFile()) {
+      if (entry.isFile) {
         const targetPath = join(leftoversFolderPath, entry.name);
-        await rm(targetPath, { force: true });
-        await rename(entryPath, targetPath);
+        await this.fileSystemPort.deleteFile(targetPath);
+        await this.fileSystemPort.move(entryPath, targetPath);
         continue;
       }
 
-      if (entry.isDirectory()) {
-        await rm(entryPath, { recursive: true, force: true });
+      if (entry.isDirectory) {
+        await this.fileSystemPort.deleteDirectory(entryPath);
       }
     }
   }
 }
-

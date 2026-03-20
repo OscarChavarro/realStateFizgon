@@ -19,6 +19,7 @@ import { UpdateExistingPropertiesFlowService } from 'src/application/services/sc
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
 import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/execute-scrape-new-properties-cycle.use-case';
+import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/execute-update-existing-properties-flow.use-case';
 import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/execute-update-existing-properties-cycle.use-case';
 import { PrepareHomeSearchUseCase } from 'src/application/usecases/prepare-home-search.use-case';
 import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
@@ -46,6 +47,7 @@ import { RunStartupPreChecksUseCase } from 'src/application/usecases/run-startup
     BootstrapChromiumSessionUseCase,
     ExecuteMainSearchFormUseCase,
     ExecuteScrapeNewPropertiesCycleUseCase,
+    ExecuteUpdateExistingPropertiesFlowUseCase,
     ExecuteUpdateExistingPropertiesCycleUseCase,
     PrepareHomeSearchUseCase,
     RunScraperStateLoopUseCase,

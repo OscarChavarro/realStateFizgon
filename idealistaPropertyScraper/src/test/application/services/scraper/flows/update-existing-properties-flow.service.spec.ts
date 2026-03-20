@@ -1,22 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
-import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
+import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/execute-update-existing-properties-flow.use-case';
 
-class SearchResultsPreparationServiceMock {
-  readonly prepareSearchResultsWithFilters = jest.fn<(
-    client: ScraperCdpClient,
-    page: ScraperCdpClient['Page'],
-    runtime: ScraperCdpClient['Runtime']
-  ) => Promise<void>>();
-}
-
-class PropertyListPageServiceMock {
-  readonly resetProcessedUrlsForCurrentSearch = jest.fn<() => void>();
-  readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
+class ExecuteUpdateExistingPropertiesFlowUseCaseMock {
+  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
 }
 
 function createClient(): ScraperCdpClient {
@@ -35,39 +23,19 @@ function createClient(): ScraperCdpClient {
 }
 
 describe('UpdateExistingPropertiesFlowService', () => {
-  it.each([
-    {
-      missingUrls: ['https://idealista.com/inmueble/1/'],
-      openUrls: ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/2/'],
-      expectedCalls: [['https://idealista.com/inmueble/1/'], ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/2/']]
-    },
-    {
-      missingUrls: [],
-      openUrls: ['https://idealista.com/inmueble/3/'],
-      expectedCalls: [['https://idealista.com/inmueble/3/']]
-    }
-  ])('whenUpdateFlowRuns_execute_shouldProcessMissingLastTimeVisitedBeforeFullOpenSet', async ({
-    missingUrls,
-    openUrls,
-    expectedCalls
-  }) => {
+  it('whenFlowServiceExecutes_execute_shouldDelegateToUseCase', async () => {
     // Arrange
-    const search = new SearchResultsPreparationServiceMock();
-    const mongo = new PropertyPersistencePortMock();
-    const list = new PropertyListPageServiceMock();
+    const useCase = new ExecuteUpdateExistingPropertiesFlowUseCaseMock();
     const service = new UpdateExistingPropertiesFlowService(
-      search as unknown as SearchResultsPreparationService,
-      mongo as unknown as PropertyPersistencePort,
-      list as unknown as PropertyListPageService
+      useCase as unknown as ExecuteUpdateExistingPropertiesFlowUseCase
     );
     const client = createClient();
-    mongo.getOpenPropertyUrlsWithoutLastTimeVisited.mockResolvedValue(missingUrls);
-    mongo.getOpenPropertyUrls.mockResolvedValue(openUrls);
+
     // Action
     await service.execute(client);
+
     // Assert
-    expect(search.prepareSearchResultsWithFilters).toHaveBeenCalledWith(client, client.Page, client.Runtime);
-    expect(list.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(1);
-    expect(list.processExistingUrls.mock.calls.map((call) => call[1])).toEqual(expectedCalls);
+    expect(useCase.execute).toHaveBeenCalledTimes(1);
+    expect(useCase.execute).toHaveBeenCalledWith(client);
   });
 });

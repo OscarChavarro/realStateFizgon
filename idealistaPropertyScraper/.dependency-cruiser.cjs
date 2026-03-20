@@ -41,7 +41,7 @@ module.exports = {
         path: '^src/main/domain/'
       },
       to: {
-        path: '^src/main/(application|adapters|infrastructure)/'
+        path: '^src/main/(application|adapters|infrastructure|ports)/'
       }
     },
     {
@@ -65,6 +65,55 @@ module.exports = {
       to: {
         path: '^src/main/application/',
         pathNot: '^src/main/application/dto/'
+      }
+    },
+    {
+      name: 'application-dto-must-not-depend-on-non-dto-layers',
+      severity: 'error',
+      comment:
+        'Application DTO contracts must stay transport-only and not depend on domain/adapters/infrastructure/ports.',
+      from: {
+        path: '^src/main/application/dto/'
+      },
+      to: {
+        path: '^(src/main/(adapters|domain|infrastructure|ports)/|src/main/application/(?!dto/))'
+      }
+    },
+    {
+      name: 'outbound-adapters-must-not-depend-on-application',
+      severity: 'error',
+      comment:
+        'Outbound adapters should implement ports and avoid taking dependencies on application services/use cases.',
+      from: {
+        path: '^src/main/adapters/outbound/'
+      },
+      to: {
+        path: '^src/main/application/'
+      }
+    },
+    {
+      name: 'infrastructure-must-not-depend-on-application-or-adapters',
+      severity: 'error',
+      comment:
+        'Infrastructure building blocks should remain technical and independent from application/adapters.',
+      from: {
+        path: '^src/main/infrastructure/'
+      },
+      to: {
+        path: '^src/main/(application|adapters)/'
+      }
+    },
+    {
+      name: 'only-composition-root-can-import-inbound-adapters',
+      severity: 'error',
+      comment:
+        'Inbound adapters should only be referenced by themselves or the application composition root.',
+      from: {
+        path: '^src/main/',
+        pathNot: '(^src/main/adapters/inbound/|^src/main/app\\.module\\.ts$)'
+      },
+      to: {
+        path: '^src/main/adapters/inbound/'
       }
     }
   ],

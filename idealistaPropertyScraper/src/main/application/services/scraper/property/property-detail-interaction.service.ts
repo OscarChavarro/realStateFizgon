@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PropertyDetailInteractionService {
   private readonly logger = new Logger(PropertyDetailInteractionService.name);
@@ -15,7 +16,9 @@ export class PropertyDetailInteractionService {
 
   constructor(
     private readonly scraperConfig: ScraperConfig,
-    private readonly originErrorDetectorService: OriginErrorDetectorService
+    private readonly originErrorDetectorService: OriginErrorDetectorService,
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort
   ) {}
 
   async throwIfOriginErrorPage(runtime: RuntimeClient): Promise<void> {
@@ -34,18 +37,18 @@ export class PropertyDetailInteractionService {
   }
 
   private async extendAllPhotos(runtime: RuntimeClient): Promise<void> {
-    await sleep(this.scraperConfig.propertyDetailPagePreMediaExpansionWaitMs);
+    await this.sleepPort.sleep(this.scraperConfig.propertyDetailPagePreMediaExpansionWaitMs);
     const clickedCount = await this.clickAllMorePhotosIfExists(runtime);
     if (clickedCount === 0) {
       return;
     }
 
-    await sleep(this.scraperConfig.propertyDetailPageScrollIntervalMs);
+    await this.sleepPort.sleep(this.scraperConfig.propertyDetailPageScrollIntervalMs);
     await this.scrollPageToBottomAndBackToTop(runtime);
   }
 
   private async waitForImagesToLoad(runtime: RuntimeClient): Promise<void> {
-    await sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
+    await this.sleepPort.sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
 
     const timeoutMs = Math.max(this.scraperConfig.propertyDetailPageImagesLoadWaitMs * 4, 8000);
     const start = Date.now();
@@ -98,7 +101,7 @@ export class PropertyDetailInteractionService {
 
       previousLoaded = progress.loaded;
       previousTotal = progress.total;
-      await sleep(Math.max(150, this.scraperConfig.propertyDetailPageScrollIntervalMs));
+      await this.sleepPort.sleep(Math.max(150, this.scraperConfig.propertyDetailPageScrollIntervalMs));
     }
 
     this.logger.warn('Timeout waiting for full image DOM load. Continuing with best-effort capture.');
@@ -184,7 +187,7 @@ export class PropertyDetailInteractionService {
     })()`);
 
     if (queuedCount > 0) {
-      await sleep(Math.max(200, this.scraperConfig.propertyDetailPageScrollIntervalMs));
+      await this.sleepPort.sleep(Math.max(200, this.scraperConfig.propertyDetailPageScrollIntervalMs));
     }
   }
 
@@ -202,7 +205,7 @@ export class PropertyDetailInteractionService {
         })()`,
         returnByValue: true
       });
-      await sleep(interval);
+      await this.sleepPort.sleep(interval);
     }
 
     await runtime.evaluate({
@@ -245,7 +248,7 @@ export class PropertyDetailInteractionService {
       }
 
       clicks += 1;
-      await sleep(this.scraperConfig.propertyDetailPageMorePhotosClickWaitMs);
+      await this.sleepPort.sleep(this.scraperConfig.propertyDetailPageMorePhotosClickWaitMs);
     }
 
     return clicks;

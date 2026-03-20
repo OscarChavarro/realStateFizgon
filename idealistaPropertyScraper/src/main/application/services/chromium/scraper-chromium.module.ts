@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
+import { SleepModule } from 'adapters/outbound/timing/sleep.module';
 import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
 import { ChromiumCdpReadinessService } from 'application/services/chromium/chromium-cdp-readiness.service';
 import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
@@ -13,7 +15,7 @@ import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilienc
 import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, ScraperStateModule],
+  imports: [ConfigurationModule, ScraperStateModule, ErrorMessageModule, SleepModule],
   providers: [
     ChromiumPageSyncService,
     ChromiumCdpReadinessService,

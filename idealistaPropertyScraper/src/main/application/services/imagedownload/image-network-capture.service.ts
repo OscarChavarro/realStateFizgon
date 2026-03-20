@@ -1,12 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
 import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
-import { toErrorMessage } from 'infrastructure/error-message';
-import { sleep } from 'infrastructure/sleep';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class ImageNetworkCaptureService {
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();
@@ -15,6 +17,13 @@ export class ImageNetworkCaptureService {
   private lastImageNetworkActivityAt = 0;
   private imageNetworkActivitySeen = false;
   private imageNetworkActivityCounter = 0;
+
+  constructor(
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
+  ) {}
 
   isInitialized(client: object): boolean {
     return this.initializedClients.has(client);
@@ -69,7 +78,7 @@ export class ImageNetworkCaptureService {
       if (this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0) {
         return;
       }
-      await sleep(100);
+      await this.sleepPort.sleep(100);
     }
 
     if (this.activeDownloadTasks.size > 0) {
@@ -86,12 +95,12 @@ export class ImageNetworkCaptureService {
       await this.waitForPendingImageDownloads(Math.min(quietWindowMs, 1200));
       const noPendingWork = this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0;
       if (!noPendingWork) {
-        await sleep(120);
+        await this.sleepPort.sleep(120);
         continue;
       }
 
       if (!this.imageNetworkActivitySeen) {
-        await sleep(200);
+        await this.sleepPort.sleep(200);
         continue;
       }
 
@@ -99,7 +108,7 @@ export class ImageNetworkCaptureService {
         if (Date.now() - start >= noActivityGraceMs) {
           return;
         }
-        await sleep(200);
+        await this.sleepPort.sleep(200);
         continue;
       }
 
@@ -108,7 +117,7 @@ export class ImageNetworkCaptureService {
         return;
       }
 
-      await sleep(120);
+      await this.sleepPort.sleep(120);
     }
 
     logger.warn(`Image network did not become idle in ${maxWaitMs}ms. Continuing with best-effort capture.`);
@@ -131,7 +140,7 @@ export class ImageNetworkCaptureService {
       await onImageBody({ requestId, url, mimeType, body });
       this.markImageNetworkActivity();
     } catch (error) {
-      const message = toErrorMessage(error);
+      const message = this.errorMessagePort.toErrorMessage(error);
       logger.warn(`Failed to capture image response body for "${url}" (requestId=${requestId}): ${message}`);
     }
   }

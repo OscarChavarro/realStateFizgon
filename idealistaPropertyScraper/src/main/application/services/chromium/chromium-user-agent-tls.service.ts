@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'infrastructure/error-message';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 type LoggerLike = {
   log(message: string): void;
@@ -17,7 +19,11 @@ export class ChromiumUserAgentTlsService {
   private cachedBrowserVersion?: string;
   private cachedBrowserVersionBinary?: string;
 
-  constructor(private readonly chromeConfig: ChromeConfig) {}
+  constructor(
+    private readonly chromeConfig: ChromeConfig,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
+  ) {}
 
   resolveBrowserBinary(logger?: LoggerLike): string {
     if (this.resolvedBrowserBinary) {
@@ -88,7 +94,7 @@ export class ChromiumUserAgentTlsService {
       return this.cachedBrowserVersion;
     } catch (error) {
       this.cachedBrowserVersion = undefined;
-      const message = toErrorMessage(error);
+      const message = this.errorMessagePort.toErrorMessage(error);
       (logger ?? this.logger).warn(
         `Failed to detect browser version from "${resolvedBrowserBinary}": ${message}`
       );

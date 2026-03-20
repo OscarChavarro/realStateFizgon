@@ -2,12 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
 
 class ScraperConfigMockForDetailInteraction {
   readonly propertyDetailPagePreMediaExpansionWaitMs = 100;
@@ -21,11 +17,19 @@ class OriginErrorDetectorServiceMockForDetailInteraction {
   readonly hasOriginError = jest.fn<(runtime: unknown) => Promise<boolean>>();
 }
 
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
+
 function createService() {
   const originError = new OriginErrorDetectorServiceMockForDetailInteraction();
+  const sleepPort: SleepPortMock = {
+    sleep: jest.fn(async () => undefined)
+  };
   const service = new PropertyDetailInteractionService(
     new ScraperConfigMockForDetailInteraction() as unknown as ScraperConfig,
-    originError as unknown as OriginErrorDetectorService
+    originError as unknown as OriginErrorDetectorService,
+    sleepPort as never
   );
   const logger = {
     warn: jest.fn<(message: string) => void>(),
@@ -33,7 +37,7 @@ function createService() {
     error: jest.fn<(message: string) => void>()
   };
   (service as unknown as { logger: typeof logger }).logger = logger;
-  return { service, originError, logger };
+  return { service, originError, logger, sleepPort };
 }
 
 function createRuntimeWithEvaluator(
@@ -101,7 +105,7 @@ describe('PropertyDetailInteractionService', () => {
 
   it('whenMorePhotosAreAvailable_revealDetailMedia_shouldClickAndRunSecondScrollPass', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, sleepPort } = createService();
     let clickChecks = 0;
     const runtime = createRuntimeWithEvaluator((expression) => {
       if (expression.includes('more-photos')) {
@@ -119,7 +123,7 @@ describe('PropertyDetailInteractionService', () => {
     // Action
     await service.revealDetailMedia(runtime);
     // Assert
-    expect(sleep).toHaveBeenCalledWith(75);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(75);
     expect((runtime.evaluate as jest.Mock).mock.calls.length).toBeGreaterThan(5);
   });
 
@@ -176,7 +180,7 @@ describe('PropertyDetailInteractionService', () => {
 
   it('whenPreloadQueueContainsUrls_revealDetailMedia_shouldWaitForNetworkKickoffBeforeLoadCheck', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, sleepPort } = createService();
     const runtime = createRuntimeWithEvaluator((expression) => {
       if (expression.includes('more-photos')) {
         return false;
@@ -192,6 +196,6 @@ describe('PropertyDetailInteractionService', () => {
     // Action
     await service.revealDetailMedia(runtime);
     // Assert
-    expect(sleep).toHaveBeenCalledWith(200);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(200);
   });
 });

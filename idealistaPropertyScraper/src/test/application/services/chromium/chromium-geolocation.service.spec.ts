@@ -5,6 +5,7 @@ import { ChromiumPageSyncService } from 'application/services/chromium/chromium-
 import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 jest.mock('chrome-remote-interface', () => {
   const cdp = jest.fn();
   return Object.assign(cdp, {
@@ -46,10 +47,14 @@ function createService(config?: ChromeConfigMockForGeolocation) {
   const permissionRegistrar = new ChromiumPermissionRegistrarServiceMockForGeolocation();
   permissionRegistrar.ensureOriginIsAuthorized.mockResolvedValue(undefined);
   permissionRegistrar.grantGeolocationPermissions.mockResolvedValue(undefined);
+  const errorMessagePort: ErrorMessagePort = {
+    toErrorMessage: jest.fn((error: unknown) => error instanceof Error ? error.message : String(error))
+  };
   const service = new ChromiumGeolocationService(
     chromeConfig as unknown as ChromeConfig,
     pageSync as unknown as ChromiumPageSyncService,
-    permissionRegistrar as unknown as ChromiumPermissionRegistrarService
+    permissionRegistrar as unknown as ChromiumPermissionRegistrarService,
+    errorMessagePort
   );
   const logger = {
     warn: jest.fn<(message: string) => void>(),

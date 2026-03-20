@@ -1,17 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { PropertyDetailNavigationService } from 'application/services/scraper/property/property-detail-navigation.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { sleep } from 'infrastructure/sleep';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
 
 class ChromeConfigMockForDetailNavigation {
   readonly chromeCdpReadyTimeoutMs = 1000;
   readonly chromeCdpPollIntervalMs = 100;
 }
+
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
 
 function createRuntime(values: unknown[]): RuntimeClient {
   const evaluate = jest.fn<RuntimeClient['evaluate']>(async () => ({ result: { value: values.at(-1) } }));
@@ -19,6 +19,12 @@ function createRuntime(values: unknown[]): RuntimeClient {
     evaluate.mockImplementationOnce(async () => ({ result: { value } }));
   });
   return { evaluate };
+}
+
+function createSleepPort(): SleepPortMock {
+  return {
+    sleep: jest.fn(async () => undefined)
+  };
 }
 
 describe('PropertyDetailNavigationService', () => {
@@ -33,8 +39,10 @@ describe('PropertyDetailNavigationService', () => {
   it('whenPropertyIsVisible_clickPropertyLinkFromResults_shouldReturnTrue', async () => {
     // Arrange
     const runtime = createRuntime([true]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     // Action
     const clicked = await service.clickPropertyLinkFromResults(runtime, 'https://www.idealista.com/inmueble/123/');
@@ -46,8 +54,10 @@ describe('PropertyDetailNavigationService', () => {
   it('whenTargetUrlBecomesReady_waitForDetailUrlAndDomComplete_shouldWaitUntilReady', async () => {
     // Arrange
     const runtime = createRuntime([false, true]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     let now = 0;
     jest.spyOn(Date, 'now').mockImplementation(() => {
@@ -57,15 +67,17 @@ describe('PropertyDetailNavigationService', () => {
     // Action
     await service.waitForDetailUrlAndDomComplete(runtime, 'https://www.idealista.com/inmueble/123/');
     // Assert
-    expect(sleep).toHaveBeenCalledTimes(1);
-    expect(sleep).toHaveBeenCalledWith(100);
+    expect(sleepPort.sleep).toHaveBeenCalledTimes(1);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(100);
   });
 
   it('whenTargetUrlNeverBecomesReady_waitForDetailUrlAndDomComplete_shouldThrowTimeoutError', async () => {
     // Arrange
     const runtime = createRuntime([false, false, false, false]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     let now = 0;
     jest.spyOn(Date, 'now').mockImplementation(() => {
@@ -76,14 +88,16 @@ describe('PropertyDetailNavigationService', () => {
     const action = service.waitForDetailUrlAndDomComplete(runtime, 'https://www.idealista.com/inmueble/123/');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for target URL to load: https://www.idealista.com/inmueble/123/');
-    expect(sleep).toHaveBeenCalled();
+    expect(sleepPort.sleep).toHaveBeenCalled();
   });
 
   it('whenDirectNavigationIsRequested_navigateDirectlyToUrl_shouldSetLocationAndWaitForCompletion', async () => {
     // Arrange
     const runtime = createRuntime([true]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     const waitSpy = jest.spyOn(
       service as unknown as { waitForDetailUrlAndDomComplete: (runtimeArg: RuntimeClient, targetUrl: string) => Promise<void> },
@@ -99,8 +113,10 @@ describe('PropertyDetailNavigationService', () => {
   it('whenSearchResultsAreReady_goBackToSearchResults_shouldReturnAfterHistoryBack', async () => {
     // Arrange
     const runtime = createRuntime([true, true]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     let now = 0;
     jest.spyOn(Date, 'now').mockImplementation(() => {
@@ -111,14 +127,16 @@ describe('PropertyDetailNavigationService', () => {
     await service.goBackToSearchResults(runtime);
     // Assert
     expect(runtime.evaluate).toHaveBeenNthCalledWith(1, expect.objectContaining({ expression: 'window.history.back(); true;' }));
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenSearchResultsNeverBecomeReady_goBackToSearchResults_shouldThrowTimeoutError', async () => {
     // Arrange
     const runtime = createRuntime([true, false, false, false, false]);
+    const sleepPort = createSleepPort();
     const service = new PropertyDetailNavigationService(
-      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      sleepPort as never
     );
     let now = 0;
     jest.spyOn(Date, 'now').mockImplementation(() => {
@@ -129,6 +147,6 @@ describe('PropertyDetailNavigationService', () => {
     const action = service.goBackToSearchResults(runtime);
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting to return to search results after detail processing.');
-    expect(sleep).toHaveBeenCalled();
+    expect(sleepPort.sleep).toHaveBeenCalled();
   });
 });

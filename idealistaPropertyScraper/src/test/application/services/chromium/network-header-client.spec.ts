@@ -6,9 +6,19 @@ type LoggerMock = {
   warn: jest.Mock<(message: string) => void>;
 };
 
+type ErrorMessagePortMock = {
+  toErrorMessage: jest.Mock<(error: unknown) => string>;
+};
+
 function createLogger(): LoggerMock {
   return {
     warn: jest.fn<(message: string) => void>()
+  };
+}
+
+function createErrorMessagePort(): ErrorMessagePortMock {
+  return {
+    toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
   };
 }
 
@@ -17,7 +27,8 @@ describe('NetworkHeaderClient', () => {
     // Arrange
     const client = { Network: {} } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     const hasDomain = networkHeaderClient.hasNetworkDomain();
     // Assert
@@ -28,7 +39,8 @@ describe('NetworkHeaderClient', () => {
     // Arrange
     const client = {} as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     const hasDomain = networkHeaderClient.hasNetworkDomain();
     // Assert
@@ -40,7 +52,8 @@ describe('NetworkHeaderClient', () => {
     const enable = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
     const client = { Network: { enable } } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.enableNetworkDomain();
     // Assert
@@ -53,7 +66,8 @@ describe('NetworkHeaderClient', () => {
     const enable = jest.fn<() => Promise<void>>().mockRejectedValue(new Error('boom'));
     const client = { Network: { enable } } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.enableNetworkDomain();
     // Assert
@@ -66,7 +80,8 @@ describe('NetworkHeaderClient', () => {
       .mockResolvedValue(undefined);
     const client = { Network: { setExtraHTTPHeaders } } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.applyExtraHeaders({ DNT: '1' });
     // Assert
@@ -80,7 +95,8 @@ describe('NetworkHeaderClient', () => {
       .mockResolvedValue(undefined);
     const client = { Network: { setExtraHTTPHeaders } } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.applyExtraHeaders({});
     // Assert
@@ -91,7 +107,8 @@ describe('NetworkHeaderClient', () => {
     // Arrange
     const client = { Network: {} } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.applyExtraHeaders({ DNT: '1' });
     // Assert
@@ -104,7 +121,8 @@ describe('NetworkHeaderClient', () => {
       .mockRejectedValue(new Error('fail'));
     const client = { Network: { setExtraHTTPHeaders } } as CdpNetworkClient;
     const logger = createLogger();
-    const networkHeaderClient = new NetworkHeaderClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const networkHeaderClient = new NetworkHeaderClient(client, logger as never, errorMessagePort as never);
     // Action
     await networkHeaderClient.applyExtraHeaders({ DNT: '1' });
     // Assert

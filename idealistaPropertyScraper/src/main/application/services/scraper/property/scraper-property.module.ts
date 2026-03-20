@@ -3,6 +3,7 @@ import { IdealistaCaptchaDetectorModule } from 'adapters/outbound/captcha/ideali
 import { RabbitMqModule } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
 import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
 import { MongoDatabaseModule } from 'adapters/outbound/persistence/mongodb/mongo-database.module';
+import { SleepModule } from 'adapters/outbound/timing/sleep.module';
 import { ImageDownloadModule } from 'application/services/imagedownload/image-download.module';
 import { OriginErrorDetectorModule } from 'application/services/resilience/origin-error-detector.module';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
@@ -34,7 +35,8 @@ import { ConfigurationModule } from 'infrastructure/config/settings/configuratio
     ErrorMessageModule,
     MongoDatabaseModule,
     ImageDownloadModule,
-    IdealistaCaptchaDetectorModule
+    IdealistaCaptchaDetectorModule,
+    SleepModule
   ],
   providers: [
     CookieApprovalDialogScraperService,

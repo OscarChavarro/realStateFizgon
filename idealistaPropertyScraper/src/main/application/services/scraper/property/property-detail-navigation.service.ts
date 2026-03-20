@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { sleep } from 'infrastructure/sleep';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PropertyDetailNavigationService {
   private static readonly SEARCH_RESULTS_READY_EXPRESSION = `(() => {
@@ -17,7 +18,11 @@ export class PropertyDetailNavigationService {
     return complete && hasResults;
   })()`;
 
-  constructor(private readonly chromeConfig: ChromeConfig) {}
+  constructor(
+    private readonly chromeConfig: ChromeConfig,
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort
+  ) {}
 
   async clickPropertyLinkFromResults(runtime: RuntimeClient, targetUrl: string): Promise<boolean> {
     return await this.evaluateExpression<boolean>(runtime, `(() => {
@@ -83,7 +88,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await sleep(this.chromeConfig.chromeCdpPollIntervalMs);
+      await this.sleepPort.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error(`Timeout waiting for target URL to load: ${targetUrl}`);
@@ -112,7 +117,7 @@ export class PropertyDetailNavigationService {
         return;
       }
 
-      await sleep(this.chromeConfig.chromeCdpPollIntervalMs);
+      await this.sleepPort.sleep(this.chromeConfig.chromeCdpPollIntervalMs);
     }
 
     throw new Error('Timeout waiting to return to search results after detail processing.');

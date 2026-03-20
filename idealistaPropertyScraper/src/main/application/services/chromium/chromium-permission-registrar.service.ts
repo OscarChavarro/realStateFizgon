@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { toErrorMessage } from 'infrastructure/error-message';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 type CdpBrowser = {
   grantPermissions?(params: { origin: string; permissions: string[] }): Promise<void>;
 };
@@ -24,7 +26,10 @@ export class ChromiumPermissionRegistrarService {
   private readonly allowedOrigins = new Set<string>();
   private readonly pendingOrigins = new Set<string>();
 
-  constructor() {}
+  constructor(
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
+  ) {}
 
   registerPageNavigationListener(client: CdpClient, page: CdpPage, allowlist?: string[]): void {
     page.frameNavigated((event) => {
@@ -80,7 +85,7 @@ export class ChromiumPermissionRegistrarService {
       this.allowedOrigins.add(origin);
       this.logger.log(`Granted geolocation permissions for ${origin}.`);
     } catch (error) {
-      this.logger.warn(`Failed to grant geolocation permissions for ${origin}. ${toErrorMessage(error)}`);
+      this.logger.warn(`Failed to grant geolocation permissions for ${origin}. ${this.errorMessagePort.toErrorMessage(error)}`);
     } finally {
       this.pendingOrigins.delete(origin);
     }

@@ -1,15 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
-
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
 
 class ScraperConfigMockForCookieApproval {
   readonly cookieApprovalDialogWaitMs = 120;
 }
+
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
 
 type RuntimeClientMock = {
   evaluate: jest.Mock<(
@@ -23,30 +22,40 @@ function createRuntime(value: boolean): RuntimeClientMock {
   };
 }
 
+function createSleepPort(): SleepPortMock {
+  return {
+    sleep: jest.fn(async () => undefined)
+  };
+}
+
 describe('CookieApprovalDialogScraperService', () => {
   it('whenDialogIsNotVisible_acceptCookiesIfVisible_shouldSkipWaits', async () => {
     // Arrange
     const runtime = createRuntime(false);
+    const sleepPort = createSleepPort();
     const service = new CookieApprovalDialogScraperService(
-      new ScraperConfigMockForCookieApproval() as unknown as ScraperConfig
+      new ScraperConfigMockForCookieApproval() as unknown as ScraperConfig,
+      sleepPort as never
     );
     // Action
     await service.acceptCookiesIfVisible(runtime);
     // Assert
     expect(runtime.evaluate).toHaveBeenCalledWith(expect.objectContaining({ returnByValue: true }));
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenDialogIsVisible_acceptCookiesIfVisible_shouldClickAndWaitTwice', async () => {
     // Arrange
     const runtime = createRuntime(true);
+    const sleepPort = createSleepPort();
     const service = new CookieApprovalDialogScraperService(
-      new ScraperConfigMockForCookieApproval() as unknown as ScraperConfig
+      new ScraperConfigMockForCookieApproval() as unknown as ScraperConfig,
+      sleepPort as never
     );
     // Action
     await service.acceptCookiesIfVisible(runtime);
     // Assert
-    expect(sleep).toHaveBeenCalledTimes(2);
-    expect(sleep).toHaveBeenCalledWith(120);
+    expect(sleepPort.sleep).toHaveBeenCalledTimes(2);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(120);
   });
 });

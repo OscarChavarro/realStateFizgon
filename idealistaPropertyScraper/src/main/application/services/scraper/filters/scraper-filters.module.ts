@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SleepModule } from 'adapters/outbound/timing/sleep.module';
 import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
 import { FilterAvailableOptionExtractorService } from 'application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
@@ -12,7 +13,7 @@ import { ApplySearchFiltersUseCase } from 'application/usecases/scraper/apply-se
 import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, ScraperChromiumModule],
+  imports: [ConfigurationModule, ScraperChromiumModule, SleepModule],
   providers: [
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractorService,

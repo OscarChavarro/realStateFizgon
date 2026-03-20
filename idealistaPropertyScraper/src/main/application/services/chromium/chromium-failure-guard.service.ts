@@ -1,8 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'infrastructure/error-message';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class ChromiumFailureGuardService {
@@ -12,7 +14,9 @@ export class ChromiumFailureGuardService {
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
-    private readonly recoverFromBrowserFailureUseCase: RecoverFromBrowserFailureUseCase
+    private readonly recoverFromBrowserFailureUseCase: RecoverFromBrowserFailureUseCase,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async handleUnexpectedChromeExit(params: {
@@ -70,7 +74,7 @@ export class ChromiumFailureGuardService {
     try {
       await this.recoverFromBrowserFailureUseCase.execute(params);
     } catch (error) {
-      this.logger.error(`Browser restart failed: ${toErrorMessage(error)}`);
+      this.logger.error(`Browser restart failed: ${this.errorMessagePort.toErrorMessage(error)}`);
     } finally {
       this.recoveryInProgress = false;
     }

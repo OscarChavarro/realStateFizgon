@@ -49,6 +49,10 @@ type LoggerMock = {
   log: jest.Mock<(message: string) => void>;
 };
 
+type ErrorMessagePortMock = {
+  toErrorMessage: jest.Mock<(error: unknown) => string>;
+};
+
 function createService(config?: {
   chromeCdpPollIntervalMs?: number;
   chromeUserAgent?: string;
@@ -71,11 +75,15 @@ function createService(config?: {
   chromiumUserAgentTlsService.resolveUserAgentForHeaders.mockReturnValue(
     config?.resolvedUserAgent ?? chromeConfig.chromeUserAgent
   );
+  const errorMessagePort: ErrorMessagePortMock = {
+    toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
+  };
 
   const service = new ChromiumNetworkHeadersService(
     chromeConfig as unknown as ChromeConfig,
     chromiumPageSyncService as unknown as ChromiumPageSyncService,
-    chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService
+    chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService,
+    errorMessagePort as never
   );
   const logger: LoggerMock = {
     warn: jest.fn<(message: string) => void>(),
@@ -88,7 +96,8 @@ function createService(config?: {
     chromeConfig,
     chromiumPageSyncService,
     chromiumUserAgentTlsService,
-    logger
+    logger,
+    errorMessagePort
   };
 }
 

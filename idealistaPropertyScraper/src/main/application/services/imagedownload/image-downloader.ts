@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Property } from 'domain/property/property.model';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
@@ -10,8 +10,11 @@ import { NetworkResponseReceivedEvent } from 'application/services/imagedownload
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { toErrorMessage } from 'infrastructure/error-message';
-import { sleep } from 'infrastructure/sleep';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 @Injectable()
 export class ImageDownloaderService {
@@ -23,7 +26,11 @@ export class ImageDownloaderService {
     private readonly imageDownloadPathService: ImageDownloadPathService,
     private readonly imageUrlRulesService: ImageUrlRulesService,
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,
-    private readonly finalizePropertyImagesUseCase: FinalizePropertyImagesUseCase
+    private readonly finalizePropertyImagesUseCase: FinalizePropertyImagesUseCase,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort,
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort
   ) {}
 
   async validateImageDownloadFolder(): Promise<void> {
@@ -36,13 +43,13 @@ export class ImageDownloaderService {
         this.imageDownloadPathService.ensureWritableFolders(configuredFolder);
         return;
       } catch (error) {
-        const message = toErrorMessage(error);
+        const message = this.errorMessagePort.toErrorMessage(error);
         this.logger.error(`Image download folder validation failed: ${message}`);
         this.logger.error(`Check permissions, free disk space, and path configured in environment.json: "${configuredFolder}".`);
         this.logger.error(
           `NFS/shared-folder access is failing. Keeping pod alive for ${waitSeconds} seconds before retrying validation.`
         );
-        await sleep(waitMs);
+        await this.sleepPort.sleep(waitMs);
       }
     }
   }

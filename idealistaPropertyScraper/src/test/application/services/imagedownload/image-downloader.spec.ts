@@ -7,15 +7,10 @@ import { NetworkEnabledCdpClient } from 'application/services/imagedownload/netw
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
 import { Property } from 'domain/property/property.model';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
 
 class ChromeConfigMockForDownloader {
   readonly chromeBrowserLaunchRetryWaitMs = 1000;
@@ -47,6 +42,14 @@ class FinalizePropertyImagesUseCaseMock {
   readonly execute = jest.fn<(property: Property) => Promise<void>>();
   readonly persistCapturedImage = jest.fn<(payload: unknown) => Promise<void>>();
 }
+
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
+
+type ErrorMessagePortMock = {
+  toErrorMessage: jest.Mock<(error: unknown) => string>;
+};
 
 type FakeNetwork = {
   enable: jest.Mock<() => Promise<void>>;
@@ -87,13 +90,21 @@ function createService() {
   const urlRules = new ImageUrlRulesServiceMock();
   const networkCapture = new ImageNetworkCaptureServiceMock();
   const finalizeUseCase = new FinalizePropertyImagesUseCaseMock();
+  const errorMessagePort: ErrorMessagePortMock = {
+    toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
+  };
+  const sleepPort: SleepPortMock = {
+    sleep: jest.fn(async () => undefined)
+  };
   const service = new ImageDownloaderService(
     new ChromeConfigMockForDownloader() as unknown as ChromeConfig,
     new ScraperConfigMockForDownloader() as unknown as ScraperConfig,
     pathService as unknown as ImageDownloadPathService,
     urlRules as unknown as ImageUrlRulesService,
     networkCapture as unknown as ImageNetworkCaptureService,
-    finalizeUseCase as unknown as FinalizePropertyImagesUseCase
+    finalizeUseCase as unknown as FinalizePropertyImagesUseCase,
+    errorMessagePort as never,
+    sleepPort as never
   );
   const logger = {
     warn: jest.fn<(message: string) => void>(),
@@ -101,7 +112,7 @@ function createService() {
     error: jest.fn<(message: string) => void>()
   };
   (service as unknown as { logger: typeof logger }).logger = logger;
-  return { service, pathService, urlRules, networkCapture, finalizeUseCase, logger };
+  return { service, pathService, urlRules, networkCapture, finalizeUseCase, logger, sleepPort, errorMessagePort };
 }
 
 describe('ImageDownloaderService', () => {
@@ -115,18 +126,18 @@ describe('ImageDownloaderService', () => {
 
   it('whenFolderIsWritable_validateImageDownloadFolder_shouldReturnWithoutRetry', async () => {
     // Arrange
-    const { service, pathService } = createService();
+    const { service, pathService, sleepPort } = createService();
     pathService.ensureWritableFolders.mockImplementation(() => undefined);
     // Action
     await service.validateImageDownloadFolder();
     // Assert
     expect(pathService.ensureWritableFolders).toHaveBeenCalledWith('/tmp/images');
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenFolderValidationFailsOnce_validateImageDownloadFolder_shouldRetryAfterSleep', async () => {
     // Arrange
-    const { service, pathService, logger } = createService();
+    const { service, pathService, logger, sleepPort } = createService();
     pathService.ensureWritableFolders
       .mockImplementationOnce(() => {
         throw new Error('permission denied');
@@ -136,7 +147,7 @@ describe('ImageDownloaderService', () => {
     await service.validateImageDownloadFolder();
     // Assert
     expect(pathService.ensureWritableFolders).toHaveBeenCalledTimes(2);
-    expect(sleep).toHaveBeenCalledWith(1000);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(1000);
     expect(logger.error).toHaveBeenCalled();
   });
 
@@ -277,4 +288,3 @@ describe('ImageDownloaderService', () => {
     expect(finalizeUseCase.execute).toHaveBeenCalledWith(property);
   });
 });
-

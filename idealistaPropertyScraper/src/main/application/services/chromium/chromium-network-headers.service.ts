@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
@@ -8,7 +8,9 @@ import { UserAgentOverrideClient } from 'application/services/chromium/user-agen
 import { NetworkHeaderClient } from 'application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'infrastructure/error-message';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 type PageTarget = {
   id?: string;
@@ -33,7 +35,9 @@ export class ChromiumNetworkHeadersService {
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
-    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
+    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async applyHeaders(client: CdpNetworkClient): Promise<void> {
@@ -49,7 +53,7 @@ export class ChromiumNetworkHeadersService {
     this.headersTargetLoopRunning = true;
     void this.runHeadersTargetLoop(cdpHost, cdpPort, isShuttingDown)
       .catch((error) => {
-        this.logger.warn(`Network headers target loop failed. ${toErrorMessage(error)}`);
+        this.logger.warn(`Network headers target loop failed. ${this.errorMessagePort.toErrorMessage(error)}`);
       })
       .finally(() => {
         this.headersTargetLoopRunning = false;
@@ -67,7 +71,7 @@ export class ChromiumNetworkHeadersService {
       try {
         await this.applyOverridesToOpenTargets(cdpHost, cdpPort);
       } catch (error) {
-        this.logger.warn(`Failed to refresh network header targets. ${toErrorMessage(error)}`);
+        this.logger.warn(`Failed to refresh network header targets. ${this.errorMessagePort.toErrorMessage(error)}`);
       }
 
       await this.chromiumPageSyncService.sleep(pollIntervalMs);
@@ -136,7 +140,7 @@ export class ChromiumNetworkHeadersService {
         await client.close();
       }
     } catch (error) {
-      this.logger.warn(`Failed to apply network headers for ${targetKey}. ${toErrorMessage(error)}`);
+      this.logger.warn(`Failed to apply network headers for ${targetKey}. ${this.errorMessagePort.toErrorMessage(error)}`);
       const existing = this.targetClients.get(targetKey);
       if (existing) {
         try {
@@ -150,13 +154,13 @@ export class ChromiumNetworkHeadersService {
   }
 
   private async applyOverridesToClient(client: CdpNetworkClient, overrides: HeaderOverrides): Promise<boolean> {
-    const networkHeaderClient = new NetworkHeaderClient(client, this.logger);
+    const networkHeaderClient = new NetworkHeaderClient(client, this.logger, this.errorMessagePort);
     if (!networkHeaderClient.hasNetworkDomain()) {
       return false;
     }
 
     await networkHeaderClient.enableNetworkDomain();
-    const userAgentOverrideClient = new UserAgentOverrideClient(client, this.logger);
+    const userAgentOverrideClient = new UserAgentOverrideClient(client, this.logger, this.errorMessagePort);
     await userAgentOverrideClient.apply(overrides.userAgentOverride);
     await networkHeaderClient.applyExtraHeaders(overrides.extraHeaders);
 

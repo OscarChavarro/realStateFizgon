@@ -4,7 +4,6 @@ import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { sleep } from 'infrastructure/sleep';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
@@ -14,10 +13,6 @@ jest.mock('node:fs', () => ({
   closeSync: jest.fn(),
   mkdirSync: jest.fn(),
   openSync: jest.fn()
-}));
-
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
 }));
 
 class ChromeConfigMockForProcessLifecycle {
@@ -36,6 +31,14 @@ class ChromiumUserAgentTlsServiceMockForProcessLifecycle {
     logger?: unknown
   ) => string | undefined>();
 }
+
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
+
+type ErrorMessagePortMock = {
+  toErrorMessage: jest.Mock<(error: unknown) => string>;
+};
 
 type FakeProcess = {
   pid?: number;
@@ -86,9 +89,17 @@ function createService() {
   chromiumUserAgentTlsService.resolveBrowserBinary.mockReturnValue('/usr/bin/chromium');
   chromiumUserAgentTlsService.getBrowserVersion.mockReturnValue('145.0.7420.0');
   chromiumUserAgentTlsService.resolveUserAgentForLaunch.mockReturnValue('Mozilla Chrome/145.0.7420.0');
+  const errorMessagePort: ErrorMessagePortMock = {
+    toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
+  };
+  const sleepPort: SleepPortMock = {
+    sleep: jest.fn(async () => undefined)
+  };
   const service = new ChromiumProcessLifecycleService(
     chromeConfig as unknown as ChromeConfig,
-    chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService
+    chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService,
+    errorMessagePort as never,
+    sleepPort as never
   );
   const logger = {
     error: jest.fn<(message: string) => void>(),
@@ -96,7 +107,7 @@ function createService() {
     log: jest.fn<(message: string) => void>()
   };
   (service as unknown as { logger: typeof logger }).logger = logger;
-  return { service, chromeConfig, chromiumUserAgentTlsService, logger };
+  return { service, chromeConfig, chromiumUserAgentTlsService, logger, errorMessagePort, sleepPort };
 }
 
 describe('ChromiumProcessLifecycleService', () => {
@@ -138,7 +149,7 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnedProcessHasNoPid_launchChromiumProcess_shouldLogUnknownPid', async () => {
     // Arrange
-    const { service, logger } = createService();
+    const { service, logger, sleepPort } = createService();
     const spawnMock = spawn as unknown as jest.Mock;
     const { process } = createSpawnSuccessProcess(undefined as unknown as number);
     process.pid = undefined;
@@ -152,7 +163,7 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnFailsWithEnoent_launchChromiumProcess_shouldRetryAfterSleep', async () => {
     // Arrange
-    const { service, logger } = createService();
+    const { service, logger, sleepPort } = createService();
     const spawnMock = spawn as unknown as jest.Mock;
     const error = new Error('missing') as Error & { code?: string };
     error.code = 'ENOENT';
@@ -169,7 +180,7 @@ describe('ChromiumProcessLifecycleService', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'Browser binary "/usr/bin/chromium" was not found. Waiting 0 seconds before retrying launch.'
     );
-    expect(sleep).toHaveBeenCalledWith(500);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(500);
     expect(spawnMock).toHaveBeenCalledTimes(2);
     expect(closeSync).toHaveBeenCalledWith(20);
     expect(closeSync).toHaveBeenCalledWith(21);
@@ -177,7 +188,7 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnFailsWithUnexpectedError_launchChromiumProcess_shouldPropagateError', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, sleepPort } = createService();
     const spawnMock = spawn as unknown as jest.Mock;
     const error = new Error('spawn-failed');
     spawnMock.mockReturnValue(createSpawnErrorProcess(error));
@@ -186,7 +197,7 @@ describe('ChromiumProcessLifecycleService', () => {
     const action = service.launchChromiumProcess(9223, jest.fn(), () => false);
     // Assert
     await expect(action).rejects.toThrow('spawn-failed');
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenServiceIsAlreadyShuttingDown_launchChromiumProcess_shouldAbortLaunch', async () => {

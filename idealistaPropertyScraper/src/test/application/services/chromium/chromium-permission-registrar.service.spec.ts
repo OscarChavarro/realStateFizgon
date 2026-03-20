@@ -1,6 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
 
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 type CdpClient = {
   Browser?: {
     grantPermissions?: (params: { origin: string; permissions: string[] }) => Promise<void>;
@@ -12,7 +13,10 @@ type CdpPage = {
 };
 
 function createService() {
-  const service = new ChromiumPermissionRegistrarService();
+  const errorMessagePort: ErrorMessagePort = {
+    toErrorMessage: jest.fn((error: unknown) => error instanceof Error ? error.message : String(error))
+  };
+  const service = new ChromiumPermissionRegistrarService(errorMessagePort);
   const logger = {
     warn: jest.fn<(message: string) => void>(),
     log: jest.fn<(message: string) => void>(),

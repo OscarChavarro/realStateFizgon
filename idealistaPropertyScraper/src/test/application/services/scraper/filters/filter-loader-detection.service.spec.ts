@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
-jest.mock('infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
 
 class ScraperConfigMockForLoader {
   readonly filterStateClickWaitMs = 50;
@@ -17,6 +13,16 @@ class ScraperConfigMockForLoader {
 
 class ChromiumPageSyncServiceMockForLoader {
   readonly waitForPageLoad = jest.fn<(page: unknown, runtime: unknown, timeout: number, poll: number) => Promise<void>>();
+}
+
+type SleepPortMock = {
+  sleep: jest.Mock<(ms: number) => Promise<void>>;
+};
+
+function createSleepPort(): SleepPortMock {
+  return {
+    sleep: jest.fn(async () => undefined)
+  };
 }
 
 function createClient(evaluate: FiltersCdpClient['Runtime']['evaluate']): FiltersCdpClient {
@@ -40,9 +46,11 @@ describe('FilterLoaderDetectionService', () => {
   it('whenListingLoaderDisappears_waitForPostClickStabilityOrReload_shouldReturnTrueWithoutReload', async () => {
     // Arrange
     const pageSync = new ChromiumPageSyncServiceMockForLoader();
+    const sleepPort = createSleepPort();
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      pageSync as unknown as ChromiumPageSyncService
+      pageSync as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const evaluate = jest.fn(async () => ({ result: { value: false } }));
     const client = createClient(evaluate);
@@ -57,10 +65,12 @@ describe('FilterLoaderDetectionService', () => {
   it('whenListingLoaderStaysVisible_waitForPostClickStabilityOrReload_shouldReloadAndReturnFalse', async () => {
     // Arrange
     const pageSync = new ChromiumPageSyncServiceMockForLoader();
+    const sleepPort = createSleepPort();
     pageSync.waitForPageLoad.mockResolvedValue(undefined);
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      pageSync as unknown as ChromiumPageSyncService
+      pageSync as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({ result: { value: true } }));
     [true, true, true, true, true, true, true, true, false].forEach((value) => {
@@ -83,23 +93,27 @@ describe('FilterLoaderDetectionService', () => {
 
   it('whenScrollToTopFails_scrollToTop_shouldThrowError', async () => {
     // Arrange
+    const sleepPort = createSleepPort();
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'boom' } })));
     // Action
     const action = service.scrollToTop(client);
     // Assert
     await expect(action).rejects.toThrow('boom');
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenScrollToTopSucceeds_scrollToTop_shouldResolveWithoutError', async () => {
     // Arrange
+    const sleepPort = createSleepPort();
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const evaluate = jest.fn(async () => ({ result: { value: true } }));
     const client = createClient(evaluate);
@@ -111,9 +125,11 @@ describe('FilterLoaderDetectionService', () => {
 
   it('whenListingVisibilityEvaluationFails_waitForPostClickStabilityOrReload_shouldPropagateError', async () => {
     // Arrange
+    const sleepPort = createSleepPort();
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'listing-error' } })));
     // Action
@@ -125,10 +141,12 @@ describe('FilterLoaderDetectionService', () => {
   it('whenAsideFiltersNeverAppearAfterReload_waitForPostClickStabilityOrReload_shouldThrowTimeoutError', async () => {
     // Arrange
     const pageSync = new ChromiumPageSyncServiceMockForLoader();
+    const sleepPort = createSleepPort();
     pageSync.waitForPageLoad.mockResolvedValue(undefined);
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      pageSync as unknown as ChromiumPageSyncService
+      pageSync as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>()
       .mockResolvedValueOnce({ result: { value: true } })
@@ -150,10 +168,12 @@ describe('FilterLoaderDetectionService', () => {
   it('whenAsideFilterProbeReturnsException_waitForPostClickStabilityOrReload_shouldThrowProbeError', async () => {
     // Arrange
     const pageSync = new ChromiumPageSyncServiceMockForLoader();
+    const sleepPort = createSleepPort();
     pageSync.waitForPageLoad.mockResolvedValue(undefined);
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      pageSync as unknown as ChromiumPageSyncService
+      pageSync as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>()
       .mockResolvedValueOnce({ result: { value: true } })
@@ -174,9 +194,11 @@ describe('FilterLoaderDetectionService', () => {
 
   it('whenAsideFilterProbeHasEmptyExceptionText_waitForAsideFilters_shouldIgnoreExceptionObjectAndReturn', async () => {
     // Arrange
+    const sleepPort = createSleepPort();
     const service = new FilterLoaderDetectionService(
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
-      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService
+      new ChromiumPageSyncServiceMockForLoader() as unknown as ChromiumPageSyncService,
+      sleepPort as never
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: '' }, result: { value: true } })));
     // Action

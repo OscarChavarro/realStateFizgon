@@ -7,9 +7,19 @@ type LoggerMock = {
   warn: jest.Mock<(message: string) => void>;
 };
 
+type ErrorMessagePortMock = {
+  toErrorMessage: jest.Mock<(error: unknown) => string>;
+};
+
 function createLogger(): LoggerMock {
   return {
     warn: jest.fn<(message: string) => void>()
+  };
+}
+
+function createErrorMessagePort(): ErrorMessagePortMock {
+  return {
+    toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
   };
 }
 
@@ -27,7 +37,8 @@ describe('UserAgentOverrideClient', () => {
     const emulationSetter = jest.fn<(params: UserAgentOverridePayload) => Promise<void>>();
     const client = { Emulation: { setUserAgentOverride: emulationSetter } } as CdpNetworkClient;
     const logger = createLogger();
-    const overrideClient = new UserAgentOverrideClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const overrideClient = new UserAgentOverrideClient(client, logger as never, errorMessagePort as never);
     // Action
     await overrideClient.apply(undefined);
     // Assert
@@ -45,7 +56,8 @@ describe('UserAgentOverrideClient', () => {
       Network: { setUserAgentOverride: networkSetter }
     } as CdpNetworkClient;
     const logger = createLogger();
-    const overrideClient = new UserAgentOverrideClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const overrideClient = new UserAgentOverrideClient(client, logger as never, errorMessagePort as never);
     // Action
     await overrideClient.apply(payload);
     // Assert
@@ -59,7 +71,8 @@ describe('UserAgentOverrideClient', () => {
     const networkSetter = jest.fn<(params: UserAgentOverridePayload) => Promise<void>>().mockResolvedValue(undefined);
     const client = { Network: { setUserAgentOverride: networkSetter } } as CdpNetworkClient;
     const logger = createLogger();
-    const overrideClient = new UserAgentOverrideClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const overrideClient = new UserAgentOverrideClient(client, logger as never, errorMessagePort as never);
     // Action
     await overrideClient.apply(payload);
     // Assert
@@ -72,7 +85,8 @@ describe('UserAgentOverrideClient', () => {
     const payload = createOverridePayload();
     const client = { Emulation: {}, Network: {} } as CdpNetworkClient;
     const logger = createLogger();
-    const overrideClient = new UserAgentOverrideClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const overrideClient = new UserAgentOverrideClient(client, logger as never, errorMessagePort as never);
     // Action
     await overrideClient.apply(payload);
     // Assert
@@ -87,7 +101,8 @@ describe('UserAgentOverrideClient', () => {
     const emulationSetter = jest.fn<(params: UserAgentOverridePayload) => Promise<void>>().mockRejectedValue(new Error('boom'));
     const client = { Emulation: { setUserAgentOverride: emulationSetter } } as CdpNetworkClient;
     const logger = createLogger();
-    const overrideClient = new UserAgentOverrideClient(client, logger as never);
+    const errorMessagePort = createErrorMessagePort();
+    const overrideClient = new UserAgentOverrideClient(client, logger as never, errorMessagePort as never);
     // Action
     await overrideClient.apply(payload);
     // Assert

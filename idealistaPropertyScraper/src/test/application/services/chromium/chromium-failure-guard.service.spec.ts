@@ -4,6 +4,7 @@ import { ChromiumPageSyncService } from 'application/services/chromium/chromium-
 import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 class ChromeConfigMockForChromiumFailureGuardService {
   constructor(public readonly chromeCdpRequestTimeoutMs: number) {}
 }
@@ -40,10 +41,14 @@ function createGuard() {
   chromiumPageSyncService.sleep.mockResolvedValue(undefined);
   const recoverFromBrowserFailureUseCase = new RecoverFromBrowserFailureUseCaseMockForChromiumFailureGuardService();
   recoverFromBrowserFailureUseCase.execute.mockResolvedValue(undefined);
+  const errorMessagePort: ErrorMessagePort = {
+    toErrorMessage: jest.fn((error: unknown) => error instanceof Error ? error.message : String(error))
+  };
   const service = new ChromiumFailureGuardService(
     chromeConfig as unknown as ChromeConfig,
     chromiumPageSyncService as unknown as ChromiumPageSyncService,
-    recoverFromBrowserFailureUseCase as unknown as RecoverFromBrowserFailureUseCase
+    recoverFromBrowserFailureUseCase as unknown as RecoverFromBrowserFailureUseCase,
+    errorMessagePort
   );
   const logger = {
     error: jest.fn<(message: string) => void>(),

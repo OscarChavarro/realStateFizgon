@@ -1,20 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { sleep } from 'infrastructure/sleep';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class FilterLoaderDetectionService {
   private readonly logger = new Logger(FilterLoaderDetectionService.name);
 
   constructor(
     private readonly scraperConfig: ScraperConfig,
-    private readonly chromiumPageSyncService: ChromiumPageSyncService
+    private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort
   ) {}
 
   async waitForPostClickStabilityOrReload(client: FiltersCdpClient): Promise<boolean> {
-    await sleep(this.scraperConfig.filterStateClickWaitMs);
+    await this.sleepPort.sleep(this.scraperConfig.filterStateClickWaitMs);
 
     const disappeared = await this.waitForListingLoadingToDisappear(client);
     if (disappeared) {
@@ -45,7 +48,7 @@ export class FilterLoaderDetectionService {
       if (!isVisible) {
         return true;
       }
-      await sleep(pollInterval);
+      await this.sleepPort.sleep(pollInterval);
     }
 
     const isVisibleAfterTimeout = await this.isListingLoadingVisible(client);
@@ -95,7 +98,7 @@ export class FilterLoaderDetectionService {
         return;
       }
 
-      await sleep(pollInterval);
+      await this.sleepPort.sleep(pollInterval);
     }
 
     throw new Error('Timeout waiting for #aside-filters after reload.');

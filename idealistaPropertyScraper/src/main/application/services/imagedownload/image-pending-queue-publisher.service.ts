@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { toErrorMessage } from 'infrastructure/error-message';
 import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
 import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class ImagePendingQueuePublisherService {
@@ -10,7 +12,9 @@ export class ImagePendingQueuePublisherService {
 
   constructor(
     @Inject(QUEUE_PUBLISHER_PORT)
-    private readonly queuePublisherPort: QueuePublisherPort
+    private readonly queuePublisherPort: QueuePublisherPort,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async publishPendingImageUrl(url: string, propertyId: string): Promise<void> {
@@ -20,7 +24,7 @@ export class ImagePendingQueuePublisherService {
         propertyId
       });
     } catch (error) {
-      const message = toErrorMessage(error);
+      const message = this.errorMessagePort.toErrorMessage(error);
       this.logger.error(`Failed enqueueing pending image URL "${url}" for property "${propertyId}": ${message}`);
     }
   }

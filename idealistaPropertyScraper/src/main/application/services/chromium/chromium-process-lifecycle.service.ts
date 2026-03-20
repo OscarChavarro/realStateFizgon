@@ -1,11 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'infrastructure/error-message';
-import { sleep } from 'infrastructure/sleep';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
+
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {
@@ -17,7 +20,11 @@ export class ChromiumProcessLifecycleService {
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
-    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService
+    private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort,
+    @Inject(SLEEP_PORT)
+    private readonly sleepPort: SleepPort
   ) {}
 
   async launchChromiumProcess(
@@ -59,7 +66,7 @@ export class ChromiumProcessLifecycleService {
           this.logger.error(
             `Browser binary "${browserBinary}" was not found. Waiting ${Math.floor(waitMs / 1000)} seconds before retrying launch.`
           );
-          await sleep(waitMs);
+          await this.sleepPort.sleep(waitMs);
           continue;
         }
 
@@ -107,7 +114,7 @@ export class ChromiumProcessLifecycleService {
       process.kill(pid, 'SIGKILL');
       this.logger.warn(`Sent SIGKILL to Chrome process PID ${pid}.`);
     } catch (error) {
-      this.logger.warn(`Failed to send SIGKILL to Chrome process PID ${pid}. ${toErrorMessage(error)}`);
+      this.logger.warn(`Failed to send SIGKILL to Chrome process PID ${pid}. ${this.errorMessagePort.toErrorMessage(error)}`);
     }
   }
 
@@ -117,7 +124,7 @@ export class ChromiumProcessLifecycleService {
       return true;
     }
 
-    const message = toErrorMessage(error);
+    const message = this.errorMessagePort.toErrorMessage(error);
     return message.includes('ENOENT');
   }
 

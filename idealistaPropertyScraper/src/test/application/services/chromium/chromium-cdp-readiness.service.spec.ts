@@ -15,6 +15,12 @@ class ChromiumPageSyncServiceMockForReadiness {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();
 }
 
+function createClockPort(initial = 0): { nowMs: jest.MockedFunction<() => number> } {
+  return {
+    nowMs: jest.fn<() => number>().mockReturnValue(initial)
+  };
+}
+
 describe('ChromiumCdpReadinessService', () => {
   const originalFetch = global.fetch;
 
@@ -26,9 +32,11 @@ describe('ChromiumCdpReadinessService', () => {
     // Arrange
     const chrome = new ChromeConfigMockForReadiness(5000, 200, 100);
     const pageSync = new ChromiumPageSyncServiceMockForReadiness();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumCdpReadinessService(
       chrome as unknown as ChromeConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const fetchMock = jest.fn<typeof fetch>().mockResolvedValue({
@@ -49,9 +57,11 @@ describe('ChromiumCdpReadinessService', () => {
     // Arrange
     const chrome = new ChromeConfigMockForReadiness(5000, 200, 100);
     const pageSync = new ChromiumPageSyncServiceMockForReadiness();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumCdpReadinessService(
       chrome as unknown as ChromeConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const fetchMock = jest.fn<typeof fetch>()
@@ -70,15 +80,17 @@ describe('ChromiumCdpReadinessService', () => {
     // Arrange
     const chrome = new ChromeConfigMockForReadiness(1000, 200, 50);
     const pageSync = new ChromiumPageSyncServiceMockForReadiness();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumCdpReadinessService(
       chrome as unknown as ChromeConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const fetchMock = jest.fn<typeof fetch>().mockRejectedValue(new Error('connect ECONNREFUSED'));
     global.fetch = fetchMock;
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -87,7 +99,6 @@ describe('ChromiumCdpReadinessService', () => {
     // Assert
     await expect(action).rejects.toThrow('CDP endpoint did not become available in time');
     expect(pageSync.sleep).toHaveBeenCalledWith(50);
-    nowSpy.mockRestore();
     global.fetch = originalFetch;
   });
 
@@ -95,15 +106,17 @@ describe('ChromiumCdpReadinessService', () => {
     // Arrange
     const chrome = new ChromeConfigMockForReadiness(500, 200, 50);
     const pageSync = new ChromiumPageSyncServiceMockForReadiness();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumCdpReadinessService(
       chrome as unknown as ChromeConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const fetchMock = jest.fn<typeof fetch>().mockResolvedValue({ ok: false } as Response);
     global.fetch = fetchMock;
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 300;
       return now;
     });
@@ -112,7 +125,6 @@ describe('ChromiumCdpReadinessService', () => {
     // Assert
     await expect(action).rejects.toThrow('CDP endpoint did not become available in time at 127.0.0.1:9222');
     await expect(action).rejects.not.toThrow('(');
-    nowSpy.mockRestore();
     global.fetch = originalFetch;
   });
 
@@ -121,9 +133,12 @@ describe('ChromiumCdpReadinessService', () => {
     jest.useFakeTimers();
     const chrome = new ChromeConfigMockForReadiness(120, 50, 10);
     const pageSync = new ChromiumPageSyncServiceMockForReadiness();
+    const clockPort = createClockPort(0);
+    clockPort.nowMs.mockImplementation(() => Date.now());
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumCdpReadinessService(
       chrome as unknown as ChromeConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const fetchMock = jest.fn<typeof fetch>((_, init) =>

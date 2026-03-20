@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PropertyDetailNavigationService {
@@ -22,6 +24,7 @@ export class PropertyDetailNavigationService {
   constructor(
     @Inject(CHROME_SETTINGS_PORT)
     private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}
@@ -75,9 +78,9 @@ export class PropertyDetailNavigationService {
 
   async waitForDetailUrlAndDomComplete(runtime: RuntimeClient, targetUrl: string): Promise<void> {
     const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const ready = await this.evaluateExpression<boolean>(runtime, `(() => {
         const currentNoHash = window.location.href.split('#')[0];
         const targetNoHash = ${JSON.stringify(targetUrl)}.split('#')[0];
@@ -111,8 +114,8 @@ export class PropertyDetailNavigationService {
     });
 
     const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
-    const start = Date.now();
-    while (Date.now() - start < timeout) {
+    const start = this.clockPort.nowMs();
+    while (this.clockPort.nowMs() - start < timeout) {
       const isReady = await this.evaluateExpression<boolean>(runtime, PropertyDetailNavigationService.SEARCH_RESULTS_READY_EXPRESSION);
 
       if (isReady) {

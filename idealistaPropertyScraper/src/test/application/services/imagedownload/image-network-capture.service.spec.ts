@@ -19,12 +19,19 @@ function createService() {
   const sleepPort: SleepPortMock = {
     sleep: jest.fn(async () => undefined)
   };
+  const clockPort = {
+    nowMs: jest.fn<() => number>().mockReturnValue(0)
+  };
   const errorMessagePort: ErrorMessagePortMock = {
     toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
   };
-  const service = new ImageNetworkCaptureService(sleepPort as never, errorMessagePort as never);
+  const service = new ImageNetworkCaptureService(
+    sleepPort as never,
+    clockPort as never,
+    errorMessagePort as never
+  );
 
-  return { service, sleepPort, errorMessagePort };
+  return { service, sleepPort, clockPort, errorMessagePort };
 }
 
 describe('ImageNetworkCaptureService', () => {
@@ -206,11 +213,11 @@ describe('ImageNetworkCaptureService', () => {
 
   it('whenNetworkNeverSettles_waitForPendingImageDownloads_shouldWaitUntilTimeoutThenSettleActiveTasks', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     const activeTask = Promise.resolve();
     (service as unknown as { activeDownloadTasks: Set<Promise<void>> }).activeDownloadTasks.add(activeTask);
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -218,19 +225,18 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForPendingImageDownloads(1000);
     // Assert
     expect(sleepPort.sleep).toHaveBeenCalled();
-    nowSpy.mockRestore();
   });
 
   it('whenTimeoutHappensWithoutActiveTasks_waitForPendingImageDownloads_shouldSkipSettledWait', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { pendingImageRequests: Map<string, unknown> }).pendingImageRequests.set('req-1', {
       url: 'https://img4.idealista.com/a.jpg',
       mimeType: 'image/jpeg'
     });
     const allSettledSpy = jest.spyOn(Promise, 'allSettled');
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -238,7 +244,6 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForPendingImageDownloads(1000);
     // Assert
     expect(allSettledSpy).not.toHaveBeenCalled();
-    nowSpy.mockRestore();
     allSettledSpy.mockRestore();
   });
 
@@ -259,7 +264,7 @@ describe('ImageNetworkCaptureService', () => {
 
   it('whenImageActivityWasSeenAndQueueIsIdle_waitForImageNetworkSettled_shouldReturnWithoutWarning', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     service.trackResponseReceived({
       requestId: 'r7',
       type: 'image',
@@ -268,7 +273,7 @@ describe('ImageNetworkCaptureService', () => {
     service.trackLoadingFailed({ requestId: 'r7' });
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 800;
       return now;
     });
@@ -276,12 +281,11 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForImageNetworkSettled(logger as unknown as Logger, 3000, 1200);
     // Assert
     expect(logger.warn).not.toHaveBeenCalled();
-    nowSpy.mockRestore();
   });
 
   it('whenSettleWaitUsesDefaults_waitForImageNetworkSettled_shouldUseDefaultTimeoutAndQuietWindow', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { imageNetworkActivitySeen: boolean }).imageNetworkActivitySeen = true;
     (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 1;
     const pendingSpy = jest.spyOn(
@@ -293,7 +297,7 @@ describe('ImageNetworkCaptureService', () => {
     });
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 1500;
       return now;
     });
@@ -301,12 +305,11 @@ describe('ImageNetworkCaptureService', () => {
     await service.waitForImageNetworkSettled(logger as unknown as Logger);
     // Assert
     expect(pendingSpy).toHaveBeenCalledWith(1200);
-    nowSpy.mockRestore();
   });
 
   it('whenPendingWorkNeverDrains_waitForImageNetworkSettled_shouldSleepAndWarnAfterTimeout', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { pendingImageRequests: Map<string, unknown> }).pendingImageRequests.set('req', {
       url: 'https://img4.idealista.com/a.jpg',
       mimeType: 'image/jpeg'
@@ -317,7 +320,7 @@ describe('ImageNetworkCaptureService', () => {
     ).mockResolvedValue(undefined);
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 900;
       return now;
     });
@@ -326,19 +329,18 @@ describe('ImageNetworkCaptureService', () => {
     // Assert
     expect(sleepPort.sleep).toHaveBeenCalledWith(120);
     expect(logger.warn).toHaveBeenCalledWith('Image network did not become idle in 1500ms. Continuing with best-effort capture.');
-    nowSpy.mockRestore();
   });
 
   it('whenNoActivityHasBeenSeen_waitForImageNetworkSettled_shouldPollGracefullyUntilTimeout', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     jest.spyOn(
       service as unknown as { waitForPendingImageDownloads: (timeoutMs?: number) => Promise<void> },
       'waitForPendingImageDownloads'
     ).mockResolvedValue(undefined);
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 700;
       return now;
     });
@@ -347,12 +349,11 @@ describe('ImageNetworkCaptureService', () => {
     // Assert
     expect(sleepPort.sleep).toHaveBeenCalledWith(200);
     expect(logger.warn).toHaveBeenCalledWith('Image network did not become idle in 1200ms. Continuing with best-effort capture.');
-    nowSpy.mockRestore();
   });
 
   it('whenCounterDidNotChangeWithinGrace_waitForImageNetworkSettled_shouldSleepOnGraceBranch', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { imageNetworkActivitySeen: boolean }).imageNetworkActivitySeen = true;
     (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 3;
     jest.spyOn(
@@ -361,7 +362,7 @@ describe('ImageNetworkCaptureService', () => {
     ).mockResolvedValue(undefined);
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 400;
       return now;
     });
@@ -370,12 +371,11 @@ describe('ImageNetworkCaptureService', () => {
     // Assert
     expect(sleepPort.sleep).toHaveBeenCalledWith(200);
     expect(logger.warn).not.toHaveBeenCalled();
-    nowSpy.mockRestore();
   });
 
   it('whenNetworkIsActiveButNotQuiet_waitForImageNetworkSettled_shouldSleepUntilQuietWindowOrTimeout', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { imageNetworkActivitySeen: boolean }).imageNetworkActivitySeen = true;
     (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 5;
     (service as unknown as { lastImageNetworkActivityAt: number }).lastImageNetworkActivityAt = 1000;
@@ -388,7 +388,7 @@ describe('ImageNetworkCaptureService', () => {
     });
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 700;
       return now;
     });
@@ -398,12 +398,11 @@ describe('ImageNetworkCaptureService', () => {
     expect(pendingSpy).toHaveBeenCalled();
     expect(sleepPort.sleep).toHaveBeenCalledWith(120);
     expect(logger.warn).toHaveBeenCalledWith('Image network did not become idle in 1600ms. Continuing with best-effort capture.');
-    nowSpy.mockRestore();
   });
 
   it('whenQuietWindowIsReached_waitForImageNetworkSettled_shouldReturnWithoutWarning', async () => {
     // Arrange
-    const { service, sleepPort, errorMessagePort } = createService();
+    const { service, sleepPort, clockPort, errorMessagePort } = createService();
     (service as unknown as { imageNetworkActivitySeen: boolean }).imageNetworkActivitySeen = true;
     (service as unknown as { imageNetworkActivityCounter: number }).imageNetworkActivityCounter = 10;
     const pendingSpy = jest.spyOn(
@@ -415,7 +414,7 @@ describe('ImageNetworkCaptureService', () => {
     });
     const logger = new LoggerMock();
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 1000;
       return now;
     });
@@ -424,6 +423,5 @@ describe('ImageNetworkCaptureService', () => {
     // Assert
     expect(pendingSpy).toHaveBeenCalled();
     expect(logger.warn).not.toHaveBeenCalled();
-    nowSpy.mockRestore();
   });
 });

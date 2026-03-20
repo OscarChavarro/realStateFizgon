@@ -2,9 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class FilterLoaderDetectionService {
@@ -14,6 +16,7 @@ export class FilterLoaderDetectionService {
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}
@@ -43,9 +46,9 @@ export class FilterLoaderDetectionService {
   private async waitForListingLoadingToDisappear(client: FiltersCdpClient): Promise<boolean> {
     const timeout = this.scraperConfig.filterListingLoadingTimeoutMs;
     const pollInterval = this.scraperConfig.filterListingLoadingPollIntervalMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const isVisible = await this.isListingLoadingVisible(client);
       if (!isVisible) {
         return true;
@@ -84,9 +87,9 @@ export class FilterLoaderDetectionService {
   private async waitForAsideFilters(client: FiltersCdpClient): Promise<void> {
     const timeout = this.scraperConfig.filterListingLoadingTimeoutMs;
     const pollInterval = this.scraperConfig.filterListingLoadingPollIntervalMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const result = await client.Runtime.evaluate({
         expression: `Boolean(document.querySelector('#aside-filters'))`,
         returnByValue: true

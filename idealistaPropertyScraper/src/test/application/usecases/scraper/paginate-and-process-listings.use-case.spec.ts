@@ -44,6 +44,9 @@ function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): Prope
 function createUseCase() {
   const propertyListPageService = new PropertyListPageServiceMockForPaginateAndProcessListingsUseCase();
   const sleepPort = new SleepPortMockForPaginateAndProcessListingsUseCase();
+  const clockPort = {
+    nowMs: jest.fn<() => number>().mockReturnValue(0)
+  };
   const captchaDetectorPort = new CaptchaDetectorPortMockForPaginateAndProcessListingsUseCase();
   propertyListPageService.getPropertyUrls.mockResolvedValue(['https://www.idealista.com/inmueble/1/']);
   propertyListPageService.processUrls.mockResolvedValue(undefined);
@@ -54,6 +57,7 @@ function createUseCase() {
     new ScraperConfigMockForPaginateAndProcessListingsUseCase() as unknown as ScraperConfig,
     propertyListPageService as unknown as PropertyListPageService,
     captchaDetectorPort,
+    clockPort as never,
     sleepPort
   );
   const logger = {
@@ -62,7 +66,7 @@ function createUseCase() {
     error: jest.fn<(message: string) => void>()
   };
   (useCase as unknown as { logger: typeof logger }).logger = logger;
-  return { useCase, propertyListPageService, sleepPort, logger, captchaDetectorPort };
+  return { useCase, propertyListPageService, sleepPort, logger, captchaDetectorPort, clockPort };
 }
 
 describe('PaginateAndProcessListingsUseCase', () => {
@@ -183,10 +187,10 @@ describe('PaginateAndProcessListingsUseCase', () => {
 
   it('whenUrlDoesNotChangeWithinTimeout_waitForUrlChange_shouldThrowTimeoutError', async () => {
     // Arrange
-    const { useCase } = createUseCase();
+    const { useCase, clockPort } = createUseCase();
     const client = createClient(jest.fn(async () => ({ result: { value: 'https://www.idealista.com/page-1/' } })));
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -195,15 +199,14 @@ describe('PaginateAndProcessListingsUseCase', () => {
       .waitForUrlChange(client, 'https://www.idealista.com/page-1/');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for pagination URL change from https://www.idealista.com/page-1/');
-    nowSpy.mockRestore();
   });
 
   it('whenListingsNeverAppear_waitForListingsOrPagination_shouldThrowTimeoutError', async () => {
     // Arrange
-    const { useCase } = createUseCase();
+    const { useCase, clockPort } = createUseCase();
     const client = createClient(jest.fn(async () => ({ result: { value: false } })));
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -212,7 +215,6 @@ describe('PaginateAndProcessListingsUseCase', () => {
       .waitForListingsOrPagination(client);
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for listings/pagination after moving to next page.');
-    nowSpy.mockRestore();
   });
 
   it('whenListingsEvaluationHasException_waitForListingsOrPagination_shouldThrowRuntimeError', async () => {

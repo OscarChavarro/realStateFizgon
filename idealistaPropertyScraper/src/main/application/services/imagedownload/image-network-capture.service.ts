@@ -3,11 +3,13 @@ import { NetworkLoadingFailedEvent } from 'application/dto/imagedownload/network
 import { NetworkLoadingFinishedEvent } from 'application/dto/imagedownload/network-loading-finished-event.dto';
 import { NetworkResponseReceivedEvent } from 'application/dto/imagedownload/network-response-received-event.dto';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
 import type { NetworkDomain } from 'ports/outbound/browser/network-domain.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class ImageNetworkCaptureService {
@@ -21,6 +23,7 @@ export class ImageNetworkCaptureService {
   constructor(
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort
   ) {}
@@ -73,8 +76,8 @@ export class ImageNetworkCaptureService {
   }
 
   async waitForPendingImageDownloads(timeoutMs = 15000): Promise<void> {
-    const start = Date.now();
-    while (Date.now() - start < timeoutMs) {
+    const start = this.clockPort.nowMs();
+    while (this.clockPort.nowMs() - start < timeoutMs) {
       if (this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0) {
         return;
       }
@@ -87,11 +90,11 @@ export class ImageNetworkCaptureService {
   }
 
   async waitForImageNetworkSettled(logger: Logger, maxWaitMs = 12000, quietWindowMs = 1200): Promise<void> {
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
     const startCounter = this.imageNetworkActivityCounter;
     const noActivityGraceMs = Math.min(2500, maxWaitMs);
 
-    while (Date.now() - start < maxWaitMs) {
+    while (this.clockPort.nowMs() - start < maxWaitMs) {
       await this.waitForPendingImageDownloads(Math.min(quietWindowMs, 1200));
       const noPendingWork = this.pendingImageRequests.size === 0 && this.activeDownloadTasks.size === 0;
       if (!noPendingWork) {
@@ -105,14 +108,14 @@ export class ImageNetworkCaptureService {
       }
 
       if (this.imageNetworkActivityCounter === startCounter) {
-        if (Date.now() - start >= noActivityGraceMs) {
+        if (this.clockPort.nowMs() - start >= noActivityGraceMs) {
           return;
         }
         await this.sleepPort.sleep(200);
         continue;
       }
 
-      const idleMs = Date.now() - this.lastImageNetworkActivityAt;
+      const idleMs = this.clockPort.nowMs() - this.lastImageNetworkActivityAt;
       if (idleMs >= quietWindowMs) {
         return;
       }
@@ -147,7 +150,7 @@ export class ImageNetworkCaptureService {
 
   private markImageNetworkActivity(): void {
     this.imageNetworkActivitySeen = true;
-    this.lastImageNetworkActivityAt = Date.now();
+    this.lastImageNetworkActivityAt = this.clockPort.nowMs();
     this.imageNetworkActivityCounter += 1;
   }
 

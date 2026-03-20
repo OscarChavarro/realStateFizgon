@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ScraperState } from 'domain/states/scraper-state.enum';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
+
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 @Injectable()
@@ -11,10 +14,13 @@ export class ScraperStateMachineService {
   private lastIdleReachedAtMs: number | null = null;
   private readonly requestedStateQueue: ScraperState[] = [];
 
-  constructor(@Inject(SCRAPER_SETTINGS_PORT) private readonly scraperConfig: ScraperSettingsPort) {
+  constructor(
+    @Inject(SCRAPER_SETTINGS_PORT) private readonly scraperConfig: ScraperSettingsPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort
+  ) {
     this.currentState = scraperConfig.initialScraperState;
     if (this.currentState === ScraperState.IDLE) {
-      this.lastIdleReachedAtMs = Date.now();
+      this.lastIdleReachedAtMs = this.clockPort.nowMs();
     }
     this.logger.log(`Initial scraper state set to: ${this.currentState}.`);
   }
@@ -68,7 +74,7 @@ export class ScraperStateMachineService {
 
   finishScrapingForNewPropertiesCycle(): ScraperState {
     this.currentState = ScraperState.IDLE;
-    this.lastIdleReachedAtMs = Date.now();
+    this.lastIdleReachedAtMs = this.clockPort.nowMs();
     const nextRequestedState = this.requestedStateQueue.shift();
     if (nextRequestedState) {
       this.currentState = nextRequestedState;
@@ -80,7 +86,7 @@ export class ScraperStateMachineService {
 
   finishUpdatingPropertiesCycle(): ScraperState {
     this.currentState = ScraperState.IDLE;
-    this.lastIdleReachedAtMs = Date.now();
+    this.lastIdleReachedAtMs = this.clockPort.nowMs();
     const nextRequestedState = this.requestedStateQueue.shift();
     if (nextRequestedState) {
       this.currentState = nextRequestedState;
@@ -93,7 +99,7 @@ export class ScraperStateMachineService {
   setState(state: ScraperState): void {
     this.currentState = state;
     if (state === ScraperState.IDLE) {
-      this.lastIdleReachedAtMs = Date.now();
+      this.lastIdleReachedAtMs = this.clockPort.nowMs();
     }
     this.logger.log(`Current scraper state set to: ${state}.`);
   }

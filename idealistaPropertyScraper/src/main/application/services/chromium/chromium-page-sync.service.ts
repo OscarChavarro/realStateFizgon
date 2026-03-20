@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 type CdpPageDomain = {
@@ -18,7 +20,8 @@ type CdpRuntimeDomain = {
 export class ChromiumPageSyncService {
   constructor(
     @Inject(SLEEP_PORT)
-    private readonly sleepPort: SleepPort
+    private readonly sleepPort: SleepPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort
   ) {}
 
   async waitForPageLoad(
@@ -29,7 +32,7 @@ export class ChromiumPageSyncService {
   ): Promise<void> {
     const safeTimeoutMs = Math.max(1000, timeoutMs);
     const safePollIntervalMs = Math.max(50, pollIntervalMs);
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
     let loadEventReceived = false;
 
     if (runtime && await this.isDocumentReady(runtime)) {
@@ -44,7 +47,7 @@ export class ChromiumPageSyncService {
       return;
     }
 
-    while (Date.now() - start < safeTimeoutMs) {
+    while (this.clockPort.nowMs() - start < safeTimeoutMs) {
       if (loadEventReceived) {
         return;
       }
@@ -65,9 +68,9 @@ export class ChromiumPageSyncService {
     timeoutMs: number,
     pollIntervalMs: number
   ): Promise<void> {
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeoutMs) {
+    while (this.clockPort.nowMs() - start < timeoutMs) {
       const evaluation = await runtime.evaluate({
         expression,
         returnByValue: true

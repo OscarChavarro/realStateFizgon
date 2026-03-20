@@ -2,21 +2,24 @@ import { Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { INPUT_OUTPUT_FILE_ACCESS_PORT } from 'ports/outbound/input-output/input-output-file-access.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 
 import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 
 @Injectable()
 export class ImageFileNameService {
   constructor(
     private readonly imageUrlRulesService: ImageUrlRulesService,
     @Inject(INPUT_OUTPUT_FILE_ACCESS_PORT)
-    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort
+    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort
   ) {}
 
   buildImageFilename(url: string, mimeType: string): string {
     const hash = createHash('sha1').update(url).digest('hex');
     const extension = this.resolveImageExtension(url, mimeType);
-    return `${Date.now()}-${hash}${extension}`;
+    return `${this.clockPort.nowMs()}-${hash}${extension}`;
   }
 
   resolveImageExtension(url: string, mimeType: string): string {

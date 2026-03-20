@@ -5,10 +5,12 @@ import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PaginateAndProcessListingsUseCase {
@@ -22,6 +24,7 @@ export class PaginateAndProcessListingsUseCase {
     private readonly propertyListPageService: PropertyListPageService,
     @Inject(CAPTCHA_DETECTOR_PORT)
     private readonly captchaDetectorPort: CaptchaDetectorPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
@@ -117,9 +120,9 @@ export class PaginateAndProcessListingsUseCase {
   private async waitForUrlChange(client: PropertyCdpClient, previousUrl: string): Promise<void> {
     const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
     const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const currentUrl = await this.getCurrentUrl(client);
       if (currentUrl !== previousUrl) {
         return;
@@ -133,9 +136,9 @@ export class PaginateAndProcessListingsUseCase {
   private async waitForListingsOrPagination(client: PropertyCdpClient): Promise<void> {
     const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
     const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const result = await client.Runtime.evaluate({
         expression: `(() => {
           return Boolean(

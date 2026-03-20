@@ -14,6 +14,12 @@ class OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase {
   readonly buildConditionExpression = jest.fn<(title: string, text: string) => string>();
 }
 
+function createClockPort(initial = 0): { nowMs: jest.MockedFunction<() => number> } {
+  return {
+    nowMs: jest.fn<() => number>().mockReturnValue(initial)
+  };
+}
+
 function createClient(evaluate: FiltersCdpClient['Runtime']['evaluate']): FiltersCdpClient {
   return {
     Runtime: {
@@ -31,9 +37,11 @@ describe('ExecuteMainSearchFormUseCase', () => {
   it('whenMainPageFlowSucceeds_execute_shouldCompleteAllAutomationSteps', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
@@ -54,9 +62,11 @@ describe('ExecuteMainSearchFormUseCase', () => {
   it('whenOriginErrorIsDetected_waitForExpression_shouldThrowError', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('true');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const client = createClient(jest.fn(async () => ({
@@ -72,9 +82,11 @@ describe('ExecuteMainSearchFormUseCase', () => {
   it('whenRuntimeReturnsErrorDescription_evaluateOrThrow_shouldThrowError', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const client = createClient(jest.fn(async () => ({ result: { description: 'Error: click failed' } })));
@@ -88,9 +100,11 @@ describe('ExecuteMainSearchFormUseCase', () => {
   it('whenExpressionEvaluationThrowsException_waitForExpression_shouldThrowError', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'runtime-failed' } })));
@@ -104,9 +118,11 @@ describe('ExecuteMainSearchFormUseCase', () => {
   it('whenExpressionDoesNotMatch_waitForExpression_shouldThrowTimeoutWithLastUrlAndTitle', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({
@@ -114,7 +130,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
     }));
     const client = createClient(evaluate);
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 3000;
       return now;
     });
@@ -123,21 +139,22 @@ describe('ExecuteMainSearchFormUseCase', () => {
       .waitForExpression(client, 'false');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for expression: false. Last URL="https://x", title="loading".');
-    nowSpy.mockRestore();
   });
 
   it('whenExpressionResultOmitsUrlAndTitle_waitForExpression_shouldFallbackTimeoutMessageToEmptyValues', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({ result: { value: {} } }));
     const client = createClient(evaluate);
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 3000;
       return now;
     });
@@ -146,15 +163,16 @@ describe('ExecuteMainSearchFormUseCase', () => {
       .waitForExpression(client, 'false');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for expression: false. Last URL="", title="".');
-    nowSpy.mockRestore();
   });
 
   it('whenRuntimeReturnsExceptionDetails_evaluateOrThrow_shouldThrowRuntimeError', async () => {
     // Arrange
     const originErrorDetector = new OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase();
+    const clockPort = createClockPort(0);
     originErrorDetector.buildConditionExpression.mockReturnValue('false');
     const useCase = new ExecuteMainSearchFormUseCase(
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
+      clockPort as never,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'click exploded' } })));
@@ -165,4 +183,3 @@ describe('ExecuteMainSearchFormUseCase', () => {
     await expect(action).rejects.toThrow('click exploded');
   });
 });
-

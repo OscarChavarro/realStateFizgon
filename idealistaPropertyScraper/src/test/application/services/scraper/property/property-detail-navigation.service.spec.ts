@@ -27,6 +27,12 @@ function createSleepPort(): SleepPortMock {
   };
 }
 
+function createClockPort(initial = 0): { nowMs: jest.MockedFunction<() => number> } {
+  return {
+    nowMs: jest.fn<() => number>().mockReturnValue(initial)
+  };
+}
+
 describe('PropertyDetailNavigationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -40,8 +46,10 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([true]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     // Action
@@ -55,12 +63,14 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([false, true]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     let now = 0;
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 200;
       return now;
     });
@@ -75,12 +85,14 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([false, false, false, false]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     let now = 0;
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -95,8 +107,10 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([true]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     const waitSpy = jest.spyOn(
@@ -114,12 +128,14 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([true, true]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     let now = 0;
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 100;
       return now;
     });
@@ -134,12 +150,14 @@ describe('PropertyDetailNavigationService', () => {
     // Arrange
     const runtime = createRuntime([true, false, false, false, false]);
     const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
     const service = new PropertyDetailNavigationService(
       new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
       sleepPort as never
     );
     let now = 0;
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });

@@ -2,9 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PropertyDetailInteractionService {
@@ -19,6 +21,7 @@ export class PropertyDetailInteractionService {
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort,
     private readonly originErrorDetectorService: OriginErrorDetectorService,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}
@@ -53,12 +56,12 @@ export class PropertyDetailInteractionService {
     await this.sleepPort.sleep(this.scraperConfig.propertyDetailPageImagesLoadWaitMs);
 
     const timeoutMs = Math.max(this.scraperConfig.propertyDetailPageImagesLoadWaitMs * 4, 8000);
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
     let stableIterations = 0;
     let previousLoaded = -1;
     let previousTotal = -1;
 
-    while (Date.now() - start < timeoutMs) {
+    while (this.clockPort.nowMs() - start < timeoutMs) {
       const progress = await this.evaluateExpression<{ total: number; loaded: number }>(runtime, `(() => {
         const detailContainer = document.querySelector(${JSON.stringify(PropertyDetailInteractionService.DETAIL_CONTAINER_SELECTOR)});
         if (!detailContainer) {

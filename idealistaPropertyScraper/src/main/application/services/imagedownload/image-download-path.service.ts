@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { INPUT_OUTPUT_FILE_ACCESS_PORT } from 'ports/outbound/input-output/input-output-file-access.port.token';
 import { INPUT_OUTPUT_PATH_PORT } from 'ports/outbound/input-output/input-output-path.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 
 import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
 import type { InputOutputPathPort } from 'ports/outbound/input-output/input-output-path.port';
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 
 @Injectable()
 export class ImageDownloadPathService {
@@ -11,7 +13,8 @@ export class ImageDownloadPathService {
     @Inject(INPUT_OUTPUT_PATH_PORT)
     private readonly inputOutputPathPort: InputOutputPathPort,
     @Inject(INPUT_OUTPUT_FILE_ACCESS_PORT)
-    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort
+    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort
   ) {}
 
   ensureWritableFolders(downloadFolder: string): void {
@@ -33,7 +36,7 @@ export class ImageDownloadPathService {
     this.inputOutputFileAccessPort.assertReadableWritable(incomingFolderPath);
     this.inputOutputFileAccessPort.assertReadableWritable(leftoversFolderPath);
 
-    const probeFile = this.inputOutputPathPort.join(incomingFolderPath, `.write-probe-${Date.now()}.tmp`);
+    const probeFile = this.inputOutputPathPort.join(incomingFolderPath, `.write-probe-${this.clockPort.nowMs()}.tmp`);
     this.inputOutputFileAccessPort.writeTextFile(probeFile, 'ok');
     this.inputOutputFileAccessPort.deleteFile(probeFile);
   }

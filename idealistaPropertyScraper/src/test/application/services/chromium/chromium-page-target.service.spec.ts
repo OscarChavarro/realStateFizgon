@@ -24,6 +24,12 @@ class ChromiumPageSyncServiceMock {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();
 }
 
+function createClockPort(initial = 0): { nowMs: jest.MockedFunction<() => number> } {
+  return {
+    nowMs: jest.fn<() => number>().mockReturnValue(initial)
+  };
+}
+
 type CdpListMock = jest.MockedFunction<
   (params: { host: string; port: number }) => Promise<Array<{ id: string; type?: string; url?: string }>>
 >;
@@ -38,10 +44,12 @@ describe('ChromiumPageTargetService', () => {
     const chrome = new ChromeConfigMock(5000, 100);
     const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
     const pageSync = new ChromiumPageSyncServiceMock();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumPageTargetService(
       chrome as unknown as ChromeConfig,
       scraper as unknown as ScraperConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const listMock = CDP.List as unknown as CdpListMock;
@@ -62,10 +70,12 @@ describe('ChromiumPageTargetService', () => {
     const chrome = new ChromeConfigMock(5000, 100);
     const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
     const pageSync = new ChromiumPageSyncServiceMock();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumPageTargetService(
       chrome as unknown as ChromeConfig,
       scraper as unknown as ScraperConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const listMock = CDP.List as unknown as CdpListMock;
@@ -85,10 +95,12 @@ describe('ChromiumPageTargetService', () => {
     const chrome = new ChromeConfigMock(5000, 100);
     const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
     const pageSync = new ChromiumPageSyncServiceMock();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumPageTargetService(
       chrome as unknown as ChromeConfig,
       scraper as unknown as ScraperConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const listMock = CDP.List as unknown as CdpListMock;
@@ -108,10 +120,12 @@ describe('ChromiumPageTargetService', () => {
     const chrome = new ChromeConfigMock(5000, 100);
     const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
     const pageSync = new ChromiumPageSyncServiceMock();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumPageTargetService(
       chrome as unknown as ChromeConfig,
       scraper as unknown as ScraperConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const listMock = CDP.List as unknown as CdpListMock;
@@ -131,16 +145,18 @@ describe('ChromiumPageTargetService', () => {
     const chrome = new ChromeConfigMock(1000, 50);
     const scraper = new ScraperConfigMockForTarget('https://www.idealista.com/venta-viviendas/');
     const pageSync = new ChromiumPageSyncServiceMock();
+    const clockPort = createClockPort(0);
     pageSync.sleep.mockResolvedValue(undefined);
     const service = new ChromiumPageTargetService(
       chrome as unknown as ChromeConfig,
       scraper as unknown as ScraperConfig,
+      clockPort as never,
       pageSync as unknown as ChromiumPageSyncService
     );
     const listMock = CDP.List as unknown as CdpListMock;
     listMock.mockResolvedValue([]);
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -149,6 +165,5 @@ describe('ChromiumPageTargetService', () => {
     // Assert
     expect(target).toBeUndefined();
     expect(pageSync.sleep).toHaveBeenCalledWith(50);
-    nowSpy.mockRestore();
   });
 });

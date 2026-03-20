@@ -18,13 +18,21 @@ type ExpressionRuntimeMock = {
   >;
 };
 
-function createService(): { service: ChromiumPageSyncService; sleepPort: jest.Mocked<SleepPort> } {
+function createService(): {
+  service: ChromiumPageSyncService;
+  sleepPort: jest.Mocked<SleepPort>;
+  clockPort: { nowMs: jest.MockedFunction<() => number> };
+} {
   const sleepPort: jest.Mocked<SleepPort> = {
     sleep: jest.fn(async () => undefined)
   };
+  const clockPort = {
+    nowMs: jest.fn<() => number>().mockReturnValue(0)
+  };
   return {
-    service: new ChromiumPageSyncService(sleepPort),
-    sleepPort
+    service: new ChromiumPageSyncService(sleepPort, clockPort as never),
+    sleepPort,
+    clockPort
   };
 }
 
@@ -134,13 +142,13 @@ describe('ChromiumPageSyncService', () => {
 
   it('whenPageNeverLoads_waitForPageLoad_shouldThrowTimeoutError', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, clockPort } = createService();
     const page = { loadEventFired: jest.fn<(cb: () => void) => void>() };
     const runtime: RuntimeDomainMock = {
       evaluate: jest.fn(async () => ({ result: { value: false } }))
     };
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 600;
       return now;
     });
@@ -148,7 +156,6 @@ describe('ChromiumPageSyncService', () => {
     const action = service.waitForPageLoad(page, runtime, 100, 10);
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for page load after 1000ms.');
-    nowSpy.mockRestore();
   });
 
   it('whenExpressionEventuallyMatches_waitForExpression_shouldResolveAfterPolling', async () => {
@@ -169,12 +176,12 @@ describe('ChromiumPageSyncService', () => {
 
   it('whenExpressionNeverMatches_waitForExpression_shouldThrowTimeoutError', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, clockPort } = createService();
     const runtime: ExpressionRuntimeMock = {
       evaluate: jest.fn(async () => ({ result: { value: false } }))
     };
     let now = 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 400;
       return now;
     });
@@ -182,7 +189,6 @@ describe('ChromiumPageSyncService', () => {
     const action = service.waitForExpression(runtime, 'window.ready === true', 1000, 50);
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for expression: window.ready === true');
-    nowSpy.mockRestore();
   });
 
   it('whenSleepIsRequested_sleep_shouldDelegateToSleepPort', async () => {

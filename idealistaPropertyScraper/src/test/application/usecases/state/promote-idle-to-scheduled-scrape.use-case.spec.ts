@@ -11,17 +11,23 @@ function createUseCase(params?: {
 }): {
   useCase: PromoteIdleToScheduledScrapeUseCase;
   stateMachineService: ScraperStateMachineService;
+  clockPort: { nowMs: jest.MockedFunction<() => number> };
 } {
   const config = new ScraperConfigMock({
     initialScraperState: params?.initialState ?? ScraperState.IDLE,
     reScrapeIntervalMs: params?.reScrapeIntervalMs ?? 900000
   });
-  const stateMachineService = new ScraperStateMachineService(config as unknown as ScraperConfig);
+  const clockPort = { nowMs: jest.fn<() => number>().mockReturnValue(0) };
+  const stateMachineService = new ScraperStateMachineService(
+    config as unknown as ScraperConfig,
+    clockPort as never
+  );
   const useCase = new PromoteIdleToScheduledScrapeUseCase(
     stateMachineService,
-    config as unknown as ScraperConfig
+    config as unknown as ScraperConfig,
+    clockPort as never
   );
-  return { useCase, stateMachineService };
+  return { useCase, stateMachineService, clockPort };
 }
 
 describe('PromoteIdleToScheduledScrapeUseCase', () => {
@@ -68,18 +74,17 @@ describe('PromoteIdleToScheduledScrapeUseCase', () => {
 
   it('whenNowParameterIsOmitted_execute_shouldUseDateNowDefaultValue', () => {
     // Arrange
-    const { useCase, stateMachineService } = createUseCase({
+    const { useCase, stateMachineService, clockPort } = createUseCase({
       initialState: ScraperState.IDLE,
       reScrapeIntervalMs: 1000
     });
     const lastIdleAt = stateMachineService.getLastIdleReachedAtMs() ?? 0;
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(lastIdleAt + 1000);
+    clockPort.nowMs.mockReturnValue(lastIdleAt + 1000);
     // Action
     const promoted = useCase.execute();
     // Assert
     expect(promoted).toBe(true);
     expect(stateMachineService.getCurrentState()).toBe(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
-    nowSpy.mockRestore();
   });
 
   it('whenIdleTimestampIsUnavailable_execute_shouldSkipPromotion', () => {

@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 
 @Injectable()
@@ -10,15 +13,16 @@ export class ChromiumCdpReadinessService {
   constructor(
     @Inject(CHROME_SETTINGS_PORT)
     private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
   async waitForReadyEndpoint(host: string, port: number): Promise<void> {
     const timeout = this.chromeConfig.chromeCdpReadyTimeoutMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
     let lastError: unknown;
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), this.chromeConfig.chromeCdpRequestTimeoutMs);
 

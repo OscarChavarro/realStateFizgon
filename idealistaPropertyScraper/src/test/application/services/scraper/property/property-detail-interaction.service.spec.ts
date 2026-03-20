@@ -26,9 +26,13 @@ function createService() {
   const sleepPort: SleepPortMock = {
     sleep: jest.fn(async () => undefined)
   };
+  const clockPort = {
+    nowMs: jest.fn<() => number>().mockReturnValue(0)
+  };
   const service = new PropertyDetailInteractionService(
     new ScraperConfigMockForDetailInteraction() as unknown as ScraperConfig,
     originError as unknown as OriginErrorDetectorService,
+    clockPort as never,
     sleepPort as never
   );
   const logger = {
@@ -37,7 +41,7 @@ function createService() {
     error: jest.fn<(message: string) => void>()
   };
   (service as unknown as { logger: typeof logger }).logger = logger;
-  return { service, originError, logger, sleepPort };
+  return { service, originError, logger, sleepPort, clockPort };
 }
 
 function createRuntimeWithEvaluator(
@@ -152,9 +156,9 @@ describe('PropertyDetailInteractionService', () => {
 
   it('whenImageLoadingNeverStabilizes_revealDetailMedia_shouldLogTimeoutWarning', async () => {
     // Arrange
-    const { service, logger } = createService();
+    const { service, logger, clockPort } = createService();
     let now = 0;
-    jest.spyOn(Date, 'now').mockImplementation(() => {
+    clockPort.nowMs.mockImplementation(() => {
       now += 2500;
       return now;
     });

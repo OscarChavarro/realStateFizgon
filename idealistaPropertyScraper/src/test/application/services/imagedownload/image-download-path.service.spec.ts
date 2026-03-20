@@ -23,9 +23,10 @@ class InputOutputFileAccessPortMock implements InputOutputFileAccessPort {
 function createService() {
   const pathPort = new InputOutputPathPortMock();
   const fileAccessPort = new InputOutputFileAccessPortMock();
+  const clockPort = { nowMs: jest.fn<() => number>().mockReturnValue(1700000000000) };
   fileAccessPort.fileExists.mockReturnValue(false);
   return {
-    service: new ImageDownloadPathService(pathPort, fileAccessPort),
+    service: new ImageDownloadPathService(pathPort, fileAccessPort, clockPort as never),
     pathPort,
     fileAccessPort
   };

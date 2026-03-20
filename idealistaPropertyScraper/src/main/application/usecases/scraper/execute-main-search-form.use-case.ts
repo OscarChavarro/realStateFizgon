@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
+
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
@@ -11,6 +14,7 @@ export class ExecuteMainSearchFormUseCase {
   constructor(
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
@@ -124,12 +128,12 @@ export class ExecuteMainSearchFormUseCase {
 
   private async waitForExpression(client: FiltersCdpClient, expression: string): Promise<void> {
     const timeout = this.scraperConfig.mainPageExpressionTimeoutMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
     let lastCurrentUrl = '';
     let lastTitle = '';
     const originErrorCondition = this.originErrorDetectorService.buildConditionExpression('title', 'text');
 
-    while (Date.now() - start < timeout) {
+    while (this.clockPort.nowMs() - start < timeout) {
       const evaluation = await client.Runtime.evaluate({
         expression: `(() => {
           const matched = (${expression});
@@ -186,4 +190,3 @@ export class ExecuteMainSearchFormUseCase {
     }
   }
 }
-

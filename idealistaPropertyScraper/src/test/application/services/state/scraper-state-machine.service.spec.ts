@@ -4,6 +4,27 @@ import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { ScraperState } from 'domain/states/scraper-state.enum';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 
+const createClockPortMock = (...timestamps: number[]): { nowMs: jest.MockedFunction<() => number> } => {
+  const nowMs = jest.fn<() => number>();
+  if (timestamps.length === 0) {
+    nowMs.mockReturnValue(1700000000000);
+  } else {
+    for (const timestamp of timestamps) {
+      nowMs.mockReturnValueOnce(timestamp);
+    }
+    nowMs.mockReturnValue(timestamps[timestamps.length - 1]);
+  }
+  return { nowMs };
+};
+
+const createService = (config: ScraperConfigMock, ...timestamps: number[]): ScraperStateMachineService => {
+  const clockPort = createClockPortMock(...timestamps);
+  return new ScraperStateMachineService(
+    config as unknown as ScraperConfig,
+    clockPort as never
+  );
+};
+
 describe('ScraperStateMachineService', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -12,7 +33,7 @@ describe('ScraperStateMachineService', () => {
   it('whenServiceIsCreated_getCurrentState_shouldReturnInitialStateFromConfig', () => {
     // Arrange
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     // Action
     const result = service.getCurrentState();
     // Assert
@@ -21,9 +42,8 @@ describe('ScraperStateMachineService', () => {
 
   it('whenServiceStartsInIdle_getLastIdleReachedAtMs_shouldCaptureCreationTime', () => {
     // Arrange
-    jest.spyOn(Date, 'now').mockReturnValue(1700000000000);
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.IDLE });
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config, 1700000000000);
     // Action
     const lastIdleReachedAtMs = service.getLastIdleReachedAtMs();
     // Assert
@@ -33,7 +53,7 @@ describe('ScraperStateMachineService', () => {
   it('whenServiceStartsInNonIdle_getLastIdleReachedAtMs_shouldBeNullUntilIdleIsReached', () => {
     // Arrange
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     // Action
     const lastIdleReachedAtMs = service.getLastIdleReachedAtMs();
     // Assert
@@ -43,7 +63,7 @@ describe('ScraperStateMachineService', () => {
   it('whenSameStateIsRequestedAgain_enqueueStateRequest_shouldCoalesceWithoutDuplicatingQueue', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     service.enqueueUpdatePropertiesRequest();
     service.enqueueScrapePropertiesRequest();
     // Action
@@ -57,7 +77,7 @@ describe('ScraperStateMachineService', () => {
   it('whenRequestedStateIsAlreadyLatest_enqueueStateRequest_shouldKeepQueueOrder', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     service.enqueueUpdatePropertiesRequest();
     // Action
     const pending = service.enqueueUpdatePropertiesRequest();
@@ -69,7 +89,7 @@ describe('ScraperStateMachineService', () => {
   it('whenQueueExceedsLimit_enqueueStateRequest_shouldDropOldestPendingState', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     const enqueue = (service as unknown as { enqueueStateRequest: (state: ScraperState) => number }).enqueueStateRequest;
     for (let index = 0; index < 12; index += 1) {
       enqueue.call(service, `STATE_${index}` as unknown as ScraperState);
@@ -84,7 +104,7 @@ describe('ScraperStateMachineService', () => {
   it('whenDroppedStateIsUndefined_enqueueStateRequest_shouldStillKeepQueueWithinLimit', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     const queue = (service as unknown as { requestedStateQueue: Array<ScraperState> }).requestedStateQueue;
     queue.push(undefined as unknown as ScraperState);
     for (let index = 1; index < 10; index += 1) {
@@ -108,7 +128,7 @@ describe('ScraperStateMachineService', () => {
   ])('whenPendingStateExists_finishCycle_shouldTransitionToNextRequestedState', ({ operation }) => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     service.enqueueUpdatePropertiesRequest();
     // Action
     const result = operation(service);
@@ -120,7 +140,7 @@ describe('ScraperStateMachineService', () => {
   it('whenNoPendingStateExists_finishScrapingForNewPropertiesCycle_shouldReturnIdle', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     // Action
     const result = service.finishScrapingForNewPropertiesCycle();
     // Assert
@@ -131,7 +151,7 @@ describe('ScraperStateMachineService', () => {
   it('whenNoPendingStateExists_finishUpdatingPropertiesCycle_shouldReturnIdle', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     // Action
     const result = service.finishUpdatingPropertiesCycle();
     // Assert
@@ -142,7 +162,7 @@ describe('ScraperStateMachineService', () => {
   it('whenStateIsSet_setState_shouldReplaceCurrentState', () => {
     // Arrange
     const config = new ScraperConfigMock();
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
+    const service = createService(config);
     // Action
     service.setState(ScraperState.SCRAPING_FOR_NEW_PROPERTIES);
     // Assert
@@ -152,8 +172,7 @@ describe('ScraperStateMachineService', () => {
   it('whenStateTransitionsToIdle_setState_shouldUpdateLastIdleTimestamp', () => {
     // Arrange
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.UPDATING_PROPERTIES });
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
-    jest.spyOn(Date, 'now').mockReturnValue(1700000005555);
+    const service = createService(config, 1700000005555);
     // Action
     service.setState(ScraperState.IDLE);
     // Assert
@@ -163,8 +182,7 @@ describe('ScraperStateMachineService', () => {
   it('whenScrapeCycleFinishes_finishScrapingForNewPropertiesCycle_shouldUpdateLastIdleTimestamp', () => {
     // Arrange
     const config = new ScraperConfigMock({ initialScraperState: ScraperState.SCRAPING_FOR_NEW_PROPERTIES });
-    const service = new ScraperStateMachineService(config as unknown as ScraperConfig);
-    jest.spyOn(Date, 'now').mockReturnValue(1700000007777);
+    const service = createService(config, 1700000007777);
     // Action
     service.finishScrapingForNewPropertiesCycle();
     // Assert

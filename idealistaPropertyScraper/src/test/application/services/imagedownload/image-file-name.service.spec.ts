@@ -15,6 +15,10 @@ class InputOutputFileAccessPortMock implements InputOutputFileAccessPort {
   readonly pathExists = jest.fn<(path: string) => Promise<boolean>>();
 }
 
+const createClockPortMock = (nowMs = 1234567890): { nowMs: jest.MockedFunction<() => number> } => ({
+  nowMs: jest.fn<() => number>().mockReturnValue(nowMs)
+});
+
 describe('ImageFileNameService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -22,13 +26,15 @@ describe('ImageFileNameService', () => {
 
   it('whenFilenameIsBuilt_buildImageFilename_shouldIncludeTimestampHashAndResolvedExtension', () => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
-    const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    const service = new ImageFileNameService(
+      new ImageUrlRulesService(),
+      new InputOutputFileAccessPortMock(),
+      createClockPortMock(1234567890) as never
+    );
     // Action
     const filename = service.buildImageFilename('https://img4.idealista.com/a/b/c/photo.jpeg', 'image/jpeg');
     // Assert
     expect(filename).toMatch(/^1234567890-[a-f0-9]{40}\.jpg$/);
-    nowSpy.mockRestore();
   });
 
   it.each([
@@ -41,7 +47,11 @@ describe('ImageFileNameService', () => {
     { url: 'https://img4.idealista.com/photo', mimeType: 'application/octet-stream', expected: '.img' }
   ])('whenExtensionIsResolved_resolveImageExtension_shouldReturnExpectedExtension', ({ url, mimeType, expected }) => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
+    const service = new ImageFileNameService(
+      new ImageUrlRulesService(),
+      new InputOutputFileAccessPortMock(),
+      createClockPortMock() as never
+    );
     // Action
     const extension = service.resolveImageExtension(url, mimeType);
     // Assert
@@ -75,7 +85,11 @@ describe('ImageFileNameService', () => {
     expected
   }) => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
+    const service = new ImageFileNameService(
+      new ImageUrlRulesService(),
+      new InputOutputFileAccessPortMock(),
+      createClockPortMock() as never
+    );
     // Action
     const fileName = service.buildCompatibleTargetFilename(imageUrl, downloadedExtension);
     // Assert
@@ -89,7 +103,11 @@ describe('ImageFileNameService', () => {
     // Arrange
     const inputOutputFileAccessPort = new InputOutputFileAccessPortMock();
     inputOutputFileAccessPort.pathExists.mockResolvedValue(exists);
-    const service = new ImageFileNameService(new ImageUrlRulesService(), inputOutputFileAccessPort);
+    const service = new ImageFileNameService(
+      new ImageUrlRulesService(),
+      inputOutputFileAccessPort,
+      createClockPortMock() as never
+    );
     // Action
     const result = await service.pathExists('/tmp/some-path');
     // Assert

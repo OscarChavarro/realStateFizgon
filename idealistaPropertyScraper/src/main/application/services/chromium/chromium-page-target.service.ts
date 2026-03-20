@@ -3,6 +3,9 @@ import CDP = require('chrome-remote-interface');
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { CdpPageTarget } from 'application/dto/browser/cdp-page-target.dto';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
+
+import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
@@ -14,15 +17,16 @@ export class ChromiumPageTargetService {
     private readonly chromeConfig: ChromeSettingsPort,
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort,
+    @Inject(CLOCK_PORT) private readonly clockPort: ClockPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
   async waitForPageTarget(host: string, port: number): Promise<CdpPageTarget | undefined> {
     const timeoutMs = this.chromeConfig.chromeCdpReadyTimeoutMs;
     const pollIntervalMs = this.chromeConfig.chromeCdpPollIntervalMs;
-    const start = Date.now();
+    const start = this.clockPort.nowMs();
 
-    while (Date.now() - start < timeoutMs) {
+    while (this.clockPort.nowMs() - start < timeoutMs) {
       const targets = await CDP.List({ host, port });
       const pageTargets = [...targets]
         .filter((target: { type?: string }) => target.type === 'page')

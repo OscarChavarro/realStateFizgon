@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
@@ -11,6 +10,7 @@ import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 class CookieApprovalDialogScraperServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly acceptCookiesIfVisible = jest.fn<(runtime: unknown) => Promise<void>>();
 }
@@ -34,7 +34,7 @@ class PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly savePropertyWithImages = jest.fn<(property: Property) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): PropertyCdpClient {
   return {
     Page: {
       bringToFront: jest.fn(async () => undefined)

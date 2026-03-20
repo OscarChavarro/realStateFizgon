@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 class PropertyListPageServiceMockForRevalidatePropertiesWithoutLastVisitUseCase {
   readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
 }

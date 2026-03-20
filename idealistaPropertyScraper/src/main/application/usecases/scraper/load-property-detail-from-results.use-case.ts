@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 @Injectable()
 export class LoadPropertyDetailFromResultsUseCase {
   constructor(private readonly navigationService: PropertyDetailNavigationService) {}
 
   async execute(
-    client: CdpClient,
+    client: PropertyCdpClient,
     url: string,
     onDetailLoaded: () => Promise<void>
   ): Promise<void> {

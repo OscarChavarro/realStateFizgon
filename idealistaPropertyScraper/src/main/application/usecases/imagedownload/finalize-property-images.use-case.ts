@@ -5,14 +5,14 @@ import { ImageDownloadPathService } from 'src/application/services/imagedownload
 import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
-import { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { DownloadedIncomingImage } from 'src/application/services/imagedownload/downloaded-incoming-image.type';
 import { Property } from 'src/domain/property/property.model';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { DownloadedIncomingImage } from 'src/application/services/imagedownload/downloaded-incoming-image.type';
+import type { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
 @Injectable()
 export class FinalizePropertyImagesUseCase {
   private readonly logger = new Logger(FinalizePropertyImagesUseCase.name);

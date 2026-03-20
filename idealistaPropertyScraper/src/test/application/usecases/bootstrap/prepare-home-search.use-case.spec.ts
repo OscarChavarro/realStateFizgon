@@ -4,11 +4,11 @@ import { ChromiumGeolocationService } from 'src/application/services/chromium/ch
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 jest.mock('chrome-remote-interface', () => jest.fn());
 
 type PageTarget = { id?: string; type?: string; url?: string };

@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class FilterLoaderDetectionService {
   private readonly logger = new Logger(FilterLoaderDetectionService.name);
@@ -13,7 +13,7 @@ export class FilterLoaderDetectionService {
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 
-  async waitForPostClickStabilityOrReload(client: CdpClient): Promise<boolean> {
+  async waitForPostClickStabilityOrReload(client: FiltersCdpClient): Promise<boolean> {
     await sleep(this.scraperConfig.filterStateClickWaitMs);
 
     const disappeared = await this.waitForListingLoadingToDisappear(client);
@@ -35,7 +35,7 @@ export class FilterLoaderDetectionService {
     return false;
   }
 
-  private async waitForListingLoadingToDisappear(client: CdpClient): Promise<boolean> {
+  private async waitForListingLoadingToDisappear(client: FiltersCdpClient): Promise<boolean> {
     const timeout = this.scraperConfig.filterListingLoadingTimeoutMs;
     const pollInterval = this.scraperConfig.filterListingLoadingPollIntervalMs;
     const start = Date.now();
@@ -52,7 +52,7 @@ export class FilterLoaderDetectionService {
     return !isVisibleAfterTimeout;
   }
 
-  private async isListingLoadingVisible(client: CdpClient): Promise<boolean> {
+  private async isListingLoadingVisible(client: FiltersCdpClient): Promise<boolean> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const element = document.querySelector('#listing-loading');
@@ -76,7 +76,7 @@ export class FilterLoaderDetectionService {
     return result.result?.value === true;
   }
 
-  private async waitForAsideFilters(client: CdpClient): Promise<void> {
+  private async waitForAsideFilters(client: FiltersCdpClient): Promise<void> {
     const timeout = this.scraperConfig.filterListingLoadingTimeoutMs;
     const pollInterval = this.scraperConfig.filterListingLoadingPollIntervalMs;
     const start = Date.now();
@@ -101,7 +101,7 @@ export class FilterLoaderDetectionService {
     throw new Error('Timeout waiting for #aside-filters after reload.');
   }
 
-  async scrollToTop(client: CdpClient): Promise<void> {
+  async scrollToTop(client: FiltersCdpClient): Promise<void> {
     const result = await client.Runtime.evaluate({
       expression: `window.scrollTo(0, 0); true;`,
       returnByValue: true

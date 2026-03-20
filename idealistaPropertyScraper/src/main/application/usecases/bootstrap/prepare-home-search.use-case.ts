@@ -4,10 +4,10 @@ import { ChromiumGeolocationService } from 'src/application/services/chromium/ch
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 @Injectable()
 export class PrepareHomeSearchUseCase {
   private readonly logger = new Logger(PrepareHomeSearchUseCase.name);

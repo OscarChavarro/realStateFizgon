@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 @Injectable()
 export class PropertyDetailInteractionService {
   private readonly logger = new Logger(PropertyDetailInteractionService.name);

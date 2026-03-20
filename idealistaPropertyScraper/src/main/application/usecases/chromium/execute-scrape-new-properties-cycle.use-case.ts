@@ -3,11 +3,11 @@ import CDP = require('chrome-remote-interface');
 import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 @Injectable()
 export class ExecuteScrapeNewPropertiesCycleUseCase {
   private readonly logger = new Logger(ExecuteScrapeNewPropertiesCycleUseCase.name);

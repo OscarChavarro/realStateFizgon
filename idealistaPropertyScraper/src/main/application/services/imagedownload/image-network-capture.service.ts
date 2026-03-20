@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
 import { NetworkDomain } from 'src/application/services/imagedownload/network-domain.type';
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
@@ -7,6 +6,7 @@ import { NetworkResponseReceivedEvent } from 'src/application/services/imagedown
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
 @Injectable()
 export class ImageNetworkCaptureService {
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class FilterActionExecutorService {
   async clickPlainOption(
-    client: CdpClient,
+    client: FiltersCdpClient,
     selector: string,
     option: string,
     mode: 'enable' | 'disable'
@@ -64,7 +64,7 @@ export class FilterActionExecutorService {
   }
 
   async clickSingleSelectorDropdownOption(
-    client: CdpClient,
+    client: FiltersCdpClient,
     selector: string,
     option: string
   ): Promise<boolean> {
@@ -139,7 +139,7 @@ export class FilterActionExecutorService {
   }
 
   async clickMinMaxOption(
-    client: CdpClient,
+    client: FiltersCdpClient,
     selector: string,
     role: 'min' | 'max',
     value: string

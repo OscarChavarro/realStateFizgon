@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/scraper/paginate-and-process-listings.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
@@ -20,11 +20,11 @@ class ScraperConfigMockForPaginateAndProcessListingsUseCase {
 }
 
 class PropertyListPageServiceMockForPaginateAndProcessListingsUseCase {
-  readonly getPropertyUrls = jest.fn<(client: CdpClient) => Promise<string[]>>();
-  readonly processUrls = jest.fn<(client: CdpClient, urls: string[]) => Promise<void>>();
+  readonly getPropertyUrls = jest.fn<(client: PropertyCdpClient) => Promise<string[]>>();
+  readonly processUrls = jest.fn<(client: PropertyCdpClient, urls: string[]) => Promise<void>>();
 }
 
-function createClient(evaluate: CdpClient['Runtime']['evaluate']): CdpClient {
+function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): PropertyCdpClient {
   return {
     Runtime: {
       evaluate
@@ -62,7 +62,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
   it('whenCurrentPageHasNoNextButton_execute_shouldFinishPaginationOnCurrentPage', async () => {
     // Arrange
     const { useCase, propertyListPageService, logger } = createUseCase();
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<PropertyCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('.pagination li.next')) {
         return { result: { value: false } };
       }
@@ -80,7 +80,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
   it('whenNextExistsButClickFails_execute_shouldWarnAndStopPagination', async () => {
     // Arrange
     const { useCase, logger } = createUseCase();
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<PropertyCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('.pagination li.next') && !params.expression.includes('const next')) {
         return { result: { value: true } };
       }
@@ -104,7 +104,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase, logger, captchaDetector } = createUseCase();
     let urlCall = 0;
     let hasNextCall = 0;
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<PropertyCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('.pagination li.next') && !params.expression.includes('const next')) {
         hasNextCall += 1;
         return { result: { value: hasNextCall === 1 } };
@@ -139,7 +139,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'next-failed' } })));
     // Action
-    const action = (useCase as unknown as { hasNextButton: (clientArg: CdpClient) => Promise<boolean> }).hasNextButton(client);
+    const action = (useCase as unknown as { hasNextButton: (clientArg: PropertyCdpClient) => Promise<boolean> }).hasNextButton(client);
     // Assert
     await expect(action).rejects.toThrow('next-failed');
   });
@@ -149,7 +149,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'url-failed' } })));
     // Action
-    const action = (useCase as unknown as { getCurrentUrl: (clientArg: CdpClient) => Promise<string> }).getCurrentUrl(client);
+    const action = (useCase as unknown as { getCurrentUrl: (clientArg: PropertyCdpClient) => Promise<string> }).getCurrentUrl(client);
     // Assert
     await expect(action).rejects.toThrow('url-failed');
   });
@@ -159,7 +159,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ result: {} })));
     // Action
-    const currentUrl = await (useCase as unknown as { getCurrentUrl: (clientArg: CdpClient) => Promise<string> }).getCurrentUrl(client);
+    const currentUrl = await (useCase as unknown as { getCurrentUrl: (clientArg: PropertyCdpClient) => Promise<string> }).getCurrentUrl(client);
     // Assert
     expect(currentUrl).toBe('');
   });
@@ -169,7 +169,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'click-failed' } })));
     // Action
-    const action = (useCase as unknown as { clickNextButton: (clientArg: CdpClient) => Promise<boolean> }).clickNextButton(client);
+    const action = (useCase as unknown as { clickNextButton: (clientArg: PropertyCdpClient) => Promise<boolean> }).clickNextButton(client);
     // Assert
     await expect(action).rejects.toThrow('click-failed');
   });
@@ -184,7 +184,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
       return now;
     });
     // Action
-    const action = (useCase as unknown as { waitForUrlChange: (clientArg: CdpClient, previousUrl: string) => Promise<void> })
+    const action = (useCase as unknown as { waitForUrlChange: (clientArg: PropertyCdpClient, previousUrl: string) => Promise<void> })
       .waitForUrlChange(client, 'https://www.idealista.com/page-1/');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for pagination URL change from https://www.idealista.com/page-1/');
@@ -201,7 +201,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
       return now;
     });
     // Action
-    const action = (useCase as unknown as { waitForListingsOrPagination: (clientArg: CdpClient) => Promise<void> })
+    const action = (useCase as unknown as { waitForListingsOrPagination: (clientArg: PropertyCdpClient) => Promise<void> })
       .waitForListingsOrPagination(client);
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for listings/pagination after moving to next page.');
@@ -213,7 +213,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'listings-failed' } })));
     // Action
-    const action = (useCase as unknown as { waitForListingsOrPagination: (clientArg: CdpClient) => Promise<void> })
+    const action = (useCase as unknown as { waitForListingsOrPagination: (clientArg: PropertyCdpClient) => Promise<void> })
       .waitForListingsOrPagination(client);
     // Assert
     await expect(action).rejects.toThrow('listings-failed');

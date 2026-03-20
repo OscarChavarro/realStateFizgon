@@ -1,5 +1,6 @@
 import { NetworkDomain } from 'src/application/services/imagedownload/network-domain.type';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 
 export type ScraperCdpClient = {
   Browser?: {

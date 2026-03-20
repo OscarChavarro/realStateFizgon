@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 class ScraperConfigMockForExecuteMainSearchFormUseCase {
   readonly mainPageExpressionTimeoutMs = 5000;
   readonly mainPageExpressionPollIntervalMs = 50;
@@ -14,7 +14,7 @@ class OriginErrorDetectorServiceMockForExecuteMainSearchFormUseCase {
   readonly buildConditionExpression = jest.fn<(title: string, text: string) => string>();
 }
 
-function createClient(evaluate: CdpClient['Runtime']['evaluate']): CdpClient {
+function createClient(evaluate: FiltersCdpClient['Runtime']['evaluate']): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
@@ -36,7 +36,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('return { matched, hasOriginError')) {
         return { result: { value: { matched: true, hasOriginError: false, currentUrl: 'https://idealista.com', title: 'ok' } } };
       }
@@ -63,7 +63,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       result: { value: { matched: false, hasOriginError: true, currentUrl: 'https://x', title: 'err' } }
     })));
     // Action
-    const action = (useCase as unknown as { waitForExpression: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { waitForExpression: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .waitForExpression(client, 'true');
     // Assert
     await expect(action).rejects.toThrow('Origin error page detected while waiting for expression: true');
@@ -79,7 +79,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
     );
     const client = createClient(jest.fn(async () => ({ result: { description: 'Error: click failed' } })));
     // Action
-    const action = (useCase as unknown as { evaluateOrThrow: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { evaluateOrThrow: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .evaluateOrThrow(client, 'true');
     // Assert
     await expect(action).rejects.toThrow('Error: click failed');
@@ -95,7 +95,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'runtime-failed' } })));
     // Action
-    const action = (useCase as unknown as { waitForExpression: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { waitForExpression: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .waitForExpression(client, 'true');
     // Assert
     await expect(action).rejects.toThrow('runtime-failed');
@@ -109,7 +109,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async () => ({
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({
       result: { value: { matched: false, hasOriginError: false, currentUrl: 'https://x', title: 'loading' } }
     }));
     const client = createClient(evaluate);
@@ -119,7 +119,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       return now;
     });
     // Action
-    const action = (useCase as unknown as { waitForExpression: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { waitForExpression: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .waitForExpression(client, 'false');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for expression: false. Last URL="https://x", title="loading".');
@@ -134,7 +134,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       new ScraperConfigMockForExecuteMainSearchFormUseCase() as unknown as ScraperConfig,
       originErrorDetector as unknown as OriginErrorDetectorService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async () => ({ result: { value: {} } }));
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({ result: { value: {} } }));
     const client = createClient(evaluate);
     let now = 0;
     const nowSpy = jest.spyOn(Date, 'now').mockImplementation(() => {
@@ -142,7 +142,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
       return now;
     });
     // Action
-    const action = (useCase as unknown as { waitForExpression: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { waitForExpression: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .waitForExpression(client, 'false');
     // Assert
     await expect(action).rejects.toThrow('Timeout waiting for expression: false. Last URL="", title="".');
@@ -159,7 +159,7 @@ describe('ExecuteMainSearchFormUseCase', () => {
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: 'click exploded' } })));
     // Action
-    const action = (useCase as unknown as { evaluateOrThrow: (clientArg: CdpClient, expression: string) => Promise<void> })
+    const action = (useCase as unknown as { evaluateOrThrow: (clientArg: FiltersCdpClient, expression: string) => Promise<void> })
       .evaluateOrThrow(client, 'true');
     // Assert
     await expect(action).rejects.toThrow('click exploded');

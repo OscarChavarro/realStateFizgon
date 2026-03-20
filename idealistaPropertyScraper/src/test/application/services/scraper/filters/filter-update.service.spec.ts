@@ -1,5 +1,4 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
@@ -10,23 +9,24 @@ import { Price } from 'src/domain/filters/price.filter';
 import { PropertyType } from 'src/domain/filters/property-type.filter';
 import { Rooms } from 'src/domain/filters/rooms.filter';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 class FilterLoaderDetectionServiceMock {
-  readonly scrollToTop = jest.fn<(client: CdpClient) => Promise<void>>();
-  readonly waitForPostClickStabilityOrReload = jest.fn<(client: CdpClient) => Promise<boolean>>();
+  readonly scrollToTop = jest.fn<(client: FiltersCdpClient) => Promise<void>>();
+  readonly waitForPostClickStabilityOrReload = jest.fn<(client: FiltersCdpClient) => Promise<boolean>>();
 }
 
 class FilterSelectionReaderServiceMock {
-  readonly readCurrentPlainSelection = jest.fn<(client: CdpClient, filter: unknown) => Promise<string[]>>();
-  readonly readCurrentMinMaxSelection = jest.fn<(client: CdpClient, selector: string) => Promise<{ selectedMin: string | null; selectedMax: string | null }>>();
+  readonly readCurrentPlainSelection = jest.fn<(client: FiltersCdpClient, filter: unknown) => Promise<string[]>>();
+  readonly readCurrentMinMaxSelection = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<{ selectedMin: string | null; selectedMax: string | null }>>();
 }
 
 class FilterActionExecutorServiceMock {
-  readonly clickPlainOption = jest.fn<(client: CdpClient, selector: string, option: string, mode: 'enable' | 'disable') => Promise<boolean>>();
-  readonly clickSingleSelectorDropdownOption = jest.fn<(client: CdpClient, selector: string, option: string) => Promise<boolean>>();
-  readonly clickMinMaxOption = jest.fn<(client: CdpClient, selector: string, role: 'min' | 'max', value: string) => Promise<boolean>>();
+  readonly clickPlainOption = jest.fn<(client: FiltersCdpClient, selector: string, option: string, mode: 'enable' | 'disable') => Promise<boolean>>();
+  readonly clickSingleSelectorDropdownOption = jest.fn<(client: FiltersCdpClient, selector: string, option: string) => Promise<boolean>>();
+  readonly clickMinMaxOption = jest.fn<(client: FiltersCdpClient, selector: string, role: 'min' | 'max', value: string) => Promise<boolean>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),

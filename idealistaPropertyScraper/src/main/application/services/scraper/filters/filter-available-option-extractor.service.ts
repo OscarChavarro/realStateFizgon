@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MinMaxOptions } from 'src/application/services/scraper/filters/min-max-options.type';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class FilterAvailableOptionExtractorService {
-  async extractSingleSelectorDropdownOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractSingleSelectorDropdownOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -25,7 +25,7 @@ export class FilterAvailableOptionExtractorService {
     );
   }
 
-  async extractMultipleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractMultipleSelectorOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -55,7 +55,7 @@ export class FilterAvailableOptionExtractorService {
     );
   }
 
-  async extractSingleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractSingleSelectorOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -77,7 +77,7 @@ export class FilterAvailableOptionExtractorService {
     );
   }
 
-  async extractMinMaxOptions(client: CdpClient, selector: string): Promise<MinMaxOptions> {
+  async extractMinMaxOptions(client: FiltersCdpClient, selector: string): Promise<MinMaxOptions> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
@@ -124,7 +124,7 @@ export class FilterAvailableOptionExtractorService {
     };
   }
 
-  private async evaluateStringArray(client: CdpClient, expression: string): Promise<string[]> {
+  private async evaluateStringArray(client: FiltersCdpClient, expression: string): Promise<string[]> {
     const result = await client.Runtime.evaluate({
       expression,
       awaitPromise: true,

@@ -1,12 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 type RuntimeMockResult = {
   exceptionDetails?: {
     text?: string;

@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 @Injectable()
 export class RevalidatePropertiesWithoutLastVisitUseCase {
   private readonly logger = new Logger(RevalidatePropertiesWithoutLastVisitUseCase.name);

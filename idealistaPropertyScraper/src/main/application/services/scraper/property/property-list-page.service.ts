@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 @Injectable()
 export class PropertyListPageService {
   private readonly logger = new Logger(PropertyListPageService.name);
@@ -13,7 +13,7 @@ export class PropertyListPageService {
     private readonly revalidateExistingPropertyUrlsUseCase: RevalidateExistingPropertyUrlsUseCase
   ) {}
 
-  async getPropertyUrls(client: CdpClient): Promise<string[]> {
+  async getPropertyUrls(client: PropertyCdpClient): Promise<string[]> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const normalizeUrl = (value) => {
@@ -66,11 +66,11 @@ export class PropertyListPageService {
     this.logger.log('Reset processed property URL cache for the current search cycle.');
   }
 
-  async processUrls(client: CdpClient, urls: string[]): Promise<void> {
+  async processUrls(client: PropertyCdpClient, urls: string[]): Promise<void> {
     await this.processDiscoveredPropertyUrlsUseCase.execute(client, urls, this.processedUrlsSinceLastSearch);
   }
 
-  async processExistingUrls(client: CdpClient, urls: string[]): Promise<void> {
+  async processExistingUrls(client: PropertyCdpClient, urls: string[]): Promise<void> {
     await this.revalidateExistingPropertyUrlsUseCase.execute(
       client,
       urls,

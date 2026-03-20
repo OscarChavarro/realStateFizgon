@@ -1,6 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
@@ -9,6 +7,8 @@ import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class ApplySearchFiltersUseCase {
   private readonly logger = new Logger(ApplySearchFiltersUseCase.name);
@@ -24,7 +24,7 @@ export class ApplySearchFiltersUseCase {
     this.applyConfiguredFilterDefinitions();
   }
 
-  async execute(client: CdpClient): Promise<void> {
+  async execute(client: FiltersCdpClient): Promise<void> {
     await client.Runtime.enable();
     const payload = await this.readAsideFilters(client);
 
@@ -52,7 +52,7 @@ export class ApplySearchFiltersUseCase {
   }
 
   private async processFilter(
-    client: CdpClient,
+    client: FiltersCdpClient,
     payload: AsideFiltersPayload,
     filter: Filter,
     matchedSectionIndexes: Set<number>
@@ -89,7 +89,7 @@ export class ApplySearchFiltersUseCase {
     }
   }
 
-  private async processMinMaxFilter(client: CdpClient, filter: Filter): Promise<void> {
+  private async processMinMaxFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
     const { minOptions, maxOptions } = await this.filterAvailableOptionExtractor.extractMinMaxOptions(client, filter.getCssSelector());
     const { selectedMin, selectedMax } = await this.filterSelectedOptionExtractor.extractSelectedMinMax(client, filter.getCssSelector());
     filter.setMinOptions(minOptions);
@@ -98,28 +98,28 @@ export class ApplySearchFiltersUseCase {
     filter.setSelectedMax(selectedMax);
   }
 
-  private async processSingleSelectorDropdownFilter(client: CdpClient, filter: Filter): Promise<void> {
+  private async processSingleSelectorDropdownFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
     const options = await this.filterAvailableOptionExtractor.extractSingleSelectorDropdownOptions(client, filter.getCssSelector());
     const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorDropdownOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
   }
 
-  private async processMultipleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
+  private async processMultipleSelectorFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
     const options = await this.filterAvailableOptionExtractor.extractMultipleSelectorOptions(client, filter.getCssSelector());
     const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedMultipleSelectorOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
   }
 
-  private async processSingleSelectorFilter(client: CdpClient, filter: Filter): Promise<void> {
+  private async processSingleSelectorFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
     const options = await this.filterAvailableOptionExtractor.extractSingleSelectorOptions(client, filter.getCssSelector());
     const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorOptions(client, filter.getCssSelector());
     filter.setPlainOptions(options);
     filter.setSelectedPlainOptions(selectedPlainOptions);
   }
 
-  private async readAsideFilters(client: CdpClient): Promise<AsideFiltersPayload> {
+  private async readAsideFilters(client: FiltersCdpClient): Promise<AsideFiltersPayload> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const normalize = (value) => value
@@ -191,7 +191,7 @@ export class ApplySearchFiltersUseCase {
     return sectionName.includes(supportedName) || supportedName.includes(sectionName);
   }
 
-  private async isPresentBySelector(client: CdpClient, selector: string): Promise<boolean> {
+  private async isPresentBySelector(client: FiltersCdpClient, selector: string): Promise<boolean> {
     const result = await client.Runtime.evaluate({
       expression: `Boolean(document.querySelector(${JSON.stringify(selector)}))`,
       returnByValue: true

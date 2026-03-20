@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
@@ -19,7 +19,7 @@ class ChromiumPageSyncServiceMockForLoader {
   readonly waitForPageLoad = jest.fn<(page: unknown, runtime: unknown, timeout: number, poll: number) => Promise<void>>();
 }
 
-function createClient(evaluate: CdpClient['Runtime']['evaluate']): CdpClient {
+function createClient(evaluate: FiltersCdpClient['Runtime']['evaluate']): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
@@ -62,7 +62,7 @@ describe('FilterLoaderDetectionService', () => {
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
       pageSync as unknown as ChromiumPageSyncService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async () => ({ result: { value: true } }));
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async () => ({ result: { value: true } }));
     [true, true, true, true, true, true, true, true, false].forEach((value) => {
       evaluate.mockImplementationOnce(async () => ({ result: { value } }));
     });
@@ -130,7 +130,7 @@ describe('FilterLoaderDetectionService', () => {
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
       pageSync as unknown as ChromiumPageSyncService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>()
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>()
       .mockResolvedValueOnce({ result: { value: true } })
       .mockResolvedValueOnce({ result: { value: true } })
       .mockResolvedValue({ result: { value: false } });
@@ -155,7 +155,7 @@ describe('FilterLoaderDetectionService', () => {
       new ScraperConfigMockForLoader() as unknown as ScraperConfig,
       pageSync as unknown as ChromiumPageSyncService
     );
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>()
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>()
       .mockResolvedValueOnce({ result: { value: true } })
       .mockResolvedValueOnce({ result: { value: true } })
       .mockResolvedValueOnce({ exceptionDetails: { text: 'aside-probe-error' } });
@@ -180,7 +180,7 @@ describe('FilterLoaderDetectionService', () => {
     );
     const client = createClient(jest.fn(async () => ({ exceptionDetails: { text: '' }, result: { value: true } })));
     // Action
-    const action = (service as unknown as { waitForAsideFilters: (value: CdpClient) => Promise<void> }).waitForAsideFilters(client);
+    const action = (service as unknown as { waitForAsideFilters: (value: FiltersCdpClient) => Promise<void> }).waitForAsideFilters(client);
     // Assert
     await expect(action).resolves.toBeUndefined();
   });

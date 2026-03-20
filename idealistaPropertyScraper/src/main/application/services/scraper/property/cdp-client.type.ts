@@ -1,6 +1,6 @@
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 
-export type CdpClient = {
+export type PropertyCdpClient = {
   Page: {
     bringToFront(): Promise<void>;
   };

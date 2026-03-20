@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 class ApplySearchFiltersUseCaseMock {
-  readonly execute = jest.fn<(client: CdpClient) => Promise<void>>();
+  readonly execute = jest.fn<(client: FiltersCdpClient) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),

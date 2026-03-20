@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 type PageDomainMock = {
   navigate(params: { url: string }): Promise<void>;
   reload(params?: { ignoreCache?: boolean }): Promise<void>;
@@ -14,10 +14,10 @@ type RuntimeDomainMock = {
 };
 
 class PrepareSearchResultsUseCaseMock {
-  readonly execute = jest.fn<(client: CdpClient, page: PageDomainMock, runtime: RuntimeDomainMock) => Promise<void>>();
+  readonly execute = jest.fn<(client: FiltersCdpClient, page: PageDomainMock, runtime: RuntimeDomainMock) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),

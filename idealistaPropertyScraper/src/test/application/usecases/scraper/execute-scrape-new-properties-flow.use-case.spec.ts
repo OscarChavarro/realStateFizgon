@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 class SearchResultsPreparationServiceMockForExecuteScrapeNewPropertiesFlowUseCase {
   readonly prepareSearchResultsWithFilters = jest.fn<
     (client: ScraperCdpClient, page: ScraperCdpClient['Page'], runtime: ScraperCdpClient['Runtime']) => Promise<void>

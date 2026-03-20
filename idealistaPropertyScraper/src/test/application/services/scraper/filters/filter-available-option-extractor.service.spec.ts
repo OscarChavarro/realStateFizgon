@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 
-function createClient(): CdpClient {
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
-      evaluate: evaluateMock as unknown as CdpClient['Runtime']['evaluate']
+      evaluate: evaluateMock as unknown as FiltersCdpClient['Runtime']['evaluate']
     },
     Page: {
       reload: jest.fn(async () => undefined),
@@ -19,13 +19,13 @@ function createClient(): CdpClient {
 describe('FilterAvailableOptionExtractorService', () => {
   it.each([
     {
-      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractSingleSelectorDropdownOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: FiltersCdpClient) => service.extractSingleSelectorDropdownOptions(client, '#a')
     },
     {
-      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractMultipleSelectorOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: FiltersCdpClient) => service.extractMultipleSelectorOptions(client, '#a')
     },
     {
-      operation: async (service: FilterAvailableOptionExtractorService, client: CdpClient) => service.extractSingleSelectorOptions(client, '#a')
+      operation: async (service: FilterAvailableOptionExtractorService, client: FiltersCdpClient) => service.extractSingleSelectorOptions(client, '#a')
     }
   ])('whenRuntimeReturnsStringArray_$operation_shouldReturnArray', async ({ operation }) => {
     // Arrange

@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 @Injectable()
 export class ProcessLoadedPropertyDetailUseCase {
   private readonly logger = new Logger(ProcessLoadedPropertyDetailUseCase.name);
@@ -21,7 +21,7 @@ export class ProcessLoadedPropertyDetailUseCase {
   ) {}
 
   async execute(
-    client: CdpClient,
+    client: PropertyCdpClient,
     url: string,
     geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB'
   ): Promise<void> {

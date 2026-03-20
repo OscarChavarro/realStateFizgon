@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { Property } from 'src/domain/property/property.model';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 @Injectable()
 export class ExtractAndEnrichPropertyDetailUseCase {
   constructor(

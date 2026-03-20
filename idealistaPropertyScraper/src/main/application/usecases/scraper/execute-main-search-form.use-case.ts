@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class ExecuteMainSearchFormUseCase {
   private readonly logger = new Logger(ExecuteMainSearchFormUseCase.name);
@@ -12,7 +12,7 @@ export class ExecuteMainSearchFormUseCase {
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
-  async execute(client: CdpClient, mainSearchArea: string, scraperHomeUrl: string): Promise<void> {
+  async execute(client: FiltersCdpClient, mainSearchArea: string, scraperHomeUrl: string): Promise<void> {
     this.logger.log(`Main page automation started for ${scraperHomeUrl}`);
     await client.Runtime.enable();
 
@@ -120,7 +120,7 @@ export class ExecuteMainSearchFormUseCase {
     this.logger.log('Search results state detected (URL changed or results DOM is present).');
   }
 
-  private async waitForExpression(client: CdpClient, expression: string): Promise<void> {
+  private async waitForExpression(client: FiltersCdpClient, expression: string): Promise<void> {
     const timeout = this.scraperConfig.mainPageExpressionTimeoutMs;
     const start = Date.now();
     let lastCurrentUrl = '';
@@ -168,7 +168,7 @@ export class ExecuteMainSearchFormUseCase {
     );
   }
 
-  private async evaluateOrThrow(client: CdpClient, expression: string): Promise<void> {
+  private async evaluateOrThrow(client: FiltersCdpClient, expression: string): Promise<void> {
     const result = await client.Runtime.evaluate({
       expression,
       awaitPromise: true,

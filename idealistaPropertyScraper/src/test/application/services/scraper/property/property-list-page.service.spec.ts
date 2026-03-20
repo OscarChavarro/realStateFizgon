@@ -1,18 +1,18 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 class ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService {
-  readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
+  readonly execute = jest.fn<(client: PropertyCdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
 }
 
 class RevalidateExistingPropertyUrlsUseCaseMockForPropertyListPageService {
-  readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
+  readonly execute = jest.fn<(client: PropertyCdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): PropertyCdpClient {
   return {
     Page: {
       bringToFront: jest.fn(async () => undefined)
@@ -42,7 +42,7 @@ describe('PropertyListPageService', () => {
   it('whenRuntimeReturnsStringArray_getPropertyUrls_shouldReturnOnlyStringUrls', async () => {
     // Arrange
     const { service } = createService();
-    const client: CdpClient = {
+    const client: PropertyCdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
       },
@@ -70,7 +70,7 @@ describe('PropertyListPageService', () => {
   it('whenRuntimeReturnsException_getPropertyUrls_shouldThrowError', async () => {
     // Arrange
     const { service } = createService();
-    const client: CdpClient = {
+    const client: PropertyCdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
       },
@@ -89,7 +89,7 @@ describe('PropertyListPageService', () => {
   it('whenRuntimeReturnsNonArray_getPropertyUrls_shouldReturnEmptyArray', async () => {
     // Arrange
     const { service } = createService();
-    const client: CdpClient = {
+    const client: PropertyCdpClient = {
       Page: {
         bringToFront: jest.fn(async () => undefined)
       },

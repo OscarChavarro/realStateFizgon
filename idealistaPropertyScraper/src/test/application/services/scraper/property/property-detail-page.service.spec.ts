@@ -1,25 +1,25 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
 import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 class LoadPropertyDetailFromResultsUseCaseMockForPropertyDetailPageService {
-  readonly execute = jest.fn<(client: CdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
+  readonly execute = jest.fn<(client: PropertyCdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
 }
 
 class RevalidatePropertyDetailFromDatabaseUseCaseMockForPropertyDetailPageService {
-  readonly execute = jest.fn<(client: CdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
+  readonly execute = jest.fn<(client: PropertyCdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
 }
 
 class ProcessLoadedPropertyDetailUseCaseMockForPropertyDetailPageService {
   readonly execute = jest.fn<
-    (client: CdpClient, url: string, mode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB') => Promise<void>
+    (client: PropertyCdpClient, url: string, mode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB') => Promise<void>
   >();
 }
 
-function createClient(): CdpClient {
+function createClient(): PropertyCdpClient {
   return {
     Page: {
       bringToFront: jest.fn(async () => undefined)

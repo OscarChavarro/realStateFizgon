@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
 
-function createClient(): CdpClient {
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
-      evaluate: evaluateMock as unknown as CdpClient['Runtime']['evaluate']
+      evaluate: evaluateMock as unknown as FiltersCdpClient['Runtime']['evaluate']
     },
     Page: {
       reload: jest.fn(async () => undefined),
@@ -19,17 +19,17 @@ function createClient(): CdpClient {
 describe('FilterActionExecutorService', () => {
   it.each([
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickPlainOption(client, '#a', 'A', 'enable'),
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickPlainOption(client, '#a', 'A', 'enable'),
       value: true,
       expected: true
     },
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickSingleSelectorDropdownOption(client, '#a', 'A'),
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickSingleSelectorDropdownOption(client, '#a', 'A'),
       value: false,
       expected: false
     },
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickMinMaxOption(client, '#a', 'min', '100'),
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickMinMaxOption(client, '#a', 'min', '100'),
       value: true,
       expected: true
     }
@@ -47,13 +47,13 @@ describe('FilterActionExecutorService', () => {
 
   it.each([
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickPlainOption(client, '#a', 'A', 'enable')
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickPlainOption(client, '#a', 'A', 'enable')
     },
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickSingleSelectorDropdownOption(client, '#a', 'A')
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickSingleSelectorDropdownOption(client, '#a', 'A')
     },
     {
-      operation: async (service: FilterActionExecutorService, client: CdpClient) => service.clickMinMaxOption(client, '#a', 'max', '500')
+      operation: async (service: FilterActionExecutorService, client: FiltersCdpClient) => service.clickMinMaxOption(client, '#a', 'max', '500')
     }
   ])('whenRuntimeReturnsException_$operation_shouldThrowError', async ({ operation }) => {
     // Arrange

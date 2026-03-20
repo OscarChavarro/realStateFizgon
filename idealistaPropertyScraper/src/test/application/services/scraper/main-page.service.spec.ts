@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 class ExecuteMainSearchFormUseCaseMock {
-  readonly execute = jest.fn<(client: CdpClient, mainSearchArea: string, scraperHomeUrl: string) => Promise<void>>();
+  readonly execute = jest.fn<(client: FiltersCdpClient, mainSearchArea: string, scraperHomeUrl: string) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),

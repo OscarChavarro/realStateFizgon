@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 
-function createClient(): CdpClient {
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
-      evaluate: evaluateMock as unknown as CdpClient['Runtime']['evaluate']
+      evaluate: evaluateMock as unknown as FiltersCdpClient['Runtime']['evaluate']
     },
     Page: {
       reload: jest.fn(async () => undefined),
@@ -19,13 +19,13 @@ function createClient(): CdpClient {
 describe('FilterSelectedOptionExtractorService', () => {
   it.each([
     {
-      operation: async (service: FilterSelectedOptionExtractorService, client: CdpClient) => service.extractSelectedSingleSelectorDropdownOptions(client, '#a')
+      operation: async (service: FilterSelectedOptionExtractorService, client: FiltersCdpClient) => service.extractSelectedSingleSelectorDropdownOptions(client, '#a')
     },
     {
-      operation: async (service: FilterSelectedOptionExtractorService, client: CdpClient) => service.extractSelectedMultipleSelectorOptions(client, '#a')
+      operation: async (service: FilterSelectedOptionExtractorService, client: FiltersCdpClient) => service.extractSelectedMultipleSelectorOptions(client, '#a')
     },
     {
-      operation: async (service: FilterSelectedOptionExtractorService, client: CdpClient) => service.extractSelectedSingleSelectorOptions(client, '#a')
+      operation: async (service: FilterSelectedOptionExtractorService, client: FiltersCdpClient) => service.extractSelectedSingleSelectorOptions(client, '#a')
     }
   ])('whenRuntimeReturnsStringArray_$operation_shouldReturnArray', async ({ operation }) => {
     // Arrange

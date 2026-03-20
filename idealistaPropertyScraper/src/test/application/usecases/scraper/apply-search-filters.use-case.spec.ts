@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
-import { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
@@ -10,26 +8,28 @@ import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
+import type { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 class FilterUpdateServiceMockForApplySearchFiltersUseCase {
-  readonly applyRequiredActions = jest.fn<(client: CdpClient, preloaded: SupportedFilters, extracted: SupportedFilters) => Promise<void>>();
+  readonly applyRequiredActions = jest.fn<(client: FiltersCdpClient, preloaded: SupportedFilters, extracted: SupportedFilters) => Promise<void>>();
 }
 
 class FilterAvailableOptionExtractorMockForApplySearchFiltersUseCase {
-  readonly extractSingleSelectorOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
-  readonly extractSingleSelectorDropdownOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
-  readonly extractMultipleSelectorOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
+  readonly extractSingleSelectorOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
+  readonly extractSingleSelectorDropdownOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
+  readonly extractMultipleSelectorOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
   readonly extractMinMaxOptions = jest.fn<(
-    client: CdpClient,
+    client: FiltersCdpClient,
     selector: string
   ) => Promise<{ minOptions: string[]; maxOptions: string[] }>>();
 }
 
 class FilterSelectedOptionExtractorMockForApplySearchFiltersUseCase {
-  readonly extractSelectedSingleSelectorOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
-  readonly extractSelectedSingleSelectorDropdownOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
-  readonly extractSelectedMultipleSelectorOptions = jest.fn<(client: CdpClient, selector: string) => Promise<string[]>>();
+  readonly extractSelectedSingleSelectorOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
+  readonly extractSelectedSingleSelectorDropdownOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
+  readonly extractSelectedMultipleSelectorOptions = jest.fn<(client: FiltersCdpClient, selector: string) => Promise<string[]>>();
   readonly extractSelectedMinMax = jest.fn<(
-    client: CdpClient,
+    client: FiltersCdpClient,
     selector: string
   ) => Promise<{ selectedMin: string | null; selectedMax: string | null }>>();
 }
@@ -71,8 +71,8 @@ class FakeFilter extends Filter {
 }
 
 function createClient(
-  evaluate: CdpClient['Runtime']['evaluate']
-): CdpClient {
+  evaluate: FiltersCdpClient['Runtime']['evaluate']
+): FiltersCdpClient {
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
@@ -151,7 +151,7 @@ describe('ApplySearchFiltersUseCase', () => {
       found: true,
       sections: [{ index: 0, name: 'Estado', normalized: 'estado' }]
     };
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('Boolean(document.querySelector')) {
         return { result: { value: true } };
       }
@@ -179,7 +179,7 @@ describe('ApplySearchFiltersUseCase', () => {
       found: true,
       sections: [{ index: 0, name: 'Precio', normalized: 'precio' }]
     };
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('Boolean(document.querySelector')) {
         return { result: { value: true } };
       }
@@ -218,7 +218,7 @@ describe('ApplySearchFiltersUseCase', () => {
     const unknownFilter = new FakeFilter('Custom', '#custom', 'UNKNOWN');
     unknownFilter.setPlainOptions(['A', 'B']);
     jest.spyOn(
-      useCase as unknown as { isPresentBySelector: (client: CdpClient, selector: string) => Promise<boolean> },
+      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
       'isPresentBySelector'
     ).mockResolvedValue(true);
     const payload: AsideFiltersPayload = {
@@ -229,7 +229,7 @@ describe('ApplySearchFiltersUseCase', () => {
     const client = createClient(jest.fn(async () => ({ result: { value: true } })));
     // Action
     await (useCase as unknown as {
-      processFilter: (clientArg: CdpClient, payloadArg: AsideFiltersPayload, filter: Filter, matched: Set<number>) => Promise<void>;
+      processFilter: (clientArg: FiltersCdpClient, payloadArg: AsideFiltersPayload, filter: Filter, matched: Set<number>) => Promise<void>;
     }).processFilter(client, payload, unknownFilter, matchedIndexes);
     // Assert
     expect(unknownFilter.getSelectedPlainOptions()).toEqual([]);
@@ -241,7 +241,7 @@ describe('ApplySearchFiltersUseCase', () => {
     const { useCase, available, selected } = createUseCase();
     const filter = new FakeFilter('No existe', '#missing', FilterType.SINGLE_SELECTOR);
     jest.spyOn(
-      useCase as unknown as { isPresentBySelector: (client: CdpClient, selector: string) => Promise<boolean> },
+      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
       'isPresentBySelector'
     ).mockResolvedValue(false);
     const payload: AsideFiltersPayload = { found: true, sections: [] };
@@ -249,7 +249,7 @@ describe('ApplySearchFiltersUseCase', () => {
     const client = createClient(jest.fn(async () => ({ result: { value: false } })));
     // Action
     await (useCase as unknown as {
-      processFilter: (clientArg: CdpClient, payloadArg: AsideFiltersPayload, filterArg: Filter, matchedArg: Set<number>) => Promise<void>;
+      processFilter: (clientArg: FiltersCdpClient, payloadArg: AsideFiltersPayload, filterArg: Filter, matchedArg: Set<number>) => Promise<void>;
     }).processFilter(client, payload, filter, matched);
     // Assert
     expect(available.extractSingleSelectorOptions).not.toHaveBeenCalled();
@@ -286,7 +286,7 @@ describe('ApplySearchFiltersUseCase', () => {
       found: true,
       sections: [{ index: 0, name: filter.getName(), normalized: filter.getName().toLowerCase() }]
     };
-    const evaluate = jest.fn<CdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
       if (params.expression.includes('Boolean(document.querySelector')) {
         return { result: { value: true } };
       }
@@ -306,7 +306,7 @@ describe('ApplySearchFiltersUseCase', () => {
     const { useCase } = createUseCase();
     const client = createClient(jest.fn(async () => ({ result: { value: undefined } })));
     // Action
-    const payload = await (useCase as unknown as { readAsideFilters: (clientArg: CdpClient) => Promise<AsideFiltersPayload> }).readAsideFilters(client);
+    const payload = await (useCase as unknown as { readAsideFilters: (clientArg: FiltersCdpClient) => Promise<AsideFiltersPayload> }).readAsideFilters(client);
     // Assert
     expect(payload).toEqual({ found: false, sections: [] });
   });

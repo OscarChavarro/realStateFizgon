@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 type FilterLike = {
   getType(): FilterType;
   getCssSelector(): string;
@@ -15,12 +15,12 @@ function createFilter(type: FilterType, selector = '#a'): FilterLike {
   };
 }
 
-function createClient(): CdpClient {
+function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {
     Runtime: {
       enable: jest.fn(async () => undefined),
-      evaluate: evaluateMock as unknown as CdpClient['Runtime']['evaluate']
+      evaluate: evaluateMock as unknown as FiltersCdpClient['Runtime']['evaluate']
     },
     Page: {
       reload: jest.fn(async () => undefined),

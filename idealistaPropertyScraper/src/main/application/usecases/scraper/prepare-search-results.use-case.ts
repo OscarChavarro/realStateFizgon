@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
@@ -10,6 +9,7 @@ import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
 };
@@ -36,7 +36,7 @@ export class PrepareSearchResultsUseCase {
     private readonly originErrorDetectorService: OriginErrorDetectorService
   ) {}
 
-  async execute(client: CdpClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
+  async execute(client: FiltersCdpClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
     const locationResult = await runtime.evaluate({
       expression: 'window.location.href',
       returnByValue: true
@@ -91,7 +91,7 @@ export class PrepareSearchResultsUseCase {
   }
 
   private async executeMainPageWithRetry(
-    client: CdpClient,
+    client: FiltersCdpClient,
     page: PageDomain,
     runtime: RuntimeDomain
   ): Promise<void> {

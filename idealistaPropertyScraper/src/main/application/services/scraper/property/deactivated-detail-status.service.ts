@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 type DeactivatedDetailDetectionResult = {
   isDeactivated: boolean;
   closedByIso: string | null;

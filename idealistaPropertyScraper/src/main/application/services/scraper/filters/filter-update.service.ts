@@ -6,9 +6,9 @@ import { SupportedFilters } from 'src/domain/filters/supported-filters';
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class FilterUpdateService {
   private readonly logger = new Logger(FilterUpdateService.name);
@@ -23,7 +23,7 @@ export class FilterUpdateService {
   ) {}
 
   async applyRequiredActions(
-    client: CdpClient,
+    client: FiltersCdpClient,
     preloadedFiltersFromConfiguration: SupportedFilters,
     extractedFiltersFromDom: SupportedFilters
   ): Promise<void> {
@@ -52,7 +52,7 @@ export class FilterUpdateService {
     this.logger.warn('Reached maximum full reconciliation passes.');
   }
 
-  private async reconcileFilter(client: CdpClient, expectedFilter: Filter): Promise<boolean> {
+  private async reconcileFilter(client: FiltersCdpClient, expectedFilter: Filter): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxReconciliationAttempts; attempt += 1) {
       if (expectedFilter.getType() === FilterType.MIN_MAX) {
         const currentSelection = await this.filterSelectionReaderService.readCurrentMinMaxSelection(client, expectedFilter.getCssSelector());
@@ -112,7 +112,7 @@ export class FilterUpdateService {
   }
 
   private async applyPlainSelectionActions(
-    client: CdpClient,
+    client: FiltersCdpClient,
     expectedFilter: Filter,
     toEnable: string[],
     toDisable: string[]
@@ -160,7 +160,7 @@ export class FilterUpdateService {
   }
 
   private async applyMinMaxActions(
-    client: CdpClient,
+    client: FiltersCdpClient,
     expectedFilter: Filter,
     currentSelection: MinMaxSelection
   ): Promise<boolean> {
@@ -196,7 +196,7 @@ export class FilterUpdateService {
     return false;
   }
 
-  private async shouldRestartAfterClick(client: CdpClient): Promise<boolean> {
+  private async shouldRestartAfterClick(client: FiltersCdpClient): Promise<boolean> {
     await this.filterLoaderDetectionService.scrollToTop(client);
     const stable = await this.filterLoaderDetectionService.waitForPostClickStabilityOrReload(client);
     return !stable;

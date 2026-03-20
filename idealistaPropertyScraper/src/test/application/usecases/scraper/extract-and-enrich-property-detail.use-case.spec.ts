@@ -1,7 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
@@ -9,6 +8,7 @@ import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 class HandleDeactivatedPropertyDetailUseCaseMockForExtractAndEnrichPropertyDetailUseCase {
   readonly execute = jest.fn<(runtime: RuntimeClient, url: string) => Promise<boolean>>();
 }

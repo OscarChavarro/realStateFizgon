@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
 import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/scraper/paginate-and-process-listings.use-case';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 class PaginateAndProcessListingsUseCaseMock {
-  readonly execute = jest.fn<(client: CdpClient) => Promise<void>>();
+  readonly execute = jest.fn<(client: PropertyCdpClient) => Promise<void>>();
 }
 
-function createClient(): CdpClient {
+function createClient(): PropertyCdpClient {
   return {
     Runtime: {
       evaluate: jest.fn(async () => ({ result: { value: true } }))

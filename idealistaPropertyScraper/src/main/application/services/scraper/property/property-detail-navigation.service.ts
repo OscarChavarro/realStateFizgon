@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
 @Injectable()
 export class PropertyDetailNavigationService {
   private static readonly SEARCH_RESULTS_READY_EXPRESSION = `(() => {

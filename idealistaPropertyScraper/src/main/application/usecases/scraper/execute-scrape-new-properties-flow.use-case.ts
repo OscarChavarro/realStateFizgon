@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListingPaginationService } from 'src/application/services/scraper/pagination/property-listing-pagination.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 
+import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 @Injectable()
 export class ExecuteScrapeNewPropertiesFlowUseCase {
   private readonly logger = new Logger(ExecuteScrapeNewPropertiesFlowUseCase.name);

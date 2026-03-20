@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
+import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 @Injectable()
 export class PaginateAndProcessListingsUseCase {
   private readonly logger = new Logger(PaginateAndProcessListingsUseCase.name);
@@ -17,7 +17,7 @@ export class PaginateAndProcessListingsUseCase {
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
-  async execute(client: CdpClient): Promise<void> {
+  async execute(client: PropertyCdpClient): Promise<void> {
     let page = 1;
 
     while (true) {
@@ -55,7 +55,7 @@ export class PaginateAndProcessListingsUseCase {
     }
   }
 
-  private async hasNextButton(client: CdpClient): Promise<boolean> {
+  private async hasNextButton(client: PropertyCdpClient): Promise<boolean> {
     const result = await client.Runtime.evaluate({
       expression: `(() => Boolean(document.querySelector('.pagination li.next a[href]')))()`,
       returnByValue: true
@@ -68,7 +68,7 @@ export class PaginateAndProcessListingsUseCase {
     return result.result?.value === true;
   }
 
-  private async getCurrentUrl(client: CdpClient): Promise<string> {
+  private async getCurrentUrl(client: PropertyCdpClient): Promise<string> {
     const result = await client.Runtime.evaluate({
       expression: 'window.location.href',
       returnByValue: true
@@ -81,7 +81,7 @@ export class PaginateAndProcessListingsUseCase {
     return String(result.result?.value ?? '');
   }
 
-  private async clickNextButton(client: CdpClient): Promise<boolean> {
+  private async clickNextButton(client: PropertyCdpClient): Promise<boolean> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const next = document.querySelector('.pagination li.next a[href]');
@@ -106,7 +106,7 @@ export class PaginateAndProcessListingsUseCase {
     return result.result?.value === true;
   }
 
-  private async waitForUrlChange(client: CdpClient, previousUrl: string): Promise<void> {
+  private async waitForUrlChange(client: PropertyCdpClient, previousUrl: string): Promise<void> {
     const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
     const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
     const start = Date.now();
@@ -122,7 +122,7 @@ export class PaginateAndProcessListingsUseCase {
     throw new Error(`Timeout waiting for pagination URL change from ${previousUrl}`);
   }
 
-  private async waitForListingsOrPagination(client: CdpClient): Promise<void> {
+  private async waitForListingsOrPagination(client: PropertyCdpClient): Promise<void> {
     const timeout = this.chromeConfig.chromeExpressionTimeoutMs;
     const pollInterval = this.chromeConfig.chromeExpressionPollIntervalMs;
     const start = Date.now();

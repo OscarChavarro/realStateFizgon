@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
+import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 @Injectable()
 export class FilterSelectedOptionExtractorService {
-  async extractSelectedSingleSelectorDropdownOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractSelectedSingleSelectorDropdownOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -23,7 +23,7 @@ export class FilterSelectedOptionExtractorService {
     );
   }
 
-  async extractSelectedMultipleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractSelectedMultipleSelectorOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -53,7 +53,7 @@ export class FilterSelectedOptionExtractorService {
     );
   }
 
-  async extractSelectedSingleSelectorOptions(client: CdpClient, selector: string): Promise<string[]> {
+  async extractSelectedSingleSelectorOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {
     return this.evaluateStringArray(
       client,
       `(() => {
@@ -79,7 +79,7 @@ export class FilterSelectedOptionExtractorService {
     );
   }
 
-  async extractSelectedMinMax(client: CdpClient, selector: string): Promise<MinMaxSelection> {
+  async extractSelectedMinMax(client: FiltersCdpClient, selector: string): Promise<MinMaxSelection> {
     const result = await client.Runtime.evaluate({
       expression: `(() => {
         const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
@@ -126,7 +126,7 @@ export class FilterSelectedOptionExtractorService {
     };
   }
 
-  private async evaluateStringArray(client: CdpClient, expression: string): Promise<string[]> {
+  private async evaluateStringArray(client: FiltersCdpClient, expression: string): Promise<string[]> {
     const result = await client.Runtime.evaluate({
       expression,
       awaitPromise: true,

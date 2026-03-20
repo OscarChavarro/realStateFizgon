@@ -31,6 +31,7 @@ import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/use
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
 import { ValidatePersistenceConnectionPreCheckUseCase } from 'src/application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
+import { ValidateImageDownloadFolderPreCheckUseCase } from 'src/application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
 import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
 
 @Module({
@@ -66,6 +67,7 @@ import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/pre
     PrepareSearchResultsUseCase,
     RunStartupPreChecksUseCase,
     ValidatePersistenceConnectionPreCheckUseCase,
+    ValidateImageDownloadFolderPreCheckUseCase,
     ValidateProxyAccessPreCheckUseCase,
     MainPageService,
     SearchResultsPreparationService,

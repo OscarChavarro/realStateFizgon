@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/paginate-and-process-listings.use-case';
+import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/scraper/paginate-and-process-listings.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';

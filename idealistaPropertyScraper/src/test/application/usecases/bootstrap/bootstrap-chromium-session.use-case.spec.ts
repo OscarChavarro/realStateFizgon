@@ -3,7 +3,7 @@ import { ChromiumCdpReadinessService } from 'src/application/services/chromium/c
 import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
+import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
 
 class ChromiumProcessLifecycleServiceMockForBootstrapChromiumSessionUseCase {
   readonly launchChromiumProcess = jest.fn<

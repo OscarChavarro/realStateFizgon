@@ -4,7 +4,7 @@ import { OriginErrorDetectorService } from 'src/application/services/resilience/
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
+import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 

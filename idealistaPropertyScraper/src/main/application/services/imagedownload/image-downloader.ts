@@ -7,7 +7,7 @@ import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/
 import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
-import { FinalizePropertyImagesUseCase } from 'src/application/usecases/finalize-property-images.use-case';
+import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedownload/finalize-property-images.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { toErrorMessage } from 'src/infrastructure/error-message';

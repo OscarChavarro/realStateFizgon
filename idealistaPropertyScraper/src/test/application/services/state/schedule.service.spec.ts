@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScheduleService } from 'src/application/services/state/schedule.service';
-import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/promote-idle-to-scheduled-scrape.use-case';
+import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
 
 class PromoteIdleToScheduledScrapeUseCaseMockForScheduleService {
   readonly execute = jest.fn<(nowMs?: number) => boolean>();

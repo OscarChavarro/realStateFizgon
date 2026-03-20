@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
+import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
 
 @Injectable()
 export class MainPageService {

@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ApplySearchFiltersUseCase } from 'src/application/usecases/apply-search-filters.use-case';
+import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 

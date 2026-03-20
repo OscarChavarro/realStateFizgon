@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { UpdatePropertiesController } from 'src/adapters/inbound/http/update-properties.controller';
-import { RequestScrapePropertiesUseCase } from 'src/application/usecases/request-scrape-properties.use-case';
-import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/request-update-properties.use-case';
+import { RequestScrapePropertiesUseCase } from 'src/application/usecases/state/request-scrape-properties.use-case';
+import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/state/request-update-properties.use-case';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
 class RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController {

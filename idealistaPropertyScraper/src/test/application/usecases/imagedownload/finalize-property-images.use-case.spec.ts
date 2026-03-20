@@ -5,7 +5,7 @@ import { ImageFileNameService } from 'src/application/services/imagedownload/ima
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { FinalizePropertyImagesUseCase } from 'src/application/usecases/finalize-property-images.use-case';
+import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedownload/finalize-property-images.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 import { Property } from 'src/domain/property/property.model';

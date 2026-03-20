@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
-import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
+import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
 
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;

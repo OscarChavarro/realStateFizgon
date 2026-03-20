@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
-import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
+import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
+import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 
 @Injectable()
 export class PropertyListPageService {

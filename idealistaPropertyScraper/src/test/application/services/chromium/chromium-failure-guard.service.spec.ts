@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/recover-from-browser-failure.use-case';
+import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/resilience/recover-from-browser-failure.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 
 class ChromeConfigMockForChromiumFailureGuardService {

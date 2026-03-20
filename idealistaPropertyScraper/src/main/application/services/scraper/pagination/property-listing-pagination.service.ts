@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/paginate-and-process-listings.use-case';
+import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/scraper/paginate-and-process-listings.use-case';
 
 @Injectable()
 export class PropertyListingPaginationService {

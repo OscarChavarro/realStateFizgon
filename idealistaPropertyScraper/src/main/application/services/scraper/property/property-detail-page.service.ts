@@ -8,8 +8,8 @@ import { PropertyDetailDomExtractorService } from 'src/application/services/scra
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
-import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
-import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/revalidate-property-detail-from-database.use-case';
+import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
 @Injectable()
 export class PropertyDetailPageService {

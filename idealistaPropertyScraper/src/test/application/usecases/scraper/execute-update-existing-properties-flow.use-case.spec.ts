@@ -2,9 +2,9 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/execute-update-existing-properties-flow.use-case';
+import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-update-existing-properties-flow.use-case';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PropertyPersistencePortMock } from '../../ports/outbound/persistence/property-persistence-port.mock';
+import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 class SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowUseCase {
   readonly prepareSearchResultsWithFilters = jest.fn<(

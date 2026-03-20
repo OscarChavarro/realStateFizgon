@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/promote-idle-to-scheduled-scrape.use-case';
+import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { ScraperConfigMock } from '../../support/mocks/scraper-config.mock';
+import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 
 function createUseCase(params?: {
   initialState?: ScraperState;

@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { RequestScrapePropertiesUseCase } from 'src/application/usecases/request-scrape-properties.use-case';
+import { RequestScrapePropertiesUseCase } from 'src/application/usecases/state/request-scrape-properties.use-case';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
 class ScraperStateMachineServiceMockForRequestScrapePropertiesUseCase {

@@ -3,8 +3,8 @@ import { ChromiumProcessLifecycleService } from 'src/application/services/chromi
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
-import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
-import { RunStartupPreChecksUseCase } from 'src/application/usecases/run-startup-pre-checks.use-case';
+import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
 import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ApplySearchFiltersUseCase } from 'src/application/usecases/apply-search-filters.use-case';
+import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 
 @Injectable()

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/execute-scrape-new-properties-cycle.use-case';
-import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/execute-update-existing-properties-cycle.use-case';
-import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
+import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
+import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
 
 @Injectable()
 export class ScraperOrchestratorService {

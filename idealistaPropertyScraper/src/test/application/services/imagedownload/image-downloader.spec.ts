@@ -4,7 +4,7 @@ import { ImageDownloader } from 'src/application/services/imagedownload/image-do
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
 import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/network-enabled-cdp-client.type';
-import { FinalizePropertyImagesUseCase } from 'src/application/usecases/finalize-property-images.use-case';
+import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedownload/finalize-property-images.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';

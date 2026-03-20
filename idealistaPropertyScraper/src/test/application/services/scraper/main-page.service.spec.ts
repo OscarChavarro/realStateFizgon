@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { MainPageService } from 'src/application/services/scraper/main-page.service';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
+import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
 
 class ExecuteMainSearchFormUseCaseMock {
   readonly execute = jest.fn<(client: CdpClient, mainSearchArea: string, scraperHomeUrl: string) => Promise<void>>();

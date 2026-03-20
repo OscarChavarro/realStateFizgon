@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
+import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
 import { CdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';

@@ -6,7 +6,7 @@ import { ChromiumPageTargetService } from 'src/application/services/chromium/chr
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/execute-update-existing-properties-cycle.use-case';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
 jest.mock('chrome-remote-interface', () => jest.fn());

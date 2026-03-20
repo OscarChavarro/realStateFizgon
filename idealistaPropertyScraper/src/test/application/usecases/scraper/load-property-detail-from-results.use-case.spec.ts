@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
-import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
+import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
 
 class PropertyDetailNavigationServiceMockForLoadPropertyDetailFromResultsUseCase {
   readonly clickPropertyLinkFromResults = jest.fn<(runtime: unknown, targetUrl: string) => Promise<boolean>>();

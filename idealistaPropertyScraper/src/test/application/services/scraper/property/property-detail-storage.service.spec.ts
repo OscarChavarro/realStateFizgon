@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
-import { MarkPropertyClosedUseCase } from 'src/application/usecases/mark-property-closed.use-case';
-import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/persist-property-detail-and-assets.use-case';
+import { MarkPropertyClosedUseCase } from 'src/application/usecases/scraper/mark-property-closed.use-case';
+import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';

@@ -9,7 +9,7 @@ import { ChromiumPermissionRegistrarService } from 'src/application/services/chr
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
 import { ScraperStateModule } from 'src/application/services/state/scraper-state.module';
-import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/recover-from-browser-failure.use-case';
+import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/resilience/recover-from-browser-failure.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({

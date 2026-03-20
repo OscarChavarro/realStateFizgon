@@ -1,8 +1,8 @@
 import { Controller, Post, UseGuards } from '@nestjs/common';
 import { EndpointsBasicAuthGuard } from 'src/adapters/inbound/http/endpoints-basic-auth.guard';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
-import { RequestScrapePropertiesUseCase } from 'src/application/usecases/request-scrape-properties.use-case';
-import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/request-update-properties.use-case';
+import { RequestScrapePropertiesUseCase } from 'src/application/usecases/state/request-scrape-properties.use-case';
+import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/state/request-update-properties.use-case';
 
 @Controller()
 @UseGuards(EndpointsBasicAuthGuard)

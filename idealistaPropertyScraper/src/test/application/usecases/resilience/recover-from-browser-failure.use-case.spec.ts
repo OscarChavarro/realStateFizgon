@@ -4,7 +4,7 @@ import { ChromiumGeolocationService } from 'src/application/services/chromium/ch
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/recover-from-browser-failure.use-case';
+import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/resilience/recover-from-browser-failure.use-case';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
 class ChromiumPageSyncServiceMockForRecoverFromBrowserFailureUseCase {

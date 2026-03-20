@@ -8,8 +8,8 @@ import { PropertyDetailInteractionService } from 'src/application/services/scrap
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
-import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/load-property-detail-from-results.use-case';
-import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/revalidate-property-detail-from-database.use-case';
+import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';

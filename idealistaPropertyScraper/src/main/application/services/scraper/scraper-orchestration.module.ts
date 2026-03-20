@@ -16,15 +16,15 @@ import { HomeSearchPreparationFlowService } from 'src/application/services/boots
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap-chromium-session.use-case';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/execute-main-search-form.use-case';
-import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/execute-scrape-new-properties-cycle.use-case';
-import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/execute-update-existing-properties-flow.use-case';
-import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/execute-update-existing-properties-cycle.use-case';
-import { PrepareHomeSearchUseCase } from 'src/application/usecases/prepare-home-search.use-case';
-import { RunScraperStateLoopUseCase } from 'src/application/usecases/run-scraper-state-loop.use-case';
-import { PrepareSearchResultsUseCase } from 'src/application/usecases/prepare-search-results.use-case';
-import { RunStartupPreChecksUseCase } from 'src/application/usecases/run-startup-pre-checks.use-case';
+import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
+import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
+import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-update-existing-properties-flow.use-case';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
+import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
+import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
+import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
+import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
 
 @Module({
   imports: [

@@ -8,7 +8,7 @@ import { FilterTextNormalizationService } from 'src/application/services/scraper
 import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
 import { ScraperChromiumModule } from 'src/application/services/chromium/scraper-chromium.module';
-import { ApplySearchFiltersUseCase } from 'src/application/usecases/apply-search-filters.use-case';
+import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({

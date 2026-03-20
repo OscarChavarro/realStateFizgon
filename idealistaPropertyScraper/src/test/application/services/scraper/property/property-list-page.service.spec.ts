@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/process-discovered-property-urls.use-case';
-import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/revalidate-existing-property-urls.use-case';
+import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
+import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 
 class ProcessDiscoveredPropertyUrlsUseCaseMockForPropertyListPageService {
   readonly execute = jest.fn<(client: CdpClient, urls: string[], processedUrls: Set<string>) => Promise<void>>();

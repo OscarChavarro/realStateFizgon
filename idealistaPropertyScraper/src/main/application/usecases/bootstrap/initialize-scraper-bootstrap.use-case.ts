@@ -1,19 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { HandleScraperBootstrapFailureUseCase } from 'src/application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
 import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
-import { toErrorMessage } from 'src/infrastructure/error-message';
 
 @Injectable()
 export class InitializeScraperBootstrapUseCase {
   constructor(
-    private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     private readonly runStartupPreChecksUseCase: RunStartupPreChecksUseCase,
     private readonly homeSearchPreparationFlowService: HomeSearchPreparationFlowService,
     private readonly scraperOrchestratorService: ScraperOrchestratorService,
-    private readonly bootstrapChromiumSessionUseCase: BootstrapChromiumSessionUseCase
+    private readonly bootstrapChromiumSessionUseCase: BootstrapChromiumSessionUseCase,
+    private readonly handleScraperBootstrapFailureUseCase: HandleScraperBootstrapFailureUseCase
   ) {}
 
   async execute(params: {
@@ -34,20 +33,14 @@ export class InitializeScraperBootstrapUseCase {
       await this.homeSearchPreparationFlowService.execute(params.cdpHost, params.cdpPort);
       this.startOrchestrator(params);
     } catch (error) {
-      await this.chromiumFailureGuardService.recoverFromFailure({
-        reason: `Browser startup flow failed. ${toErrorMessage(error)}`,
+      await this.handleScraperBootstrapFailureUseCase.execute({
+        error,
         cdpHost: params.cdpHost,
         cdpPort: params.cdpPort,
         browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
         isShuttingDown: params.isShuttingDown,
         onUnexpectedExit: params.onUnexpectedExit
       });
-
-      if (params.isShuttingDown()) {
-        return;
-      }
-
-      this.startOrchestrator(params);
     }
   }
 

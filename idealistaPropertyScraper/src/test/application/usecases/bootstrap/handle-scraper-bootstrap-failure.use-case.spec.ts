@@ -1,0 +1,105 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
+import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
+import { HandleScraperBootstrapFailureUseCase } from 'src/application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
+
+class ChromiumFailureGuardServiceMockForHandleScraperBootstrapFailureUseCase {
+  readonly recoverFromFailure = jest.fn<
+    (params: {
+      reason: string;
+      cdpHost: string;
+      cdpPort: number;
+      browserFailureRecoveryWaitMs: number;
+      isShuttingDown: () => boolean;
+      onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void;
+    }) => Promise<void>
+  >();
+}
+
+class ScraperOrchestratorServiceMockForHandleScraperBootstrapFailureUseCase {
+  readonly start = jest.fn<
+    (params: {
+      cdpHost: string;
+      cdpPort: number;
+      isShuttingDown: () => boolean;
+      onUnexpectedChromeExit: (code: number | null, signal: NodeJS.Signals | null) => void;
+      browserFailureRecoveryWaitMs: number;
+    }) => void
+  >();
+}
+
+function createUseCase() {
+  const chromiumFailureGuardService = new ChromiumFailureGuardServiceMockForHandleScraperBootstrapFailureUseCase();
+  chromiumFailureGuardService.recoverFromFailure.mockResolvedValue(undefined);
+  const scraperOrchestratorService = new ScraperOrchestratorServiceMockForHandleScraperBootstrapFailureUseCase();
+  const useCase = new HandleScraperBootstrapFailureUseCase(
+    chromiumFailureGuardService as unknown as ChromiumFailureGuardService,
+    scraperOrchestratorService as unknown as ScraperOrchestratorService
+  );
+
+  return {
+    useCase,
+    chromiumFailureGuardService,
+    scraperOrchestratorService
+  };
+}
+
+describe('HandleScraperBootstrapFailureUseCase', () => {
+  it('whenFailureIsHandledAndServiceKeepsRunning_execute_shouldRecoverAndRestartOrchestrator', async () => {
+    // Arrange
+    const { useCase, chromiumFailureGuardService, scraperOrchestratorService } = createUseCase();
+    const isShuttingDown = (): boolean => false;
+    const onUnexpectedExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
+    // Action
+    await useCase.execute({
+      error: 'boom-string',
+      cdpHost: '127.0.0.1',
+      cdpPort: 9222,
+      browserFailureRecoveryWaitMs: 10000,
+      isShuttingDown,
+      onUnexpectedExit
+    });
+    // Assert
+    expect(chromiumFailureGuardService.recoverFromFailure).toHaveBeenCalledWith({
+      reason: 'Browser startup flow failed. boom-string',
+      cdpHost: '127.0.0.1',
+      cdpPort: 9222,
+      browserFailureRecoveryWaitMs: 10000,
+      isShuttingDown,
+      onUnexpectedExit
+    });
+    expect(scraperOrchestratorService.start).toHaveBeenCalledWith({
+      cdpHost: '127.0.0.1',
+      cdpPort: 9222,
+      isShuttingDown,
+      onUnexpectedChromeExit: onUnexpectedExit,
+      browserFailureRecoveryWaitMs: 10000
+    });
+  });
+
+  it('whenFailureIsHandledAndShutdownWasRequested_execute_shouldRecoverWithoutRestartingOrchestrator', async () => {
+    // Arrange
+    const { useCase, chromiumFailureGuardService, scraperOrchestratorService } = createUseCase();
+    const isShuttingDown = (): boolean => true;
+    const onUnexpectedExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
+    // Action
+    await useCase.execute({
+      error: new Error('fatal'),
+      cdpHost: '127.0.0.1',
+      cdpPort: 9333,
+      browserFailureRecoveryWaitMs: 20000,
+      isShuttingDown,
+      onUnexpectedExit
+    });
+    // Assert
+    expect(chromiumFailureGuardService.recoverFromFailure).toHaveBeenCalledWith({
+      reason: 'Browser startup flow failed. fatal',
+      cdpHost: '127.0.0.1',
+      cdpPort: 9333,
+      browserFailureRecoveryWaitMs: 20000,
+      isShuttingDown,
+      onUnexpectedExit
+    });
+    expect(scraperOrchestratorService.start).not.toHaveBeenCalled();
+  });
+});

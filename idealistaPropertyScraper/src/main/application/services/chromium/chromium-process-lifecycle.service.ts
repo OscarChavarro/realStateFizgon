@@ -1,20 +1,24 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { OPERATING_SYSTEM_PROCESS_CONTROL_PORT } from 'ports/outbound/operating-system/operating-system-process-control.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type {
+  OperatingSystemProcessControlPort,
+  OperatingSystemSpawnedProcess
+} from 'ports/outbound/operating-system/operating-system-process-control.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {
   private readonly logger = new Logger(ChromiumProcessLifecycleService.name);
-  private chromeProcess?: ChildProcess;
+  private chromeProcess?: OperatingSystemSpawnedProcess;
   private chromeStdoutFd?: number;
   private chromeStderrFd?: number;
   private controlledStopInProgress = false;
@@ -25,6 +29,8 @@ export class ChromiumProcessLifecycleService {
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort,
+    @Inject(OPERATING_SYSTEM_PROCESS_CONTROL_PORT)
+    private readonly operatingSystemProcessControlPort: OperatingSystemProcessControlPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}
@@ -44,17 +50,21 @@ export class ChromiumProcessLifecycleService {
 
       try {
         const chromiumOptions = this.resolveChromiumOptions(browserBinary);
-        this.chromeProcess = spawn(browserBinary, [
-          `--remote-debugging-port=${cdpPort}`,
-          `--user-data-dir=${this.chromeConfig.chromePath}`,
-          '--no-first-run',
-          '--no-default-browser-check',
-          '--new-window',
-          ...chromiumOptions,
-          'about:blank'
-        ], {
-          stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
-        });
+        this.chromeProcess = this.operatingSystemProcessControlPort.spawn(
+          browserBinary,
+          [
+            `--remote-debugging-port=${cdpPort}`,
+            `--user-data-dir=${this.chromeConfig.chromePath}`,
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--new-window',
+            ...chromiumOptions,
+            'about:blank'
+          ],
+          {
+            stdio: ['ignore', this.chromeStdoutFd, this.chromeStderrFd]
+          }
+        );
 
         await new Promise<void>((resolve, reject) => {
           this.chromeProcess?.once('spawn', () => resolve());
@@ -107,13 +117,13 @@ export class ChromiumProcessLifecycleService {
       return;
     }
 
-    if (!this.isPidAlive(pid)) {
+    if (!this.operatingSystemProcessControlPort.isPidAlive(pid)) {
       return;
     }
 
     this.controlledStopInProgress = true;
     try {
-      process.kill(pid, 'SIGKILL');
+      this.operatingSystemProcessControlPort.killPid(pid, 'SIGKILL');
       this.logger.warn(`Sent SIGKILL to Chrome process PID ${pid}.`);
     } catch (error) {
       this.logger.warn(`Failed to send SIGKILL to Chrome process PID ${pid}. ${this.errorMessagePort.toErrorMessage(error)}`);
@@ -168,12 +178,7 @@ export class ChromiumProcessLifecycleService {
   }
 
   private isPidAlive(pid: number): boolean {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
+    return this.operatingSystemProcessControlPort.isPidAlive(pid);
   }
 
 }

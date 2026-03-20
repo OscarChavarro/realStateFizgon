@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-
-jest.mock('node:child_process', () => ({
-  spawn: jest.fn()
-}));
+import type {
+  OperatingSystemProcessControlPort,
+  OperatingSystemSpawnedProcess
+} from 'ports/outbound/operating-system/operating-system-process-control.port';
 
 jest.mock('node:fs', () => ({
   closeSync: jest.fn(),
@@ -40,14 +39,9 @@ type ErrorMessagePortMock = {
   toErrorMessage: jest.Mock<(error: unknown) => string>;
 };
 
-type FakeProcess = {
-  pid?: number;
-  killed?: boolean;
-  once: (event: string, callback: (...args: unknown[]) => void) => FakeProcess;
-  kill: (signal?: NodeJS.Signals) => void;
-};
+type FakeProcess = OperatingSystemSpawnedProcess;
 
-function createSpawnSuccessProcess(pid: number): {
+function createSpawnSuccessProcess(pid?: number): {
   process: FakeProcess;
   exitHandlerRef: { handler?: (code: number | null, signal: NodeJS.Signals | null) => void };
 } {
@@ -95,10 +89,18 @@ function createService() {
   const sleepPort: SleepPortMock = {
     sleep: jest.fn(async () => undefined)
   };
+  const operatingSystemProcessControlPort: jest.Mocked<OperatingSystemProcessControlPort> = {
+    spawn: jest.fn(),
+    spawnSync: jest.fn(),
+    canAccessPath: jest.fn(),
+    isPidAlive: jest.fn(),
+    killPid: jest.fn()
+  };
   const service = new ChromiumProcessLifecycleService(
     chromeConfig as unknown as ChromeConfig,
     chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService,
     errorMessagePort as never,
+    operatingSystemProcessControlPort,
     sleepPort as never
   );
   const logger = {
@@ -107,7 +109,15 @@ function createService() {
     log: jest.fn<(message: string) => void>()
   };
   (service as unknown as { logger: typeof logger }).logger = logger;
-  return { service, chromeConfig, chromiumUserAgentTlsService, logger, errorMessagePort, sleepPort };
+  return {
+    service,
+    chromeConfig,
+    chromiumUserAgentTlsService,
+    logger,
+    errorMessagePort,
+    sleepPort,
+    operatingSystemProcessControlPort
+  };
 }
 
 describe('ChromiumProcessLifecycleService', () => {
@@ -117,8 +127,8 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenLaunchSucceeds_launchChromiumProcess_shouldSpawnChromiumAndRegisterExitHandler', async () => {
     // Arrange
-    const { service, chromiumUserAgentTlsService, logger } = createService();
-    const spawnMock = spawn as unknown as jest.Mock;
+    const { service, chromiumUserAgentTlsService, logger, operatingSystemProcessControlPort } = createService();
+    const spawnMock = operatingSystemProcessControlPort.spawn;
     const { process, exitHandlerRef } = createSpawnSuccessProcess(1234);
     spawnMock.mockReturnValue(process);
     const onUnexpectedExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
@@ -149,10 +159,9 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnedProcessHasNoPid_launchChromiumProcess_shouldLogUnknownPid', async () => {
     // Arrange
-    const { service, logger, sleepPort } = createService();
-    const spawnMock = spawn as unknown as jest.Mock;
-    const { process } = createSpawnSuccessProcess(undefined as unknown as number);
-    process.pid = undefined;
+    const { service, logger, operatingSystemProcessControlPort } = createService();
+    const spawnMock = operatingSystemProcessControlPort.spawn;
+    const { process } = createSpawnSuccessProcess(undefined);
     spawnMock.mockReturnValue(process);
     (openSync as unknown as jest.Mock).mockReturnValueOnce(12).mockReturnValueOnce(13);
     // Action
@@ -163,8 +172,8 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnFailsWithEnoent_launchChromiumProcess_shouldRetryAfterSleep', async () => {
     // Arrange
-    const { service, logger, sleepPort } = createService();
-    const spawnMock = spawn as unknown as jest.Mock;
+    const { service, logger, sleepPort, operatingSystemProcessControlPort } = createService();
+    const spawnMock = operatingSystemProcessControlPort.spawn;
     const error = new Error('missing') as Error & { code?: string };
     error.code = 'ENOENT';
     const failingProcess = createSpawnErrorProcess(error);
@@ -188,8 +197,8 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnFailsWithUnexpectedError_launchChromiumProcess_shouldPropagateError', async () => {
     // Arrange
-    const { service, sleepPort } = createService();
-    const spawnMock = spawn as unknown as jest.Mock;
+    const { service, sleepPort, operatingSystemProcessControlPort } = createService();
+    const spawnMock = operatingSystemProcessControlPort.spawn;
     const error = new Error('spawn-failed');
     spawnMock.mockReturnValue(createSpawnErrorProcess(error));
     (openSync as unknown as jest.Mock).mockReturnValueOnce(30).mockReturnValueOnce(31);
@@ -202,17 +211,17 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenServiceIsAlreadyShuttingDown_launchChromiumProcess_shouldAbortLaunch', async () => {
     // Arrange
-    const { service } = createService();
+    const { service, operatingSystemProcessControlPort } = createService();
     // Action
     const action = service.launchChromiumProcess(9224, jest.fn(), () => true);
     // Assert
     await expect(action).rejects.toThrow('Chrome launch aborted because the service is shutting down.');
-    expect(spawn).not.toHaveBeenCalled();
+    expect(operatingSystemProcessControlPort.spawn).not.toHaveBeenCalled();
   });
 
   it('whenStopIsRequestedWithAlivePid_stopChromiumProcess_shouldSendSigtermAndCloseLogs', () => {
     // Arrange
-    const { service } = createService();
+    const { service, operatingSystemProcessControlPort } = createService();
     const fakeProcess: FakeProcess = {
       pid: 7001,
       killed: false,
@@ -222,7 +231,7 @@ describe('ChromiumProcessLifecycleService', () => {
     (service as unknown as { chromeProcess?: FakeProcess }).chromeProcess = fakeProcess;
     (service as unknown as { chromeStdoutFd?: number }).chromeStdoutFd = 40;
     (service as unknown as { chromeStderrFd?: number }).chromeStderrFd = 41;
-    jest.spyOn(service as unknown as { isPidAlive: (pid: number) => boolean }, 'isPidAlive').mockReturnValue(true);
+    operatingSystemProcessControlPort.isPidAlive.mockReturnValue(true);
     // Action
     service.stopChromiumProcess();
     // Assert
@@ -234,8 +243,8 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenExitHappensAfterControlledStop_launchChromiumProcess_shouldResetStopFlagWithoutUnexpectedExitCallback', async () => {
     // Arrange
-    const { service } = createService();
-    const spawnMock = spawn as unknown as jest.Mock;
+    const { service, operatingSystemProcessControlPort } = createService();
+    const spawnMock = operatingSystemProcessControlPort.spawn;
     const { process, exitHandlerRef } = createSpawnSuccessProcess(7010);
     spawnMock.mockReturnValue(process);
     (openSync as unknown as jest.Mock).mockReturnValueOnce(14).mockReturnValueOnce(15);
@@ -267,69 +276,63 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenForceKillHasNoPid_forceKillChromiumProcess_shouldReturnEarly', () => {
     // Arrange
-    const { service } = createService();
+    const { service, operatingSystemProcessControlPort } = createService();
     (service as unknown as { chromeProcess?: FakeProcess }).chromeProcess = {
       pid: undefined,
       killed: false,
       once: jest.fn() as unknown as FakeProcess['once'],
       kill: jest.fn() as unknown as FakeProcess['kill']
     };
-    const killSpy = jest.spyOn(process, 'kill').mockImplementation(() => true);
     // Action
     service.forceKillChromiumProcess();
     // Assert
-    expect(killSpy).not.toHaveBeenCalledWith(expect.any(Number), 'SIGKILL');
-    killSpy.mockRestore();
+    expect(operatingSystemProcessControlPort.killPid).not.toHaveBeenCalled();
   });
 
   it('whenForceKillTargetIsDead_forceKillChromiumProcess_shouldSkipSigkill', () => {
     // Arrange
-    const { service } = createService();
+    const { service, operatingSystemProcessControlPort } = createService();
     (service as unknown as { chromeProcess?: FakeProcess }).chromeProcess = {
       pid: 8001,
       killed: false,
       once: jest.fn() as unknown as FakeProcess['once'],
       kill: jest.fn() as unknown as FakeProcess['kill']
     };
-    jest.spyOn(service as unknown as { isPidAlive: (pid: number) => boolean }, 'isPidAlive').mockReturnValue(false);
-    const killSpy = jest.spyOn(process, 'kill').mockImplementation(() => true);
+    operatingSystemProcessControlPort.isPidAlive.mockReturnValue(false);
     // Action
     service.forceKillChromiumProcess();
     // Assert
-    expect(killSpy).not.toHaveBeenCalledWith(8001, 'SIGKILL');
-    killSpy.mockRestore();
+    expect(operatingSystemProcessControlPort.killPid).not.toHaveBeenCalledWith(8001, 'SIGKILL');
   });
 
   it('whenForceKillSucceeds_forceKillChromiumProcess_shouldSendSigkillAndWarn', () => {
     // Arrange
-    const { service, logger } = createService();
+    const { service, logger, operatingSystemProcessControlPort } = createService();
     (service as unknown as { chromeProcess?: FakeProcess }).chromeProcess = {
       pid: 8002,
       killed: false,
       once: jest.fn() as unknown as FakeProcess['once'],
       kill: jest.fn() as unknown as FakeProcess['kill']
     };
-    jest.spyOn(service as unknown as { isPidAlive: (pid: number) => boolean }, 'isPidAlive').mockReturnValue(true);
-    const killSpy = jest.spyOn(process, 'kill').mockImplementation(() => true);
+    operatingSystemProcessControlPort.isPidAlive.mockReturnValue(true);
     // Action
     service.forceKillChromiumProcess();
     // Assert
-    expect(killSpy).toHaveBeenCalledWith(8002, 'SIGKILL');
+    expect(operatingSystemProcessControlPort.killPid).toHaveBeenCalledWith(8002, 'SIGKILL');
     expect(logger.warn).toHaveBeenCalledWith('Sent SIGKILL to Chrome process PID 8002.');
-    killSpy.mockRestore();
   });
 
   it('whenForceKillFails_forceKillChromiumProcess_shouldWarnWithErrorMessage', () => {
     // Arrange
-    const { service, logger } = createService();
+    const { service, logger, operatingSystemProcessControlPort } = createService();
     (service as unknown as { chromeProcess?: FakeProcess }).chromeProcess = {
       pid: 8003,
       killed: false,
       once: jest.fn() as unknown as FakeProcess['once'],
       kill: jest.fn() as unknown as FakeProcess['kill']
     };
-    jest.spyOn(service as unknown as { isPidAlive: (pid: number) => boolean }, 'isPidAlive').mockReturnValue(true);
-    const killSpy = jest.spyOn(process, 'kill').mockImplementation(() => {
+    operatingSystemProcessControlPort.isPidAlive.mockReturnValue(true);
+    operatingSystemProcessControlPort.killPid.mockImplementation(() => {
       throw new Error('permission denied');
     });
     // Action
@@ -338,7 +341,6 @@ describe('ChromiumProcessLifecycleService', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       'Failed to send SIGKILL to Chrome process PID 8003. permission denied'
     );
-    killSpy.mockRestore();
   });
 
   it('whenResolvedUserAgentIsEmpty_resolveChromiumOptions_shouldNotAppendUserAgentFlag', () => {
@@ -410,13 +412,12 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenProcessKillProbeSucceeds_isPidAlive_shouldReturnTrue', () => {
     // Arrange
-    const { service } = createService();
-    const killSpy = jest.spyOn(process, 'kill').mockImplementation(() => true);
+    const { service, operatingSystemProcessControlPort } = createService();
+    operatingSystemProcessControlPort.isPidAlive.mockReturnValue(true);
     // Action
     const alive = (service as unknown as { isPidAlive: (pid: number) => boolean }).isPidAlive(123);
     // Assert
     expect(alive).toBe(true);
-    expect(killSpy).toHaveBeenCalledWith(123, 0);
-    killSpy.mockRestore();
+    expect(operatingSystemProcessControlPort.isPidAlive).toHaveBeenCalledWith(123);
   });
 });

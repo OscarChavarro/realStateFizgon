@@ -1,11 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { spawnSync } from 'node:child_process';
-import { accessSync } from 'node:fs';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { OPERATING_SYSTEM_PROCESS_CONTROL_PORT } from 'ports/outbound/operating-system/operating-system-process-control.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { OperatingSystemProcessControlPort } from 'ports/outbound/operating-system/operating-system-process-control.port';
 
 type LoggerLike = {
   log(message: string): void;
@@ -24,7 +24,9 @@ export class ChromiumUserAgentTlsService {
     @Inject(CHROME_SETTINGS_PORT)
     private readonly chromeConfig: ChromeSettingsPort,
     @Inject(ERROR_MESSAGE_PORT)
-    private readonly errorMessagePort: ErrorMessagePort
+    private readonly errorMessagePort: ErrorMessagePort,
+    @Inject(OPERATING_SYSTEM_PROCESS_CONTROL_PORT)
+    private readonly operatingSystemProcessControlPort: OperatingSystemProcessControlPort
   ) {}
 
   resolveBrowserBinary(logger?: LoggerLike): string {
@@ -49,17 +51,15 @@ export class ChromiumUserAgentTlsService {
 
     for (const candidate of chromiumCandidates) {
       if (candidate.startsWith('/')) {
-        try {
-          accessSync(candidate);
+        if (this.operatingSystemProcessControlPort.canAccessPath(candidate)) {
           logger?.log(`Detected linux/arm64. Using Chromium binary at "${candidate}".`);
           this.resolvedBrowserBinary = candidate;
           return this.resolvedBrowserBinary;
-        } catch {
-          continue;
         }
+        continue;
       }
 
-      const probe = spawnSync('which', [candidate], { stdio: 'ignore' });
+      const probe = this.operatingSystemProcessControlPort.spawnSync('which', [candidate], { stdio: 'ignore' });
       if (probe.status === 0) {
         logger?.log(`Detected linux/arm64. Using Chromium binary "${candidate}" from PATH.`);
         this.resolvedBrowserBinary = candidate;
@@ -84,7 +84,11 @@ export class ChromiumUserAgentTlsService {
     this.cachedBrowserVersionBinary = resolvedBrowserBinary;
 
     try {
-      const result = spawnSync(resolvedBrowserBinary, ['--version'], { encoding: 'utf8' });
+      const result = this.operatingSystemProcessControlPort.spawnSync(
+        resolvedBrowserBinary,
+        ['--version'],
+        { encoding: 'utf8' }
+      );
       const output = `${result.stdout ?? ''} ${result.stderr ?? ''}`.trim();
       if (!output) {
         this.cachedBrowserVersion = undefined;

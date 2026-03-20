@@ -1,17 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { spawnSync } from 'node:child_process';
-import { accessSync } from 'node:fs';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import type { OperatingSystemProcessControlPort } from 'ports/outbound/operating-system/operating-system-process-control.port';
 import { LoggerLikeMock } from '../../../support/mocks/logger-like.mock';
-
-jest.mock('node:child_process', () => ({
-  spawnSync: jest.fn()
-}));
-
-jest.mock('node:fs', () => ({
-  accessSync: jest.fn()
-}));
 
 class ChromeConfigMockForUserAgent {
   constructor(public readonly chromeBinary: string) {}
@@ -20,6 +11,16 @@ class ChromeConfigMockForUserAgent {
 function createErrorMessagePort() {
   return {
     toErrorMessage: jest.fn((error: unknown) => (error instanceof Error ? error.message : String(error)))
+  };
+}
+
+function createOperatingSystemProcessControlPortMock(): jest.Mocked<OperatingSystemProcessControlPort> {
+  return {
+    spawn: jest.fn(),
+    spawnSync: jest.fn(),
+    canAccessPath: jest.fn(),
+    isPidAlive: jest.fn(),
+    killPid: jest.fn()
   };
 }
 
@@ -45,27 +46,30 @@ function withProcessPlatformAndArch(
 }
 
 describe('ChromiumUserAgentTlsService', () => {
+  let operatingSystemProcessControlPort: jest.Mocked<OperatingSystemProcessControlPort>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    operatingSystemProcessControlPort = createOperatingSystemProcessControlPortMock();
   });
 
   it('whenBrowserBinaryIsResolved_resolveBrowserBinary_shouldReturnConfiguredBinary', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     const binary = service.resolveBrowserBinary(logger);
     // Assert
     expect(binary).toBe('/usr/bin/google-chrome');
     expect(logger.log).not.toHaveBeenCalled();
-    expect(accessSync).not.toHaveBeenCalled();
+    expect(operatingSystemProcessControlPort.canAccessPath).not.toHaveBeenCalled();
   });
 
   it('whenBrowserBinaryWasAlreadyResolved_resolveBrowserBinary_shouldReuseCachedValue', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     const first = service.resolveBrowserBinary(logger);
@@ -73,16 +77,15 @@ describe('ChromiumUserAgentTlsService', () => {
     // Assert
     expect(first).toBe('/usr/bin/google-chrome');
     expect(second).toBe('/usr/bin/google-chrome');
-    expect(accessSync).not.toHaveBeenCalled();
+    expect(operatingSystemProcessControlPort.canAccessPath).not.toHaveBeenCalled();
   });
 
   it('whenLinuxArm64HasAbsoluteChromium_resolveBrowserBinary_shouldUseDetectedAbsoluteCandidate', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/custom/chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
-    const accessMock = accessSync as unknown as jest.Mock;
-    accessMock.mockImplementation(() => undefined);
+    operatingSystemProcessControlPort.canAccessPath.mockReturnValue(true);
     // Action
     let result = '';
     withProcessPlatformAndArch('linux', 'arm64', () => {
@@ -96,14 +99,11 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenLinuxArm64FindsPathChromium_resolveBrowserBinary_shouldUsePathCandidate', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/custom/chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
-    const accessMock = accessSync as unknown as jest.Mock;
-    accessMock.mockImplementation(() => {
-      throw new Error('missing');
-    });
-    const spawnMock = spawnSync as unknown as jest.Mock;
-    spawnMock.mockReturnValueOnce({ status: 0 });
+    operatingSystemProcessControlPort.canAccessPath.mockReturnValue(false);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
+    spawnMock.mockReturnValueOnce({ status: 0, stdout: '', stderr: '' });
     // Action
     let result = '';
     withProcessPlatformAndArch('linux', 'arm64', () => {
@@ -117,14 +117,11 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenLinuxArm64HasNoCandidate_resolveBrowserBinary_shouldFallbackToConfiguredBinary', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/custom/chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
-    const accessMock = accessSync as unknown as jest.Mock;
-    accessMock.mockImplementation(() => {
-      throw new Error('missing');
-    });
-    const spawnMock = spawnSync as unknown as jest.Mock;
-    spawnMock.mockReturnValue({ status: 1 });
+    operatingSystemProcessControlPort.canAccessPath.mockReturnValue(false);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
+    spawnMock.mockReturnValue({ status: 1, stdout: '', stderr: '' });
     // Action
     let result = '';
     withProcessPlatformAndArch('linux', 'arm64', () => {
@@ -140,9 +137,10 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionCommandReturnsOutput_getBrowserVersion_shouldParseAndCacheVersion', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockReturnValue({
+      status: 0,
       stdout: 'Google Chrome 145.0.7420.0',
       stderr: ''
     });
@@ -158,13 +156,13 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenBrowserBinaryIsNotProvided_getBrowserVersion_shouldResolveBinaryBeforeReadingVersion', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const resolveSpy = jest.spyOn(
       service as unknown as { resolveBrowserBinary: () => string },
       'resolveBrowserBinary'
     ).mockReturnValue('/resolved/chromium');
-    const spawnMock = spawnSync as unknown as jest.Mock;
-    spawnMock.mockReturnValue({ stdout: 'Chromium 145.0.7420.0', stderr: '' });
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
+    spawnMock.mockReturnValue({ status: 0, stdout: 'Chromium 145.0.7420.0', stderr: '' });
     // Action
     const version = service.getBrowserVersion();
     // Assert
@@ -175,9 +173,10 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionCommandReturnsEmptyOutput_getBrowserVersion_shouldReturnUndefined', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockReturnValue({
+      status: 0,
       stdout: '',
       stderr: ''
     });
@@ -190,11 +189,12 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionCommandReturnsUndefinedStreams_getBrowserVersion_shouldFallbackToEmptyOutput', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockReturnValue({
-      stdout: undefined,
-      stderr: undefined
+      status: 0,
+      stdout: undefined as unknown as string,
+      stderr: undefined as unknown as string
     });
     // Action
     const version = service.getBrowserVersion('/usr/bin/google-chrome');
@@ -205,9 +205,10 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionOutputHasNoSemver_getBrowserVersion_shouldReturnUndefinedFromNoMatchBranch', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockReturnValue({
+      status: 0,
       stdout: 'Google Chrome development build',
       stderr: ''
     });
@@ -220,9 +221,9 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionCommandFails_getBrowserVersion_shouldReturnUndefinedAndWarn', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockImplementation(() => {
       throw new Error('spawn failed');
     });
@@ -236,13 +237,13 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenVersionCommandFailsWithoutInjectedLogger_getBrowserVersion_shouldUseInternalLoggerFallback', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const internalLogger = {
       log: jest.fn<(message: string) => void>(),
       warn: jest.fn<(message: string) => void>()
     };
     (service as unknown as { logger: typeof internalLogger }).logger = internalLogger;
-    const spawnMock = spawnSync as unknown as jest.Mock;
+    const spawnMock = operatingSystemProcessControlPort.spawnSync;
     spawnMock.mockImplementation(() => {
       throw new Error('spawn failed');
     });
@@ -298,7 +299,7 @@ describe('ChromiumUserAgentTlsService', () => {
   }) => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     const resolvedUserAgent = service.resolveUserAgentForLaunch(requestedUserAgent, browserVersion, logger);
@@ -334,7 +335,7 @@ describe('ChromiumUserAgentTlsService', () => {
   }) => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     // Action
     const resolvedUserAgent = service.resolveUserAgentForHeaders(requestedUserAgent, browserVersion);
     // Assert
@@ -348,7 +349,7 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenBrowserVersionIsUndefined_resolveUserAgentForHeaders_shouldReturnTrimmedConfiguredValue', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     // Action
     const result = service.resolveUserAgentForHeaders('  Mozilla/5.0 Chrome/145.0.0.0 Safari/537.36  ', undefined);
     // Assert
@@ -358,7 +359,7 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenHeaderUserAgentInputIsUndefined_resolveUserAgentForHeaders_shouldReturnUndefined', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     // Action
     const result = service.resolveUserAgentForHeaders(undefined as unknown as string, '145.0.7420.0');
     // Assert
@@ -368,7 +369,7 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenDefaultUserAgentIsBuiltOnWindows_resolveUserAgentForLaunch_shouldUseWindowsToken', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     let result = '';
@@ -382,7 +383,7 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenDefaultUserAgentIsBuiltOnLinuxX64_resolveUserAgentForLaunch_shouldUseLinuxX64Token', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     let result = '';
@@ -396,7 +397,7 @@ describe('ChromiumUserAgentTlsService', () => {
   it('whenDefaultUserAgentIsBuiltOnLinuxArm64_resolveUserAgentForLaunch_shouldUseLinuxArm64Token', () => {
     // Arrange
     const config = new ChromeConfigMockForUserAgent('/usr/bin/google-chrome');
-    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never);
+    const service = new ChromiumUserAgentTlsService(config as unknown as ChromeConfig, createErrorMessagePort() as never, operatingSystemProcessControlPort);
     const logger = new LoggerLikeMock();
     // Action
     let result = '';

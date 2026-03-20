@@ -6,7 +6,6 @@ import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 type HandlerMocks = {
   onScrapingForNewProperties: jest.MockedFunction<() => Promise<void>>;
   onUpdatingProperties: jest.MockedFunction<() => Promise<void>>;
-  onLoopError: jest.MockedFunction<(error: unknown) => Promise<void>>;
   isShuttingDown: jest.MockedFunction<() => boolean>;
 };
 
@@ -28,7 +27,6 @@ function createHandlers(isShuttingDown: () => boolean): HandlerMocks {
   return {
     onScrapingForNewProperties: jest.fn(async () => undefined),
     onUpdatingProperties: jest.fn(async () => undefined),
-    onLoopError: jest.fn(async (_error: unknown) => undefined),
     isShuttingDown: jest.fn(isShuttingDown)
   };
 }

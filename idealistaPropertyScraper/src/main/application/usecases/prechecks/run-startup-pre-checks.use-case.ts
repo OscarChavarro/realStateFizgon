@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
+import { ValidatePersistenceConnectionPreCheckUseCase } from 'application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
+import { ValidateImageDownloadFolderPreCheckUseCase } from 'application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
+import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
 
 @Injectable()
 export class RunStartupPreChecksUseCase {
-  constructor(private readonly infrastructurePreCheckService: InfrastructurePreCheckService) {}
+  constructor(
+    private readonly validateProxyAccessPreCheckUseCase: ValidateProxyAccessPreCheckUseCase,
+    private readonly validatePersistenceConnectionPreCheckUseCase: ValidatePersistenceConnectionPreCheckUseCase,
+    private readonly validateImageDownloadFolderPreCheckUseCase: ValidateImageDownloadFolderPreCheckUseCase
+  ) {}
 
   async execute(): Promise<void> {
-    await this.infrastructurePreCheckService.runBeforeScraperStartup();
+    await this.validateProxyAccessPreCheckUseCase.execute();
+    await this.validatePersistenceConnectionPreCheckUseCase.execute();
+    await this.validateImageDownloadFolderPreCheckUseCase.execute();
   }
 }

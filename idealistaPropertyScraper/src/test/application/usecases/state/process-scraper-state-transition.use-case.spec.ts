@@ -7,7 +7,6 @@ import { ScraperState } from 'domain/states/scraper-state.enum';
 type HandlerMocks = {
   onScrapingForNewProperties: jest.MockedFunction<() => Promise<void>>;
   onUpdatingProperties: jest.MockedFunction<() => Promise<void>>;
-  onLoopError: jest.MockedFunction<(error: unknown) => Promise<void>>;
   isShuttingDown: jest.MockedFunction<() => boolean>;
 };
 
@@ -33,7 +32,6 @@ function createHandlers(): HandlerMocks {
   return {
     onScrapingForNewProperties: jest.fn(async () => undefined),
     onUpdatingProperties: jest.fn(async () => undefined),
-    onLoopError: jest.fn(async (_error: unknown) => undefined),
     isShuttingDown: jest.fn(() => false)
   };
 }

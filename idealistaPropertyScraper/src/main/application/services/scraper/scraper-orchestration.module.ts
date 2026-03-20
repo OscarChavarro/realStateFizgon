@@ -6,7 +6,6 @@ import { MongoDatabaseModule } from 'adapters/outbound/persistence/mongodb/mongo
 import { ImageDownloadModule } from 'application/services/imagedownload/image-download.module';
 import { ScraperChromiumModule } from 'application/services/chromium/scraper-chromium.module';
 import { ScraperFiltersModule } from 'application/services/scraper/filters/scraper-filters.module';
-import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
 import { OriginErrorDetectorModule } from 'application/services/resilience/origin-error-detector.module';
 import { ScraperPaginationModule } from 'application/services/scraper/pagination/scraper-pagination.module';
 import { ScraperPropertyModule } from 'application/services/scraper/property/scraper-property.module';
@@ -46,7 +45,6 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
     ProxyAccessValidatorModule
   ],
   providers: [
-    InfrastructurePreCheckService,
     ScraperOrchestratorService,
     BootstrapChromiumSessionUseCase,
     HandleScraperBootstrapFailureUseCase,

@@ -1,14 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
-import { ScraperStateLoopService } from 'application/services/state/scraper-state-loop.service';
+import { RunScraperStateLoopCoreUseCase } from 'application/usecases/state/run-scraper-state-loop-core.use-case';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class RunScraperStateLoopUseCase {
+  private loopRunning = false;
+
   constructor(
-    private readonly scraperStateLoopService: ScraperStateLoopService,
+    private readonly runScraperStateLoopCoreUseCase: RunScraperStateLoopCoreUseCase,
     private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort
@@ -24,21 +26,33 @@ export class RunScraperStateLoopUseCase {
     onUpdatingProperties: () => Promise<void>;
     onAfterRecovery: () => void;
   }): void {
-    this.scraperStateLoopService.start({
+    if (this.loopRunning) {
+      return;
+    }
+
+    this.loopRunning = true;
+    void this.runScraperStateLoopCoreUseCase.execute({
       onScrapingForNewProperties: params.onScrapingForNewProperties,
       onUpdatingProperties: params.onUpdatingProperties,
-      onLoopError: async (error: unknown) => {
-        await this.chromiumFailureGuardService.recoverFromFailure({
-          reason: `Scraper state loop failed. ${this.errorMessagePort.toErrorMessage(error)}`,
-          cdpHost: params.cdpHost,
-          cdpPort: params.cdpPort,
-          browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
-          isShuttingDown: params.isShuttingDown,
-          onUnexpectedExit: params.onUnexpectedChromeExit
-        });
-        params.onAfterRecovery();
-      },
       isShuttingDown: params.isShuttingDown
-    });
+    })
+      .catch(async (error: unknown) => {
+        try {
+          await this.chromiumFailureGuardService.recoverFromFailure({
+            reason: `Scraper state loop failed. ${this.errorMessagePort.toErrorMessage(error)}`,
+            cdpHost: params.cdpHost,
+            cdpPort: params.cdpPort,
+            browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,
+            isShuttingDown: params.isShuttingDown,
+            onUnexpectedExit: params.onUnexpectedChromeExit
+          });
+          params.onAfterRecovery();
+        } catch {
+          // ChromiumFailureGuardService already logs recovery failures.
+        }
+      })
+      .finally(() => {
+        this.loopRunning = false;
+      });
   }
 }

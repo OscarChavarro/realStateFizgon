@@ -24,6 +24,7 @@ import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/use
 import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
 import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
+import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
 
@@ -50,6 +51,7 @@ import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/r
     ExecuteScrapeNewPropertiesCycleUseCase,
     ExecuteUpdateExistingPropertiesFlowUseCase,
     ExecuteUpdateExistingPropertiesCycleUseCase,
+    RevalidateOpenPropertiesFromDatabaseUseCase,
     RevalidatePropertiesWithoutLastVisitUseCase,
     PrepareHomeSearchUseCase,
     RunScraperStateLoopUseCase,

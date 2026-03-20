@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
+import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
@@ -13,6 +14,7 @@ export class ExecuteUpdateExistingPropertiesFlowUseCase {
     private readonly searchResultsPreparationService: SearchResultsPreparationService,
     @Inject(PROPERTY_PERSISTENCE_PORT)
     private readonly propertyPersistencePort: PropertyPersistencePort,
+    private readonly revalidatePropertiesWithoutLastVisitUseCase: RevalidatePropertiesWithoutLastVisitUseCase,
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
@@ -24,13 +26,7 @@ export class ExecuteUpdateExistingPropertiesFlowUseCase {
     );
 
     this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-    const openUrlsWithoutLastTimeVisited = await this.propertyPersistencePort.getOpenPropertyUrlsWithoutLastTimeVisited();
-    if (openUrlsWithoutLastTimeVisited.length > 0) {
-      this.logger.log(
-        `UPDATING_PROPERTIES: pre-pass for ${openUrlsWithoutLastTimeVisited.length} open properties without lastTimeVisited.`
-      );
-      await this.propertyListPageService.processExistingUrls(client, openUrlsWithoutLastTimeVisited);
-    }
+    await this.revalidatePropertiesWithoutLastVisitUseCase.execute(client);
 
     const openUrls = await this.propertyPersistencePort.getOpenPropertyUrls();
     this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);

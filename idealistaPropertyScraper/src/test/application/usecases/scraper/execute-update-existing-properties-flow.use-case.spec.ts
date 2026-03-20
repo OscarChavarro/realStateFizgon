@@ -3,6 +3,7 @@ import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-update-existing-properties-flow.use-case';
+import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
@@ -17,6 +18,10 @@ class SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowU
 class PropertyListPageServiceMockForExecuteUpdateExistingPropertiesFlowUseCase {
   readonly resetProcessedUrlsForCurrentSearch = jest.fn<() => void>();
   readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
+}
+
+class RevalidatePropertiesWithoutLastVisitUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase {
+  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
 }
 
 function createClient(): ScraperCdpClient {
@@ -35,34 +40,23 @@ function createClient(): ScraperCdpClient {
 }
 
 describe('ExecuteUpdateExistingPropertiesFlowUseCase', () => {
-  it.each([
-    {
-      missingUrls: ['https://idealista.com/inmueble/1/'],
-      openUrls: ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/2/'],
-      expectedCalls: [['https://idealista.com/inmueble/1/'], ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/2/']]
-    },
-    {
-      missingUrls: [],
-      openUrls: ['https://idealista.com/inmueble/3/'],
-      expectedCalls: [['https://idealista.com/inmueble/3/']]
-    }
-  ])('whenUseCaseRuns_execute_shouldProcessMissingLastTimeVisitedBeforeFullOpenSet', async ({
-    missingUrls,
-    openUrls,
-    expectedCalls
-  }) => {
+  it('whenUseCaseRuns_execute_shouldPrepareResetAndRevalidateWithoutVisitBeforeFullOpenSet', async () => {
     // Arrange
     const search = new SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const mongo = new PropertyPersistencePortMock();
     const list = new PropertyListPageServiceMockForExecuteUpdateExistingPropertiesFlowUseCase();
+    const revalidateWithoutVisit = new RevalidatePropertiesWithoutLastVisitUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const useCase = new ExecuteUpdateExistingPropertiesFlowUseCase(
       search as unknown as SearchResultsPreparationService,
       mongo as unknown as PropertyPersistencePort,
+      revalidateWithoutVisit as unknown as RevalidatePropertiesWithoutLastVisitUseCase,
       list as unknown as PropertyListPageService
     );
     const client = createClient();
-    mongo.getOpenPropertyUrlsWithoutLastTimeVisited.mockResolvedValue(missingUrls);
+    const openUrls = ['https://idealista.com/inmueble/1/', 'https://idealista.com/inmueble/2/'];
     mongo.getOpenPropertyUrls.mockResolvedValue(openUrls);
+    revalidateWithoutVisit.execute.mockResolvedValue(undefined);
+    list.processExistingUrls.mockResolvedValue(undefined);
 
     // Action
     await useCase.execute(client);
@@ -70,6 +64,9 @@ describe('ExecuteUpdateExistingPropertiesFlowUseCase', () => {
     // Assert
     expect(search.prepareSearchResultsWithFilters).toHaveBeenCalledWith(client, client.Page, client.Runtime);
     expect(list.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(1);
-    expect(list.processExistingUrls.mock.calls.map((call) => call[1])).toEqual(expectedCalls);
+    expect(revalidateWithoutVisit.execute).toHaveBeenCalledTimes(1);
+    expect(revalidateWithoutVisit.execute).toHaveBeenCalledWith(client);
+    expect(list.processExistingUrls).toHaveBeenCalledTimes(1);
+    expect(list.processExistingUrls).toHaveBeenCalledWith(client, openUrls);
   });
 });

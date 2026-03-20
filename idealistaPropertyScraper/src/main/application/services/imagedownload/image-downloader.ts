@@ -14,8 +14,8 @@ import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 
 @Injectable()
-export class ImageDownloader {
-  private readonly logger = new Logger(ImageDownloader.name);
+export class ImageDownloaderService {
+  private readonly logger = new Logger(ImageDownloaderService.name);
 
   constructor(
     private readonly chromeConfig: ChromeConfig,

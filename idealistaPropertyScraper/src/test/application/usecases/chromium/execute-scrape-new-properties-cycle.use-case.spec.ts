@@ -4,7 +4,7 @@ import { ChromiumGeolocationService } from 'src/application/services/chromium/ch
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
@@ -81,7 +81,7 @@ function createUseCase() {
     chromiumPageTargetService as unknown as ChromiumPageTargetService,
     chromiumGeolocationService as unknown as ChromiumGeolocationService,
     chromiumNetworkHeadersService as unknown as ChromiumNetworkHeadersService,
-    imageDownloader as unknown as ImageDownloader,
+    imageDownloader as unknown as ImageDownloaderService,
     scrapeNewPropertiesFlowService as unknown as ScrapeNewPropertiesFlowService
   );
   const logger = {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { RabbitMqModule } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
@@ -18,8 +18,8 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     ImageNetworkCaptureService,
     ImagePendingQueuePublisherService,
     FinalizePropertyImagesUseCase,
-    ImageDownloader
+    ImageDownloaderService
   ],
-  exports: [ImageDownloader]
+  exports: [ImageDownloaderService]
 })
 export class ImageDownloadModule {}

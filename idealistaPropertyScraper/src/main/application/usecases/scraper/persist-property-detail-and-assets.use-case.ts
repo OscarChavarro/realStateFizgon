@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/imagedownload/publish-new-property-notification.use-case';
 import { Property } from 'src/domain/property/property.model';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
@@ -11,7 +11,7 @@ export class PersistPropertyDetailAndAssetsUseCase {
     @Inject(PROPERTY_PERSISTENCE_PORT)
     private readonly propertyPersistencePort: PropertyPersistencePort,
     private readonly publishNewPropertyNotificationUseCase: PublishNewPropertyNotificationUseCase,
-    private readonly imageDownloader: ImageDownloader
+    private readonly imageDownloader: ImageDownloaderService
   ) {}
 
   async execute(property: Property): Promise<void> {

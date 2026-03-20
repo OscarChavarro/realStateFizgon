@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/imagedownload/publish-new-property-notification.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
@@ -51,7 +51,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
-      imageDownloader as unknown as ImageDownloader
+      imageDownloader as unknown as ImageDownloaderService
     );
     const property = createProperty();
     // Action
@@ -76,7 +76,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
-      imageDownloader as unknown as ImageDownloader
+      imageDownloader as unknown as ImageDownloaderService
     );
     // Action
     await useCase.execute(createProperty());
@@ -97,7 +97,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
       mongo as unknown as PropertyPersistencePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
-      imageDownloader as unknown as ImageDownloader
+      imageDownloader as unknown as ImageDownloaderService
     );
     // Action
     await useCase.execute(createProperty());

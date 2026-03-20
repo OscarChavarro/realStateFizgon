@@ -4,7 +4,7 @@ import { ChromiumGeolocationService } from 'src/application/services/chromium/ch
 import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
 import { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
@@ -17,7 +17,7 @@ export class ExecuteUpdateExistingPropertiesCycleUseCase {
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
-    private readonly imageDownloader: ImageDownloader,
+    private readonly imageDownloader: ImageDownloaderService,
     private readonly updateExistingPropertiesFlowService: UpdateExistingPropertiesFlowService
   ) {}
 

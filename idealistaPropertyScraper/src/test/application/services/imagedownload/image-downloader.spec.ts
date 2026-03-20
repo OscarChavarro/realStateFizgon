@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
 import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/network-enabled-cdp-client.type';
@@ -87,7 +87,7 @@ function createService() {
   const urlRules = new ImageUrlRulesServiceMock();
   const networkCapture = new ImageNetworkCaptureServiceMock();
   const finalizeUseCase = new FinalizePropertyImagesUseCaseMock();
-  const service = new ImageDownloader(
+  const service = new ImageDownloaderService(
     new ChromeConfigMockForDownloader() as unknown as ChromeConfig,
     new ScraperConfigMockForDownloader() as unknown as ScraperConfig,
     pathService as unknown as ImageDownloadPathService,
@@ -104,7 +104,7 @@ function createService() {
   return { service, pathService, urlRules, networkCapture, finalizeUseCase, logger };
 }
 
-describe('ImageDownloader', () => {
+describe('ImageDownloaderService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ProcessScraperStateTransitionUseCase } from 'src/application/usecases/state/process-scraper-state-transition.use-case';
 import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
-import { sleep } from 'src/infrastructure/sleep';
-
-jest.mock('src/infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
+import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
 
 type HandlerMocks = {
   onScrapingForNewProperties: jest.MockedFunction<() => Promise<void>>;
@@ -16,6 +12,10 @@ type HandlerMocks = {
 
 type ProcessScraperStateTransitionUseCaseMock = {
   execute: jest.MockedFunction<(handlers: HandlerMocks) => Promise<boolean>>;
+};
+
+type SleepPortMock = {
+  sleep: jest.MockedFunction<(ms: number) => Promise<void>>;
 };
 
 type RunScraperStateLoopCoreUseCaseInternals = {
@@ -36,15 +36,20 @@ function createHandlers(isShuttingDown: () => boolean): HandlerMocks {
 function createUseCase(): {
   useCase: RunScraperStateLoopCoreUseCase;
   processScraperStateTransitionUseCase: ProcessScraperStateTransitionUseCaseMock;
+  sleepPort: SleepPortMock;
 } {
   const processScraperStateTransitionUseCase: ProcessScraperStateTransitionUseCaseMock = {
     execute: jest.fn(async () => false)
   };
+  const sleepPort: SleepPortMock = {
+    sleep: jest.fn(async () => undefined)
+  };
   const useCase = new RunScraperStateLoopCoreUseCase(
-    processScraperStateTransitionUseCase as unknown as ProcessScraperStateTransitionUseCase
+    processScraperStateTransitionUseCase as unknown as ProcessScraperStateTransitionUseCase,
+    sleepPort as unknown as SleepPort
   );
 
-  return { useCase, processScraperStateTransitionUseCase };
+  return { useCase, processScraperStateTransitionUseCase, sleepPort };
 }
 
 describe('RunScraperStateLoopCoreUseCase', () => {
@@ -54,7 +59,7 @@ describe('RunScraperStateLoopCoreUseCase', () => {
 
   it('whenTransitionIsProcessed_execute_shouldContinueWithoutSleeping', async () => {
     // Arrange
-    const { useCase, processScraperStateTransitionUseCase } = createUseCase();
+    const { useCase, processScraperStateTransitionUseCase, sleepPort } = createUseCase();
     processScraperStateTransitionUseCase.execute.mockResolvedValue(true);
     let loopChecks = 0;
     const handlers = createHandlers(() => {
@@ -66,12 +71,12 @@ describe('RunScraperStateLoopCoreUseCase', () => {
     // Assert
     expect(processScraperStateTransitionUseCase.execute).toHaveBeenCalledTimes(1);
     expect(processScraperStateTransitionUseCase.execute).toHaveBeenCalledWith(handlers);
-    expect(sleep).not.toHaveBeenCalled();
+    expect(sleepPort.sleep).not.toHaveBeenCalled();
   });
 
   it('whenTransitionIsNotProcessed_execute_shouldSleepBeforeNextPoll', async () => {
     // Arrange
-    const { useCase, processScraperStateTransitionUseCase } = createUseCase();
+    const { useCase, processScraperStateTransitionUseCase, sleepPort } = createUseCase();
     processScraperStateTransitionUseCase.execute.mockResolvedValue(false);
     let loopChecks = 0;
     const handlers = createHandlers(() => {
@@ -82,8 +87,8 @@ describe('RunScraperStateLoopCoreUseCase', () => {
     await useCase.execute(handlers);
     // Assert
     expect(processScraperStateTransitionUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(sleep).toHaveBeenCalledWith(500);
-    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(sleepPort.sleep).toHaveBeenCalledWith(500);
+    expect(sleepPort.sleep).toHaveBeenCalledTimes(1);
   });
 
   it('whenShutdownIsRequested_execute_shouldLogThatLoopStopped', async () => {

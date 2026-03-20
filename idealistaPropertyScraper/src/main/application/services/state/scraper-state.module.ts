@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SleepModule } from 'src/adapters/outbound/timing/sleep.module';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
 import { ScheduleService } from 'src/application/services/state/schedule.service';
@@ -9,7 +10,7 @@ import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/r
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule],
+  imports: [ConfigurationModule, SleepModule],
   providers: [
     ScraperStateMachineService,
     PromoteIdleToScheduledScrapeUseCase,

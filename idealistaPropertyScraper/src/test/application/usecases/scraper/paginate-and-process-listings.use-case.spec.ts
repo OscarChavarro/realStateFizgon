@@ -3,12 +3,9 @@ import { PropertyListPageService } from 'src/application/services/scraper/proper
 import { PaginateAndProcessListingsUseCase } from 'src/application/usecases/scraper/paginate-and-process-listings.use-case';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
 
 import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
-jest.mock('src/infrastructure/sleep', () => ({
-  sleep: jest.fn(async () => undefined)
-}));
+import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
 
 class ChromeConfigMockForPaginateAndProcessListingsUseCase {
   readonly chromeExpressionTimeoutMs = 1000;
@@ -24,6 +21,10 @@ class PropertyListPageServiceMockForPaginateAndProcessListingsUseCase {
   readonly processUrls = jest.fn<(client: PropertyCdpClient, urls: string[]) => Promise<void>>();
 }
 
+class SleepPortMockForPaginateAndProcessListingsUseCase implements SleepPort {
+  readonly sleep = jest.fn<(ms: number) => Promise<void>>();
+}
+
 function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): PropertyCdpClient {
   return {
     Runtime: {
@@ -37,12 +38,15 @@ function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): Prope
 
 function createUseCase() {
   const propertyListPageService = new PropertyListPageServiceMockForPaginateAndProcessListingsUseCase();
+  const sleepPort = new SleepPortMockForPaginateAndProcessListingsUseCase();
   propertyListPageService.getPropertyUrls.mockResolvedValue(['https://www.idealista.com/inmueble/1/']);
   propertyListPageService.processUrls.mockResolvedValue(undefined);
+  sleepPort.sleep.mockResolvedValue(undefined);
   const useCase = new PaginateAndProcessListingsUseCase(
     new ChromeConfigMockForPaginateAndProcessListingsUseCase() as unknown as ChromeConfig,
     new ScraperConfigMockForPaginateAndProcessListingsUseCase() as unknown as ScraperConfig,
-    propertyListPageService as unknown as PropertyListPageService
+    propertyListPageService as unknown as PropertyListPageService,
+    sleepPort
   );
   const logger = {
     warn: jest.fn<(message: string) => void>(),
@@ -55,7 +59,7 @@ function createUseCase() {
   captchaDetector.panicIfCaptchaDetected.mockResolvedValue(undefined);
   (useCase as unknown as { logger: typeof logger }).logger = logger;
   (useCase as unknown as { captchaDetectorService: typeof captchaDetector }).captchaDetectorService = captchaDetector;
-  return { useCase, propertyListPageService, logger, captchaDetector };
+  return { useCase, propertyListPageService, sleepPort, logger, captchaDetector };
 }
 
 describe('PaginateAndProcessListingsUseCase', () => {
@@ -101,7 +105,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
 
   it('whenNextExistsAndPageChanges_execute_shouldMoveToFollowingPageAndContinue', async () => {
     // Arrange
-    const { useCase, logger, captchaDetector } = createUseCase();
+    const { useCase, logger, sleepPort, captchaDetector } = createUseCase();
     let urlCall = 0;
     let hasNextCall = 0;
     const evaluate = jest.fn<PropertyCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
@@ -131,7 +135,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     expect(logger.log).toHaveBeenCalledWith('Moved to page 2.');
     expect(logger.log).toHaveBeenCalledWith('Pagination finished at page 2.');
     expect(captchaDetector.panicIfCaptchaDetected).toHaveBeenCalled();
-    expect((sleep as jest.Mock)).toHaveBeenCalled();
+    expect(sleepPort.sleep).toHaveBeenCalled();
   });
 
   it('whenHasNextButtonEvaluationHasException_hasNextButton_shouldThrowRuntimeError', async () => {

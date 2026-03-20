@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FileSystemModule } from 'src/adapters/outbound/filesystem/file-system.module';
 import { RabbitMqModule } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
+import { SleepModule } from 'src/adapters/outbound/timing/sleep.module';
 import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
 import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
 import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
@@ -11,7 +12,7 @@ import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedow
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, RabbitMqModule, FileSystemModule],
+  imports: [ConfigurationModule, RabbitMqModule, FileSystemModule, SleepModule],
   providers: [
     ImageDownloadPathService,
     ImageUrlRulesService,

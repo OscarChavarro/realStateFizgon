@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { SLEEP_PORT } from 'src/ports/outbound/timing/sleep.port.token';
 
 import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
 @Injectable()
 export class PaginateAndProcessListingsUseCase {
   private readonly logger = new Logger(PaginateAndProcessListingsUseCase.name);
@@ -14,7 +15,8 @@ export class PaginateAndProcessListingsUseCase {
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly scraperConfig: ScraperConfig,
-    private readonly propertyListPageService: PropertyListPageService
+    private readonly propertyListPageService: PropertyListPageService,
+    @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
   async execute(client: PropertyCdpClient): Promise<void> {
@@ -42,7 +44,7 @@ export class PaginateAndProcessListingsUseCase {
         return;
       }
 
-      await sleep(this.scraperConfig.paginationClickWaitMs);
+      await this.sleepPort.sleep(this.scraperConfig.paginationClickWaitMs);
       await this.waitForUrlChange(client, currentUrl);
       await this.waitForListingsOrPagination(client);
       await this.captchaDetectorService.panicIfCaptchaDetected({
@@ -116,7 +118,7 @@ export class PaginateAndProcessListingsUseCase {
       if (currentUrl !== previousUrl) {
         return;
       }
-      await sleep(pollInterval);
+      await this.sleepPort.sleep(pollInterval);
     }
 
     throw new Error(`Timeout waiting for pagination URL change from ${previousUrl}`);
@@ -146,10 +148,9 @@ export class PaginateAndProcessListingsUseCase {
         return;
       }
 
-      await sleep(pollInterval);
+      await this.sleepPort.sleep(pollInterval);
     }
 
     throw new Error('Timeout waiting for listings/pagination after moving to next page.');
   }
 }
-

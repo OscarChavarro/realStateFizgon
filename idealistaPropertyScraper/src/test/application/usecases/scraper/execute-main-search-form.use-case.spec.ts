@@ -3,7 +3,7 @@ import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/e
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 class ScraperConfigMockForExecuteMainSearchFormUseCase {
   readonly mainPageExpressionTimeoutMs = 5000;
   readonly mainPageExpressionPollIntervalMs = 50;

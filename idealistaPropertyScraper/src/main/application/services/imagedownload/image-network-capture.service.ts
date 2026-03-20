@@ -6,7 +6,7 @@ import { NetworkResponseReceivedEvent } from 'src/application/services/imagedown
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
+import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
 @Injectable()
 export class ImageNetworkCaptureService {
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();

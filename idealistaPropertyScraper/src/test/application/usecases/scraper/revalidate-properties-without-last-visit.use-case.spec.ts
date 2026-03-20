@@ -4,7 +4,7 @@ import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/use
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 class PropertyListPageServiceMockForRevalidatePropertiesWithoutLastVisitUseCase {
   readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
 }

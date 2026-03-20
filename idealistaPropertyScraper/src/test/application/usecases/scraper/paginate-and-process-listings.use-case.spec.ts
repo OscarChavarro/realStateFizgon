@@ -5,7 +5,7 @@ import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));

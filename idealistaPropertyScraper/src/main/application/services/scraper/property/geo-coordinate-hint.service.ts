@@ -4,7 +4,7 @@ import { Property } from 'src/domain/property/property.model';
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 type GeoHintFetchMode = 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB';
 
 type GeoHintPayload = {

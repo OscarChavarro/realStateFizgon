@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 class ExecuteScrapeNewPropertiesFlowUseCaseMockForScrapeNewPropertiesFlowService {
   readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
 }

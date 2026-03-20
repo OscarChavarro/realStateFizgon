@@ -3,7 +3,7 @@ import { DeactivatedDetailStatusService } from 'src/application/services/scraper
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 class DeactivatedDetailStatusServiceMockForHandleDeactivatedPropertyDetailUseCase {
   readonly detect = jest.fn<(runtime: RuntimeClient) => Promise<{ isDeactivated: boolean; closedBy: Date | null }>>();
 }

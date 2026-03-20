@@ -4,7 +4,7 @@ import { SearchResultsPreparationService } from 'src/application/services/scrape
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class ExecuteUpdateExistingPropertiesFlowUseCase {
   private readonly logger = new Logger(ExecuteUpdateExistingPropertiesFlowUseCase.name);

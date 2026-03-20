@@ -8,7 +8,7 @@ import { FilterSelectionReaderService } from 'src/application/services/scraper/f
 import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
 import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterUpdateService {
   private readonly logger = new Logger(FilterUpdateService.name);

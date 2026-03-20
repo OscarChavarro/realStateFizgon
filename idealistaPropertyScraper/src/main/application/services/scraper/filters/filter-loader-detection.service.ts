@@ -3,7 +3,7 @@ import { ChromiumPageSyncService } from 'src/application/services/chromium/chrom
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterLoaderDetectionService {
   private readonly logger = new Logger(FilterLoaderDetectionService.name);

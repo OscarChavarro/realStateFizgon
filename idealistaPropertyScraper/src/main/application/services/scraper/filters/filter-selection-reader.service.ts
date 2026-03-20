@@ -3,7 +3,7 @@ import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterSelectionReaderService {
   async readCurrentPlainSelection(client: FiltersCdpClient, expectedFilter: Filter): Promise<string[]> {

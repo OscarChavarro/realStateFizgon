@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
 import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 type PageDomainMock = {
   navigate(params: { url: string }): Promise<void>;
   reload(params?: { ignoreCache?: boolean }): Promise<void>;

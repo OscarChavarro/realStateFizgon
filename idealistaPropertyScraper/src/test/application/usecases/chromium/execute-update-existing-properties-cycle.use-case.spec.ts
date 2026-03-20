@@ -8,7 +8,7 @@ import { UpdateExistingPropertiesFlowService } from 'src/application/services/sc
 import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 jest.mock('chrome-remote-interface', () => jest.fn());
 
 type PageTarget = { id?: string; type?: string; url?: string };

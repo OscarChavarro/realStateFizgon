@@ -6,7 +6,7 @@ import { PropertyMainFeatures } from 'src/domain/property/property-main-features
 import { Property } from 'src/domain/property/property.model';
 import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 type RuntimeMockResult = {
   exceptionDetails?: {
     text?: string;

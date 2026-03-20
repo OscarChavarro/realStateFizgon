@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MinMaxOptions } from 'src/application/services/scraper/filters/min-max-options.type';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterAvailableOptionExtractorService {
   async extractSingleSelectorDropdownOptions(client: FiltersCdpClient, selector: string): Promise<string[]> {

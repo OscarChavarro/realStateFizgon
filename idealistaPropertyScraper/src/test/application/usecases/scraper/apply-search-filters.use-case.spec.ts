@@ -8,8 +8,8 @@ import { Filter } from 'src/domain/filters/filter';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
-import type { AsideFiltersPayload } from 'src/application/services/scraper/filters/aside-filters-payload.type';
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { AsideFiltersPayload } from 'src/application/dto/scraper/aside-filters-payload.dto';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 class FilterUpdateServiceMockForApplySearchFiltersUseCase {
   readonly applyRequiredActions = jest.fn<(client: FiltersCdpClient, preloaded: SupportedFilters, extracted: SupportedFilters) => Promise<void>>();
 }

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 @Injectable()
 export class HandleDeactivatedPropertyDetailUseCase {
   constructor(

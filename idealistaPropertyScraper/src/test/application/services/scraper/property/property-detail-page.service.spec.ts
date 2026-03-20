@@ -4,7 +4,7 @@ import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/s
 import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 class LoadPropertyDetailFromResultsUseCaseMockForPropertyDetailPageService {
   readonly execute = jest.fn<(client: PropertyCdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
 }

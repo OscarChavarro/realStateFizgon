@@ -9,7 +9,7 @@ import { Price } from 'src/domain/filters/price.filter';
 import { PropertyType } from 'src/domain/filters/property-type.filter';
 import { Rooms } from 'src/domain/filters/rooms.filter';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 class FilterLoaderDetectionServiceMock {
   readonly scrollToTop = jest.fn<(client: FiltersCdpClient) => Promise<void>>();
   readonly waitForPostClickStabilityOrReload = jest.fn<(client: FiltersCdpClient) => Promise<boolean>>();

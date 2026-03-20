@@ -3,7 +3,7 @@ import { PropertyDetailDomExtractorService } from 'src/application/services/scra
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 type ExtractedPropertyPayloadMock = {
   title: string | null;
   location: string | null;

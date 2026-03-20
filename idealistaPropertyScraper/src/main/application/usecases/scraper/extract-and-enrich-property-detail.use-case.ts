@@ -4,7 +4,7 @@ import { PropertyDetailDomExtractorService } from 'src/application/services/scra
 import { Property } from 'src/domain/property/property.model';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 @Injectable()
 export class ExtractAndEnrichPropertyDetailUseCase {
   constructor(

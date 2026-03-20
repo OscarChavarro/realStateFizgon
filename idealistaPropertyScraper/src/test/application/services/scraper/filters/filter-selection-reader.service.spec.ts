@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterType } from 'src/domain/filters/filter-type.enum';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 type FilterLike = {
   getType(): FilterType;
   getCssSelector(): string;

@@ -6,7 +6,7 @@ import { PropertyDetailStorageService } from 'src/application/services/scraper/p
 import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class ProcessLoadedPropertyDetailUseCase {
   private readonly logger = new Logger(ProcessLoadedPropertyDetailUseCase.name);

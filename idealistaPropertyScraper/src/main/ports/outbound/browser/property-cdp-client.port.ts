@@ -1,4 +1,4 @@
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 
 export type PropertyCdpClient = {
   Page: {

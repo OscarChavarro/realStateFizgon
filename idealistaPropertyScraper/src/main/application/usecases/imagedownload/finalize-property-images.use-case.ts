@@ -11,8 +11,8 @@ import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config
 import { toErrorMessage } from 'src/infrastructure/error-message';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { DownloadedIncomingImage } from 'src/application/services/imagedownload/downloaded-incoming-image.type';
-import type { ImageResponseBodyPayload } from 'src/application/services/imagedownload/image-response-body-payload.type';
+import type { DownloadedIncomingImage } from 'src/application/dto/imagedownload/downloaded-incoming-image.dto';
+import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
 @Injectable()
 export class FinalizePropertyImagesUseCase {
   private readonly logger = new Logger(FinalizePropertyImagesUseCase.name);

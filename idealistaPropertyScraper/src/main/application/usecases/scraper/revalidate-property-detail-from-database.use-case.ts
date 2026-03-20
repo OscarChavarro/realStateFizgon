@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class RevalidatePropertyDetailFromDatabaseUseCase {
   constructor(private readonly navigationService: PropertyDetailNavigationService) {}

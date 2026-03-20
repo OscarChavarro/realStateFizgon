@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailNavigationServiceMockForRevalidatePropertyDetailFromDatabaseUseCase {
   readonly navigateDirectlyToUrl = jest.fn<(runtime: unknown, targetUrl: string) => Promise<void>>();
   readonly goBackToSearchResults = jest.fn<(runtime: unknown) => Promise<void>>();

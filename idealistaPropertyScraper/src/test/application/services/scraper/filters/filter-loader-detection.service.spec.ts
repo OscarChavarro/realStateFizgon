@@ -4,7 +4,7 @@ import { FilterLoaderDetectionService } from 'src/application/services/scraper/f
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { FiltersCdpClient } from 'src/application/services/scraper/filters/cdp-client.type';
+import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));

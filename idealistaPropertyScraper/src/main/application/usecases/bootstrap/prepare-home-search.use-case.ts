@@ -7,7 +7,7 @@ import { ChromiumPageTargetService } from 'src/application/services/chromium/chr
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class PrepareHomeSearchUseCase {
   private readonly logger = new Logger(PrepareHomeSearchUseCase.name);

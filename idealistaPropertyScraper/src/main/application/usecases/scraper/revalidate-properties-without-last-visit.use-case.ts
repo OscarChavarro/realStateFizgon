@@ -3,7 +3,7 @@ import { PropertyListPageService } from 'src/application/services/scraper/proper
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class RevalidatePropertiesWithoutLastVisitUseCase {
   private readonly logger = new Logger(RevalidatePropertiesWithoutLastVisitUseCase.name);

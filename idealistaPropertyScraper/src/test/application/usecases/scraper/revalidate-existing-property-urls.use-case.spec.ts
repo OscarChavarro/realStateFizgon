@@ -4,7 +4,7 @@ import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase {
   readonly loadPropertyUrlFromDatabase = jest.fn<(client: PropertyCdpClient, url: string) => Promise<void>>();
 }

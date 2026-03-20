@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class PropertyListPageService {
   private readonly logger = new Logger(PropertyListPageService.name);

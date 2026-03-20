@@ -7,7 +7,7 @@ import { ImageDownloaderService } from 'src/application/services/imagedownload/i
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 
-import type { ScraperCdpClient } from 'src/application/services/chromium/scraper-cdp-client.type';
+import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class ExecuteUpdateExistingPropertiesCycleUseCase {
   private readonly logger = new Logger(ExecuteUpdateExistingPropertiesCycleUseCase.name);

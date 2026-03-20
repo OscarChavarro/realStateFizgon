@@ -4,7 +4,7 @@ import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/s
 import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailPageServiceMockForProcessDiscoveredPropertyUrlsUseCase {
   readonly loadPropertyUrl = jest.fn<(client: PropertyCdpClient, url: string) => Promise<void>>();
 }

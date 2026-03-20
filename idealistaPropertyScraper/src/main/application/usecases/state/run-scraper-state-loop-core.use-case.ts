@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { ScraperStateLoopHandlers } from 'src/application/services/state/scraper-state-loop-handlers.type';
+import type { ScraperStateLoopHandlers } from 'src/application/usecases/state/scraper-state-loop-handlers.port';
 import { ProcessScraperStateTransitionUseCase } from 'src/application/usecases/state/process-scraper-state-transition.use-case';
 import { sleep } from 'src/infrastructure/sleep';
 

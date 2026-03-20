@@ -4,7 +4,7 @@ import { OriginErrorDetectorService } from 'src/application/services/resilience/
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
 import { sleep } from 'src/infrastructure/sleep';
 
-import type { RuntimeClient } from 'src/application/services/scraper/property/runtime-client.type';
+import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
 jest.mock('src/infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));

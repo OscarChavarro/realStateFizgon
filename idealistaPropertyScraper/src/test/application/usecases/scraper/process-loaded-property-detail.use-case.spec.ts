@@ -10,7 +10,7 @@ import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 
-import type { PropertyCdpClient } from 'src/application/services/scraper/property/cdp-client.type';
+import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
 class CookieApprovalDialogScraperServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly acceptCookiesIfVisible = jest.fn<(runtime: unknown) => Promise<void>>();
 }

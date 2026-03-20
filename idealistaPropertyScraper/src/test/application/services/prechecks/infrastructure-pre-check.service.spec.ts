@@ -1,11 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ImageDownloader } from 'src/application/services/imagedownload/image-downloader';
 import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
+import { ValidatePersistenceConnectionPreCheckUseCase } from 'src/application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
 import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 class ValidateProxyAccessPreCheckUseCaseMockForInfrastructurePreCheckService {
+  readonly execute = jest.fn<() => Promise<void>>();
+}
+
+class ValidatePersistenceConnectionPreCheckUseCaseMockForInfrastructurePreCheckService {
   readonly execute = jest.fn<() => Promise<void>>();
 }
 
@@ -16,18 +19,19 @@ class ImageDownloaderMockForInfrastructurePreCheckService {
 function createService() {
   const validateProxyAccessPreCheckUseCase =
     new ValidateProxyAccessPreCheckUseCaseMockForInfrastructurePreCheckService();
-  const propertyPersistencePort = new PropertyPersistencePortMock();
+  const validatePersistenceConnectionPreCheckUseCase =
+    new ValidatePersistenceConnectionPreCheckUseCaseMockForInfrastructurePreCheckService();
   const imageDownloader = new ImageDownloaderMockForInfrastructurePreCheckService();
   const service = new InfrastructurePreCheckService(
     validateProxyAccessPreCheckUseCase as unknown as ValidateProxyAccessPreCheckUseCase,
-    propertyPersistencePort as unknown as PropertyPersistencePort,
+    validatePersistenceConnectionPreCheckUseCase as unknown as ValidatePersistenceConnectionPreCheckUseCase,
     imageDownloader as unknown as ImageDownloader
   );
 
   return {
     service,
     validateProxyAccessPreCheckUseCase,
-    propertyPersistencePort,
+    validatePersistenceConnectionPreCheckUseCase,
     imageDownloader
   };
 }
@@ -35,18 +39,19 @@ function createService() {
 describe('InfrastructurePreCheckService', () => {
   it('whenAllPreChecksPass_runBeforeScraperStartup_shouldValidateProxyMongoAndImageFolderInOrder', async () => {
     // Arrange
-    const { service, validateProxyAccessPreCheckUseCase, propertyPersistencePort, imageDownloader } = createService();
+    const { service, validateProxyAccessPreCheckUseCase, validatePersistenceConnectionPreCheckUseCase, imageDownloader } =
+      createService();
     validateProxyAccessPreCheckUseCase.execute.mockResolvedValue(undefined);
-    propertyPersistencePort.validateConnectionOrExit.mockResolvedValue(undefined);
+    validatePersistenceConnectionPreCheckUseCase.execute.mockResolvedValue(undefined);
     imageDownloader.validateImageDownloadFolder.mockResolvedValue(undefined);
     // Action
     await service.runBeforeScraperStartup();
     // Assert
     expect(validateProxyAccessPreCheckUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(propertyPersistencePort.validateConnectionOrExit).toHaveBeenCalledTimes(1);
+    expect(validatePersistenceConnectionPreCheckUseCase.execute).toHaveBeenCalledTimes(1);
     expect(imageDownloader.validateImageDownloadFolder).toHaveBeenCalledTimes(1);
     const proxyCallOrder = validateProxyAccessPreCheckUseCase.execute.mock.invocationCallOrder[0];
-    const mongoCallOrder = propertyPersistencePort.validateConnectionOrExit.mock.invocationCallOrder[0];
+    const mongoCallOrder = validatePersistenceConnectionPreCheckUseCase.execute.mock.invocationCallOrder[0];
     const imageCallOrder = imageDownloader.validateImageDownloadFolder.mock.invocationCallOrder[0];
     expect(proxyCallOrder).toBeLessThan(mongoCallOrder);
     expect(mongoCallOrder).toBeLessThan(imageCallOrder);
@@ -54,23 +59,27 @@ describe('InfrastructurePreCheckService', () => {
 
   it('whenProxyValidationFails_runBeforeScraperStartup_shouldPropagateErrorAndSkipMongoAndImageChecks', async () => {
     // Arrange
-    const { service, validateProxyAccessPreCheckUseCase, propertyPersistencePort, imageDownloader } =
+    const { service, validateProxyAccessPreCheckUseCase, validatePersistenceConnectionPreCheckUseCase, imageDownloader } =
       createService();
     validateProxyAccessPreCheckUseCase.execute.mockRejectedValue(new Error('proxy failed'));
     // Action
     const action = service.runBeforeScraperStartup();
     // Assert
     await expect(action).rejects.toThrow('proxy failed');
-    expect(propertyPersistencePort.validateConnectionOrExit).not.toHaveBeenCalled();
+    expect(validatePersistenceConnectionPreCheckUseCase.execute).not.toHaveBeenCalled();
     expect(imageDownloader.validateImageDownloadFolder).not.toHaveBeenCalled();
   });
 
   it('whenMongoValidationFails_runBeforeScraperStartup_shouldPropagateErrorAndSkipImageCheck', async () => {
     // Arrange
-    const { service, validateProxyAccessPreCheckUseCase, propertyPersistencePort, imageDownloader } =
-      createService();
+    const {
+      service,
+      validateProxyAccessPreCheckUseCase,
+      validatePersistenceConnectionPreCheckUseCase,
+      imageDownloader
+    } = createService();
     validateProxyAccessPreCheckUseCase.execute.mockResolvedValue(undefined);
-    propertyPersistencePort.validateConnectionOrExit.mockRejectedValue(new Error('mongo failed'));
+    validatePersistenceConnectionPreCheckUseCase.execute.mockRejectedValue(new Error('mongo failed'));
     // Action
     const action = service.runBeforeScraperStartup();
     // Assert
@@ -81,17 +90,21 @@ describe('InfrastructurePreCheckService', () => {
 
   it('whenImageFolderValidationFails_runBeforeScraperStartup_shouldPropagateErrorAfterPreviousChecks', async () => {
     // Arrange
-    const { service, validateProxyAccessPreCheckUseCase, propertyPersistencePort, imageDownloader } =
-      createService();
+    const {
+      service,
+      validateProxyAccessPreCheckUseCase,
+      validatePersistenceConnectionPreCheckUseCase,
+      imageDownloader
+    } = createService();
     validateProxyAccessPreCheckUseCase.execute.mockResolvedValue(undefined);
-    propertyPersistencePort.validateConnectionOrExit.mockResolvedValue(undefined);
+    validatePersistenceConnectionPreCheckUseCase.execute.mockResolvedValue(undefined);
     imageDownloader.validateImageDownloadFolder.mockRejectedValue(new Error('image folder failed'));
     // Action
     const action = service.runBeforeScraperStartup();
     // Assert
     await expect(action).rejects.toThrow('image folder failed');
     expect(validateProxyAccessPreCheckUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(propertyPersistencePort.validateConnectionOrExit).toHaveBeenCalledTimes(1);
+    expect(validatePersistenceConnectionPreCheckUseCase.execute).toHaveBeenCalledTimes(1);
     expect(imageDownloader.validateImageDownloadFolder).toHaveBeenCalledTimes(1);
   });
 });

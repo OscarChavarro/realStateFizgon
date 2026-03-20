@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
+import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
+import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
+import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
@@ -9,8 +11,10 @@ export class ProcessDiscoveredPropertyUrlsUseCase {
   private readonly logger = new Logger(ProcessDiscoveredPropertyUrlsUseCase.name);
 
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort,
+    @Inject(PROPERTY_READ_PORT)
+    private readonly propertyReadPort: PropertyReadPort,
+    @Inject(PROPERTY_WRITE_PORT)
+    private readonly propertyWritePort: PropertyWritePort,
     private readonly propertyDetailPageService: PropertyDetailPageService
   ) {}
 
@@ -21,10 +25,10 @@ export class ProcessDiscoveredPropertyUrlsUseCase {
         continue;
       }
 
-      const isOpen = await this.propertyPersistencePort.isOpenPropertyByUrl(url);
+      const isOpen = await this.propertyReadPort.isOpenPropertyByUrl(url);
       if (isOpen) {
         this.logger.log(`Skipping existing open property: ${url}`);
-        await this.propertyPersistencePort.touchPropertyLastTimeVisited(url);
+        await this.propertyWritePort.touchPropertyLastTimeVisited(url);
         continue;
       }
 

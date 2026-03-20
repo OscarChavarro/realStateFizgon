@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { GeoLocationHint } from 'domain/property/geo-location-hint.model';
 import { Property } from 'domain/property/property.model';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
+import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
+import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 type GeoHintFetchMode = 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB';
@@ -26,8 +26,8 @@ export class GeoCoordinateHintService {
   private readonly logger = new Logger(GeoCoordinateHintService.name);
 
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort
+    @Inject(PROPERTY_READ_PORT)
+    private readonly propertyReadPort: PropertyReadPort
   ) {}
 
   async enrichProperty(
@@ -36,7 +36,7 @@ export class GeoCoordinateHintService {
     mode: GeoHintFetchMode
   ): Promise<Property> {
     if (mode === 'ONLY_WHEN_MISSING_IN_DB') {
-      const hasHint = await this.propertyPersistencePort.hasGeoLocationHintByUrl(property.url);
+      const hasHint = await this.propertyReadPort.hasGeoLocationHintByUrl(property.url);
       if (hasHint) {
         return property;
       }

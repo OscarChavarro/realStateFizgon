@@ -1,13 +1,8 @@
 import { Property } from 'domain/property/property.model';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 
-export interface PropertyPersistencePort {
+export interface PropertyWritePort {
   saveProperty(property: Property): Promise<SavePropertyResult>;
   saveClosedProperty(url: string, closedBy?: Date): Promise<void>;
-  isOpenPropertyByUrl(url: string): Promise<boolean>;
-  hasGeoLocationHintByUrl(url: string): Promise<boolean>;
   touchPropertyLastTimeVisited(url: string, visitedAt?: Date): Promise<void>;
-  getOpenPropertyUrlsWithoutLastTimeVisited(): Promise<string[]>;
-  getOpenPropertyUrls(): Promise<string[]>;
-  validateConnectionOrExit(): Promise<void>;
 }

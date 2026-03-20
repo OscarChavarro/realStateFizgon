@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
+import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
@@ -9,8 +9,8 @@ export class RevalidateExistingPropertyUrlsUseCase {
   private readonly logger = new Logger(RevalidateExistingPropertyUrlsUseCase.name);
 
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort,
+    @Inject(PROPERTY_WRITE_PORT)
+    private readonly propertyWritePort: PropertyWritePort,
     private readonly propertyDetailPageService: PropertyDetailPageService
   ) {}
 
@@ -23,7 +23,7 @@ export class RevalidateExistingPropertyUrlsUseCase {
 
       this.logger.log(`Revalidating existing property: ${url}`);
       await this.propertyDetailPageService.loadPropertyUrlFromDatabase(client, url);
-      await this.propertyPersistencePort.touchPropertyLastTimeVisited(url);
+      await this.propertyWritePort.touchPropertyLastTimeVisited(url);
       processedUrls.add(url);
     }
   }

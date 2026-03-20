@@ -6,7 +6,7 @@ import { PropertyFeatureGroup } from 'domain/property/property-feature-group.mod
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
 import { Property } from 'domain/property/property.model';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 
 class PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase {
   readonly execute = jest.fn<(property: Property) => Promise<void>>();
@@ -49,7 +49,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
-      mongo as unknown as PropertyPersistencePort,
+      mongo as unknown as PropertyWritePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloaderService
     );
@@ -74,7 +74,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
-      mongo as unknown as PropertyPersistencePort,
+      mongo as unknown as PropertyWritePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloaderService
     );
@@ -95,7 +95,7 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
     imageDownloader.waitForPendingImageDownloads.mockResolvedValue(undefined);
     imageDownloader.movePropertyImagesFromIncoming.mockResolvedValue(undefined);
     const useCase = new PersistPropertyDetailAndAssetsUseCase(
-      mongo as unknown as PropertyPersistencePort,
+      mongo as unknown as PropertyWritePort,
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloaderService
     );

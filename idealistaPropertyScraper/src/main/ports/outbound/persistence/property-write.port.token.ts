@@ -1,0 +1,1 @@
+export const PROPERTY_WRITE_PORT = Symbol('PROPERTY_WRITE_PORT');

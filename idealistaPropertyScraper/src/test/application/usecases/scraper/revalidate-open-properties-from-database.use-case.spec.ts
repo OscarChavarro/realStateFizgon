@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
@@ -39,7 +39,7 @@ describe('RevalidateOpenPropertiesFromDatabaseUseCase', () => {
     const mongo = new PropertyPersistencePortMock();
     const list = new PropertyListPageServiceMockForRevalidateOpenPropertiesFromDatabaseUseCase();
     const useCase = new RevalidateOpenPropertiesFromDatabaseUseCase(
-      mongo as unknown as PropertyPersistencePort,
+      mongo as unknown as PropertyReadPort,
       list as unknown as PropertyListPageService
     );
     const client = createClient();

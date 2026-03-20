@@ -1,0 +1,1 @@
+export const PROPERTY_READ_PORT = Symbol('PROPERTY_READ_PORT');

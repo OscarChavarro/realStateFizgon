@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 describe('MarkPropertyClosedUseCase', () => {
@@ -9,7 +9,7 @@ describe('MarkPropertyClosedUseCase', () => {
     const propertyPersistencePort = new PropertyPersistencePortMock();
     propertyPersistencePort.saveClosedProperty.mockResolvedValue(undefined);
     const useCase = new MarkPropertyClosedUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort
+      propertyPersistencePort as unknown as PropertyWritePort
     );
     const closedBy = new Date('2026-01-15T00:00:00.000Z');
     // Action
@@ -26,7 +26,7 @@ describe('MarkPropertyClosedUseCase', () => {
     const propertyPersistencePort = new PropertyPersistencePortMock();
     propertyPersistencePort.saveClosedProperty.mockResolvedValue(undefined);
     const useCase = new MarkPropertyClosedUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort
+      propertyPersistencePort as unknown as PropertyWritePort
     );
     // Action
     await useCase.execute('https://www.idealista.com/inmueble/999/');

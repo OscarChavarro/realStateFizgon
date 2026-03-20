@@ -1,15 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
+import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
+import { PERSISTENCE_HEALTH_PORT } from 'ports/outbound/persistence/persistence-health.port.token';
 
 @Injectable()
 export class ValidatePersistenceConnectionPreCheckUseCase {
   constructor(
-    @Inject(PROPERTY_PERSISTENCE_PORT)
-    private readonly propertyPersistencePort: PropertyPersistencePort
+    @Inject(PERSISTENCE_HEALTH_PORT)
+    private readonly persistenceHealthPort: PersistenceHealthPort
   ) {}
 
   async execute(): Promise<void> {
-    await this.propertyPersistencePort.validateConnectionOrExit();
+    await this.persistenceHealthPort.validateConnectionOrExit();
   }
 }

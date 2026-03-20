@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ValidatePersistenceConnectionPreCheckUseCase } from 'application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 describe('ValidatePersistenceConnectionPreCheckUseCase', () => {
@@ -9,7 +9,7 @@ describe('ValidatePersistenceConnectionPreCheckUseCase', () => {
     const propertyPersistencePort = new PropertyPersistencePortMock();
     propertyPersistencePort.validateConnectionOrExit.mockResolvedValue(undefined);
     const useCase = new ValidatePersistenceConnectionPreCheckUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort
+      propertyPersistencePort as unknown as PersistenceHealthPort
     );
     // Action
     await useCase.execute();
@@ -22,7 +22,7 @@ describe('ValidatePersistenceConnectionPreCheckUseCase', () => {
     const propertyPersistencePort = new PropertyPersistencePortMock();
     propertyPersistencePort.validateConnectionOrExit.mockRejectedValue(new Error('mongo unavailable'));
     const useCase = new ValidatePersistenceConnectionPreCheckUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort
+      propertyPersistencePort as unknown as PersistenceHealthPort
     );
     // Action
     const action = useCase.execute();

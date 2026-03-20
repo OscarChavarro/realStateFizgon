@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
 import { RevalidateExistingPropertyUrlsUseCase } from 'application/usecases/scraper/revalidate-existing-property-urls.use-case';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
@@ -26,7 +26,7 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
     const propertyPersistencePort = new PropertyPersistencePortMock();
     const propertyDetailPageService = new PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase();
     const useCase = new RevalidateExistingPropertyUrlsUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort,
+      propertyPersistencePort as unknown as PropertyWritePort,
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
     const processedUrls = new Set<string>(['https://idealista.com/inmueble/1/']);
@@ -44,7 +44,7 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
     const propertyDetailPageService = new PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase();
     propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
     const useCase = new RevalidateExistingPropertyUrlsUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort,
+      propertyPersistencePort as unknown as PropertyWritePort,
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
     const client = createClient();
@@ -65,7 +65,7 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
     const propertyDetailPageService = new PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase();
     propertyDetailPageService.loadPropertyUrlFromDatabase.mockResolvedValue(undefined);
     const useCase = new RevalidateExistingPropertyUrlsUseCase(
-      propertyPersistencePort as unknown as PropertyPersistencePort,
+      propertyPersistencePort as unknown as PropertyWritePort,
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
     const client = createClient();

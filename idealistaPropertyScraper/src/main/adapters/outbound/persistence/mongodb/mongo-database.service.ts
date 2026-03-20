@@ -4,14 +4,16 @@ import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
 import { Property } from 'domain/property/property.model';
 import { sleep } from 'infrastructure/sleep';
-import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
+import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
+import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 import { MongoPriceMigrationService, PriceFixSummary } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
 import { MongoPropertyUpsertService } from 'adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
 import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 
 @Injectable()
-export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistencePort {
+export class MongoDatabaseService implements OnModuleDestroy, PropertyWritePort, PropertyReadPort, PersistenceHealthPort {
   private static readonly PROPERTIES_COLLECTION = 'properties';
 
   private readonly logger = new Logger(MongoDatabaseService.name);

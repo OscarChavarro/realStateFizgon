@@ -5,7 +5,9 @@ import { MongoPublicationDateMapperService } from 'adapters/outbound/persistence
 import { MongoPropertyUpsertService } from 'adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
 import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
-import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
+import { PERSISTENCE_HEALTH_PORT } from 'ports/outbound/persistence/persistence-health.port.token';
+import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
+import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
 @Module({
   imports: [ConfigurationModule],
@@ -16,10 +18,18 @@ import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-p
     MongoPropertyVisitService,
     MongoDatabaseService,
     {
-      provide: PROPERTY_PERSISTENCE_PORT,
+      provide: PROPERTY_WRITE_PORT,
+      useExisting: MongoDatabaseService
+    },
+    {
+      provide: PROPERTY_READ_PORT,
+      useExisting: MongoDatabaseService
+    },
+    {
+      provide: PERSISTENCE_HEALTH_PORT,
       useExisting: MongoDatabaseService
     }
   ],
-  exports: [MongoDatabaseService, PROPERTY_PERSISTENCE_PORT]
+  exports: [MongoDatabaseService, PROPERTY_WRITE_PORT, PROPERTY_READ_PORT, PERSISTENCE_HEALTH_PORT]
 })
 export class MongoDatabaseModule {}

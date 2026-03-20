@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
-import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper/process-loaded-property-detail.use-case';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
 import { PropertyImage } from 'domain/property/property-image.model';
@@ -31,8 +31,8 @@ class ExtractAndEnrichPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUse
   >();
 }
 
-class PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase {
-  readonly savePropertyWithImages = jest.fn<(property: Property) => Promise<void>>();
+class PersistPropertyDetailAndAssetsUseCaseMockForProcessLoadedPropertyDetailUseCase {
+  readonly execute = jest.fn<(property: Property) => Promise<void>>();
 }
 
 class CaptchaDetectorPortMockForProcessLoadedPropertyDetailUseCase implements CaptchaDetectorPort {
@@ -70,7 +70,8 @@ function createUseCase() {
   const interaction = new PropertyDetailInteractionServiceMockForProcessLoadedPropertyDetailUseCase();
   const handleDeactivated = new HandleDeactivatedPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase();
   const extractAndEnrich = new ExtractAndEnrichPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase();
-  const storage = new PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase();
+  const persistPropertyDetailAndAssetsUseCase =
+    new PersistPropertyDetailAndAssetsUseCaseMockForProcessLoadedPropertyDetailUseCase();
   const captchaDetectorPort = new CaptchaDetectorPortMockForProcessLoadedPropertyDetailUseCase();
   captchaDetectorPort.panicIfCaptchaDetected.mockResolvedValue(undefined);
 
@@ -79,7 +80,7 @@ function createUseCase() {
     interaction as unknown as PropertyDetailInteractionService,
     handleDeactivated as unknown as HandleDeactivatedPropertyDetailUseCase,
     extractAndEnrich as unknown as ExtractAndEnrichPropertyDetailUseCase,
-    storage as unknown as PropertyDetailStorageService,
+    persistPropertyDetailAndAssetsUseCase as unknown as PersistPropertyDetailAndAssetsUseCase,
     captchaDetectorPort
   );
 
@@ -89,7 +90,7 @@ function createUseCase() {
     interaction,
     handleDeactivated,
     extractAndEnrich,
-    storage,
+    persistPropertyDetailAndAssetsUseCase,
     captchaDetectorPort
   };
 }
@@ -129,7 +130,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       cookie,
       handleDeactivated,
       extractAndEnrich,
-      storage
+      persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
     const enrichedProperty = createProperty('https://www.idealista.com/inmueble/3/');
@@ -138,7 +139,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
     handleDeactivated.execute.mockResolvedValue(false);
     extractAndEnrich.execute.mockResolvedValue(enrichedProperty);
-    storage.savePropertyWithImages.mockResolvedValue(undefined);
+    persistPropertyDetailAndAssetsUseCase.execute.mockResolvedValue(undefined);
 
     // Action
     await useCase.execute(client, 'https://www.idealista.com/inmueble/3/', 'ALWAYS');
@@ -151,7 +152,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       'https://www.idealista.com/inmueble/3/',
       'ALWAYS'
     );
-    expect(storage.savePropertyWithImages).toHaveBeenCalledWith(enrichedProperty);
+    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty);
   });
 
   it('whenDetailIsActiveAndExtractedFromDatabase_execute_shouldUseConditionalGeoHintMode', async () => {
@@ -162,7 +163,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       cookie,
       handleDeactivated,
       extractAndEnrich,
-      storage
+      persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
     const enrichedProperty = createProperty('https://www.idealista.com/inmueble/3b/');
@@ -171,7 +172,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
     handleDeactivated.execute.mockResolvedValue(false);
     extractAndEnrich.execute.mockResolvedValue(enrichedProperty);
-    storage.savePropertyWithImages.mockResolvedValue(undefined);
+    persistPropertyDetailAndAssetsUseCase.execute.mockResolvedValue(undefined);
 
     // Action
     await useCase.execute(client, 'https://www.idealista.com/inmueble/3b/', 'ONLY_WHEN_MISSING_IN_DB');
@@ -182,7 +183,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       'https://www.idealista.com/inmueble/3b/',
       'ONLY_WHEN_MISSING_IN_DB'
     );
-    expect(storage.savePropertyWithImages).toHaveBeenCalledWith(enrichedProperty);
+    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty);
   });
 
   it('whenExtractionPathReturnsNull_execute_shouldReturnWithoutPersisting', async () => {
@@ -193,7 +194,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       cookie,
       handleDeactivated,
       extractAndEnrich,
-      storage
+      persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
@@ -207,6 +208,6 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
 
     // Assert
     expect(extractAndEnrich.execute).toHaveBeenCalledTimes(1);
-    expect(storage.savePropertyWithImages).not.toHaveBeenCalled();
+    expect(persistPropertyDetailAndAssetsUseCase.execute).not.toHaveBeenCalled();
   });
 });

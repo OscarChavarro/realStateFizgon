@@ -4,7 +4,7 @@ import { ChromiumGeolocationService } from 'application/services/chromium/chromi
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
-import { ScrapeNewPropertiesFlowService } from 'application/services/scraper/flows/scrape-new-properties-flow.service';
+import { ExecuteScrapeNewPropertiesFlowUseCase } from 'application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
@@ -20,7 +20,7 @@ export class ExecuteScrapeNewPropertiesCycleUseCase {
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,
     private readonly imageDownloader: ImageDownloaderService,
-    private readonly scrapeNewPropertiesFlowService: ScrapeNewPropertiesFlowService
+    private readonly executeScrapeNewPropertiesFlowUseCase: ExecuteScrapeNewPropertiesFlowUseCase
   ) {}
 
   async execute(cdpHost: string, cdpPort: number): Promise<void> {
@@ -44,7 +44,7 @@ export class ExecuteScrapeNewPropertiesCycleUseCase {
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
       await this.imageDownloader.initializeNetworkCapture(client);
       await Page.bringToFront();
-      await this.scrapeNewPropertiesFlowService.execute(client);
+      await this.executeScrapeNewPropertiesFlowUseCase.execute(client);
     } finally {
       await client.close();
     }

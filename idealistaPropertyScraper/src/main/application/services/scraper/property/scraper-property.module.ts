@@ -13,7 +13,6 @@ import { PropertyDetailDomExtractorService } from 'application/services/scraper/
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailNavigationService } from 'application/services/scraper/property/property-detail-navigation.service';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
-import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
 import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
@@ -53,7 +52,6 @@ import { RevalidatePropertyDetailFromDatabaseUseCase } from 'application/usecase
     RevalidateExistingPropertyUrlsUseCase,
     LoadPropertyDetailFromResultsUseCase,
     RevalidatePropertyDetailFromDatabaseUseCase,
-    PropertyDetailStorageService,
     PropertyDetailPageService,
     PropertyListPageService
   ],

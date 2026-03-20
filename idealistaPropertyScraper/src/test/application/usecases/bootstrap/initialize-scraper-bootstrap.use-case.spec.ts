@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
 import { BootstrapChromiumSessionUseCase } from 'application/usecases/bootstrap/bootstrap-chromium-session.use-case';
 import { HandleScraperBootstrapFailureUseCase } from 'application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
 import { InitializeScraperBootstrapUseCase } from 'application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
+import { PrepareHomeSearchUseCase } from 'application/usecases/bootstrap/prepare-home-search.use-case';
 import { RunStartupPreChecksUseCase } from 'application/usecases/prechecks/run-startup-pre-checks.use-case';
 
 class RunStartupPreChecksUseCaseMockForInitializeScraperBootstrapUseCase {
   readonly execute = jest.fn<() => Promise<void>>();
 }
 
-class HomeSearchPreparationFlowServiceMockForInitializeScraperBootstrapUseCase {
+class PrepareHomeSearchUseCaseMockForInitializeScraperBootstrapUseCase {
   readonly execute = jest.fn<(cdpHost: string, cdpPort: number) => Promise<void>>();
 }
 
@@ -53,8 +53,8 @@ class HandleScraperBootstrapFailureUseCaseMockForInitializeScraperBootstrapUseCa
 function createUseCase() {
   const runStartupPreChecksUseCase = new RunStartupPreChecksUseCaseMockForInitializeScraperBootstrapUseCase();
   runStartupPreChecksUseCase.execute.mockResolvedValue(undefined);
-  const homeSearchPreparationFlowService = new HomeSearchPreparationFlowServiceMockForInitializeScraperBootstrapUseCase();
-  homeSearchPreparationFlowService.execute.mockResolvedValue(undefined);
+  const prepareHomeSearchUseCase = new PrepareHomeSearchUseCaseMockForInitializeScraperBootstrapUseCase();
+  prepareHomeSearchUseCase.execute.mockResolvedValue(undefined);
   const scraperOrchestratorService = new ScraperOrchestratorServiceMockForInitializeScraperBootstrapUseCase();
   const bootstrapChromiumSessionUseCase = new BootstrapChromiumSessionUseCaseMockForInitializeScraperBootstrapUseCase();
   bootstrapChromiumSessionUseCase.execute.mockResolvedValue(undefined);
@@ -63,7 +63,7 @@ function createUseCase() {
   handleScraperBootstrapFailureUseCase.execute.mockResolvedValue(undefined);
   const useCase = new InitializeScraperBootstrapUseCase(
     runStartupPreChecksUseCase as unknown as RunStartupPreChecksUseCase,
-    homeSearchPreparationFlowService as unknown as HomeSearchPreparationFlowService,
+    prepareHomeSearchUseCase as unknown as PrepareHomeSearchUseCase,
     scraperOrchestratorService as unknown as ScraperOrchestratorService,
     bootstrapChromiumSessionUseCase as unknown as BootstrapChromiumSessionUseCase,
     handleScraperBootstrapFailureUseCase as unknown as HandleScraperBootstrapFailureUseCase
@@ -72,7 +72,7 @@ function createUseCase() {
   return {
     useCase,
     runStartupPreChecksUseCase,
-    homeSearchPreparationFlowService,
+    prepareHomeSearchUseCase,
     scraperOrchestratorService,
     bootstrapChromiumSessionUseCase,
     handleScraperBootstrapFailureUseCase
@@ -85,7 +85,7 @@ describe('InitializeScraperBootstrapUseCase', () => {
     const {
       useCase,
       runStartupPreChecksUseCase,
-      homeSearchPreparationFlowService,
+      prepareHomeSearchUseCase,
       scraperOrchestratorService,
       bootstrapChromiumSessionUseCase,
       handleScraperBootstrapFailureUseCase
@@ -108,7 +108,7 @@ describe('InitializeScraperBootstrapUseCase', () => {
       onUnexpectedExit,
       isShuttingDown
     });
-    expect(homeSearchPreparationFlowService.execute).toHaveBeenCalledWith('127.0.0.1', 9222);
+    expect(prepareHomeSearchUseCase.execute).toHaveBeenCalledWith('127.0.0.1', 9222);
     expect(scraperOrchestratorService.start).toHaveBeenCalledWith({
       cdpHost: '127.0.0.1',
       cdpPort: 9222,
@@ -124,7 +124,7 @@ describe('InitializeScraperBootstrapUseCase', () => {
     const {
       useCase,
       runStartupPreChecksUseCase,
-      homeSearchPreparationFlowService,
+      prepareHomeSearchUseCase,
       scraperOrchestratorService,
       bootstrapChromiumSessionUseCase,
       handleScraperBootstrapFailureUseCase
@@ -150,7 +150,7 @@ describe('InitializeScraperBootstrapUseCase', () => {
       onUnexpectedExit
     });
     expect(bootstrapChromiumSessionUseCase.execute).not.toHaveBeenCalled();
-    expect(homeSearchPreparationFlowService.execute).not.toHaveBeenCalled();
+    expect(prepareHomeSearchUseCase.execute).not.toHaveBeenCalled();
     expect(scraperOrchestratorService.start).not.toHaveBeenCalled();
   });
 });

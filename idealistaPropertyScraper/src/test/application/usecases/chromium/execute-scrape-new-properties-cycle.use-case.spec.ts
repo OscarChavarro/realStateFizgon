@@ -4,11 +4,11 @@ import { ChromiumGeolocationService } from 'application/services/chromium/chromi
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
-import { ScrapeNewPropertiesFlowService } from 'application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ExecuteScrapeNewPropertiesCycleUseCase } from 'application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { ExecuteScrapeNewPropertiesFlowUseCase } from 'application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 jest.mock('chrome-remote-interface', () => jest.fn());
 
 type PageTarget = { id?: string; type?: string; url?: string };
@@ -35,7 +35,7 @@ class ImageDownloaderMockForExecuteScrapeNewPropertiesCycleUseCase {
   readonly initializeNetworkCapture = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
 }
 
-class ScrapeNewPropertiesFlowServiceMockForExecuteScrapeNewPropertiesCycleUseCase {
+class ExecuteScrapeNewPropertiesFlowUseCaseMockForExecuteScrapeNewPropertiesCycleUseCase {
   readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
 }
 
@@ -74,15 +74,16 @@ function createUseCase() {
   chromiumGeolocationService.applyGeolocationOverride.mockResolvedValue(undefined);
   const imageDownloader = new ImageDownloaderMockForExecuteScrapeNewPropertiesCycleUseCase();
   imageDownloader.initializeNetworkCapture.mockResolvedValue(undefined);
-  const scrapeNewPropertiesFlowService = new ScrapeNewPropertiesFlowServiceMockForExecuteScrapeNewPropertiesCycleUseCase();
-  scrapeNewPropertiesFlowService.execute.mockResolvedValue(undefined);
+  const executeScrapeNewPropertiesFlowUseCase =
+    new ExecuteScrapeNewPropertiesFlowUseCaseMockForExecuteScrapeNewPropertiesCycleUseCase();
+  executeScrapeNewPropertiesFlowUseCase.execute.mockResolvedValue(undefined);
   const useCase = new ExecuteScrapeNewPropertiesCycleUseCase(
-    scraperConfig as unknown as ScraperConfig,
+    scraperConfig as unknown as ScraperSettingsPort,
     chromiumPageTargetService as unknown as ChromiumPageTargetService,
     chromiumGeolocationService as unknown as ChromiumGeolocationService,
     chromiumNetworkHeadersService as unknown as ChromiumNetworkHeadersService,
     imageDownloader as unknown as ImageDownloaderService,
-    scrapeNewPropertiesFlowService as unknown as ScrapeNewPropertiesFlowService
+    executeScrapeNewPropertiesFlowUseCase as unknown as ExecuteScrapeNewPropertiesFlowUseCase
   );
   const logger = {
     log: jest.fn<(message: string) => void>(),
@@ -98,7 +99,7 @@ function createUseCase() {
     chromiumNetworkHeadersService,
     chromiumGeolocationService,
     imageDownloader,
-    scrapeNewPropertiesFlowService,
+    executeScrapeNewPropertiesFlowUseCase,
     logger
   };
 }
@@ -129,7 +130,7 @@ describe('ExecuteScrapeNewPropertiesCycleUseCase', () => {
       chromiumNetworkHeadersService,
       chromiumGeolocationService,
       imageDownloader,
-      scrapeNewPropertiesFlowService,
+      executeScrapeNewPropertiesFlowUseCase,
       logger
     } = createUseCase();
     chromiumPageTargetService.waitForPageTarget.mockResolvedValue({ id: 'target-42', type: 'page' });
@@ -149,7 +150,7 @@ describe('ExecuteScrapeNewPropertiesCycleUseCase', () => {
     expect(chromiumGeolocationService.applyGeolocationOverride).toHaveBeenCalledWith(client);
     expect(imageDownloader.initializeNetworkCapture).toHaveBeenCalledWith(client);
     expect(client.Page.bringToFront).toHaveBeenCalledTimes(1);
-    expect(scrapeNewPropertiesFlowService.execute).toHaveBeenCalledWith(client);
+    expect(executeScrapeNewPropertiesFlowUseCase.execute).toHaveBeenCalledWith(client);
     expect(client.close).toHaveBeenCalledTimes(1);
     expect(logger.log).toHaveBeenCalledWith('Using page target target-42 for SCRAPING_FOR_NEW_PROPERTIES state.');
   });
@@ -159,12 +160,12 @@ describe('ExecuteScrapeNewPropertiesCycleUseCase', () => {
     const {
       useCase,
       chromiumPageTargetService,
-      scrapeNewPropertiesFlowService,
+      executeScrapeNewPropertiesFlowUseCase,
       logger
     } = createUseCase();
     chromiumPageTargetService.waitForPageTarget.mockResolvedValue({ type: 'page' });
     const client = createClient();
-    scrapeNewPropertiesFlowService.execute.mockRejectedValue(new Error('scrape flow failed'));
+    executeScrapeNewPropertiesFlowUseCase.execute.mockRejectedValue(new Error('scrape flow failed'));
     const cdpMock = CDP as unknown as jest.MockedFunction<
       (params: { host: string; port: number; target: PageTarget }) => Promise<ScraperCdpClient>
     >;

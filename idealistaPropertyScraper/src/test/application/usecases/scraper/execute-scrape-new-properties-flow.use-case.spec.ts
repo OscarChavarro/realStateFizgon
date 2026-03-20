@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyListingPaginationService } from 'application/services/scraper/pagination/property-listing-pagination.service';
-import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
+import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
-class SearchResultsPreparationServiceMockForExecuteScrapeNewPropertiesFlowUseCase {
-  readonly prepareSearchResultsWithFilters = jest.fn<
+class PrepareSearchResultsUseCaseMockForExecuteScrapeNewPropertiesFlowUseCase {
+  readonly execute = jest.fn<
     (client: ScraperCdpClient, page: ScraperCdpClient['Page'], runtime: ScraperCdpClient['Runtime']) => Promise<void>
   >();
 }
@@ -40,10 +40,10 @@ function createClient(): ScraperCdpClient {
 }
 
 function createUseCase() {
-  const searchResultsPreparationService = new SearchResultsPreparationServiceMockForExecuteScrapeNewPropertiesFlowUseCase();
+  const prepareSearchResultsUseCase = new PrepareSearchResultsUseCaseMockForExecuteScrapeNewPropertiesFlowUseCase();
   const propertyListingPaginationService = new PropertyListingPaginationServiceMockForExecuteScrapeNewPropertiesFlowUseCase();
   const useCase = new ExecuteScrapeNewPropertiesFlowUseCase(
-    searchResultsPreparationService as unknown as SearchResultsPreparationService,
+    prepareSearchResultsUseCase as unknown as PrepareSearchResultsUseCase,
     propertyListingPaginationService as unknown as PropertyListingPaginationService
   );
   const logger = {
@@ -53,7 +53,7 @@ function createUseCase() {
 
   return {
     useCase,
-    searchResultsPreparationService,
+    prepareSearchResultsUseCase,
     propertyListingPaginationService,
     logger
   };
@@ -62,16 +62,16 @@ function createUseCase() {
 describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
   it('whenPreparationAndPaginationSucceed_execute_shouldRunFlowAndLogFinish', async () => {
     // Arrange
-    const { useCase, searchResultsPreparationService, propertyListingPaginationService, logger } = createUseCase();
+    const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
-    searchResultsPreparationService.prepareSearchResultsWithFilters.mockResolvedValue(undefined);
+    prepareSearchResultsUseCase.execute.mockResolvedValue(undefined);
     propertyListingPaginationService.execute.mockResolvedValue(undefined);
 
     // Action
     await useCase.execute(client);
 
     // Assert
-    expect(searchResultsPreparationService.prepareSearchResultsWithFilters).toHaveBeenCalledWith(
+    expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledWith(
       client,
       client.Page,
       client.Runtime
@@ -82,9 +82,9 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
 
   it('whenPreparationFails_execute_shouldPropagateErrorAndSkipPaginationAndFinishLog', async () => {
     // Arrange
-    const { useCase, searchResultsPreparationService, propertyListingPaginationService, logger } = createUseCase();
+    const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
-    searchResultsPreparationService.prepareSearchResultsWithFilters.mockRejectedValue(new Error('prepare failed'));
+    prepareSearchResultsUseCase.execute.mockRejectedValue(new Error('prepare failed'));
 
     // Action
     const action = useCase.execute(client);
@@ -97,9 +97,9 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
 
   it('whenPaginationFails_execute_shouldPropagateErrorAndSkipFinishLog', async () => {
     // Arrange
-    const { useCase, searchResultsPreparationService, propertyListingPaginationService, logger } = createUseCase();
+    const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
-    searchResultsPreparationService.prepareSearchResultsWithFilters.mockResolvedValue(undefined);
+    prepareSearchResultsUseCase.execute.mockResolvedValue(undefined);
     propertyListingPaginationService.execute.mockRejectedValue(new Error('pagination failed'));
 
     // Action
@@ -107,7 +107,7 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
 
     // Assert
     await expect(action).rejects.toThrow('pagination failed');
-    expect(searchResultsPreparationService.prepareSearchResultsWithFilters).toHaveBeenCalledTimes(1);
+    expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledTimes(1);
     expect(propertyListingPaginationService.execute).toHaveBeenCalledTimes(1);
     expect(logger.log).not.toHaveBeenCalled();
   });

@@ -7,17 +7,12 @@ import { ImageDownloadModule } from 'application/services/imagedownload/image-do
 import { ScraperChromiumModule } from 'application/services/chromium/scraper-chromium.module';
 import { ScraperFiltersModule } from 'application/services/scraper/filters/scraper-filters.module';
 import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
-import { MainPageService } from 'application/services/scraper/main-page.service';
 import { OriginErrorDetectorModule } from 'application/services/resilience/origin-error-detector.module';
 import { ScraperPaginationModule } from 'application/services/scraper/pagination/scraper-pagination.module';
 import { ScraperPropertyModule } from 'application/services/scraper/property/scraper-property.module';
-import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
 import { ScraperBootstrapService } from 'application/services/scraper/scraper-bootstrap.service';
 import { ScraperStateModule } from 'application/services/state/scraper-state.module';
-import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
-import { ScrapeNewPropertiesFlowService } from 'application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
-import { UpdateExistingPropertiesFlowService } from 'application/services/scraper/flows/update-existing-properties-flow.service';
 import { BootstrapChromiumSessionUseCase } from 'application/usecases/bootstrap/bootstrap-chromium-session.use-case';
 import { HandleScraperBootstrapFailureUseCase } from 'application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
 import { InitializeScraperBootstrapUseCase } from 'application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
@@ -52,10 +47,7 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
   ],
   providers: [
     InfrastructurePreCheckService,
-    HomeSearchPreparationFlowService,
-    ScrapeNewPropertiesFlowService,
     ScraperOrchestratorService,
-    UpdateExistingPropertiesFlowService,
     BootstrapChromiumSessionUseCase,
     HandleScraperBootstrapFailureUseCase,
     InitializeScraperBootstrapUseCase,
@@ -73,8 +65,6 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
     ValidatePersistenceConnectionPreCheckUseCase,
     ValidateImageDownloadFolderPreCheckUseCase,
     ValidateProxyAccessPreCheckUseCase,
-    MainPageService,
-    SearchResultsPreparationService,
     ScraperBootstrapService
   ],
   exports: [ScraperBootstrapService]

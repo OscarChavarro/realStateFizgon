@@ -2,8 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { FiltersService } from 'application/services/scraper/filters/filters.service';
-import { MainPageService } from 'application/services/scraper/main-page.service';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { ExecuteMainSearchFormUseCase } from 'application/usecases/scraper/execute-main-search-form.use-case';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
@@ -35,7 +35,7 @@ export class PrepareSearchResultsUseCase {
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
-    private readonly mainPageService: MainPageService,
+    private readonly executeMainSearchFormUseCase: ExecuteMainSearchFormUseCase,
     private readonly filtersService: FiltersService,
     private readonly propertyListPageService: PropertyListPageService,
     private readonly originErrorDetectorService: OriginErrorDetectorService,
@@ -110,7 +110,7 @@ export class PrepareSearchResultsUseCase {
       try {
         await this.recoverIfOriginError(page, runtime);
         this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-        await this.mainPageService.execute(
+        await this.executeMainSearchFormUseCase.execute(
           client,
           this.scraperConfig.mainSearchArea,
           this.scraperConfig.scraperHomeUrl

@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { DeactivatedDetailStatusService } from 'application/services/scraper/property/deactivated-detail-status.service';
-import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
+import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 @Injectable()
 export class HandleDeactivatedPropertyDetailUseCase {
   constructor(
     private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
-    private readonly storageService: PropertyDetailStorageService
+    private readonly markPropertyClosedUseCase: MarkPropertyClosedUseCase
   ) {}
 
   async execute(runtime: RuntimeClient, url: string): Promise<boolean> {
@@ -16,7 +16,7 @@ export class HandleDeactivatedPropertyDetailUseCase {
       return false;
     }
 
-    await this.storageService.markPropertyClosed(url, deactivatedStatus.closedBy ?? undefined);
+    await this.markPropertyClosedUseCase.execute(url, deactivatedStatus.closedBy ?? undefined);
     return true;
   }
 }

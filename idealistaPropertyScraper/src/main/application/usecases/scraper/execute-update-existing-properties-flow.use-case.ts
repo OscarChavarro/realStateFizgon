@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
-import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
+import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
@@ -10,14 +10,14 @@ export class ExecuteUpdateExistingPropertiesFlowUseCase {
   private readonly logger = new Logger(ExecuteUpdateExistingPropertiesFlowUseCase.name);
 
   constructor(
-    private readonly searchResultsPreparationService: SearchResultsPreparationService,
+    private readonly prepareSearchResultsUseCase: PrepareSearchResultsUseCase,
     private readonly revalidatePropertiesWithoutLastVisitUseCase: RevalidatePropertiesWithoutLastVisitUseCase,
     private readonly revalidateOpenPropertiesFromDatabaseUseCase: RevalidateOpenPropertiesFromDatabaseUseCase,
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
   async execute(client: ScraperCdpClient): Promise<void> {
-    await this.searchResultsPreparationService.prepareSearchResultsWithFilters(
+    await this.prepareSearchResultsUseCase.execute(
       client,
       client.Page,
       client.Runtime

@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
-import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 
 import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
@@ -17,7 +17,7 @@ export class ProcessLoadedPropertyDetailUseCase {
     private readonly interactionService: PropertyDetailInteractionService,
     private readonly handleDeactivatedPropertyDetailUseCase: HandleDeactivatedPropertyDetailUseCase,
     private readonly extractAndEnrichPropertyDetailUseCase: ExtractAndEnrichPropertyDetailUseCase,
-    private readonly storageService: PropertyDetailStorageService,
+    private readonly persistPropertyDetailAndAssetsUseCase: PersistPropertyDetailAndAssetsUseCase,
     @Inject(CAPTCHA_DETECTOR_PORT)
     private readonly captchaDetectorPort: CaptchaDetectorPort
   ) {}
@@ -55,6 +55,6 @@ export class ProcessLoadedPropertyDetailUseCase {
       return;
     }
 
-    await this.storageService.savePropertyWithImages(enrichedProperty);
+    await this.persistPropertyDetailAndAssetsUseCase.execute(enrichedProperty);
   }
 }

@@ -1,15 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { DeactivatedDetailStatusService } from 'application/services/scraper/property/deactivated-detail-status.service';
-import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 class DeactivatedDetailStatusServiceMockForHandleDeactivatedPropertyDetailUseCase {
   readonly detect = jest.fn<(runtime: RuntimeClient) => Promise<{ isDeactivated: boolean; closedBy: Date | null }>>();
 }
 
-class PropertyDetailStorageServiceMockForHandleDeactivatedPropertyDetailUseCase {
-  readonly markPropertyClosed = jest.fn<(url: string, closedBy?: Date) => Promise<void>>();
+class MarkPropertyClosedUseCaseMockForHandleDeactivatedPropertyDetailUseCase {
+  readonly execute = jest.fn<(url: string, closedBy?: Date) => Promise<void>>();
 }
 
 function createRuntime(): RuntimeClient {
@@ -46,15 +46,15 @@ describe('HandleDeactivatedPropertyDetailUseCase', () => {
   }) => {
     // Arrange
     const deactivatedDetailStatusService = new DeactivatedDetailStatusServiceMockForHandleDeactivatedPropertyDetailUseCase();
-    const storageService = new PropertyDetailStorageServiceMockForHandleDeactivatedPropertyDetailUseCase();
+    const markPropertyClosedUseCase = new MarkPropertyClosedUseCaseMockForHandleDeactivatedPropertyDetailUseCase();
     const useCase = new HandleDeactivatedPropertyDetailUseCase(
       deactivatedDetailStatusService as unknown as DeactivatedDetailStatusService,
-      storageService as unknown as PropertyDetailStorageService
+      markPropertyClosedUseCase as unknown as MarkPropertyClosedUseCase
     );
     const runtime = createRuntime();
     const url = 'https://www.idealista.com/inmueble/123/';
     deactivatedDetailStatusService.detect.mockResolvedValue(detectResult);
-    storageService.markPropertyClosed.mockResolvedValue(undefined);
+    markPropertyClosedUseCase.execute.mockResolvedValue(undefined);
 
     // Action
     const handled = await useCase.execute(runtime, url);
@@ -62,9 +62,9 @@ describe('HandleDeactivatedPropertyDetailUseCase', () => {
     // Assert
     expect(handled).toBe(expectedHandled);
     expect(deactivatedDetailStatusService.detect).toHaveBeenCalledWith(runtime);
-    expect(storageService.markPropertyClosed).toHaveBeenCalledTimes(expectedMarkCalls);
+    expect(markPropertyClosedUseCase.execute).toHaveBeenCalledTimes(expectedMarkCalls);
     if (expectedMarkCalls > 0) {
-      expect(storageService.markPropertyClosed).toHaveBeenCalledWith(url, expectedClosedBy);
+      expect(markPropertyClosedUseCase.execute).toHaveBeenCalledWith(url, expectedClosedBy);
     }
   });
 });

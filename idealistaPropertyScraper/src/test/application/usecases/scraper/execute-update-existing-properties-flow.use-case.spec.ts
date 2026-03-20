@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
-import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
 import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'application/usecases/scraper/execute-update-existing-properties-flow.use-case';
+import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
-class SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowUseCase {
-  readonly prepareSearchResultsWithFilters = jest.fn<(
+class PrepareSearchResultsUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase {
+  readonly execute = jest.fn<(
     client: ScraperCdpClient,
     page: ScraperCdpClient['Page'],
     runtime: ScraperCdpClient['Runtime']
@@ -45,12 +45,12 @@ function createClient(): ScraperCdpClient {
 describe('ExecuteUpdateExistingPropertiesFlowUseCase', () => {
   it('whenUseCaseRuns_execute_shouldPrepareResetAndRevalidateWithoutVisitBeforeFullOpenSet', async () => {
     // Arrange
-    const search = new SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowUseCase();
+    const prepareSearchResultsUseCase = new PrepareSearchResultsUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const list = new PropertyListPageServiceMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const revalidateWithoutVisit = new RevalidatePropertiesWithoutLastVisitUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const revalidateOpenFromDb = new RevalidateOpenPropertiesFromDatabaseUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase();
     const useCase = new ExecuteUpdateExistingPropertiesFlowUseCase(
-      search as unknown as SearchResultsPreparationService,
+      prepareSearchResultsUseCase as unknown as PrepareSearchResultsUseCase,
       revalidateWithoutVisit as unknown as RevalidatePropertiesWithoutLastVisitUseCase,
       revalidateOpenFromDb as unknown as RevalidateOpenPropertiesFromDatabaseUseCase,
       list as unknown as PropertyListPageService
@@ -63,7 +63,7 @@ describe('ExecuteUpdateExistingPropertiesFlowUseCase', () => {
     await useCase.execute(client);
 
     // Assert
-    expect(search.prepareSearchResultsWithFilters).toHaveBeenCalledWith(client, client.Page, client.Runtime);
+    expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledWith(client, client.Page, client.Runtime);
     expect(list.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(1);
     expect(revalidateWithoutVisit.execute).toHaveBeenCalledTimes(1);
     expect(revalidateWithoutVisit.execute).toHaveBeenCalledWith(client);

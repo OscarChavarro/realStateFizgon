@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
 import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
 import { BootstrapChromiumSessionUseCase } from 'application/usecases/bootstrap/bootstrap-chromium-session.use-case';
 import { HandleScraperBootstrapFailureUseCase } from 'application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
+import { PrepareHomeSearchUseCase } from 'application/usecases/bootstrap/prepare-home-search.use-case';
 import { RunStartupPreChecksUseCase } from 'application/usecases/prechecks/run-startup-pre-checks.use-case';
 
 @Injectable()
 export class InitializeScraperBootstrapUseCase {
   constructor(
     private readonly runStartupPreChecksUseCase: RunStartupPreChecksUseCase,
-    private readonly homeSearchPreparationFlowService: HomeSearchPreparationFlowService,
+    private readonly prepareHomeSearchUseCase: PrepareHomeSearchUseCase,
     private readonly scraperOrchestratorService: ScraperOrchestratorService,
     private readonly bootstrapChromiumSessionUseCase: BootstrapChromiumSessionUseCase,
     private readonly handleScraperBootstrapFailureUseCase: HandleScraperBootstrapFailureUseCase
@@ -30,7 +30,7 @@ export class InitializeScraperBootstrapUseCase {
         onUnexpectedExit: params.onUnexpectedExit,
         isShuttingDown: params.isShuttingDown
       });
-      await this.homeSearchPreparationFlowService.execute(params.cdpHost, params.cdpPort);
+      await this.prepareHomeSearchUseCase.execute(params.cdpHost, params.cdpPort);
       this.startOrchestrator(params);
     } catch (error) {
       await this.handleScraperBootstrapFailureUseCase.execute({

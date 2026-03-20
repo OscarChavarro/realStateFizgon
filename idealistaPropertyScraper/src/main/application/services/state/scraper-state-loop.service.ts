@@ -1,12 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import type { ScraperStateLoopHandlers } from 'src/application/services/state/scraper-state-loop-handlers.type';
 import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
-
-export type ScraperStateLoopHandlers = {
-  onScrapingForNewProperties: () => Promise<void>;
-  onUpdatingProperties: () => Promise<void>;
-  onLoopError: (error: unknown) => Promise<void>;
-  isShuttingDown: () => boolean;
-};
 
 @Injectable()
 export class ScraperStateLoopService {

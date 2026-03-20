@@ -5,7 +5,7 @@ import { FilterLoaderDetectionService } from 'src/application/services/scraper/f
 import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
 import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
 import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
-import { SupportedFilters } from 'src/application/services/scraper/filters/supported-filters';
+import { SupportedFilters } from 'src/domain/filters/supported-filters';
 import { Price } from 'src/domain/filters/price.filter';
 import { PropertyType } from 'src/domain/filters/property-type.filter';
 import { Rooms } from 'src/domain/filters/rooms.filter';

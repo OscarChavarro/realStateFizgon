@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ScraperStateLoopHandlers, ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
+import type { ScraperStateLoopHandlers } from 'src/application/services/state/scraper-state-loop-handlers.type';
+import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
 import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
 
 class RunScraperStateLoopCoreUseCaseMockForScraperStateLoopService {

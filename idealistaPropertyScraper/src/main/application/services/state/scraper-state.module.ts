@@ -7,10 +7,9 @@ import { ProcessScraperStateTransitionUseCase } from 'application/usecases/state
 import { PromoteIdleToScheduledScrapeUseCase } from 'application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
 import { ResolveIdleStateUseCase } from 'application/usecases/state/resolve-idle-state.use-case';
 import { RunScraperStateLoopCoreUseCase } from 'application/usecases/state/run-scraper-state-loop-core.use-case';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, SleepModule],
+  imports: [SleepModule],
   providers: [
     ScraperStateMachineService,
     PromoteIdleToScheduledScrapeUseCase,

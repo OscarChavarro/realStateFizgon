@@ -12,10 +12,9 @@ import { ChromiumProcessLifecycleService } from 'application/services/chromium/c
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ScraperStateModule } from 'application/services/state/scraper-state.module';
 import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, ScraperStateModule, ErrorMessageModule, SleepModule],
+  imports: [ScraperStateModule, ErrorMessageModule, SleepModule],
   providers: [
     ChromiumPageSyncService,
     ChromiumCdpReadinessService,

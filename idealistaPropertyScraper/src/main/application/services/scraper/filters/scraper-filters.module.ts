@@ -10,10 +10,9 @@ import { FiltersService } from 'application/services/scraper/filters/filters.ser
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
 import { ScraperChromiumModule } from 'application/services/chromium/scraper-chromium.module';
 import { ApplySearchFiltersUseCase } from 'application/usecases/scraper/apply-search-filters.use-case';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, ScraperChromiumModule, SleepModule],
+  imports: [ScraperChromiumModule, SleepModule],
   providers: [
     FilterLoaderDetectionService,
     FilterAvailableOptionExtractorService,

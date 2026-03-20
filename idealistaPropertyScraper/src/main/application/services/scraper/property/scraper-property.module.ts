@@ -25,11 +25,9 @@ import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper
 import { RevalidateExistingPropertyUrlsUseCase } from 'application/usecases/scraper/revalidate-existing-property-urls.use-case';
 import { LoadPropertyDetailFromResultsUseCase } from 'application/usecases/scraper/load-property-detail-from-results.use-case';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-property-detail-from-database.use-case';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
   imports: [
-    ConfigurationModule,
     OriginErrorDetectorModule,
     RabbitMqModule,
     ErrorMessageModule,

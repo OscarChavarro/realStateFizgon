@@ -14,7 +14,6 @@ import { ScraperPropertyModule } from 'application/services/scraper/property/scr
 import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
 import { ScraperBootstrapService } from 'application/services/scraper/scraper-bootstrap.service';
 import { ScraperStateModule } from 'application/services/state/scraper-state.module';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
 import { ScrapeNewPropertiesFlowService } from 'application/services/scraper/flows/scrape-new-properties-flow.service';
 import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
@@ -39,7 +38,6 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
 
 @Module({
   imports: [
-    ConfigurationModule,
     ScraperChromiumModule,
     OriginErrorDetectorModule,
     ScraperFiltersModule,

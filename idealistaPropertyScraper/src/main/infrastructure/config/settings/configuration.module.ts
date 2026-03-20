@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
@@ -7,6 +7,7 @@ import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 
+@Global()
 @Module({
   providers: [
     ConfigurationSourceService,

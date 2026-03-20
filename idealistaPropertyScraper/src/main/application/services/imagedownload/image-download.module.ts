@@ -10,10 +10,9 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
 
 @Module({
-  imports: [ConfigurationModule, RabbitMqModule, FileSystemModule, ErrorMessageModule, SleepModule],
+  imports: [RabbitMqModule, FileSystemModule, ErrorMessageModule, SleepModule],
   providers: [
     ImageDownloadPathService,
     ImageUrlRulesService,

@@ -24,9 +24,9 @@ module.exports = {
     },
     {
       name: 'application-modules-should-not-import-infrastructure-directly',
-      severity: 'warn',
+      severity: 'error',
       comment:
-        '// TODO: move infrastructure wiring out of application modules into dedicated composition modules.',
+        'Application modules must not import infrastructure modules directly.',
       from: {
         path: '^src/main/application/(usecases|services)/.*\\.module\\.ts$'
       },

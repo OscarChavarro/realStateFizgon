@@ -17,6 +17,7 @@ import { ScrapeNewPropertiesFlowService } from 'src/application/services/scraper
 import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
 import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
 import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { InitializeScraperBootstrapUseCase } from 'src/application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
 import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
@@ -48,6 +49,7 @@ import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/r
     ScraperOrchestratorService,
     UpdateExistingPropertiesFlowService,
     BootstrapChromiumSessionUseCase,
+    InitializeScraperBootstrapUseCase,
     ExecuteMainSearchFormUseCase,
     ExecuteScrapeNewPropertiesFlowUseCase,
     ExecuteScrapeNewPropertiesCycleUseCase,

@@ -1,18 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
-import { ScraperState } from 'domain/states/scraper-state.enum';
-
-type RequestUpdatePropertiesResult = {
-  status: string;
-  state: ScraperState;
-  pendingRequests: number;
-};
+import type { RequestPropertiesCommandResult } from 'ports/inbound/http/request-properties-command-result.contract';
+import type { RequestUpdatePropertiesPort } from 'ports/inbound/http/request-update-properties.port';
 
 @Injectable()
-export class RequestUpdatePropertiesUseCase {
+export class RequestUpdatePropertiesUseCase implements RequestUpdatePropertiesPort {
   constructor(private readonly scraperStateMachineService: ScraperStateMachineService) {}
 
-  execute(): RequestUpdatePropertiesResult {
+  execute(): RequestPropertiesCommandResult {
     const pendingRequests = this.scraperStateMachineService.enqueueUpdatePropertiesRequest();
     return {
       status: 'queued',

@@ -5,10 +5,24 @@ import { ScraperStateModule } from 'application/services/state/scraper-state.mod
 import { RequestScrapePropertiesUseCase } from 'application/usecases/state/request-scrape-properties.use-case';
 import { RequestUpdatePropertiesUseCase } from 'application/usecases/state/request-update-properties.use-case';
 import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
+import { REQUEST_SCRAPE_PROPERTIES_PORT } from 'ports/inbound/http/request-scrape-properties.port.token';
+import { REQUEST_UPDATE_PROPERTIES_PORT } from 'ports/inbound/http/request-update-properties.port.token';
 
 @Module({
   imports: [ConfigurationModule, ScraperStateModule],
   controllers: [UpdatePropertiesController],
-  providers: [EndpointsBasicAuthGuard, RequestUpdatePropertiesUseCase, RequestScrapePropertiesUseCase]
+  providers: [
+    EndpointsBasicAuthGuard,
+    RequestUpdatePropertiesUseCase,
+    RequestScrapePropertiesUseCase,
+    {
+      provide: REQUEST_UPDATE_PROPERTIES_PORT,
+      useExisting: RequestUpdatePropertiesUseCase
+    },
+    {
+      provide: REQUEST_SCRAPE_PROPERTIES_PORT,
+      useExisting: RequestScrapePropertiesUseCase
+    }
+  ]
 })
 export class UpdatePropertiesHttpModule {}

@@ -1,8 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { UpdatePropertiesController } from 'adapters/inbound/http/update-properties.controller';
-import { RequestScrapePropertiesUseCase } from 'application/usecases/state/request-scrape-properties.use-case';
-import { RequestUpdatePropertiesUseCase } from 'application/usecases/state/request-update-properties.use-case';
 import { ScraperState } from 'domain/states/scraper-state.enum';
+
+import type { RequestScrapePropertiesPort } from 'ports/inbound/http/request-scrape-properties.port';
+import type { RequestUpdatePropertiesPort } from 'ports/inbound/http/request-update-properties.port';
 
 class RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController {
   readonly execute = jest.fn<() => { status: string; state: ScraperState; pendingRequests: number }>();
@@ -23,8 +24,8 @@ describe('UpdatePropertiesController', () => {
     });
     const requestScrapePropertiesUseCase = new RequestScrapePropertiesUseCaseMockForUpdatePropertiesController();
     const controller = new UpdatePropertiesController(
-      requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesUseCase,
-      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesUseCase
+      requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesPort,
+      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesPort
     );
     // Action
     const result = controller.requestUpdateProperties();
@@ -48,8 +49,8 @@ describe('UpdatePropertiesController', () => {
       pendingRequests: 2
     });
     const controller = new UpdatePropertiesController(
-      requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesUseCase,
-      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesUseCase
+      requestUpdatePropertiesUseCase as unknown as RequestUpdatePropertiesPort,
+      requestScrapePropertiesUseCase as unknown as RequestScrapePropertiesPort
     );
     // Action
     const result = controller.requestScrapeProperties();

@@ -1,24 +1,29 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Inject, Post, UseGuards } from '@nestjs/common';
 import { EndpointsBasicAuthGuard } from 'adapters/inbound/http/endpoints-basic-auth.guard';
-import { ScraperState } from 'domain/states/scraper-state.enum';
-import { RequestScrapePropertiesUseCase } from 'application/usecases/state/request-scrape-properties.use-case';
-import { RequestUpdatePropertiesUseCase } from 'application/usecases/state/request-update-properties.use-case';
+import { REQUEST_SCRAPE_PROPERTIES_PORT } from 'ports/inbound/http/request-scrape-properties.port.token';
+import { REQUEST_UPDATE_PROPERTIES_PORT } from 'ports/inbound/http/request-update-properties.port.token';
+
+import type { RequestPropertiesCommandResult } from 'ports/inbound/http/request-properties-command-result.contract';
+import type { RequestScrapePropertiesPort } from 'ports/inbound/http/request-scrape-properties.port';
+import type { RequestUpdatePropertiesPort } from 'ports/inbound/http/request-update-properties.port';
 
 @Controller()
 @UseGuards(EndpointsBasicAuthGuard)
 export class UpdatePropertiesController {
   constructor(
-    private readonly requestUpdatePropertiesUseCase: RequestUpdatePropertiesUseCase,
-    private readonly requestScrapePropertiesUseCase: RequestScrapePropertiesUseCase
+    @Inject(REQUEST_UPDATE_PROPERTIES_PORT)
+    private readonly requestUpdatePropertiesPort: RequestUpdatePropertiesPort,
+    @Inject(REQUEST_SCRAPE_PROPERTIES_PORT)
+    private readonly requestScrapePropertiesPort: RequestScrapePropertiesPort
   ) {}
 
   @Post('updateProperties')
-  requestUpdateProperties(): { status: string; state: ScraperState; pendingRequests: number } {
-    return this.requestUpdatePropertiesUseCase.execute();
+  requestUpdateProperties(): RequestPropertiesCommandResult {
+    return this.requestUpdatePropertiesPort.execute();
   }
 
   @Post('scrapeProperties')
-  requestScrapeProperties(): { status: string; state: ScraperState; pendingRequests: number } {
-    return this.requestScrapePropertiesUseCase.execute();
+  requestScrapeProperties(): RequestPropertiesCommandResult {
+    return this.requestScrapePropertiesPort.execute();
   }
 }

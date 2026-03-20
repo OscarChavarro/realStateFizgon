@@ -115,6 +115,43 @@ module.exports = {
       to: {
         path: '^src/main/adapters/inbound/'
       }
+    },
+    {
+      name: 'inbound-controllers-must-not-depend-on-application',
+      severity: 'error',
+      comment:
+        'Inbound controllers must talk to inbound ports/contracts, not concrete application classes.',
+      from: {
+        path: '^src/main/adapters/inbound/.*\\.controller\\.ts$'
+      },
+      to: {
+        path: '^src/main/application/'
+      }
+    },
+    {
+      name: 'inbound-non-modules-must-not-depend-on-application',
+      severity: 'error',
+      comment:
+        'Only inbound wiring modules can reference application implementations for DI composition.',
+      from: {
+        path: '^src/main/adapters/inbound/',
+        pathNot: '\\.module\\.ts$'
+      },
+      to: {
+        path: '^src/main/application/'
+      }
+    },
+    {
+      name: 'inbound-ports-must-not-depend-on-application-adapters-or-infrastructure',
+      severity: 'error',
+      comment:
+        'Inbound port contracts must stay framework-agnostic and independent from application/adapters/infrastructure.',
+      from: {
+        path: '^src/main/ports/inbound/'
+      },
+      to: {
+        path: '^src/main/(application|adapters|infrastructure)/'
+      }
     }
   ],
   options: {

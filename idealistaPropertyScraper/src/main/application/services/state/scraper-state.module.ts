@@ -4,6 +4,7 @@ import { ScraperStateMachineService } from 'src/application/services/state/scrap
 import { ScheduleService } from 'src/application/services/state/schedule.service';
 import { ProcessScraperStateTransitionUseCase } from 'src/application/usecases/state/process-scraper-state-transition.use-case';
 import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
+import { ResolveIdleStateUseCase } from 'src/application/usecases/state/resolve-idle-state.use-case';
 import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
 import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
 
@@ -13,6 +14,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     ScraperStateMachineService,
     PromoteIdleToScheduledScrapeUseCase,
     ScheduleService,
+    ResolveIdleStateUseCase,
     ProcessScraperStateTransitionUseCase,
     RunScraperStateLoopCoreUseCase,
     ScraperStateLoopService

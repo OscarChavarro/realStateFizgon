@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { ScraperStateLoopHandlers } from 'src/application/services/state/scraper-state-loop.service';
-import { ScheduleService } from 'src/application/services/state/schedule.service';
 import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ResolveIdleStateUseCase } from 'src/application/usecases/state/resolve-idle-state.use-case';
 import { ScraperState } from 'src/domain/states/scraper-state.enum';
 
 @Injectable()
 export class ProcessScraperStateTransitionUseCase {
   constructor(
     private readonly scraperStateMachineService: ScraperStateMachineService,
-    private readonly scheduleService: ScheduleService
+    private readonly resolveIdleStateUseCase: ResolveIdleStateUseCase
   ) {}
 
   async execute(handlers: ScraperStateLoopHandlers): Promise<boolean> {
@@ -25,16 +25,8 @@ export class ProcessScraperStateTransitionUseCase {
       return true;
     }
 
-    if (currentState === ScraperState.IDLE && this.scraperStateMachineService.getPendingRequestsCount() > 0) {
-      const nextRequestedState = this.scraperStateMachineService.consumeNextRequestedState();
-      if (nextRequestedState) {
-        this.scraperStateMachineService.setState(nextRequestedState);
-      }
-      return true;
-    }
-
-    if (currentState === ScraperState.IDLE && this.scheduleService.promoteIdleToScheduledScrapeIfDue()) {
-      return true;
+    if (currentState === ScraperState.IDLE) {
+      return this.resolveIdleStateUseCase.execute();
     }
 
     return false;

@@ -2,16 +2,11 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
-type ProxyValidationArgs = {
-  enabled: boolean;
-  host: string;
-  port: number;
-  retryWaitMs: number;
-  logger: unknown;
-};
+import type { ProxyAccessValidatorPort } from 'ports/outbound/network/proxy-access-validator.port';
 
-class ProxyServiceMockForValidateProxyAccessPreCheckUseCase {
-  readonly validateProxyAccessOrWait = jest.fn<(args: ProxyValidationArgs) => Promise<void>>();
+class ProxyAccessValidatorPortMockForValidateProxyAccessPreCheckUseCase implements ProxyAccessValidatorPort {
+  readonly validateProxyAccessOrWait: jest.MockedFunction<ProxyAccessValidatorPort['validateProxyAccessOrWait']> =
+    jest.fn();
 }
 
 function createUseCase() {
@@ -21,29 +16,30 @@ function createUseCase() {
     proxyPort: 8080,
     chromeBrowserLaunchRetryWaitMs: 5000
   };
-  const useCase = new ValidateProxyAccessPreCheckUseCase(chromeConfig as unknown as ChromeConfig);
-  const proxyService = new ProxyServiceMockForValidateProxyAccessPreCheckUseCase();
-  Object.defineProperty(useCase as unknown as { proxyService: unknown }, 'proxyService', {
-    value: proxyService
-  });
+  const proxyAccessValidatorPort = new ProxyAccessValidatorPortMockForValidateProxyAccessPreCheckUseCase();
+  proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue(undefined);
+  const useCase = new ValidateProxyAccessPreCheckUseCase(
+    chromeConfig as unknown as ChromeConfig,
+    proxyAccessValidatorPort
+  );
 
   return {
     useCase,
     chromeConfig,
-    proxyService
+    proxyAccessValidatorPort
   };
 }
 
 describe('ValidateProxyAccessPreCheckUseCase', () => {
   it('whenProxyIsConfigured_execute_shouldValidateProxyAccessWithConfiguredValues', async () => {
     // Arrange
-    const { useCase, chromeConfig, proxyService } = createUseCase();
-    proxyService.validateProxyAccessOrWait.mockResolvedValue(undefined);
+    const { useCase, chromeConfig, proxyAccessValidatorPort } = createUseCase();
+    proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue(undefined);
     // Action
     await useCase.execute();
     // Assert
-    expect(proxyService.validateProxyAccessOrWait).toHaveBeenCalledTimes(1);
-    expect(proxyService.validateProxyAccessOrWait).toHaveBeenCalledWith({
+    expect(proxyAccessValidatorPort.validateProxyAccessOrWait).toHaveBeenCalledTimes(1);
+    expect(proxyAccessValidatorPort.validateProxyAccessOrWait).toHaveBeenCalledWith({
       enabled: chromeConfig.proxyEnabled,
       host: chromeConfig.proxyHost,
       port: chromeConfig.proxyPort,
@@ -54,8 +50,8 @@ describe('ValidateProxyAccessPreCheckUseCase', () => {
 
   it('whenProxyValidationFails_execute_shouldPropagateError', async () => {
     // Arrange
-    const { useCase, proxyService } = createUseCase();
-    proxyService.validateProxyAccessOrWait.mockRejectedValue(new Error('proxy unavailable'));
+    const { useCase, proxyAccessValidatorPort } = createUseCase();
+    proxyAccessValidatorPort.validateProxyAccessOrWait.mockRejectedValue(new Error('proxy unavailable'));
     // Action
     const action = useCase.execute();
     // Assert

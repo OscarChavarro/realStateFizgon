@@ -4,6 +4,7 @@ import { PaginateAndProcessListingsUseCase } from 'application/usecases/scraper/
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
@@ -25,6 +26,10 @@ class SleepPortMockForPaginateAndProcessListingsUseCase implements SleepPort {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();
 }
 
+class CaptchaDetectorPortMockForPaginateAndProcessListingsUseCase implements CaptchaDetectorPort {
+  readonly panicIfCaptchaDetected = jest.fn(async () => undefined);
+}
+
 function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): PropertyCdpClient {
   return {
     Runtime: {
@@ -39,13 +44,16 @@ function createClient(evaluate: PropertyCdpClient['Runtime']['evaluate']): Prope
 function createUseCase() {
   const propertyListPageService = new PropertyListPageServiceMockForPaginateAndProcessListingsUseCase();
   const sleepPort = new SleepPortMockForPaginateAndProcessListingsUseCase();
+  const captchaDetectorPort = new CaptchaDetectorPortMockForPaginateAndProcessListingsUseCase();
   propertyListPageService.getPropertyUrls.mockResolvedValue(['https://www.idealista.com/inmueble/1/']);
   propertyListPageService.processUrls.mockResolvedValue(undefined);
   sleepPort.sleep.mockResolvedValue(undefined);
+  captchaDetectorPort.panicIfCaptchaDetected.mockResolvedValue(undefined);
   const useCase = new PaginateAndProcessListingsUseCase(
     new ChromeConfigMockForPaginateAndProcessListingsUseCase() as unknown as ChromeConfig,
     new ScraperConfigMockForPaginateAndProcessListingsUseCase() as unknown as ScraperConfig,
     propertyListPageService as unknown as PropertyListPageService,
+    captchaDetectorPort,
     sleepPort
   );
   const logger = {
@@ -53,13 +61,8 @@ function createUseCase() {
     log: jest.fn<(message: string) => void>(),
     error: jest.fn<(message: string) => void>()
   };
-  const captchaDetector = {
-    panicIfCaptchaDetected: jest.fn<(params: unknown) => Promise<void>>()
-  };
-  captchaDetector.panicIfCaptchaDetected.mockResolvedValue(undefined);
   (useCase as unknown as { logger: typeof logger }).logger = logger;
-  (useCase as unknown as { captchaDetectorService: typeof captchaDetector }).captchaDetectorService = captchaDetector;
-  return { useCase, propertyListPageService, sleepPort, logger, captchaDetector };
+  return { useCase, propertyListPageService, sleepPort, logger, captchaDetectorPort };
 }
 
 describe('PaginateAndProcessListingsUseCase', () => {
@@ -105,7 +108,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
 
   it('whenNextExistsAndPageChanges_execute_shouldMoveToFollowingPageAndContinue', async () => {
     // Arrange
-    const { useCase, logger, sleepPort, captchaDetector } = createUseCase();
+    const { useCase, logger, sleepPort, captchaDetectorPort } = createUseCase();
     let urlCall = 0;
     let hasNextCall = 0;
     const evaluate = jest.fn<PropertyCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
@@ -134,7 +137,7 @@ describe('PaginateAndProcessListingsUseCase', () => {
     // Assert
     expect(logger.log).toHaveBeenCalledWith('Moved to page 2.');
     expect(logger.log).toHaveBeenCalledWith('Pagination finished at page 2.');
-    expect(captchaDetector.panicIfCaptchaDetected).toHaveBeenCalled();
+    expect(captchaDetectorPort.panicIfCaptchaDetected).toHaveBeenCalled();
     expect(sleepPort.sleep).toHaveBeenCalled();
   });
 

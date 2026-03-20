@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { IdealistaCaptchaDetectorModule } from 'adapters/outbound/captcha/idealista-captcha-detector.module';
 import { RabbitMqModule } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
 import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
 import { MongoDatabaseModule } from 'adapters/outbound/persistence/mongodb/mongo-database.module';
@@ -32,7 +33,8 @@ import { ConfigurationModule } from 'infrastructure/config/settings/configuratio
     RabbitMqModule,
     ErrorMessageModule,
     MongoDatabaseModule,
-    ImageDownloadModule
+    ImageDownloadModule,
+    IdealistaCaptchaDetectorModule
   ],
   providers: [
     CookieApprovalDialogScraperService,

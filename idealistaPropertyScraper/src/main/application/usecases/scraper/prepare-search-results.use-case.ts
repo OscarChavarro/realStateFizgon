@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { FiltersService } from 'application/services/scraper/filters/filters.service';
@@ -7,8 +6,10 @@ import { MainPageService } from 'application/services/scraper/main-page.service'
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 type RuntimeDomain = {
@@ -24,7 +25,6 @@ type PageDomain = {
 @Injectable()
 export class PrepareSearchResultsUseCase {
   private readonly logger = new Logger(PrepareSearchResultsUseCase.name);
-  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
   private firstHomePageWaitApplied = false;
 
   constructor(
@@ -35,6 +35,8 @@ export class PrepareSearchResultsUseCase {
     private readonly filtersService: FiltersService,
     private readonly propertyListPageService: PropertyListPageService,
     private readonly originErrorDetectorService: OriginErrorDetectorService,
+    @Inject(CAPTCHA_DETECTOR_PORT)
+    private readonly captchaDetectorPort: CaptchaDetectorPort,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort
   ) {}
@@ -54,7 +56,7 @@ export class PrepareSearchResultsUseCase {
         this.chromeConfig.chromeCdpReadyTimeoutMs,
         this.chromeConfig.chromeCdpPollIntervalMs
       );
-      await this.captchaDetectorService.panicIfCaptchaDetected({
+      await this.captchaDetectorPort.panicIfCaptchaDetected({
         runtime,
         logger: this.logger,
         context: 'listing home page navigation'
@@ -64,7 +66,7 @@ export class PrepareSearchResultsUseCase {
     await this.waitForFirstHomePageDeviceVerification();
     this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
     await this.executeMainPageWithRetry(client, page, runtime);
-    await this.captchaDetectorService.panicIfCaptchaDetected({
+    await this.captchaDetectorPort.panicIfCaptchaDetected({
       runtime,
       logger: this.logger,
       context: 'listing search results page load'

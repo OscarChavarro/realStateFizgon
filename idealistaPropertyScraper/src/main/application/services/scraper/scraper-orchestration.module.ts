@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { IdealistaCaptchaDetectorModule } from 'adapters/outbound/captcha/idealista-captcha-detector.module';
+import { ProxyAccessValidatorModule } from 'adapters/outbound/network/proxy-access-validator.module';
 import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
 import { MongoDatabaseModule } from 'adapters/outbound/persistence/mongodb/mongo-database.module';
 import { ImageDownloadModule } from 'application/services/imagedownload/image-download.module';
@@ -46,7 +48,9 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
     ScraperStateModule,
     MongoDatabaseModule,
     ImageDownloadModule,
-    ErrorMessageModule
+    ErrorMessageModule,
+    IdealistaCaptchaDetectorModule,
+    ProxyAccessValidatorModule
   ],
   providers: [
     InfrastructurePreCheckService,

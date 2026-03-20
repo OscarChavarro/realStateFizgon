@@ -7,6 +7,7 @@ import { PropertyListPageService } from 'application/services/scraper/property/p
 import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 class ChromeConfigMockForPrepareSearchResultsUseCase {
@@ -47,6 +48,11 @@ class OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase {
 
 class ErrorMessagePortMockForPrepareSearchResultsUseCase implements ErrorMessagePort {
   readonly toErrorMessage = jest.fn<(error: unknown) => string>();
+}
+
+class CaptchaDetectorPortMockForPrepareSearchResultsUseCase implements CaptchaDetectorPort {
+  readonly panicIfCaptchaDetected =
+    jest.fn<(request: Parameters<CaptchaDetectorPort['panicIfCaptchaDetected']>[0]) => Promise<void>>();
 }
 
 type PageDomainMock = {
@@ -114,11 +120,17 @@ function createUseCase(dependencies: {
   filters: FiltersServiceMockForPrepareSearchResultsUseCase;
   propertyList: PropertyListPageServiceMockForPrepareSearchResultsUseCase;
   originError: OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase;
-}): { useCase: PrepareSearchResultsUseCase; errorMessagePort: ErrorMessagePortMockForPrepareSearchResultsUseCase } {
+}): {
+  useCase: PrepareSearchResultsUseCase;
+  errorMessagePort: ErrorMessagePortMockForPrepareSearchResultsUseCase;
+  captchaDetectorPort: CaptchaDetectorPortMockForPrepareSearchResultsUseCase;
+} {
   const errorMessagePort = new ErrorMessagePortMockForPrepareSearchResultsUseCase();
+  const captchaDetectorPort = new CaptchaDetectorPortMockForPrepareSearchResultsUseCase();
   errorMessagePort.toErrorMessage.mockImplementation((error: unknown) =>
     error instanceof Error ? error.message : String(error)
   );
+  captchaDetectorPort.panicIfCaptchaDetected.mockResolvedValue(undefined);
   const useCase = new PrepareSearchResultsUseCase(
     new ChromeConfigMockForPrepareSearchResultsUseCase() as unknown as ChromeConfig,
     new ScraperConfigMockForPrepareSearchResultsUseCase() as unknown as ScraperConfig,
@@ -127,9 +139,10 @@ function createUseCase(dependencies: {
     dependencies.filters as unknown as FiltersService,
     dependencies.propertyList as unknown as PropertyListPageService,
     dependencies.originError as unknown as OriginErrorDetectorService,
+    captchaDetectorPort,
     errorMessagePort
   );
-  return { useCase, errorMessagePort };
+  return { useCase, errorMessagePort, captchaDetectorPort };
 }
 
 describe('PrepareSearchResultsUseCase', () => {

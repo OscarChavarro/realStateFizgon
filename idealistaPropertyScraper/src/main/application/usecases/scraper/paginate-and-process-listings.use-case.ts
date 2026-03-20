@@ -1,21 +1,23 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PaginateAndProcessListingsUseCase {
   private readonly logger = new Logger(PaginateAndProcessListingsUseCase.name);
-  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
 
   constructor(
     private readonly chromeConfig: ChromeConfig,
     private readonly scraperConfig: ScraperConfig,
     private readonly propertyListPageService: PropertyListPageService,
+    @Inject(CAPTCHA_DETECTOR_PORT)
+    private readonly captchaDetectorPort: CaptchaDetectorPort,
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
@@ -23,7 +25,7 @@ export class PaginateAndProcessListingsUseCase {
     let page = 1;
 
     while (true) {
-      await this.captchaDetectorService.panicIfCaptchaDetected({
+      await this.captchaDetectorPort.panicIfCaptchaDetected({
         runtime: client.Runtime,
         logger: this.logger,
         context: `property listing page ${page}`
@@ -47,7 +49,7 @@ export class PaginateAndProcessListingsUseCase {
       await this.sleepPort.sleep(this.scraperConfig.paginationClickWaitMs);
       await this.waitForUrlChange(client, currentUrl);
       await this.waitForListingsOrPagination(client);
-      await this.captchaDetectorService.panicIfCaptchaDetected({
+      await this.captchaDetectorPort.panicIfCaptchaDetected({
         runtime: client.Runtime,
         logger: this.logger,
         context: `property listing page ${page + 1}`

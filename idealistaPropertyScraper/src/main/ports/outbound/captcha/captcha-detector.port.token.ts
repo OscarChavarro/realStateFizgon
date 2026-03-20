@@ -1,0 +1,1 @@
+export const CAPTCHA_DETECTOR_PORT = Symbol('CAPTCHA_DETECTOR_PORT');

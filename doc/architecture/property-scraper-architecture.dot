@@ -151,7 +151,7 @@ digraph PropertyScraperArchitecture {
       <TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">
         <TR>
           <TD><IMG SRC="doc/architecture/googleMaps.png"/></TD>
-          <TD>Google auth</TD>
+          <TD>Google maps</TD>
         </TR>
       </TABLE>
     >,

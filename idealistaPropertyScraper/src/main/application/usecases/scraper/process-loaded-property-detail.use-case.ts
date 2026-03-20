@@ -1,23 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class ProcessLoadedPropertyDetailUseCase {
   private readonly logger = new Logger(ProcessLoadedPropertyDetailUseCase.name);
-  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
 
   constructor(
     private readonly cookieApprovalDialogScraperService: CookieApprovalDialogScraperService,
     private readonly interactionService: PropertyDetailInteractionService,
     private readonly handleDeactivatedPropertyDetailUseCase: HandleDeactivatedPropertyDetailUseCase,
     private readonly extractAndEnrichPropertyDetailUseCase: ExtractAndEnrichPropertyDetailUseCase,
-    private readonly storageService: PropertyDetailStorageService
+    private readonly storageService: PropertyDetailStorageService,
+    @Inject(CAPTCHA_DETECTOR_PORT)
+    private readonly captchaDetectorPort: CaptchaDetectorPort
   ) {}
 
   async execute(
@@ -25,7 +27,7 @@ export class ProcessLoadedPropertyDetailUseCase {
     url: string,
     geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB'
   ): Promise<void> {
-    await this.captchaDetectorService.panicIfCaptchaDetected({
+    await this.captchaDetectorPort.panicIfCaptchaDetected({
       runtime: client.Runtime,
       logger: this.logger,
       context: `property detail url "${url}"`

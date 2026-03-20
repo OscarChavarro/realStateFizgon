@@ -10,6 +10,7 @@ import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
 import { Property } from 'domain/property/property.model';
 
+import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class CookieApprovalDialogScraperServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly acceptCookiesIfVisible = jest.fn<(runtime: unknown) => Promise<void>>();
@@ -32,6 +33,10 @@ class ExtractAndEnrichPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUse
 
 class PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly savePropertyWithImages = jest.fn<(property: Property) => Promise<void>>();
+}
+
+class CaptchaDetectorPortMockForProcessLoadedPropertyDetailUseCase implements CaptchaDetectorPort {
+  readonly panicIfCaptchaDetected = jest.fn(async () => undefined);
 }
 
 function createClient(): PropertyCdpClient {
@@ -66,21 +71,17 @@ function createUseCase() {
   const handleDeactivated = new HandleDeactivatedPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase();
   const extractAndEnrich = new ExtractAndEnrichPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase();
   const storage = new PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase();
+  const captchaDetectorPort = new CaptchaDetectorPortMockForProcessLoadedPropertyDetailUseCase();
+  captchaDetectorPort.panicIfCaptchaDetected.mockResolvedValue(undefined);
 
   const useCase = new ProcessLoadedPropertyDetailUseCase(
     cookie as unknown as CookieApprovalDialogScraperService,
     interaction as unknown as PropertyDetailInteractionService,
     handleDeactivated as unknown as HandleDeactivatedPropertyDetailUseCase,
     extractAndEnrich as unknown as ExtractAndEnrichPropertyDetailUseCase,
-    storage as unknown as PropertyDetailStorageService
+    storage as unknown as PropertyDetailStorageService,
+    captchaDetectorPort
   );
-
-  const captchaDetectorService = {
-    panicIfCaptchaDetected: jest.fn<(args: { runtime: unknown; logger: unknown; context: string }) => Promise<void>>()
-  };
-  captchaDetectorService.panicIfCaptchaDetected.mockResolvedValue(undefined);
-  (useCase as unknown as { captchaDetectorService: typeof captchaDetectorService }).captchaDetectorService =
-    captchaDetectorService;
 
   return {
     useCase,
@@ -89,7 +90,7 @@ function createUseCase() {
     handleDeactivated,
     extractAndEnrich,
     storage,
-    captchaDetectorService
+    captchaDetectorPort
   };
 }
 
@@ -102,7 +103,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       cookie,
       handleDeactivated,
       extractAndEnrich,
-      captchaDetectorService
+      captchaDetectorPort
     } = createUseCase();
     const client = createClient();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
@@ -113,7 +114,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     await useCase.execute(client, 'https://www.idealista.com/inmueble/2/', 'ALWAYS');
 
     // Assert
-    expect(captchaDetectorService.panicIfCaptchaDetected).toHaveBeenCalledTimes(1);
+    expect(captchaDetectorPort.panicIfCaptchaDetected).toHaveBeenCalledTimes(1);
     expect(handleDeactivated.execute).toHaveBeenCalledTimes(1);
     expect(handleDeactivated.execute).toHaveBeenCalledWith(client.Runtime, 'https://www.idealista.com/inmueble/2/');
     expect(interaction.revealDetailMedia).not.toHaveBeenCalled();

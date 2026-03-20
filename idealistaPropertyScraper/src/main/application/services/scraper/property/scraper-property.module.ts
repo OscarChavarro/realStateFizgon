@@ -16,6 +16,7 @@ import { MarkPropertyClosedUseCase } from 'src/application/usecases/scraper/mark
 import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/imagedownload/publish-new-property-notification.use-case';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'src/application/usecases/scraper/process-discovered-property-urls.use-case';
+import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
@@ -41,6 +42,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     PublishNewPropertyNotificationUseCase,
     PersistPropertyDetailAndAssetsUseCase,
     ProcessDiscoveredPropertyUrlsUseCase,
+    HandleDeactivatedPropertyDetailUseCase,
     ProcessLoadedPropertyDetailUseCase,
     RevalidateExistingPropertyUrlsUseCase,
     LoadPropertyDetailFromResultsUseCase,

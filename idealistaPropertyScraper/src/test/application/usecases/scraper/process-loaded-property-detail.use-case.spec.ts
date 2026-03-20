@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
 import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
 import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
 import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
+import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
 import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
 import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
 import { PropertyImage } from 'src/domain/property/property-image.model';
@@ -21,8 +21,8 @@ class PropertyDetailInteractionServiceMockForProcessLoadedPropertyDetailUseCase 
   readonly revealDetailMedia = jest.fn<(runtime: unknown) => Promise<void>>();
 }
 
-class DeactivatedDetailStatusServiceMockForProcessLoadedPropertyDetailUseCase {
-  readonly detect = jest.fn<(runtime: unknown) => Promise<{ isDeactivated: boolean; closedBy: Date | null }>>();
+class HandleDeactivatedPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase {
+  readonly execute = jest.fn<(runtime: unknown, url: string) => Promise<boolean>>();
 }
 
 class PropertyDetailDomExtractorServiceMockForProcessLoadedPropertyDetailUseCase {
@@ -70,7 +70,7 @@ function createProperty(url: string): Property {
 function createUseCase() {
   const cookie = new CookieApprovalDialogScraperServiceMockForProcessLoadedPropertyDetailUseCase();
   const interaction = new PropertyDetailInteractionServiceMockForProcessLoadedPropertyDetailUseCase();
-  const deactivated = new DeactivatedDetailStatusServiceMockForProcessLoadedPropertyDetailUseCase();
+  const handleDeactivated = new HandleDeactivatedPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUseCase();
   const extractor = new PropertyDetailDomExtractorServiceMockForProcessLoadedPropertyDetailUseCase();
   const geoCoordinateHint = new GeoCoordinateHintServiceMockForProcessLoadedPropertyDetailUseCase();
   const storage = new PropertyDetailStorageServiceMockForProcessLoadedPropertyDetailUseCase();
@@ -78,7 +78,7 @@ function createUseCase() {
   const useCase = new ProcessLoadedPropertyDetailUseCase(
     cookie as unknown as CookieApprovalDialogScraperService,
     interaction as unknown as PropertyDetailInteractionService,
-    deactivated as unknown as DeactivatedDetailStatusService,
+    handleDeactivated as unknown as HandleDeactivatedPropertyDetailUseCase,
     extractor as unknown as PropertyDetailDomExtractorService,
     geoCoordinateHint as unknown as GeoCoordinateHintService,
     storage as unknown as PropertyDetailStorageService
@@ -95,7 +95,7 @@ function createUseCase() {
     useCase,
     cookie,
     interaction,
-    deactivated,
+    handleDeactivated,
     extractor,
     geoCoordinateHint,
     storage,
@@ -104,52 +104,30 @@ function createUseCase() {
 }
 
 describe('ProcessLoadedPropertyDetailUseCase', () => {
-  it('whenLoadedDetailIsDeactivated_execute_shouldMarkClosed', async () => {
+  it('whenDetailIsHandledAsDeactivatedBeforeMedia_execute_shouldReturnEarly', async () => {
     // Arrange
     const {
       useCase,
       interaction,
       cookie,
-      deactivated,
-      storage,
+      handleDeactivated,
       extractor,
       captchaDetectorService
     } = createUseCase();
     const client = createClient();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated.detect.mockResolvedValue({ isDeactivated: true, closedBy: new Date('2026-02-01T00:00:00.000Z') });
-    storage.markPropertyClosed.mockResolvedValue(undefined);
+    handleDeactivated.execute.mockResolvedValue(true);
 
     // Action
     await useCase.execute(client, 'https://www.idealista.com/inmueble/2/', 'ALWAYS');
 
     // Assert
     expect(captchaDetectorService.panicIfCaptchaDetected).toHaveBeenCalledTimes(1);
-    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/2/', new Date('2026-02-01T00:00:00.000Z'));
+    expect(handleDeactivated.execute).toHaveBeenCalledTimes(1);
+    expect(handleDeactivated.execute).toHaveBeenCalledWith(client.Runtime, 'https://www.idealista.com/inmueble/2/');
+    expect(interaction.revealDetailMedia).not.toHaveBeenCalled();
     expect(extractor.extractProperty).not.toHaveBeenCalled();
-  });
-
-  it('whenLoadedDetailIsDeactivatedWithoutClosedDate_execute_shouldMarkClosedWithUndefinedDate', async () => {
-    // Arrange
-    const {
-      useCase,
-      interaction,
-      cookie,
-      deactivated,
-      storage
-    } = createUseCase();
-    const client = createClient();
-    interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
-    cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated.detect.mockResolvedValue({ isDeactivated: true, closedBy: null });
-    storage.markPropertyClosed.mockResolvedValue(undefined);
-
-    // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/2b/', 'ALWAYS');
-
-    // Assert
-    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/2b/', undefined);
   });
 
   it('whenDetailIsActiveAndExtracted_execute_shouldFilterEnrichAndPersistProperty', async () => {
@@ -158,7 +136,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       useCase,
       interaction,
       cookie,
-      deactivated,
+      handleDeactivated,
       extractor,
       geoCoordinateHint,
       storage
@@ -182,7 +160,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated.detect.mockResolvedValue({ isDeactivated: false, closedBy: null });
+    handleDeactivated.execute.mockResolvedValue(false);
     extractor.extractProperty.mockResolvedValue(rawProperty);
     extractor.filterPropertyImagesByBlurPattern.mockReturnValue(filteredProperty);
     geoCoordinateHint.enrichProperty.mockResolvedValue(geoEnrichedProperty);
@@ -192,6 +170,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     await useCase.execute(client, 'https://www.idealista.com/inmueble/3/', 'ALWAYS');
 
     // Assert
+    expect(handleDeactivated.execute).toHaveBeenCalledTimes(1);
     expect(interaction.revealDetailMedia).toHaveBeenCalledWith(client.Runtime);
     expect(extractor.filterPropertyImagesByBlurPattern).toHaveBeenCalledWith(rawProperty);
     expect(geoCoordinateHint.enrichProperty).toHaveBeenCalledWith(client.Runtime, filteredProperty, 'ALWAYS');
@@ -204,7 +183,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       useCase,
       interaction,
       cookie,
-      deactivated,
+      handleDeactivated,
       extractor,
       geoCoordinateHint,
       storage
@@ -215,7 +194,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated.detect.mockResolvedValue({ isDeactivated: false, closedBy: null });
+    handleDeactivated.execute.mockResolvedValue(false);
     extractor.extractProperty.mockResolvedValue(rawProperty);
     extractor.filterPropertyImagesByBlurPattern.mockReturnValue(filteredProperty);
     geoCoordinateHint.enrichProperty.mockResolvedValue(filteredProperty);
@@ -239,16 +218,14 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       useCase,
       interaction,
       cookie,
-      deactivated,
+      handleDeactivated,
       extractor
     } = createUseCase();
     const client = createClient();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated.detect
-      .mockResolvedValueOnce({ isDeactivated: false, closedBy: null })
-      .mockResolvedValueOnce({ isDeactivated: false, closedBy: null });
+    handleDeactivated.execute.mockResolvedValue(false);
     extractor.extractProperty.mockResolvedValue(null);
 
     // Action
@@ -258,62 +235,33 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     await expect(action).rejects.toThrow(
       'Property detail container was not found after loading URL: https://www.idealista.com/inmueble/4/'
     );
+    expect(handleDeactivated.execute).toHaveBeenCalledTimes(2);
   });
 
-  it('whenExtractionFailsAndThenDeactivated_execute_shouldMarkClosed', async () => {
+  it('whenExtractionFailsAndThenIsHandledAsDeactivated_execute_shouldReturnWithoutThrowing', async () => {
     // Arrange
     const {
       useCase,
       interaction,
       cookie,
-      deactivated,
+      handleDeactivated,
       extractor,
       storage
     } = createUseCase();
     const client = createClient();
-    const closedBy = new Date('2026-02-02T00:00:00.000Z');
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated
-      .detect
-      .mockResolvedValueOnce({ isDeactivated: false, closedBy: null })
-      .mockResolvedValueOnce({ isDeactivated: true, closedBy });
+    handleDeactivated.execute
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
     extractor.extractProperty.mockResolvedValue(null);
-    storage.markPropertyClosed.mockResolvedValue(undefined);
 
     // Action
     await useCase.execute(client, 'https://www.idealista.com/inmueble/5/', 'ONLY_WHEN_MISSING_IN_DB');
 
     // Assert
-    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5/', closedBy);
-  });
-
-  it('whenExtractionFailsAndThenDeactivatedWithoutClosedDate_execute_shouldMarkClosedWithUndefinedDate', async () => {
-    // Arrange
-    const {
-      useCase,
-      interaction,
-      cookie,
-      deactivated,
-      extractor,
-      storage
-    } = createUseCase();
-    const client = createClient();
-    interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
-    interaction.revealDetailMedia.mockResolvedValue(undefined);
-    cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
-    deactivated
-      .detect
-      .mockResolvedValueOnce({ isDeactivated: false, closedBy: null })
-      .mockResolvedValueOnce({ isDeactivated: true, closedBy: null });
-    extractor.extractProperty.mockResolvedValue(null);
-    storage.markPropertyClosed.mockResolvedValue(undefined);
-
-    // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/5b/', 'ONLY_WHEN_MISSING_IN_DB');
-
-    // Assert
-    expect(storage.markPropertyClosed).toHaveBeenCalledWith('https://www.idealista.com/inmueble/5b/', undefined);
+    expect(handleDeactivated.execute).toHaveBeenCalledTimes(2);
+    expect(storage.savePropertyWithImages).not.toHaveBeenCalled();
   });
 });

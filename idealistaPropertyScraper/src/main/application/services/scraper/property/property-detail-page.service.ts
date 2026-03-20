@@ -1,84 +1,26 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
+import { Injectable } from '@nestjs/common';
 import { CdpClient } from 'src/application/services/scraper/property/cdp-client.type';
-import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
-import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
-import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
-import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
-import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
-import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
 import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
+import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
 @Injectable()
 export class PropertyDetailPageService {
-  private readonly logger = new Logger(PropertyDetailPageService.name);
-  private readonly captchaDetectorService = new IdealistaCaptchaDetectorService();
-
   constructor(
-    private readonly cookieApprovalDialogScraperService: CookieApprovalDialogScraperService,
-    private readonly navigationService: PropertyDetailNavigationService,
-    private readonly interactionService: PropertyDetailInteractionService,
-    private readonly deactivatedDetailStatusService: DeactivatedDetailStatusService,
-    private readonly domExtractorService: PropertyDetailDomExtractorService,
-    private readonly geoCoordinateHintService: GeoCoordinateHintService,
-    private readonly storageService: PropertyDetailStorageService,
     private readonly loadPropertyDetailFromResultsUseCase: LoadPropertyDetailFromResultsUseCase,
-    private readonly revalidatePropertyDetailFromDatabaseUseCase: RevalidatePropertyDetailFromDatabaseUseCase
+    private readonly revalidatePropertyDetailFromDatabaseUseCase: RevalidatePropertyDetailFromDatabaseUseCase,
+    private readonly processLoadedPropertyDetailUseCase: ProcessLoadedPropertyDetailUseCase
   ) {}
 
   async loadPropertyUrl(client: CdpClient, url: string): Promise<void> {
     await this.loadPropertyDetailFromResultsUseCase.execute(client, url, async () => {
-      await this.processLoadedPropertyDetail(client, url, 'ALWAYS');
+      await this.processLoadedPropertyDetailUseCase.execute(client, url, 'ALWAYS');
     });
   }
 
   async loadPropertyUrlFromDatabase(client: CdpClient, url: string): Promise<void> {
     await this.revalidatePropertyDetailFromDatabaseUseCase.execute(client, url, async () => {
-      await this.processLoadedPropertyDetail(client, url, 'ONLY_WHEN_MISSING_IN_DB');
+      await this.processLoadedPropertyDetailUseCase.execute(client, url, 'ONLY_WHEN_MISSING_IN_DB');
     });
-  }
-
-  private async processLoadedPropertyDetail(
-    client: CdpClient,
-    url: string,
-    geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB'
-  ): Promise<void> {
-    await this.captchaDetectorService.panicIfCaptchaDetected({
-      runtime: client.Runtime,
-      logger: this.logger,
-      context: `property detail url "${url}"`
-    });
-
-    await this.interactionService.throwIfOriginErrorPage(client.Runtime);
-    await this.cookieApprovalDialogScraperService.acceptCookiesIfVisible(client.Runtime);
-
-    const deactivatedStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
-    if (deactivatedStatus.isDeactivated) {
-      await this.storageService.markPropertyClosed(url, deactivatedStatus.closedBy ?? undefined);
-      return;
-    }
-
-    await this.interactionService.revealDetailMedia(client.Runtime);
-
-    const extractedProperty = await this.domExtractorService.extractProperty(client.Runtime, url);
-    if (!extractedProperty) {
-      const afterExtractionStatus = await this.deactivatedDetailStatusService.detect(client.Runtime);
-      if (afterExtractionStatus.isDeactivated) {
-        await this.storageService.markPropertyClosed(url, afterExtractionStatus.closedBy ?? undefined);
-        return;
-      }
-
-      throw new Error(`Property detail container was not found after loading URL: ${url}`);
-    }
-
-    const filteredProperty = this.domExtractorService.filterPropertyImagesByBlurPattern(extractedProperty);
-    const enrichedProperty = await this.geoCoordinateHintService.enrichProperty(
-      client.Runtime,
-      filteredProperty,
-      geoHintMode
-    );
-    await this.storageService.savePropertyWithImages(enrichedProperty);
   }
 }

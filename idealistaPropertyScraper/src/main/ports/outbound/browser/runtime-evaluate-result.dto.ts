@@ -3,6 +3,7 @@ export type RuntimeEvaluateResult = {
     text?: string;
   };
   result?: {
+    description?: string;
     value?: unknown;
   };
 };

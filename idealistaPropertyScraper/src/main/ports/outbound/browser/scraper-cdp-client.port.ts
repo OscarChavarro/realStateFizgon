@@ -1,4 +1,4 @@
-import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
+import type { NetworkDomain } from 'ports/outbound/browser/network-domain.port';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 

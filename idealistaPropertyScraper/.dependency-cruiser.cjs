@@ -53,6 +53,16 @@ module.exports = {
       to: {
         path: '^src/main/(adapters|infrastructure)/'
       }
+    },
+    {
+      name: 'ports-must-not-depend-on-application',
+      severity: 'error',
+      from: {
+        path: '^src/main/ports/'
+      },
+      to: {
+        path: '^src/main/application/'
+      }
     }
   ],
   options: {

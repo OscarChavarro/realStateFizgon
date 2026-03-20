@@ -1,4 +1,4 @@
-import { RuntimeDomain } from 'application/services/scraper/filters/runtime-domain.type';
+import type { RuntimeDomain } from 'ports/outbound/browser/runtime-domain.port';
 
 export type FiltersCdpClient = {
   Runtime: RuntimeDomain;

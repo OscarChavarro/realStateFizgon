@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
 import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/network-loading-failed-event.type';
 import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
@@ -7,6 +6,7 @@ import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.p
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
+import type { NetworkDomain } from 'ports/outbound/browser/network-domain.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()

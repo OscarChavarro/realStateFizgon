@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
-import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
+import type { NetworkDomain } from 'ports/outbound/browser/network-domain.port';
 
 class LoggerMock {
   readonly warn = jest.fn<(message: string) => void>();

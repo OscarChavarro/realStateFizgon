@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { access } from 'node:fs/promises';
-import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
-import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
+import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
+import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 
 jest.mock('node:fs/promises', () => ({
   access: jest.fn()

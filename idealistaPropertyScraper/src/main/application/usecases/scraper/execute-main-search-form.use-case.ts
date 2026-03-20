@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class ExecuteMainSearchFormUseCase {
   private readonly logger = new Logger(ExecuteMainSearchFormUseCase.name);

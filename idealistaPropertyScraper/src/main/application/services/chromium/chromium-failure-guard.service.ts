@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/resilience/recover-from-browser-failure.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 @Injectable()
 export class ChromiumFailureGuardService {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ScheduleService } from 'src/application/services/state/schedule.service';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
+import { ScheduleService } from 'application/services/state/schedule.service';
+import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 
 @Injectable()
 export class ResolveIdleStateUseCase {

@@ -3,9 +3,9 @@ import { ConfirmChannel, ChannelModel, connect, Options } from 'amqplib';
 import { once } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
+import { RabbitConfig } from 'infrastructure/config/settings/rabbit.config';
+import { toErrorMessage } from 'infrastructure/error-message';
+import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
 
 @Injectable()
 export class RabbitMqService implements OnModuleDestroy, QueuePublisherPort {

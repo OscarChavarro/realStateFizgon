@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
-import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
+import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
+import { ScraperStateLoopService } from 'application/services/state/scraper-state-loop.service';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class RunScraperStateLoopUseCase {

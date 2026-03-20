@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
-import { ExecuteScrapeNewPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
-import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
-import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
+import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
+import { ExecuteScrapeNewPropertiesCycleUseCase } from 'application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
+import { RunScraperStateLoopUseCase } from 'application/usecases/state/run-scraper-state-loop.use-case';
 
 class ExecuteScrapeNewPropertiesCycleUseCaseMockForScraperOrchestratorService {
   readonly execute = jest.fn<(cdpHost: string, cdpPort: number) => Promise<void>>();

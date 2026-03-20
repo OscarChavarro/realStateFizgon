@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
-import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
-import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
-import { HandleScraperBootstrapFailureUseCase } from 'src/application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
-import { InitializeScraperBootstrapUseCase } from 'src/application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
-import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
+import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
+import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
+import { BootstrapChromiumSessionUseCase } from 'application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { HandleScraperBootstrapFailureUseCase } from 'application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
+import { InitializeScraperBootstrapUseCase } from 'application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
+import { RunStartupPreChecksUseCase } from 'application/usecases/prechecks/run-startup-pre-checks.use-case';
 
 class RunStartupPreChecksUseCaseMockForInitializeScraperBootstrapUseCase {
   readonly execute = jest.fn<() => Promise<void>>();

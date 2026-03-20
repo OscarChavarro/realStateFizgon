@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { RecoverFromBrowserFailureUseCase } from 'src/application/usecases/resilience/recover-from-browser-failure.use-case';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { ChromiumCdpReadinessService } from 'application/services/chromium/chromium-cdp-readiness.service';
+import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
+import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
+import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 class ChromiumPageSyncServiceMockForRecoverFromBrowserFailureUseCase {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();

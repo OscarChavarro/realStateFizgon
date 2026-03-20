@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ProxyService } from '@real-state-fizgon/proxy';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
 @Injectable()
 export class ValidateProxyAccessPreCheckUseCase {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
-import { ConfigurationModule } from 'src/infrastructure/config/settings/configuration.module';
-import { QUEUE_PUBLISHER_PORT } from 'src/ports/outbound/messaging/queue-publisher.port.token';
+import { RabbitMqService } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
+import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
+import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
 
 @Module({
   imports: [ConfigurationModule],

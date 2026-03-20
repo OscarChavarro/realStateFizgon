@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NetworkDomain } from 'src/application/services/imagedownload/network-domain.type';
-import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
-import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
-import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
-import { toErrorMessage } from 'src/infrastructure/error-message';
-import { sleep } from 'src/infrastructure/sleep';
+import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
+import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/network-loading-failed-event.type';
+import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
+import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
+import { toErrorMessage } from 'infrastructure/error-message';
+import { sleep } from 'infrastructure/sleep';
 
-import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
+import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
 @Injectable()
 export class ImageNetworkCaptureService {
   private readonly pendingImageRequests = new Map<string, { url: string; mimeType: string }>();

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PromoteIdleToScheduledScrapeUseCase } from 'src/application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
+import { PromoteIdleToScheduledScrapeUseCase } from 'application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
 
 @Injectable()
 export class ScheduleService {

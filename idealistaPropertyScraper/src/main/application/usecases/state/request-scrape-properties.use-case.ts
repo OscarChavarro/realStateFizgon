@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 type RequestScrapePropertiesResult = {
   status: string;

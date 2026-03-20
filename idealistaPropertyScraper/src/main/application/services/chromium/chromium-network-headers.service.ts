@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
-import { UserAgentMetadata } from 'src/application/services/chromium/user-agent-metadata.type';
-import { UserAgentOverridePayload } from 'src/application/services/chromium/user-agent-override-payload.type';
-import { UserAgentOverrideClient } from 'src/application/services/chromium/user-agent-override-client';
-import { NetworkHeaderClient } from 'src/application/services/chromium/network-header-client';
-import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { UserAgentMetadata } from 'application/services/chromium/user-agent-metadata.type';
+import { UserAgentOverridePayload } from 'application/services/chromium/user-agent-override-payload.type';
+import { UserAgentOverrideClient } from 'application/services/chromium/user-agent-override-client';
+import { NetworkHeaderClient } from 'application/services/chromium/network-header-client';
+import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 type PageTarget = {
   id?: string;

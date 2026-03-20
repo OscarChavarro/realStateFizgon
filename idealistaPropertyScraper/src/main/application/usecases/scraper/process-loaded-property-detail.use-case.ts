@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
-import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
-import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
-import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
-import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
+import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
+import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
+import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
+import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class ProcessLoadedPropertyDetailUseCase {
   private readonly logger = new Logger(ProcessLoadedPropertyDetailUseCase.name);

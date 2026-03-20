@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
+import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
 
-import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class RevalidateOpenPropertiesFromDatabaseUseCase {
   private readonly logger = new Logger(RevalidateOpenPropertiesFromDatabaseUseCase.name);

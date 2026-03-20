@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
-import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ExecuteMainSearchFormUseCase } from 'application/usecases/scraper/execute-main-search-form.use-case';
+import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 class ScraperConfigMockForExecuteMainSearchFormUseCase {
   readonly mainPageExpressionTimeoutMs = 5000;
   readonly mainPageExpressionPollIntervalMs = 50;

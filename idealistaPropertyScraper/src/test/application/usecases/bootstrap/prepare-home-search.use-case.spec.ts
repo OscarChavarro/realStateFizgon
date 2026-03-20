@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
+import { PrepareHomeSearchUseCase } from 'application/usecases/bootstrap/prepare-home-search.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
-import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 jest.mock('chrome-remote-interface', () => jest.fn());
 
 type PageTarget = { id?: string; type?: string; url?: string };

@@ -1,5 +1,5 @@
-import { Filter } from 'src/domain/filters/filter';
-import { FilterType } from 'src/domain/filters/filter-type.enum';
+import { Filter } from 'domain/filters/filter';
+import { FilterType } from 'domain/filters/filter-type.enum';
 
 export class Floor extends Filter {
   constructor() {

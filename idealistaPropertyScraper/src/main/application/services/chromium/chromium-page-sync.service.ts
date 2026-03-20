@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { sleep } from 'src/infrastructure/sleep';
+import { sleep } from 'infrastructure/sleep';
 
 type CdpPageDomain = {
   loadEventFired(cb: () => void): void;

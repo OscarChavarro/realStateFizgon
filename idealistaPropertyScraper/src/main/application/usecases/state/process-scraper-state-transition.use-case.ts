@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import type { ScraperStateLoopHandlers } from 'src/application/usecases/state/scraper-state-loop-handlers.port';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { ResolveIdleStateUseCase } from 'src/application/usecases/state/resolve-idle-state.use-case';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import type { ScraperStateLoopHandlers } from 'application/usecases/state/scraper-state-loop-handlers.port';
+import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
+import { ResolveIdleStateUseCase } from 'application/usecases/state/resolve-idle-state.use-case';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 @Injectable()
 export class ProcessScraperStateTransitionUseCase {

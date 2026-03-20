@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
 
 type RuntimeClient = {
   evaluate(params: { expression: string; returnByValue?: boolean }): Promise<{ result?: { value?: unknown } }>;

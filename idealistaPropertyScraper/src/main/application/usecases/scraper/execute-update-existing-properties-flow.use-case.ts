@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-open-properties-from-database.use-case';
-import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
+import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
+import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
+import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
-import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class ExecuteUpdateExistingPropertiesFlowUseCase {
   private readonly logger = new Logger(ExecuteUpdateExistingPropertiesFlowUseCase.name);

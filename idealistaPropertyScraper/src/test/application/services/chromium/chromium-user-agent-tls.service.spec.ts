@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { LoggerLikeMock } from '../../../support/mocks/logger-like.mock';
 
 jest.mock('node:child_process', () => ({

@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
-import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { BootstrapChromiumSessionUseCase } from 'src/application/usecases/bootstrap/bootstrap-chromium-session.use-case';
+import { ChromiumCdpReadinessService } from 'application/services/chromium/chromium-cdp-readiness.service';
+import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
+import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
+import { BootstrapChromiumSessionUseCase } from 'application/usecases/bootstrap/bootstrap-chromium-session.use-case';
 
 class ChromiumProcessLifecycleServiceMockForBootstrapChromiumSessionUseCase {
   readonly launchChromiumProcess = jest.fn<

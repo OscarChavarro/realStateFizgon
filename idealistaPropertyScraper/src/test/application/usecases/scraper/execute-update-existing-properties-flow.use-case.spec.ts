@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { SearchResultsPreparationService } from 'src/application/services/scraper/search-results-preparation.service';
-import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'src/application/usecases/scraper/execute-update-existing-properties-flow.use-case';
-import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-open-properties-from-database.use-case';
-import { RevalidatePropertiesWithoutLastVisitUseCase } from 'src/application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
+import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { SearchResultsPreparationService } from 'application/services/scraper/search-results-preparation.service';
+import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'application/usecases/scraper/execute-update-existing-properties-flow.use-case';
+import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
+import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
-import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 class SearchResultsPreparationServiceMockForExecuteUpdateExistingPropertiesFlowUseCase {
   readonly prepareSearchResultsWithFilters = jest.fn<(
     client: ScraperCdpClient,

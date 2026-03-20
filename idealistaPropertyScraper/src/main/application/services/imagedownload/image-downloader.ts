@@ -1,17 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Property } from 'src/domain/property/property.model';
-import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
-import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/network-enabled-cdp-client.type';
-import { NetworkLoadingFailedEvent } from 'src/application/services/imagedownload/network-loading-failed-event.type';
-import { NetworkLoadingFinishedEvent } from 'src/application/services/imagedownload/network-loading-finished-event.type';
-import { NetworkResponseReceivedEvent } from 'src/application/services/imagedownload/network-response-received-event.type';
-import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedownload/finalize-property-images.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
-import { sleep } from 'src/infrastructure/sleep';
+import { Property } from 'domain/property/property.model';
+import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
+import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
+import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
+import { NetworkEnabledCdpClient } from 'application/services/imagedownload/network-enabled-cdp-client.type';
+import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/network-loading-failed-event.type';
+import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
+import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
+import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { toErrorMessage } from 'infrastructure/error-message';
+import { sleep } from 'infrastructure/sleep';
 
 @Injectable()
 export class ImageDownloaderService {

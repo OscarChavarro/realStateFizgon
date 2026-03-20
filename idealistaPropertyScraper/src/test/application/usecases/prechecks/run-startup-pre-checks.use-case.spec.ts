@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
-import { RunStartupPreChecksUseCase } from 'src/application/usecases/prechecks/run-startup-pre-checks.use-case';
+import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
+import { RunStartupPreChecksUseCase } from 'application/usecases/prechecks/run-startup-pre-checks.use-case';
 
 class InfrastructurePreCheckServiceMockForRunStartupPreChecksUseCase {
   readonly runBeforeScraperStartup = jest.fn<() => Promise<void>>();

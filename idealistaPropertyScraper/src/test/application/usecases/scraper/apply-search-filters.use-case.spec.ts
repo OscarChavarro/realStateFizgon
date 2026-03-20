@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ApplySearchFiltersUseCase } from 'src/application/usecases/scraper/apply-search-filters.use-case';
-import { FilterAvailableOptionExtractorService } from 'src/application/services/scraper/filters/filter-available-option-extractor.service';
-import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
-import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
-import { SupportedFilters } from 'src/domain/filters/supported-filters';
-import { Filter } from 'src/domain/filters/filter';
-import { FilterType } from 'src/domain/filters/filter-type.enum';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ApplySearchFiltersUseCase } from 'application/usecases/scraper/apply-search-filters.use-case';
+import { FilterAvailableOptionExtractorService } from 'application/services/scraper/filters/filter-available-option-extractor.service';
+import { FilterSelectedOptionExtractorService } from 'application/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
+import { SupportedFilters } from 'domain/filters/supported-filters';
+import { Filter } from 'domain/filters/filter';
+import { FilterType } from 'domain/filters/filter-type.enum';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
-import type { AsideFiltersPayload } from 'src/application/dto/scraper/aside-filters-payload.dto';
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { AsideFiltersPayload } from 'application/dto/scraper/aside-filters-payload.dto';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 class FilterUpdateServiceMockForApplySearchFiltersUseCase {
   readonly applyRequiredActions = jest.fn<(client: FiltersCdpClient, preloaded: SupportedFilters, extracted: SupportedFilters) => Promise<void>>();
 }

@@ -2,10 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
-import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { toErrorMessage } from 'infrastructure/error-message';
+import { sleep } from 'infrastructure/sleep';
 
 @Injectable()
 export class ChromiumProcessLifecycleService {

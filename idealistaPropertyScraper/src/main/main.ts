@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from 'src/app.module';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { AppModule } from 'app.module';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');

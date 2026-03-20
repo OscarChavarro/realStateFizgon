@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { MongoServerError } from 'mongodb';
 import * as mongodb from 'mongodb';
-import { MongoDatabaseService } from 'src/adapters/outbound/persistence/mongodb/mongo-database.service';
-import { PriceFixSummary } from 'src/adapters/outbound/persistence/mongodb/mongo-price-migration.service';
-import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
-import { Property } from 'src/domain/property/property.model';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
+import { MongoDatabaseService } from 'adapters/outbound/persistence/mongodb/mongo-database.service';
+import { PriceFixSummary } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
+import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
+import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
 import { ChromeConfigMock } from '../../../../support/mocks/chrome-config.mock';
 import { MongoConfigMock } from '../../../../support/mocks/mongo-config.mock';
-import { sleep } from 'src/infrastructure/sleep';
+import { sleep } from 'infrastructure/sleep';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
+import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 
 function buildValidEnvironment(): Record<string, unknown> {
   return {

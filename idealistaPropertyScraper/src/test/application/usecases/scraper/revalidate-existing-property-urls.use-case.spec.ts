@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
-import { RevalidateExistingPropertyUrlsUseCase } from 'src/application/usecases/scraper/revalidate-existing-property-urls.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
+import { RevalidateExistingPropertyUrlsUseCase } from 'application/usecases/scraper/revalidate-existing-property-urls.use-case';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase {
   readonly loadPropertyUrlFromDatabase = jest.fn<(client: PropertyCdpClient, url: string) => Promise<void>>();
 }

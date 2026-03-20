@@ -1,4 +1,4 @@
-import { FilterDefinition } from 'src/infrastructure/config/settings/filter-definition.type';
+import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
 
 type FilterDefinitionByName = Record<string, FilterDefinition | undefined>;
 type SettingsPayload = Record<string, unknown>;

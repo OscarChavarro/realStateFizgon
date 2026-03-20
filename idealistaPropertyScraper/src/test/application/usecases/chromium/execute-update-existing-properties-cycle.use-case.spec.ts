@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
-import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
-import { UpdateExistingPropertiesFlowService } from 'src/application/services/scraper/flows/update-existing-properties-flow.service';
-import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'src/application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
+import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
+import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
+import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
+import { UpdateExistingPropertiesFlowService } from 'application/services/scraper/flows/update-existing-properties-flow.service';
+import { ExecuteUpdateExistingPropertiesCycleUseCase } from 'application/usecases/chromium/execute-update-existing-properties-cycle.use-case';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
-import type { ScraperCdpClient } from 'src/ports/outbound/browser/scraper-cdp-client.port';
+import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 jest.mock('chrome-remote-interface', () => jest.fn());
 
 type PageTarget = { id?: string; type?: string; url?: string };

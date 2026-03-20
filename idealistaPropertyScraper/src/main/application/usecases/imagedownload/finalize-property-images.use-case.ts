@@ -1,21 +1,21 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { join } from 'node:path';
-import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageFileNameService } from 'src/application/services/imagedownload/image-file-name.service';
-import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
-import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
-import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { Property } from 'src/domain/property/property.model';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { FILE_SYSTEM_PORT } from 'src/ports/outbound/filesystem/file-system.port.token';
-import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
-import { SLEEP_PORT } from 'src/ports/outbound/timing/sleep.port.token';
+import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
+import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
+import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
+import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
+import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
+import { Property } from 'domain/property/property.model';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { FILE_SYSTEM_PORT } from 'ports/outbound/filesystem/file-system.port.token';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
-import type { DownloadedIncomingImage } from 'src/application/dto/imagedownload/downloaded-incoming-image.dto';
-import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
-import type { FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
-import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
+import type { DownloadedIncomingImage } from 'application/dto/imagedownload/downloaded-incoming-image.dto';
+import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
+import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 @Injectable()
 export class FinalizePropertyImagesUseCase {

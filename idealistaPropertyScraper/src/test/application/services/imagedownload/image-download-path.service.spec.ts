@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
+import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 
 const foldersToDelete: string[] = [];
 

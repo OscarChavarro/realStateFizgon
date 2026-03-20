@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { MongoPropertyVisitService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-visit.service';
+import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 
 type PropertyVisitCollectionMock = {
   updateOne: jest.Mock;

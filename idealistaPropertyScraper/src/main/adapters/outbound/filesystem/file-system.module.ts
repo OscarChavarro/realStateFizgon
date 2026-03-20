@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { FileSystemService } from 'src/adapters/outbound/filesystem/file-system.service';
-import { FILE_SYSTEM_PORT } from 'src/ports/outbound/filesystem/file-system.port.token';
+import { FileSystemService } from 'adapters/outbound/filesystem/file-system.service';
+import { FILE_SYSTEM_PORT } from 'ports/outbound/filesystem/file-system.port.token';
 
 @Module({
   providers: [

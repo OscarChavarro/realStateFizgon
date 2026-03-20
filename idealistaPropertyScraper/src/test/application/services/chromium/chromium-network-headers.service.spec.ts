@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
-import { ChromiumNetworkHeadersService } from 'src/application/services/chromium/chromium-network-headers.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
-import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
 jest.mock('chrome-remote-interface', () => {
   const cdp = jest.fn();

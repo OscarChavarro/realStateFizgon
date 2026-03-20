@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 type DeactivatedDetailDetectionResult = {
   isDeactivated: boolean;
   closedByIso: string | null;

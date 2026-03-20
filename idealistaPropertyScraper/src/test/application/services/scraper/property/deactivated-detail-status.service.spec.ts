@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { DeactivatedDetailStatusService } from 'src/application/services/scraper/property/deactivated-detail-status.service';
+import { DeactivatedDetailStatusService } from 'application/services/scraper/property/deactivated-detail-status.service';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 function createRuntime(resultValue: unknown): RuntimeClient {
   return {
     evaluate: jest.fn(async () => ({ result: { value: resultValue } }))

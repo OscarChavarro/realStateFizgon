@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
-import { Filter } from 'src/domain/filters/filter';
-import { FilterType } from 'src/domain/filters/filter-type.enum';
-import { SupportedFilters } from 'src/domain/filters/supported-filters';
-import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
-import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
-import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
-import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
+import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
+import { Filter } from 'domain/filters/filter';
+import { FilterType } from 'domain/filters/filter-type.enum';
+import { SupportedFilters } from 'domain/filters/supported-filters';
+import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
+import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
+import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
+import { MinMaxSelection } from 'application/services/scraper/filters/min-max-selection.type';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterUpdateService {
   private readonly logger = new Logger(FilterUpdateService.name);

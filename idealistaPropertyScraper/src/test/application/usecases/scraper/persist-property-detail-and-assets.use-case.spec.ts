@@ -1,12 +1,12 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
-import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/scraper/persist-property-detail-and-assets.use-case';
-import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/imagedownload/publish-new-property-notification.use-case';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
-import { Property } from 'src/domain/property/property.model';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
+import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
+import { PublishNewPropertyNotificationUseCase } from 'application/usecases/imagedownload/publish-new-property-notification.use-case';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property.model';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
 
 class PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase {
   readonly execute = jest.fn<(property: Property) => Promise<void>>();

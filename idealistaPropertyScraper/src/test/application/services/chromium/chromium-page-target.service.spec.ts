@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
-import { ChromiumPageTargetService } from 'src/application/services/chromium/chromium-page-target.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 jest.mock('chrome-remote-interface', () => ({
   List: jest.fn()

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 describe('toErrorMessage', () => {
   it('whenValueIsError_toErrorMessage_shouldReturnMessage', () => {

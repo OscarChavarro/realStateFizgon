@@ -1,16 +1,16 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
-import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
-import { PropertyDetailStorageService } from 'src/application/services/scraper/property/property-detail-storage.service';
-import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
-import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
-import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
-import { Property } from 'src/domain/property/property.model';
+import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
+import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
+import { PropertyDetailStorageService } from 'application/services/scraper/property/property-detail-storage.service';
+import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
+import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper/process-loaded-property-detail.use-case';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property.model';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class CookieApprovalDialogScraperServiceMockForProcessLoadedPropertyDetailUseCase {
   readonly acceptCookiesIfVisible = jest.fn<(runtime: unknown) => Promise<void>>();
 }

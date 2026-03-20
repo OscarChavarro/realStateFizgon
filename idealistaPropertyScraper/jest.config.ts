@@ -8,9 +8,9 @@ const config: Config = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }]
   },
+  moduleDirectories: ['node_modules', '<rootDir>/src/main'],
   moduleNameMapper: {
-    '^@real-state-fizgon/captcha-solvers$': '<rootDir>/src/test/support/mocks/captcha-solvers.mock.ts',
-    '^src/(.*)$': '<rootDir>/src/main/$1'
+    '^@real-state-fizgon/captcha-solvers$': '<rootDir>/src/test/support/mocks/captcha-solvers.mock.ts'
   },
   collectCoverageFrom: [
     'src/main/**/*.ts',

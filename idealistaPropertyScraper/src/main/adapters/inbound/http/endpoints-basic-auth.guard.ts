@@ -5,7 +5,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { timingSafeEqual } from 'node:crypto';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class EndpointsBasicAuthGuard implements CanActivate {

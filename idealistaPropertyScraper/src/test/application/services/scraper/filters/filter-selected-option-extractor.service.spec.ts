@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { FilterSelectedOptionExtractorService } from 'src/application/services/scraper/filters/filter-selected-option-extractor.service';
+import { FilterSelectedOptionExtractorService } from 'application/services/scraper/filters/filter-selected-option-extractor.service';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {

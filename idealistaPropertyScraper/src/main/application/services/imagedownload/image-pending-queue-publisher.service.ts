@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { toErrorMessage } from 'src/infrastructure/error-message';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
-import { QUEUE_PUBLISHER_PORT } from 'src/ports/outbound/messaging/queue-publisher.port.token';
+import { toErrorMessage } from 'infrastructure/error-message';
+import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
+import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
 
 @Injectable()
 export class ImagePendingQueuePublisherService {

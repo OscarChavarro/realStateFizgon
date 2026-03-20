@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 @Injectable()
 export class ScraperStateMachineService {

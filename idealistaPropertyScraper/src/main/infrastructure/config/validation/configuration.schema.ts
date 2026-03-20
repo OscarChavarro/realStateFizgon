@@ -5,9 +5,9 @@ import {
   SecretsChromeSchema,
   SecretsGeolocationSchema,
   SecretsProxySchema
-} from 'src/infrastructure/config/validation/chrome.schema';
-import { SecretsMongoSchema } from 'src/infrastructure/config/validation/mongo.schema';
-import { EnvironmentRabbitSchema, SecretsRabbitSchema } from 'src/infrastructure/config/validation/rabbit.schema';
+} from 'infrastructure/config/validation/chrome.schema';
+import { SecretsMongoSchema } from 'infrastructure/config/validation/mongo.schema';
+import { EnvironmentRabbitSchema, SecretsRabbitSchema } from 'infrastructure/config/validation/rabbit.schema';
 import {
   EnvironmentApiSchema,
   EnvironmentFilterTimeoutSchema,
@@ -19,7 +19,7 @@ import {
   EnvironmentSchedulerSchema,
   EnvironmentScraperSchema,
   SecretsEndpointsSchema
-} from 'src/infrastructure/config/validation/scraper.schema';
+} from 'infrastructure/config/validation/scraper.schema';
 
 const EnvironmentTimeoutsSchema = z.object({
   chrome: EnvironmentChromeTimeoutSchema,

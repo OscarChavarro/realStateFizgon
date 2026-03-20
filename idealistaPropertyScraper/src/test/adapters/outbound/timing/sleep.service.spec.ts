@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { SleepService } from 'src/adapters/outbound/timing/sleep.service';
-import { sleep } from 'src/infrastructure/sleep';
+import { SleepService } from 'adapters/outbound/timing/sleep.service';
+import { sleep } from 'infrastructure/sleep';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

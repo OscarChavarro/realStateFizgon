@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
+import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
 
 type CdpClient = {
   Browser?: {

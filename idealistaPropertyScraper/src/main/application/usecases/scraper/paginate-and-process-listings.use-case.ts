@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { SLEEP_PORT } from 'src/ports/outbound/timing/sleep.port.token';
+import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
-import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class PaginateAndProcessListingsUseCase {
   private readonly logger = new Logger(PaginateAndProcessListingsUseCase.name);

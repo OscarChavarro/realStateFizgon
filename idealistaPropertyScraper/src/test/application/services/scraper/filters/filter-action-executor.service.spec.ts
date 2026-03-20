@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
+import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 function createClient(): FiltersCdpClient {
   const evaluateMock = jest.fn();
   return {

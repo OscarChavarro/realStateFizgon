@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
+import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 
 describe('ImageUrlRulesService', () => {
   it.each([

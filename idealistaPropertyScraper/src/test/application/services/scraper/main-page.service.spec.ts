@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MainPageService } from 'src/application/services/scraper/main-page.service';
-import { ExecuteMainSearchFormUseCase } from 'src/application/usecases/scraper/execute-main-search-form.use-case';
+import { MainPageService } from 'application/services/scraper/main-page.service';
+import { ExecuteMainSearchFormUseCase } from 'application/usecases/scraper/execute-main-search-form.use-case';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 class ExecuteMainSearchFormUseCaseMock {
   readonly execute = jest.fn<(client: FiltersCdpClient, mainSearchArea: string, scraperHomeUrl: string) => Promise<void>>();
 }

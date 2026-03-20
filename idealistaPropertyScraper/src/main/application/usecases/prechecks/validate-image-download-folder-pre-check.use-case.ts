@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
+import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 
 @Injectable()
 export class ValidateImageDownloadFolderPreCheckUseCase {

@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { Filter } from 'src/domain/filters/filter';
-import { FilterType } from 'src/domain/filters/filter-type.enum';
-import { MinMaxSelection } from 'src/application/services/scraper/filters/min-max-selection.type';
+import { Filter } from 'domain/filters/filter';
+import { FilterType } from 'domain/filters/filter-type.enum';
+import { MinMaxSelection } from 'application/services/scraper/filters/min-max-selection.type';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterSelectionReaderService {
   async readCurrentPlainSelection(client: FiltersCdpClient, expectedFilter: Filter): Promise<string[]> {

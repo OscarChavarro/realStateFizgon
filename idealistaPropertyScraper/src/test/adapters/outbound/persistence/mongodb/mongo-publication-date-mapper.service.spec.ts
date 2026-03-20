@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MongoPublicationDateMapperService } from 'src/adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
+import { MongoPublicationDateMapperService } from 'adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
 
 describe('MongoPublicationDateMapperService', () => {
   it.each([

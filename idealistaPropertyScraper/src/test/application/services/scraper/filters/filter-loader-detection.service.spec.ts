@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
-jest.mock('src/infrastructure/sleep', () => ({
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
+import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { RuntimeWithEvaluateMock } from '../../../support/mocks/runtime-with-evaluate.mock';
 
 describe('OriginErrorDetectorService', () => {

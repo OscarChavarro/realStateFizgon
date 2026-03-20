@@ -1,14 +1,14 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
-import { Property } from 'src/domain/property/property.model';
-import { sleep } from 'src/infrastructure/sleep';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
-import { MongoPriceMigrationService, PriceFixSummary } from 'src/adapters/outbound/persistence/mongodb/mongo-price-migration.service';
-import { MongoPropertyUpsertService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
-import { MongoPropertyVisitService } from 'src/adapters/outbound/persistence/mongodb/mongo-property-visit.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
+import { Property } from 'domain/property/property.model';
+import { sleep } from 'infrastructure/sleep';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
+import { MongoPriceMigrationService, PriceFixSummary } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
+import { MongoPropertyUpsertService } from 'adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
+import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 
 @Injectable()
 export class MongoDatabaseService implements OnModuleDestroy, PropertyPersistencePort {

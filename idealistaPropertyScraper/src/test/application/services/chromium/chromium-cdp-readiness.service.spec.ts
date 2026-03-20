@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ChromiumCdpReadinessService } from 'src/application/services/chromium/chromium-cdp-readiness.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ChromiumCdpReadinessService } from 'application/services/chromium/chromium-cdp-readiness.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
 class ChromeConfigMockForReadiness {
   constructor(

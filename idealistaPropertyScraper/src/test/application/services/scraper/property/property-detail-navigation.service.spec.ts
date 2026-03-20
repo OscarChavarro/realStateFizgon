@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { PropertyDetailNavigationService } from 'application/services/scraper/property/property-detail-navigation.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { sleep } from 'infrastructure/sleep';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
-jest.mock('src/infrastructure/sleep', () => ({
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

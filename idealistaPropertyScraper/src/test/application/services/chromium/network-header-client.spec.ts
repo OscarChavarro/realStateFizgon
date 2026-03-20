@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
-import { NetworkHeaderClient } from 'src/application/services/chromium/network-header-client';
+import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { NetworkHeaderClient } from 'application/services/chromium/network-header-client';
 
 type LoggerMock = {
   warn: jest.Mock<(message: string) => void>;

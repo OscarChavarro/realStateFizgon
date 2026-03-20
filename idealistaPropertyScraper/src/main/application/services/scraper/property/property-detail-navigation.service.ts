@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { sleep } from 'infrastructure/sleep';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 @Injectable()
 export class PropertyDetailNavigationService {
   private static readonly SEARCH_RESULTS_READY_EXPRESSION = `(() => {

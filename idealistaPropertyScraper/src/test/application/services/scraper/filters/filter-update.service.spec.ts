@@ -1,15 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { FilterActionExecutorService } from 'src/application/services/scraper/filters/filter-action-executor.service';
-import { FilterLoaderDetectionService } from 'src/application/services/scraper/filters/filter-loader-detection.service';
-import { FilterSelectionReaderService } from 'src/application/services/scraper/filters/filter-selection-reader.service';
-import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
-import { FilterUpdateService } from 'src/application/services/scraper/filters/filter-update.service';
-import { SupportedFilters } from 'src/domain/filters/supported-filters';
-import { Price } from 'src/domain/filters/price.filter';
-import { PropertyType } from 'src/domain/filters/property-type.filter';
-import { Rooms } from 'src/domain/filters/rooms.filter';
+import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
+import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
+import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
+import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
+import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
+import { SupportedFilters } from 'domain/filters/supported-filters';
+import { Price } from 'domain/filters/price.filter';
+import { PropertyType } from 'domain/filters/property-type.filter';
+import { Rooms } from 'domain/filters/rooms.filter';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 class FilterLoaderDetectionServiceMock {
   readonly scrollToTop = jest.fn<(client: FiltersCdpClient) => Promise<void>>();
   readonly waitForPostClickStabilityOrReload = jest.fn<(client: FiltersCdpClient) => Promise<boolean>>();

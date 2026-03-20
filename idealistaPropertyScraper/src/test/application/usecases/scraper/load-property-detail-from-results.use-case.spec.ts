@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PropertyDetailNavigationService } from 'src/application/services/scraper/property/property-detail-navigation.service';
-import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
+import { PropertyDetailNavigationService } from 'application/services/scraper/property/property-detail-navigation.service';
+import { LoadPropertyDetailFromResultsUseCase } from 'application/usecases/scraper/load-property-detail-from-results.use-case';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailNavigationServiceMockForLoadPropertyDetailFromResultsUseCase {
   readonly clickPropertyLinkFromResults = jest.fn<(runtime: unknown, targetUrl: string) => Promise<boolean>>();
   readonly waitForDetailUrlAndDomComplete = jest.fn<(runtime: unknown, targetUrl: string) => Promise<void>>();

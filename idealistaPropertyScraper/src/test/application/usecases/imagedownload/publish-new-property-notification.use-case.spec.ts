@@ -1,11 +1,11 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PublishNewPropertyNotificationUseCase } from 'src/application/usecases/imagedownload/publish-new-property-notification.use-case';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
-import { Property } from 'src/domain/property/property.model';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import { PublishNewPropertyNotificationUseCase } from 'application/usecases/imagedownload/publish-new-property-notification.use-case';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property.model';
+import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 class QueuePublisherPortMockForPublishNewPropertyNotificationUseCase {
   readonly publishJsonToQueue = jest.fn<(queueName: string, payload: unknown) => Promise<void>>();

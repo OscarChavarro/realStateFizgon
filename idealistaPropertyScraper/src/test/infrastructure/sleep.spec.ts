@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { sleep } from 'src/infrastructure/sleep';
+import { sleep } from 'infrastructure/sleep';
 
 describe('sleep', () => {
   it.each([0, 25])('whenDelayIsProvided_sleep_shouldResolveAfterRequestedMilliseconds', async (ms) => {

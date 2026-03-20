@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ImagePendingQueuePublisherService } from 'src/application/services/imagedownload/image-pending-queue-publisher.service';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
+import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
+import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
 import { QueuePublisherPortMock } from '../../../ports/outbound/messaging/queue-publisher-port.mock';
 
 class NestLoggerMock {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Property } from 'src/domain/property/property.model';
-import { MarkPropertyClosedUseCase } from 'src/application/usecases/scraper/mark-property-closed.use-case';
-import { PersistPropertyDetailAndAssetsUseCase } from 'src/application/usecases/scraper/persist-property-detail-and-assets.use-case';
+import { Property } from 'domain/property/property.model';
+import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
+import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
 
 @Injectable()
 export class PropertyDetailStorageService {

@@ -1,4 +1,4 @@
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 type ScraperConfigMockOptions = {
   initialScraperState?: ScraperState;

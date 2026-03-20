@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 import { ConfigurationSourceServiceMock } from '../../../support/mocks/configuration-source.mock';
 
 function createChromeConfig(params: {

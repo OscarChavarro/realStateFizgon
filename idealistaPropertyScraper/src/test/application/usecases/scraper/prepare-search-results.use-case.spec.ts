@@ -1,13 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { FiltersService } from 'src/application/services/scraper/filters/filters.service';
-import { MainPageService } from 'src/application/services/scraper/main-page.service';
-import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
-import { PrepareSearchResultsUseCase } from 'src/application/usecases/scraper/prepare-search-results.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
+import { FiltersService } from 'application/services/scraper/filters/filters.service';
+import { MainPageService } from 'application/services/scraper/main-page.service';
+import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
+import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 class ChromeConfigMockForPrepareSearchResultsUseCase {
   readonly chromeCdpReadyTimeoutMs = 1000;

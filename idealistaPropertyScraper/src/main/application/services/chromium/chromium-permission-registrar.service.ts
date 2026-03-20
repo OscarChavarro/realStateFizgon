@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { toErrorMessage } from 'infrastructure/error-message';
 type CdpBrowser = {
   grantPermissions?(params: { origin: string; permissions: string[] }): Promise<void>;
 };

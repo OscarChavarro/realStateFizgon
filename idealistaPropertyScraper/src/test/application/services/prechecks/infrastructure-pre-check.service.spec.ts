@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
-import { ValidatePersistenceConnectionPreCheckUseCase } from 'src/application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
-import { ValidateImageDownloadFolderPreCheckUseCase } from 'src/application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
-import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
+import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
+import { ValidatePersistenceConnectionPreCheckUseCase } from 'application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
+import { ValidateImageDownloadFolderPreCheckUseCase } from 'application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
+import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
 
 class ValidateProxyAccessPreCheckUseCaseMockForInfrastructurePreCheckService {
   readonly execute = jest.fn<() => Promise<void>>();

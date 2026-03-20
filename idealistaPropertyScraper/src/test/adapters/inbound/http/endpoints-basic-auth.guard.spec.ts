@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { describe, expect, it, jest } from '@jest/globals';
-import { EndpointsBasicAuthGuard } from 'src/adapters/inbound/http/endpoints-basic-auth.guard';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { EndpointsBasicAuthGuard } from 'adapters/inbound/http/endpoints-basic-auth.guard';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { HttpExecutionContextMock } from '../../../support/mocks/http-execution-context.mock';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 

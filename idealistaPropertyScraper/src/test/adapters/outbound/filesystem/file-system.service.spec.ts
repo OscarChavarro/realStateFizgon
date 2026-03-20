@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { FileSystemService } from 'src/adapters/outbound/filesystem/file-system.service';
+import { FileSystemService } from 'adapters/outbound/filesystem/file-system.service';
 
 jest.mock('node:fs/promises', () => ({
   mkdir: jest.fn(async () => undefined),

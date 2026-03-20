@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
-import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { ChromiumUserAgentTlsService } from 'src/application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
+import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { sleep } from 'infrastructure/sleep';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
@@ -16,7 +16,7 @@ jest.mock('node:fs', () => ({
   openSync: jest.fn()
 }));
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

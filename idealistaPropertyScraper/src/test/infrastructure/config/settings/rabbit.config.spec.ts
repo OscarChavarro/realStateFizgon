@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
-import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
+import { RabbitConfig } from 'infrastructure/config/settings/rabbit.config';
+import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 import { ConfigurationSourceServiceMock } from '../../../support/mocks/configuration-source.mock';
 
 function createRabbitConfig(params: {

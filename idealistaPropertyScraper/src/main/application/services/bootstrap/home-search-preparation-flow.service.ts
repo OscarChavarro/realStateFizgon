@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
+import { PrepareHomeSearchUseCase } from 'application/usecases/bootstrap/prepare-home-search.use-case';
 
 @Injectable()
 export class HomeSearchPreparationFlowService {

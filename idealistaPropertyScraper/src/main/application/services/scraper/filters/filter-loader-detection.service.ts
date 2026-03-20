@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
 
-import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 @Injectable()
 export class FilterLoaderDetectionService {
   private readonly logger = new Logger(FilterLoaderDetectionService.name);

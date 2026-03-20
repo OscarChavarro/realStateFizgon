@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
-import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
+import { ScraperStateLoopService } from 'application/services/state/scraper-state-loop.service';
+import { RunScraperStateLoopUseCase } from 'application/usecases/state/run-scraper-state-loop.use-case';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 type ScraperStateLoopHandlers = {
   onScrapingForNewProperties: () => Promise<void>;

@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { GeoLocationHint } from 'src/domain/property/geo-location-hint.model';
-import { Property } from 'src/domain/property/property.model';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
-import { PROPERTY_PERSISTENCE_PORT } from 'src/ports/outbound/persistence/property-persistence.port.token';
+import { GeoLocationHint } from 'domain/property/geo-location-hint.model';
+import { Property } from 'domain/property/property.model';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
+import { PROPERTY_PERSISTENCE_PORT } from 'ports/outbound/persistence/property-persistence.port.token';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 type GeoHintFetchMode = 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB';
 
 type GeoHintPayload = {

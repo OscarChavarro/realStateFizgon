@@ -1,10 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { PropertyDetailPageService } from 'src/application/services/scraper/property/property-detail-page.service';
-import { LoadPropertyDetailFromResultsUseCase } from 'src/application/usecases/scraper/load-property-detail-from-results.use-case';
-import { ProcessLoadedPropertyDetailUseCase } from 'src/application/usecases/scraper/process-loaded-property-detail.use-case';
-import { RevalidatePropertyDetailFromDatabaseUseCase } from 'src/application/usecases/scraper/revalidate-property-detail-from-database.use-case';
+import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
+import { LoadPropertyDetailFromResultsUseCase } from 'application/usecases/scraper/load-property-detail-from-results.use-case';
+import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper/process-loaded-property-detail.use-case';
+import { RevalidatePropertyDetailFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
-import type { PropertyCdpClient } from 'src/ports/outbound/browser/property-cdp-client.port';
+import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class LoadPropertyDetailFromResultsUseCaseMockForPropertyDetailPageService {
   readonly execute = jest.fn<(client: PropertyCdpClient, url: string, onDetailLoaded: () => Promise<void>) => Promise<void>>();
 }

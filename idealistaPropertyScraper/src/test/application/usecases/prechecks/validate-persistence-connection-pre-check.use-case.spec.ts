@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ValidatePersistenceConnectionPreCheckUseCase } from 'src/application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { ValidatePersistenceConnectionPreCheckUseCase } from 'application/usecases/prechecks/validate-persistence-connection-pre-check.use-case';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 describe('ValidatePersistenceConnectionPreCheckUseCase', () => {

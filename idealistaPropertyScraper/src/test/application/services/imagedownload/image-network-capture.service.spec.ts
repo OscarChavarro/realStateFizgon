@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Logger } from '@nestjs/common';
-import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
-import { NetworkDomain } from 'src/application/services/imagedownload/network-domain.type';
-import { sleep } from 'src/infrastructure/sleep';
+import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
+import { NetworkDomain } from 'application/services/imagedownload/network-domain.type';
+import { sleep } from 'infrastructure/sleep';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

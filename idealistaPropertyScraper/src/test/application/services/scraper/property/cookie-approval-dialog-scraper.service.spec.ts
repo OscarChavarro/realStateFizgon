@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CookieApprovalDialogScraperService } from 'src/application/services/scraper/property/cookie-approval-dialog-scraper.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 type LoggerLike = {
   log(message: string): void;

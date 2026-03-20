@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { sleep } from 'src/infrastructure/sleep';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { sleep } from 'infrastructure/sleep';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

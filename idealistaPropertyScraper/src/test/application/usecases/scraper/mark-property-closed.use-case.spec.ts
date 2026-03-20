@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MarkPropertyClosedUseCase } from 'src/application/usecases/scraper/mark-property-closed.use-case';
-import { PropertyPersistencePort } from 'src/ports/outbound/persistence/property-persistence.port';
+import { MarkPropertyClosedUseCase } from 'application/usecases/scraper/mark-property-closed.use-case';
+import { PropertyPersistencePort } from 'ports/outbound/persistence/property-persistence.port';
 import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence/property-persistence-port.mock';
 
 describe('MarkPropertyClosedUseCase', () => {

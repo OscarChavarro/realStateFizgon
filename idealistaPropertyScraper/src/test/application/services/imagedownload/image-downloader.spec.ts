@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ImageDownloadPathService } from 'src/application/services/imagedownload/image-download-path.service';
-import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
-import { ImageNetworkCaptureService } from 'src/application/services/imagedownload/image-network-capture.service';
-import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
-import { NetworkEnabledCdpClient } from 'src/application/services/imagedownload/network-enabled-cdp-client.type';
-import { FinalizePropertyImagesUseCase } from 'src/application/usecases/imagedownload/finalize-property-images.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
-import { Property } from 'src/domain/property/property.model';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
+import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
+import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
+import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
+import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
+import { NetworkEnabledCdpClient } from 'application/services/imagedownload/network-enabled-cdp-client.type';
+import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
+import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
 
-jest.mock('src/infrastructure/sleep', () => ({
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { UpdatePropertiesController } from 'src/adapters/inbound/http/update-properties.controller';
-import { RequestScrapePropertiesUseCase } from 'src/application/usecases/state/request-scrape-properties.use-case';
-import { RequestUpdatePropertiesUseCase } from 'src/application/usecases/state/request-update-properties.use-case';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { UpdatePropertiesController } from 'adapters/inbound/http/update-properties.controller';
+import { RequestScrapePropertiesUseCase } from 'application/usecases/state/request-scrape-properties.use-case';
+import { RequestUpdatePropertiesUseCase } from 'application/usecases/state/request-update-properties.use-case';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 class RequestUpdatePropertiesUseCaseMockForUpdatePropertiesController {
   readonly execute = jest.fn<() => { status: string; state: ScraperState; pendingRequests: number }>();

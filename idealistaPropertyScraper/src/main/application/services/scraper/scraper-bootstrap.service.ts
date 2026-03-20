@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { ChromiumProcessLifecycleService } from 'src/application/services/chromium/chromium-process-lifecycle.service';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { InitializeScraperBootstrapUseCase } from 'src/application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
+import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
+import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
+import { InitializeScraperBootstrapUseCase } from 'application/usecases/bootstrap/initialize-scraper-bootstrap.use-case';
 
 @Injectable()
 export class ScraperBootstrapService implements OnModuleInit, OnModuleDestroy {

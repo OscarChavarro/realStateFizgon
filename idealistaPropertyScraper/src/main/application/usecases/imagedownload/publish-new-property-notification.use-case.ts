@@ -1,10 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Property } from 'src/domain/property/property.model';
-import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
-import { QUEUE_PUBLISHER_PORT } from 'src/ports/outbound/messaging/queue-publisher.port.token';
-import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
+import { Property } from 'domain/property/property.model';
+import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
+import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class PublishNewPropertyNotificationUseCase {

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { EventEmitter } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { connect } from 'amqplib';
-import { RabbitMqService } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
-import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
+import { RabbitMqService } from 'adapters/outbound/messaging/rabbitmq/rabbit-mq.service';
+import { RabbitConfig } from 'infrastructure/config/settings/rabbit.config';
 import { RabbitConfigMock } from '../../../../support/mocks/rabbit-config.mock';
 
 jest.mock('amqplib', () => ({

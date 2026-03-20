@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 
-import type { FileSystemEntry, FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
+import type { FileSystemEntry, FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
 
 @Injectable()
 export class FileSystemService implements FileSystemPort {

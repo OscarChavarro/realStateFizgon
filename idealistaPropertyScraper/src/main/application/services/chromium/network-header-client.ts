@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { CdpNetworkClient } from 'src/application/services/chromium/cdp-network-client.type';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 export class NetworkHeaderClient {
   constructor(

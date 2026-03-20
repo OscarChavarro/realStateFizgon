@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MongoPriceMigrationService } from 'src/adapters/outbound/persistence/mongodb/mongo-price-migration.service';
+import { MongoPriceMigrationService } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
 
 type MigrationCollectionMock = {
   find: jest.Mock;

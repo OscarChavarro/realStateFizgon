@@ -11,11 +11,13 @@
     "outDir": "./dist",
     "baseUrl": "./src/main",
     "paths": {
-      "src/*": [
-        "*",
-        "../../../modules/proxy/dist/*",
-        "../../../modules/captchaSolvers/dist/*"
-      ]
+      "adapters/*": ["adapters/*"],
+      "application/*": ["application/*"],
+      "domain/*": ["domain/*"],
+      "infrastructure/*": ["infrastructure/*"],
+      "ports/*": ["ports/*"],
+      "app.module": ["app.module"],
+      "main": ["main"]
     },
     "incremental": true,
     "strict": true,

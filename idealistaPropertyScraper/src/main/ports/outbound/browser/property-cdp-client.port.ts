@@ -1,4 +1,4 @@
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 
 export type PropertyCdpClient = {
   Page: {

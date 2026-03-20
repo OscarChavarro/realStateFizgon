@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 type CdpEmulationClient = {
   Emulation?: {

@@ -2,15 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { FilterDefinition } from 'src/infrastructure/config/settings/filter-definition.type';
+import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
 import {
   Environment,
   EnvironmentSchema,
   Secrets,
   SecretsSchema
-} from 'src/infrastructure/config/validation/configuration.schema';
-import { EnvironmentFilterDefinitionValue } from 'src/infrastructure/config/validation/scraper.schema';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+} from 'infrastructure/config/validation/configuration.schema';
+import { EnvironmentFilterDefinitionValue } from 'infrastructure/config/validation/scraper.schema';
+import { toErrorMessage } from 'infrastructure/error-message';
 
 const FILTER_DEFINITION_KEY_BY_FILTER_NAME: Record<string, string> = {
   'Tipo de inmueble': 'propertyType',

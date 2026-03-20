@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
-import { ChromiumGeolocationService } from 'src/application/services/chromium/chromium-geolocation.service';
-import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
-import { ChromiumPermissionRegistrarService } from 'src/application/services/chromium/chromium-permission-registrar.service';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
+import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
+import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
 jest.mock('chrome-remote-interface', () => {
   const cdp = jest.fn();

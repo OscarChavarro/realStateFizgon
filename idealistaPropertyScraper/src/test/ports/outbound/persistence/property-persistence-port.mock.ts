@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { Property } from 'src/domain/property/property.model';
-import { SavePropertyResult } from 'src/ports/outbound/persistence/save-property-result.type';
+import { Property } from 'domain/property/property.model';
+import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 
 export class PropertyPersistencePortMock {
   readonly saveProperty = jest.fn<(property: Property) => Promise<SavePropertyResult>>();

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InfrastructurePreCheckService } from 'src/application/services/prechecks/infrastructure-pre-check.service';
+import { InfrastructurePreCheckService } from 'application/services/prechecks/infrastructure-pre-check.service';
 
 @Injectable()
 export class RunStartupPreChecksUseCase {

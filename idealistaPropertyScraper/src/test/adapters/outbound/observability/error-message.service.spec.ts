@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { ErrorMessageService } from 'src/adapters/outbound/observability/error-message.service';
+import { ErrorMessageService } from 'adapters/outbound/observability/error-message.service';
 
 describe('ErrorMessageService', () => {
   it('whenErrorIsInstanceOfError_toErrorMessage_shouldReturnErrorMessage', () => {

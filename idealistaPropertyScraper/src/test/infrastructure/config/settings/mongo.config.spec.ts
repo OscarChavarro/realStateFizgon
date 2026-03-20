@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
-import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
+import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
+import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 
 type ConfigurationSourceMockShape = {
   environment: Record<string, unknown>;

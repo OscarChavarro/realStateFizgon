@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ImageDownloaderService } from 'src/application/services/imagedownload/image-downloader';
-import { ValidateImageDownloadFolderPreCheckUseCase } from 'src/application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
+import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
+import { ValidateImageDownloadFolderPreCheckUseCase } from 'application/usecases/prechecks/validate-image-download-folder-pre-check.use-case';
 
 class ImageDownloaderMockForValidateImageDownloadFolderPreCheckUseCase {
   readonly validateImageDownloadFolder = jest.fn<() => Promise<void>>();

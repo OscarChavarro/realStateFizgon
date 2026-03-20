@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ErrorMessageService } from 'src/adapters/outbound/observability/error-message.service';
-import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
+import { ErrorMessageService } from 'adapters/outbound/observability/error-message.service';
+import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
 @Module({
   providers: [

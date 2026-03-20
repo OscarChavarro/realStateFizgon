@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ProcessScraperStateTransitionUseCase } from 'src/application/usecases/state/process-scraper-state-transition.use-case';
-import { RunScraperStateLoopCoreUseCase } from 'src/application/usecases/state/run-scraper-state-loop-core.use-case';
-import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
+import { ProcessScraperStateTransitionUseCase } from 'application/usecases/state/process-scraper-state-transition.use-case';
+import { RunScraperStateLoopCoreUseCase } from 'application/usecases/state/run-scraper-state-loop-core.use-case';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 type HandlerMocks = {
   onScrapingForNewProperties: jest.MockedFunction<() => Promise<void>>;

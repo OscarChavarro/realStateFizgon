@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { FilterTextNormalizationService } from 'src/application/services/scraper/filters/filter-text-normalization.service';
+import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
 
 describe('FilterTextNormalizationService', () => {
   it.each([

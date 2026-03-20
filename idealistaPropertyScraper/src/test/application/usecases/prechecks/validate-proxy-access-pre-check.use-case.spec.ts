@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
+import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechecks/validate-proxy-access-pre-check.use-case';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 
 type ProxyValidationArgs = {
   enabled: boolean;

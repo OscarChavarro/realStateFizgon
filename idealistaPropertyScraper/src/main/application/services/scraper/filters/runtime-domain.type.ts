@@ -1,4 +1,4 @@
-import { RuntimeEvaluateResult } from 'src/application/services/scraper/filters/runtime-evaluate-result.type';
+import { RuntimeEvaluateResult } from 'application/services/scraper/filters/runtime-evaluate-result.type';
 
 export type RuntimeDomain = {
   enable(): Promise<void>;

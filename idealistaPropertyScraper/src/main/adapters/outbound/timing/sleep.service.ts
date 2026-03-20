@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { sleep } from 'src/infrastructure/sleep';
+import { sleep } from 'infrastructure/sleep';
 
-import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
+import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 @Injectable()
 export class SleepService implements SleepPort {

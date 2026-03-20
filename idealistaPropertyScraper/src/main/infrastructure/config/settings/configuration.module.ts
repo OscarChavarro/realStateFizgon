@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
-import { ConfigurationSourceService } from 'src/infrastructure/config/settings/configuration-source.service';
-import { MongoConfig } from 'src/infrastructure/config/settings/mongo.config';
-import { RabbitConfig } from 'src/infrastructure/config/settings/rabbit.config';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
+import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
+import { MongoConfig } from 'infrastructure/config/settings/mongo.config';
+import { RabbitConfig } from 'infrastructure/config/settings/rabbit.config';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 @Module({
   providers: [ConfigurationSourceService, ChromeConfig, MongoConfig, RabbitConfig, ScraperConfig],

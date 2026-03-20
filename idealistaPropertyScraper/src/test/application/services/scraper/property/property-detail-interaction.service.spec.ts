@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { PropertyDetailInteractionService } from 'src/application/services/scraper/property/property-detail-interaction.service';
-import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
-import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { sleep } from 'src/infrastructure/sleep';
+import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
+import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
+import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { sleep } from 'infrastructure/sleep';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
-jest.mock('src/infrastructure/sleep', () => ({
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
+jest.mock('infrastructure/sleep', () => ({
   sleep: jest.fn(async () => undefined)
 }));
 

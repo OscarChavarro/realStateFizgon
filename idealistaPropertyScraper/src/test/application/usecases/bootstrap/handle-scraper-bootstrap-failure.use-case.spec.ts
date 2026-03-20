@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
-import { ScraperOrchestratorService } from 'src/application/services/scraper/scraper-orchestrator.service';
-import { HandleScraperBootstrapFailureUseCase } from 'src/application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
-import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
+import { ChromiumFailureGuardService } from 'application/services/chromium/chromium-failure-guard.service';
+import { ScraperOrchestratorService } from 'application/services/scraper/scraper-orchestrator.service';
+import { HandleScraperBootstrapFailureUseCase } from 'application/usecases/bootstrap/handle-scraper-bootstrap-failure.use-case';
+import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 class ChromiumFailureGuardServiceMockForHandleScraperBootstrapFailureUseCase {
   readonly recoverFromFailure = jest.fn<

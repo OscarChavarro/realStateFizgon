@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { HomeSearchPreparationFlowService } from 'src/application/services/bootstrap/home-search-preparation-flow.service';
-import { PrepareHomeSearchUseCase } from 'src/application/usecases/bootstrap/prepare-home-search.use-case';
+import { HomeSearchPreparationFlowService } from 'application/services/bootstrap/home-search-preparation-flow.service';
+import { PrepareHomeSearchUseCase } from 'application/usecases/bootstrap/prepare-home-search.use-case';
 
 class PrepareHomeSearchUseCaseMockForHomeSearchPreparationFlowService {
   readonly execute = jest.fn<(host: string, port: number) => Promise<void>>();

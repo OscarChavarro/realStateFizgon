@@ -1,14 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { GeoCoordinateHintService } from 'src/application/services/scraper/property/geo-coordinate-hint.service';
-import { PropertyDetailDomExtractorService } from 'src/application/services/scraper/property/property-detail-dom-extractor.service';
-import { ExtractAndEnrichPropertyDetailUseCase } from 'src/application/usecases/scraper/extract-and-enrich-property-detail.use-case';
-import { HandleDeactivatedPropertyDetailUseCase } from 'src/application/usecases/scraper/handle-deactivated-property-detail.use-case';
-import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group.model';
-import { PropertyImage } from 'src/domain/property/property-image.model';
-import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
-import { Property } from 'src/domain/property/property.model';
+import { GeoCoordinateHintService } from 'application/services/scraper/property/geo-coordinate-hint.service';
+import { PropertyDetailDomExtractorService } from 'application/services/scraper/property/property-detail-dom-extractor.service';
+import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
+import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
+import { PropertyImage } from 'domain/property/property-image.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property.model';
 
-import type { RuntimeClient } from 'src/ports/outbound/browser/runtime-client.port';
+import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 class HandleDeactivatedPropertyDetailUseCaseMockForExtractAndEnrichPropertyDetailUseCase {
   readonly execute = jest.fn<(runtime: RuntimeClient, url: string) => Promise<boolean>>();
 }

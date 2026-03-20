@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { SecretsGeolocationSchema } from 'src/infrastructure/config/validation/chrome.schema';
+import { SecretsGeolocationSchema } from 'infrastructure/config/validation/chrome.schema';
 
 describe('SecretsGeolocationSchema', () => {
   it.each([

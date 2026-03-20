@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ScheduleService } from 'src/application/services/state/schedule.service';
-import { ScraperStateMachineService } from 'src/application/services/state/scraper-state-machine.service';
-import { ResolveIdleStateUseCase } from 'src/application/usecases/state/resolve-idle-state.use-case';
-import { ScraperState } from 'src/domain/states/scraper-state.enum';
+import { ScheduleService } from 'application/services/state/schedule.service';
+import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
+import { ResolveIdleStateUseCase } from 'application/usecases/state/resolve-idle-state.use-case';
+import { ScraperState } from 'domain/states/scraper-state.enum';
 
 type StateMachineMock = {
   getPendingRequestsCount: jest.MockedFunction<() => number>;

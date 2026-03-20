@@ -59,4 +59,5 @@ npm install
 npm ci
 npm run build
 npm run test:cov
+npm run arch:check
 cd ..

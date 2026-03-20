@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RabbitMqModule } from 'src/adapters/outbound/messaging/rabbitmq/rabbit-mq.module';
+import { ErrorMessageModule } from 'src/adapters/outbound/observability/error-message.module';
 import { MongoDatabaseModule } from 'src/adapters/outbound/persistence/mongodb/mongo-database.module';
 import { ImageDownloadModule } from 'src/application/services/imagedownload/image-download.module';
 import { OriginErrorDetectorModule } from 'src/application/services/resilience/origin-error-detector.module';
@@ -29,6 +30,7 @@ import { ConfigurationModule } from 'src/infrastructure/config/settings/configur
     ConfigurationModule,
     OriginErrorDetectorModule,
     RabbitMqModule,
+    ErrorMessageModule,
     MongoDatabaseModule,
     ImageDownloadModule
   ],

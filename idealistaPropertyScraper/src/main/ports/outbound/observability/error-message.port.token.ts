@@ -1,0 +1,1 @@
+export const ERROR_MESSAGE_PORT = Symbol('ERROR_MESSAGE_PORT');

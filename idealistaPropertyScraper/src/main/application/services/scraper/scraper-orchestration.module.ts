@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ErrorMessageModule } from 'src/adapters/outbound/observability/error-message.module';
 import { MongoDatabaseModule } from 'src/adapters/outbound/persistence/mongodb/mongo-database.module';
 import { ImageDownloadModule } from 'src/application/services/imagedownload/image-download.module';
 import { ScraperChromiumModule } from 'src/application/services/chromium/scraper-chromium.module';
@@ -44,7 +45,8 @@ import { ValidateProxyAccessPreCheckUseCase } from 'src/application/usecases/pre
     ScraperPaginationModule,
     ScraperStateModule,
     MongoDatabaseModule,
-    ImageDownloadModule
+    ImageDownloadModule,
+    ErrorMessageModule
   ],
   providers: [
     InfrastructurePreCheckService,

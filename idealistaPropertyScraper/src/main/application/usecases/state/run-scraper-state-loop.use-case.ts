@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class RunScraperStateLoopUseCase {
   constructor(
     private readonly scraperStateLoopService: ScraperStateLoopService,
-    private readonly chromiumFailureGuardService: ChromiumFailureGuardService
+    private readonly chromiumFailureGuardService: ChromiumFailureGuardService,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   execute(params: {
@@ -25,7 +29,7 @@ export class RunScraperStateLoopUseCase {
       onUpdatingProperties: params.onUpdatingProperties,
       onLoopError: async (error: unknown) => {
         await this.chromiumFailureGuardService.recoverFromFailure({
-          reason: `Scraper state loop failed. ${toErrorMessage(error)}`,
+          reason: `Scraper state loop failed. ${this.errorMessagePort.toErrorMessage(error)}`,
           cdpHost: params.cdpHost,
           cdpPort: params.cdpPort,
           browserFailureRecoveryWaitMs: params.browserFailureRecoveryWaitMs,

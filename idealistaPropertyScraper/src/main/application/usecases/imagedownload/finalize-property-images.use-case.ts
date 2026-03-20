@@ -7,14 +7,16 @@ import { ImagePendingQueuePublisherService } from 'src/application/services/imag
 import { ImageUrlRulesService } from 'src/application/services/imagedownload/image-url-rules.service';
 import { Property } from 'src/domain/property/property.model';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
 import { FILE_SYSTEM_PORT } from 'src/ports/outbound/filesystem/file-system.port.token';
+import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'src/ports/outbound/timing/sleep.port.token';
 
 import type { DownloadedIncomingImage } from 'src/application/dto/imagedownload/downloaded-incoming-image.dto';
 import type { ImageResponseBodyPayload } from 'src/application/dto/imagedownload/image-response-body-payload.dto';
 import type { FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
+
 @Injectable()
 export class FinalizePropertyImagesUseCase {
   private readonly logger = new Logger(FinalizePropertyImagesUseCase.name);
@@ -31,6 +33,7 @@ export class FinalizePropertyImagesUseCase {
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,
     private readonly imagePendingQueuePublisherService: ImagePendingQueuePublisherService,
     @Inject(FILE_SYSTEM_PORT) private readonly fileSystemPort: FileSystemPort,
+    @Inject(ERROR_MESSAGE_PORT) private readonly errorMessagePort: ErrorMessagePort,
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
@@ -192,7 +195,7 @@ export class FinalizePropertyImagesUseCase {
         const isLastAttempt = attempt === FinalizePropertyImagesUseCase.DIRECT_DOWNLOAD_MAX_ATTEMPTS;
         if (isLastAttempt) {
           this.logger.warn(
-            `Direct-download fallback failed for "${imageUrl}": ${toErrorMessage(error)}`
+            `Direct-download fallback failed for "${imageUrl}": ${this.errorMessagePort.toErrorMessage(error)}`
           );
           return false;
         }

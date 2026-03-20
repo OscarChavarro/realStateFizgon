@@ -2,6 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ChromiumFailureGuardService } from 'src/application/services/chromium/chromium-failure-guard.service';
 import { ScraperStateLoopService } from 'src/application/services/state/scraper-state-loop.service';
 import { RunScraperStateLoopUseCase } from 'src/application/usecases/state/run-scraper-state-loop.use-case';
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 
 type ScraperStateLoopHandlers = {
   onScrapingForNewProperties: () => Promise<void>;
@@ -27,19 +28,29 @@ class ChromiumFailureGuardServiceMockForRunScraperStateLoopUseCase {
   >();
 }
 
+class ErrorMessagePortMockForRunScraperStateLoopUseCase implements ErrorMessagePort {
+  readonly toErrorMessage = jest.fn<(error: unknown) => string>();
+}
+
 function createUseCase() {
   const scraperStateLoopService = new ScraperStateLoopServiceMockForRunScraperStateLoopUseCase();
   const chromiumFailureGuardService = new ChromiumFailureGuardServiceMockForRunScraperStateLoopUseCase();
   chromiumFailureGuardService.recoverFromFailure.mockResolvedValue(undefined);
+  const errorMessagePort = new ErrorMessagePortMockForRunScraperStateLoopUseCase();
+  errorMessagePort.toErrorMessage.mockImplementation((error: unknown) =>
+    error instanceof Error ? error.message : String(error)
+  );
   const useCase = new RunScraperStateLoopUseCase(
     scraperStateLoopService as unknown as ScraperStateLoopService,
-    chromiumFailureGuardService as unknown as ChromiumFailureGuardService
+    chromiumFailureGuardService as unknown as ChromiumFailureGuardService,
+    errorMessagePort
   );
 
   return {
     useCase,
     scraperStateLoopService,
-    chromiumFailureGuardService
+    chromiumFailureGuardService,
+    errorMessagePort
   };
 }
 
@@ -77,7 +88,7 @@ describe('RunScraperStateLoopUseCase', () => {
 
   it('whenLoopFails_onLoopError_shouldRecoverAndScheduleRestart', async () => {
     // Arrange
-    const { useCase, scraperStateLoopService, chromiumFailureGuardService } = createUseCase();
+    const { useCase, scraperStateLoopService, chromiumFailureGuardService, errorMessagePort } = createUseCase();
     const onAfterRecovery = jest.fn<() => void>();
     const isShuttingDown = (): boolean => false;
     const onUnexpectedChromeExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
@@ -95,6 +106,7 @@ describe('RunScraperStateLoopUseCase', () => {
     // Action
     await handlers.onLoopError(new Error('boom'));
     // Assert
+    expect(errorMessagePort.toErrorMessage).toHaveBeenCalledWith(expect.any(Error));
     expect(chromiumFailureGuardService.recoverFromFailure).toHaveBeenCalledWith({
       reason: 'Scraper state loop failed. boom',
       cdpHost: '127.0.0.1',

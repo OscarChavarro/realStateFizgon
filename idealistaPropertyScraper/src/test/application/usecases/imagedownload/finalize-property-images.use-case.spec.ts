@@ -11,6 +11,7 @@ import { PropertyFeatureGroup } from 'src/domain/property/property-feature-group
 import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import type { FileSystemPort } from 'src/ports/outbound/filesystem/file-system.port';
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 import type { SleepPort } from 'src/ports/outbound/timing/sleep.port';
 
 const originalFetch = globalThis.fetch;
@@ -63,6 +64,10 @@ class SleepPortMock implements SleepPort {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();
 }
 
+class ErrorMessagePortMock implements ErrorMessagePort {
+  readonly toErrorMessage = jest.fn<(error: unknown) => string>();
+}
+
 function createProperty(url: string, images: PropertyImage[]): Property {
   return new Property(
     '123',
@@ -85,6 +90,7 @@ function createUseCase() {
   const networkCapture = new ImageNetworkCaptureServiceMock();
   const pendingPublisher = new ImagePendingQueuePublisherServiceMock();
   const fileSystem = new FileSystemPortMock();
+  const errorMessagePort = new ErrorMessagePortMock();
   const sleepPort = new SleepPortMock();
   const useCase = new FinalizePropertyImagesUseCase(
     new ScraperConfigMockForFinalizePropertyImagesUseCase() as unknown as ScraperConfig,
@@ -94,6 +100,7 @@ function createUseCase() {
     networkCapture as unknown as ImageNetworkCaptureService,
     pendingPublisher as unknown as ImagePendingQueuePublisherService,
     fileSystem,
+    errorMessagePort,
     sleepPort
   );
   const logger = {
@@ -113,9 +120,23 @@ function createUseCase() {
   fileSystem.deleteFile.mockResolvedValue(undefined);
   fileSystem.deleteDirectory.mockResolvedValue(undefined);
   fileSystem.writeFile.mockResolvedValue(undefined);
+  errorMessagePort.toErrorMessage.mockImplementation((error: unknown) =>
+    error instanceof Error ? error.message : String(error)
+  );
   sleepPort.sleep.mockResolvedValue(undefined);
   (useCase as unknown as { logger: typeof logger }).logger = logger;
-  return { useCase, pathService, urlRules, fileName, networkCapture, pendingPublisher, fileSystem, sleepPort, logger };
+  return {
+    useCase,
+    pathService,
+    urlRules,
+    fileName,
+    networkCapture,
+    pendingPublisher,
+    fileSystem,
+    errorMessagePort,
+    sleepPort,
+    logger
+  };
 }
 
 describe('FinalizePropertyImagesUseCase', () => {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IdealistaCaptchaDetectorService } from '@real-state-fizgon/captcha-solvers';
 import { ChromiumPageSyncService } from 'src/application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'src/application/services/resilience/origin-error-detector.service';
@@ -7,9 +7,10 @@ import { MainPageService } from 'src/application/services/scraper/main-page.serv
 import { PropertyListPageService } from 'src/application/services/scraper/property/property-list-page.service';
 import { ChromeConfig } from 'src/infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'src/infrastructure/config/settings/scraper.config';
-import { toErrorMessage } from 'src/infrastructure/error-message';
+import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
 
 import type { FiltersCdpClient } from 'src/ports/outbound/browser/filters-cdp-client.port';
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 type RuntimeDomain = {
   evaluate(params: { expression: string; returnByValue?: boolean; awaitPromise?: boolean }): Promise<{ result?: { value?: unknown } }>;
 };
@@ -33,7 +34,9 @@ export class PrepareSearchResultsUseCase {
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,
     private readonly propertyListPageService: PropertyListPageService,
-    private readonly originErrorDetectorService: OriginErrorDetectorService
+    private readonly originErrorDetectorService: OriginErrorDetectorService,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async execute(client: FiltersCdpClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
@@ -109,7 +112,7 @@ export class PrepareSearchResultsUseCase {
         await this.recoverIfOriginError(page, runtime);
         return;
       } catch (error) {
-        const message = toErrorMessage(error);
+        const message = this.errorMessagePort.toErrorMessage(error);
         const isOriginErrorVisible = await this.hasOriginError(runtime);
 
         if (attempt === maxAttempts) {
@@ -163,4 +166,3 @@ export class PrepareSearchResultsUseCase {
     return this.originErrorDetectorService.hasOriginError(runtime);
   }
 }
-

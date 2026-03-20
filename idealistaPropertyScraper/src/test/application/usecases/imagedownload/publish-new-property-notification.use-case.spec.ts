@@ -5,9 +5,14 @@ import { PropertyImage } from 'src/domain/property/property-image.model';
 import { PropertyMainFeatures } from 'src/domain/property/property-main-features.model';
 import { Property } from 'src/domain/property/property.model';
 import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 
 class QueuePublisherPortMockForPublishNewPropertyNotificationUseCase {
   readonly publishJsonToQueue = jest.fn<(queueName: string, payload: unknown) => Promise<void>>();
+}
+
+class ErrorMessagePortMockForPublishNewPropertyNotificationUseCase implements ErrorMessagePort {
+  readonly toErrorMessage = jest.fn<(error: unknown) => string>();
 }
 
 function createProperty(): Property {
@@ -30,8 +35,11 @@ describe('PublishNewPropertyNotificationUseCase', () => {
     // Arrange
     const queuePublisherPort = new QueuePublisherPortMockForPublishNewPropertyNotificationUseCase();
     queuePublisherPort.publishJsonToQueue.mockResolvedValue(undefined);
+    const errorMessagePort = new ErrorMessagePortMockForPublishNewPropertyNotificationUseCase();
+    errorMessagePort.toErrorMessage.mockImplementation((error: unknown) => String(error));
     const useCase = new PublishNewPropertyNotificationUseCase(
-      queuePublisherPort as unknown as QueuePublisherPort
+      queuePublisherPort as unknown as QueuePublisherPort,
+      errorMessagePort
     );
     const property = createProperty();
     // Action
@@ -51,8 +59,11 @@ describe('PublishNewPropertyNotificationUseCase', () => {
     // Arrange
     const queuePublisherPort = new QueuePublisherPortMockForPublishNewPropertyNotificationUseCase();
     queuePublisherPort.publishJsonToQueue.mockRejectedValue(new Error('broker down'));
+    const errorMessagePort = new ErrorMessagePortMockForPublishNewPropertyNotificationUseCase();
+    errorMessagePort.toErrorMessage.mockImplementation((error: unknown) => String(error));
     const useCase = new PublishNewPropertyNotificationUseCase(
-      queuePublisherPort as unknown as QueuePublisherPort
+      queuePublisherPort as unknown as QueuePublisherPort,
+      errorMessagePort
     );
     const loggerErrorSpy = jest.spyOn(
       (useCase as unknown as { logger: { error: (message: string) => void } }).logger,

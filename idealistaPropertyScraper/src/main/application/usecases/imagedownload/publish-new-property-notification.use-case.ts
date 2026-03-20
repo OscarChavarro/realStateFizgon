@@ -1,8 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Property } from 'src/domain/property/property.model';
-import { toErrorMessage } from 'src/infrastructure/error-message';
 import { QueuePublisherPort } from 'src/ports/outbound/messaging/queue-publisher.port';
 import { QUEUE_PUBLISHER_PORT } from 'src/ports/outbound/messaging/queue-publisher.port.token';
+import { ERROR_MESSAGE_PORT } from 'src/ports/outbound/observability/error-message.port.token';
+
+import type { ErrorMessagePort } from 'src/ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class PublishNewPropertyNotificationUseCase {
@@ -11,7 +13,9 @@ export class PublishNewPropertyNotificationUseCase {
 
   constructor(
     @Inject(QUEUE_PUBLISHER_PORT)
-    private readonly queuePublisherPort: QueuePublisherPort
+    private readonly queuePublisherPort: QueuePublisherPort,
+    @Inject(ERROR_MESSAGE_PORT)
+    private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async execute(property: Property): Promise<void> {
@@ -26,7 +30,7 @@ export class PublishNewPropertyNotificationUseCase {
       );
     } catch (error) {
       this.logger.error(
-        `Property was stored in MongoDB but notification publish failed for "${property.url}". ${toErrorMessage(error)}`
+        `Property was stored in MongoDB but notification publish failed for "${property.url}". ${this.errorMessagePort.toErrorMessage(error)}`
       );
     }
   }

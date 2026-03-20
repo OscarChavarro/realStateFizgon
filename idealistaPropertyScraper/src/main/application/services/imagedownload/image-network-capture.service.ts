@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/network-loading-failed-event.type';
-import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
-import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
+import { NetworkLoadingFailedEvent } from 'application/dto/imagedownload/network-loading-failed-event.dto';
+import { NetworkLoadingFinishedEvent } from 'application/dto/imagedownload/network-loading-finished-event.dto';
+import { NetworkResponseReceivedEvent } from 'application/dto/imagedownload/network-response-received-event.dto';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 

@@ -55,13 +55,16 @@ module.exports = {
       }
     },
     {
-      name: 'ports-must-not-depend-on-application',
+      name: 'ports-must-not-depend-on-application-except-dtos',
       severity: 'error',
+      comment:
+        'Ports can depend on shared DTO contracts in application/dto, but not on application services/use cases.',
       from: {
         path: '^src/main/ports/'
       },
       to: {
-        path: '^src/main/application/'
+        path: '^src/main/application/',
+        pathNot: '^src/main/application/dto/'
       }
     }
   ],

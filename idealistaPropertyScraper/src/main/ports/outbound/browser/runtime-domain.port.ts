@@ -1,4 +1,4 @@
-import type { RuntimeEvaluateResult } from 'ports/outbound/browser/runtime-evaluate-result.dto';
+import type { RuntimeEvaluateResult } from 'application/dto/browser/runtime-evaluate-result.dto';
 
 export type RuntimeDomain = {
   enable(): Promise<void>;

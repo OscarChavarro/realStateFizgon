@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { CdpNetworkClient } from 'ports/outbound/browser/cdp-network-client.port';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 

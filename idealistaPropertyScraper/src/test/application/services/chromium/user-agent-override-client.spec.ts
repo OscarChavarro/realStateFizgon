@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { CdpNetworkClient } from 'ports/outbound/browser/cdp-network-client.port';
 import { UserAgentOverrideClient } from 'application/services/chromium/user-agent-override-client';
-import { UserAgentOverridePayload } from 'application/services/chromium/user-agent-override-payload.type';
+import { UserAgentOverridePayload } from 'application/dto/browser/user-agent-override-payload.dto';
 
 type LoggerMock = {
   warn: jest.Mock<(message: string) => void>;

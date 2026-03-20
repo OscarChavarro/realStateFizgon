@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import CDP = require('chrome-remote-interface');
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
-import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
+import { CdpNetworkClient } from 'ports/outbound/browser/cdp-network-client.port';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 

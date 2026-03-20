@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
-import { UserAgentOverridePayload } from 'application/services/chromium/user-agent-override-payload.type';
+import { CdpNetworkClient } from 'ports/outbound/browser/cdp-network-client.port';
+import { UserAgentOverridePayload } from 'application/dto/browser/user-agent-override-payload.dto';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 

@@ -3,7 +3,7 @@ import { ImageDownloadPathService } from 'application/services/imagedownload/ima
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
-import { NetworkEnabledCdpClient } from 'application/services/imagedownload/network-enabled-cdp-client.type';
+import { NetworkEnabledCdpClient } from 'ports/outbound/browser/network-enabled-cdp-client.port';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';

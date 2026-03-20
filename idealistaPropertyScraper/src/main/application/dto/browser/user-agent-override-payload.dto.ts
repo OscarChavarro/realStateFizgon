@@ -1,4 +1,4 @@
-import { UserAgentMetadata } from 'application/services/chromium/user-agent-metadata.type';
+import type { UserAgentMetadata } from 'application/dto/browser/user-agent-metadata.dto';
 
 export type UserAgentOverridePayload = {
   userAgent: string;

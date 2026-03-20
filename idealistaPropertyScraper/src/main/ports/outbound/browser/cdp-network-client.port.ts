@@ -1,4 +1,4 @@
-import { UserAgentOverridePayload } from 'application/services/chromium/user-agent-override-payload.type';
+import type { UserAgentOverridePayload } from 'application/dto/browser/user-agent-override-payload.dto';
 
 export type CdpNetworkClient = {
   Network?: {

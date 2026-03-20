@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
-import { CdpNetworkClient } from 'application/services/chromium/cdp-network-client.type';
-import { UserAgentMetadata } from 'application/services/chromium/user-agent-metadata.type';
-import { UserAgentOverridePayload } from 'application/services/chromium/user-agent-override-payload.type';
+import { CdpNetworkClient } from 'ports/outbound/browser/cdp-network-client.port';
+import { UserAgentMetadata } from 'application/dto/browser/user-agent-metadata.dto';
+import { UserAgentOverridePayload } from 'application/dto/browser/user-agent-override-payload.dto';
 import { UserAgentOverrideClient } from 'application/services/chromium/user-agent-override-client';
 import { NetworkHeaderClient } from 'application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';

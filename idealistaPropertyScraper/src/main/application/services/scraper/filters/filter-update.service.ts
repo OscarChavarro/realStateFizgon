@@ -6,7 +6,7 @@ import { SupportedFilters } from 'domain/filters/supported-filters';
 import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
 import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
 import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
-import { MinMaxSelection } from 'application/services/scraper/filters/min-max-selection.type';
+import { MinMaxSelection } from 'application/dto/scraper/min-max-selection.dto';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 @Injectable()

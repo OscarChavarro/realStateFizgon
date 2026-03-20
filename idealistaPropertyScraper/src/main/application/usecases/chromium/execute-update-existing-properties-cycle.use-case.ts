@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger  } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 import { UpdateExistingPropertiesFlowService } from 'application/services/scraper/flows/update-existing-properties-flow.service';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
@@ -13,7 +14,8 @@ export class ExecuteUpdateExistingPropertiesCycleUseCase {
   private readonly logger = new Logger(ExecuteUpdateExistingPropertiesCycleUseCase.name);
 
   constructor(
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumGeolocationService: ChromiumGeolocationService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,

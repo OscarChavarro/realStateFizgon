@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
@@ -15,7 +16,8 @@ export class PropertyDetailInteractionService {
   private static readonly MORE_PHOTOS_BUTTON_SELECTOR = 'a.btn.regular.more-photos';
 
   constructor(
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly originErrorDetectorService: OriginErrorDetectorService,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort

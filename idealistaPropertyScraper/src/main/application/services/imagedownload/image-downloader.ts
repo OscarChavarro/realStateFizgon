@@ -8,8 +8,10 @@ import { NetworkLoadingFailedEvent } from 'application/services/imagedownload/ne
 import { NetworkLoadingFinishedEvent } from 'application/services/imagedownload/network-loading-finished-event.type';
 import { NetworkResponseReceivedEvent } from 'application/services/imagedownload/network-response-received-event.type';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
@@ -21,8 +23,10 @@ export class ImageDownloaderService {
   private readonly logger = new Logger(ImageDownloaderService.name);
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly imageDownloadPathService: ImageDownloadPathService,
     private readonly imageUrlRulesService: ImageUrlRulesService,
     private readonly imageNetworkCaptureService: ImageNetworkCaptureService,

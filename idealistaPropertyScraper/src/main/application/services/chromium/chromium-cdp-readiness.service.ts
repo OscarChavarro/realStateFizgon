@@ -1,13 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger  } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 
 @Injectable()
 export class ChromiumCdpReadinessService {
   private readonly logger = new Logger(ChromiumCdpReadinessService.name);
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService
   ) {}
 

@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger  } from '@nestjs/common';
 import { ScraperState } from 'domain/states/scraper-state.enum';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 @Injectable()
 export class ScraperStateMachineService {
@@ -10,7 +11,7 @@ export class ScraperStateMachineService {
   private lastIdleReachedAtMs: number | null = null;
   private readonly requestedStateQueue: ScraperState[] = [];
 
-  constructor(private readonly scraperConfig: ScraperConfig) {
+  constructor(@Inject(SCRAPER_SETTINGS_PORT) private readonly scraperConfig: ScraperSettingsPort) {
     this.currentState = scraperConfig.initialScraperState;
     if (this.currentState === ScraperState.IDLE) {
       this.lastIdleReachedAtMs = Date.now();

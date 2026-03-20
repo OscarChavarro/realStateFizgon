@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger  } from '@nestjs/common';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { ScraperState } from 'domain/states/scraper-state.enum';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 @Injectable()
 export class PromoteIdleToScheduledScrapeUseCase {
@@ -9,7 +10,8 @@ export class PromoteIdleToScheduledScrapeUseCase {
 
   constructor(
     private readonly scraperStateMachineService: ScraperStateMachineService,
-    private readonly scraperConfig: ScraperConfig
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort
   ) {}
 
   execute(nowMs: number = Date.now()): boolean {

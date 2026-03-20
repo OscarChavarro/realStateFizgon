@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+
 @Injectable()
-export class ChromeConfig {
+export class ChromeConfig implements ChromeSettingsPort {
   private readonly logger = new Logger(ChromeConfig.name);
 
   constructor(private readonly configurationSourceService: ConfigurationSourceService) {}

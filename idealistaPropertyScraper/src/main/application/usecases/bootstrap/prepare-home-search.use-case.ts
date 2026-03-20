@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger  } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
 import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
@@ -14,8 +16,10 @@ export class PrepareHomeSearchUseCase {
   private readonly initialHardeningStabilizationWaitMs = 5000;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumPageTargetService: ChromiumPageTargetService,
     private readonly chromiumNetworkHeadersService: ChromiumNetworkHeadersService,

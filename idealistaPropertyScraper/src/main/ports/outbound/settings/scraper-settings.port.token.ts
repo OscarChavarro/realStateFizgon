@@ -1,0 +1,1 @@
+export const SCRAPER_SETTINGS_PORT = Symbol('SCRAPER_SETTINGS_PORT');

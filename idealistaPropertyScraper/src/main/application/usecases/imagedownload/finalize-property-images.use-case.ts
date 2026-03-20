@@ -6,7 +6,8 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { Property } from 'domain/property/property.model';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { FILE_SYSTEM_PORT } from 'ports/outbound/filesystem/file-system.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
@@ -26,7 +27,8 @@ export class FinalizePropertyImagesUseCase {
   private static readonly DIRECT_DOWNLOAD_RETRY_WAIT_MS = 300;
 
   constructor(
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly imageDownloadPathService: ImageDownloadPathService,
     private readonly imageUrlRulesService: ImageUrlRulesService,
     private readonly imageFileNameService: ImageFileNameService,

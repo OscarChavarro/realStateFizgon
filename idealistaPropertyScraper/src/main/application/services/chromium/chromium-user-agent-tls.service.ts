@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { spawnSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
@@ -20,7 +21,8 @@ export class ChromiumUserAgentTlsService {
   private cachedBrowserVersionBinary?: string;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort
   ) {}

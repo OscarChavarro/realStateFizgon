@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { PROXY_ACCESS_VALIDATOR_PORT } from 'ports/outbound/network/proxy-access-validator.port.token';
 
 import type { ProxyAccessValidatorPort } from 'ports/outbound/network/proxy-access-validator.port';
@@ -9,7 +10,8 @@ export class ValidateProxyAccessPreCheckUseCase {
   private readonly logger = new Logger(ValidateProxyAccessPreCheckUseCase.name);
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     @Inject(PROXY_ACCESS_VALIDATOR_PORT)
     private readonly proxyAccessValidatorPort: ProxyAccessValidatorPort
   ) {}

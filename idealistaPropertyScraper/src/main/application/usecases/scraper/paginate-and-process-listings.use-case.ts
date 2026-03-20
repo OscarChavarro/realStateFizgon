@@ -1,7 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
@@ -13,8 +15,10 @@ export class PaginateAndProcessListingsUseCase {
   private readonly logger = new Logger(PaginateAndProcessListingsUseCase.name);
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly propertyListPageService: PropertyListPageService,
     @Inject(CAPTCHA_DETECTOR_PORT)
     private readonly captchaDetectorPort: CaptchaDetectorPort,

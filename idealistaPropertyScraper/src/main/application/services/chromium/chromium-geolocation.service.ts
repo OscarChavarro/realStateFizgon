@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { ChromiumPermissionRegistrarService } from 'application/services/chromium/chromium-permission-registrar.service';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
@@ -37,7 +38,8 @@ export class ChromiumGeolocationService {
   private readonly geolocationTargetOrigins = new Map<string, string>();
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumPermissionRegistrarService: ChromiumPermissionRegistrarService,
     @Inject(ERROR_MESSAGE_PORT)

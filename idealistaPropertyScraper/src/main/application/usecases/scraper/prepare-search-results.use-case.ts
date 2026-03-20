@@ -4,8 +4,10 @@ import { OriginErrorDetectorService } from 'application/services/resilience/orig
 import { FiltersService } from 'application/services/scraper/filters/filters.service';
 import { MainPageService } from 'application/services/scraper/main-page.service';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
@@ -28,8 +30,10 @@ export class PrepareSearchResultsUseCase {
   private firstHomePageWaitApplied = false;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly mainPageService: MainPageService,
     private readonly filtersService: FiltersService,

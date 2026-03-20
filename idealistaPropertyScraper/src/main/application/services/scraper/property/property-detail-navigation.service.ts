@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
@@ -19,7 +20,8 @@ export class PropertyDetailNavigationService {
   })()`;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}

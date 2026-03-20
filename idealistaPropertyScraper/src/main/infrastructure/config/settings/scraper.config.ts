@@ -3,8 +3,10 @@ import { ScraperState } from 'domain/states/scraper-state.enum';
 import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
+
 @Injectable()
-export class ScraperConfig {
+export class ScraperConfig implements ScraperSettingsPort {
   private readonly logger = new Logger(ScraperConfig.name);
 
   constructor(private readonly configurationSourceService: ConfigurationSourceService) {}

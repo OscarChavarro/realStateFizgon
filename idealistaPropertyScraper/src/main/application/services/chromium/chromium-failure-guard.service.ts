@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
@@ -12,7 +13,8 @@ export class ChromiumFailureGuardService {
   private recoveryInProgress = false;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly recoverFromBrowserFailureUseCase: RecoverFromBrowserFailureUseCase,
     @Inject(ERROR_MESSAGE_PORT)

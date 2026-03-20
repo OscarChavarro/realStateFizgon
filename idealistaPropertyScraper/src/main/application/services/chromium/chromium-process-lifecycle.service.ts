@@ -3,7 +3,8 @@ import { ChildProcess, spawn } from 'node:child_process';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { join } from 'node:path';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
@@ -19,7 +20,8 @@ export class ChromiumProcessLifecycleService {
   private controlledStopInProgress = false;
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort,

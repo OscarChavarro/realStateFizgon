@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
+import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
@@ -13,7 +14,8 @@ export class CookieApprovalDialogScraperService {
   private readonly logger = new Logger(CookieApprovalDialogScraperService.name);
 
   constructor(
-    private readonly scraperConfig: ScraperConfig,
+    @Inject(SCRAPER_SETTINGS_PORT)
+    private readonly scraperConfig: ScraperSettingsPort,
     @Inject(SLEEP_PORT)
     private readonly sleepPort: SleepPort
   ) {}

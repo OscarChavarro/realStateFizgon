@@ -7,7 +7,8 @@ import { UserAgentOverridePayload } from 'application/services/chromium/user-age
 import { UserAgentOverrideClient } from 'application/services/chromium/user-agent-override-client';
 import { NetworkHeaderClient } from 'application/services/chromium/network-header-client';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
+import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
@@ -33,7 +34,8 @@ export class ChromiumNetworkHeadersService {
   private readonly loggedAcceptLanguageNormalizations = new Set<string>();
 
   constructor(
-    private readonly chromeConfig: ChromeConfig,
+    @Inject(CHROME_SETTINGS_PORT)
+    private readonly chromeConfig: ChromeSettingsPort,
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
     @Inject(ERROR_MESSAGE_PORT)

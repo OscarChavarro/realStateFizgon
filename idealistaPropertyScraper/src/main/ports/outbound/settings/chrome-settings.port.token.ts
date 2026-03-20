@@ -1,0 +1,1 @@
+export const CHROME_SETTINGS_PORT = Symbol('CHROME_SETTINGS_PORT');

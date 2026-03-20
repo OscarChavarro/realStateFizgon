@@ -1,11 +1,19 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { access } from 'node:fs/promises';
 import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 
-jest.mock('node:fs/promises', () => ({
-  access: jest.fn()
-}));
+import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
+
+class InputOutputFileAccessPortMock implements InputOutputFileAccessPort {
+  readonly fileExists = jest.fn<(path: string) => boolean>();
+  readonly ensureDirectory = jest.fn<(path: string) => void>();
+  readonly assertReadableWritable = jest.fn<(path: string) => void>();
+  readonly writeTextFile = jest.fn<(path: string, content: string) => void>();
+  readonly deleteFile = jest.fn<(path: string) => void>();
+  readonly openFileForAppend = jest.fn<(path: string) => number>();
+  readonly closeFileDescriptor = jest.fn<(fileDescriptor: number) => void>();
+  readonly pathExists = jest.fn<(path: string) => Promise<boolean>>();
+}
 
 describe('ImageFileNameService', () => {
   beforeEach(() => {
@@ -14,7 +22,7 @@ describe('ImageFileNameService', () => {
 
   it('whenFilenameIsBuilt_buildImageFilename_shouldIncludeTimestampHashAndResolvedExtension', () => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService());
+    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
     const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
     // Action
     const filename = service.buildImageFilename('https://img4.idealista.com/a/b/c/photo.jpeg', 'image/jpeg');
@@ -33,7 +41,7 @@ describe('ImageFileNameService', () => {
     { url: 'https://img4.idealista.com/photo', mimeType: 'application/octet-stream', expected: '.img' }
   ])('whenExtensionIsResolved_resolveImageExtension_shouldReturnExpectedExtension', ({ url, mimeType, expected }) => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService());
+    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
     // Action
     const extension = service.resolveImageExtension(url, mimeType);
     // Assert
@@ -67,7 +75,7 @@ describe('ImageFileNameService', () => {
     expected
   }) => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService());
+    const service = new ImageFileNameService(new ImageUrlRulesService(), new InputOutputFileAccessPortMock());
     // Action
     const fileName = service.buildCompatibleTargetFilename(imageUrl, downloadedExtension);
     // Assert
@@ -75,16 +83,17 @@ describe('ImageFileNameService', () => {
   });
 
   it.each([
-    { accessBehavior: async () => undefined, expected: true },
-    { accessBehavior: async () => { throw new Error('missing'); }, expected: false }
-  ])('whenPathExistenceIsChecked_pathExists_shouldReturnExpectedResult', async ({ accessBehavior, expected }) => {
+    { exists: true },
+    { exists: false }
+  ])('whenPathExistenceIsChecked_pathExists_shouldDelegateToInputOutputFileAccessPort', async ({ exists }) => {
     // Arrange
-    const service = new ImageFileNameService(new ImageUrlRulesService());
-    const accessMock = access as unknown as jest.MockedFunction<typeof access>;
-    accessMock.mockImplementation(accessBehavior as unknown as typeof access);
+    const inputOutputFileAccessPort = new InputOutputFileAccessPortMock();
+    inputOutputFileAccessPort.pathExists.mockResolvedValue(exists);
+    const service = new ImageFileNameService(new ImageUrlRulesService(), inputOutputFileAccessPort);
     // Action
-    const exists = await service.pathExists('/tmp/some-path');
+    const result = await service.pathExists('/tmp/some-path');
     // Assert
-    expect(exists).toBe(expected);
+    expect(result).toBe(exists);
+    expect(inputOutputFileAccessPort.pathExists).toHaveBeenCalledWith('/tmp/some-path');
   });
 });

@@ -5,13 +5,13 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { Property } from 'domain/property/property.model';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
 import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
 const originalFetch = globalThis.fetch;
@@ -25,6 +25,8 @@ class ImageDownloadPathServiceMock {
   readonly getIncomingFolderPath = jest.fn<(folder: string) => string>();
   readonly getDownloadFolderPath = jest.fn<(folder: string) => string>();
   readonly getLeftoversFolderPath = jest.fn<(folder: string) => string>();
+  readonly getPropertyFolderPath = jest.fn<(folder: string, propertyId: string) => string>();
+  readonly joinPath = jest.fn((...segments: string[]) => segments.join('/'));
 }
 
 class ImageUrlRulesServiceMock {
@@ -93,7 +95,7 @@ function createUseCase() {
   const errorMessagePort = new ErrorMessagePortMock();
   const sleepPort = new SleepPortMock();
   const useCase = new FinalizePropertyImagesUseCase(
-    new ScraperConfigMockForFinalizePropertyImagesUseCase() as unknown as ScraperConfig,
+    new ScraperConfigMockForFinalizePropertyImagesUseCase() as unknown as ScraperSettingsPort,
     pathService as unknown as ImageDownloadPathService,
     urlRules as unknown as ImageUrlRulesService,
     fileName as unknown as ImageFileNameService,
@@ -113,6 +115,7 @@ function createUseCase() {
   fileName.buildCompatibleTargetFilename.mockImplementation(
     (_url: string, extension: string) => `image${extension || '.img'}`
   );
+  pathService.getPropertyFolderPath.mockImplementation((folder: string, propertyId: string) => `${folder}/download/${propertyId}`);
   fileName.pathExists.mockResolvedValue(false);
   fileSystem.ensureDirectory.mockResolvedValue(undefined);
   fileSystem.listEntries.mockResolvedValue([]);

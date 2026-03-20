@@ -5,12 +5,13 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { NetworkEnabledCdpClient } from 'ports/outbound/browser/network-enabled-cdp-client.port';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
-import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { Property } from 'domain/property/property.model';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
 import { PropertyImage } from 'domain/property/property-image.model';
 import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 
 class ChromeConfigMockForDownloader {
   readonly chromeBrowserLaunchRetryWaitMs = 1000;
@@ -97,8 +98,8 @@ function createService() {
     sleep: jest.fn(async () => undefined)
   };
   const service = new ImageDownloaderService(
-    new ChromeConfigMockForDownloader() as unknown as ChromeConfig,
-    new ScraperConfigMockForDownloader() as unknown as ScraperConfig,
+    new ChromeConfigMockForDownloader() as unknown as ChromeSettingsPort,
+    new ScraperConfigMockForDownloader() as unknown as ScraperSettingsPort,
     pathService as unknown as ImageDownloadPathService,
     urlRules as unknown as ImageUrlRulesService,
     networkCapture as unknown as ImageNetworkCaptureService,

@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { join } from 'node:path';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
@@ -47,7 +46,7 @@ export class FinalizePropertyImagesUseCase {
     }
 
     const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
-    const propertyFolderPath = join(this.imageDownloadPathService.getDownloadFolderPath(this.scraperConfig.imageDownloadFolder), propertyId);
+    const propertyFolderPath = this.imageDownloadPathService.getPropertyFolderPath(this.scraperConfig.imageDownloadFolder, propertyId);
     await this.fileSystemPort.ensureDirectory(propertyFolderPath);
     let recoverySyncPerformed = false;
 
@@ -81,7 +80,7 @@ export class FinalizePropertyImagesUseCase {
 
       const sourcePath = selectedFile.path;
       const targetFilename = this.imageFileNameService.buildCompatibleTargetFilename(image.url, selectedFile.extension);
-      const targetPath = join(propertyFolderPath, targetFilename);
+      const targetPath = this.imageDownloadPathService.joinPath(propertyFolderPath, targetFilename);
 
       try {
         if (await this.imageFileNameService.pathExists(targetPath)) {
@@ -116,7 +115,7 @@ export class FinalizePropertyImagesUseCase {
 
     const incomingFolderPath = this.imageDownloadPathService.getIncomingFolderPath(this.scraperConfig.imageDownloadFolder);
     const filename = this.imageFileNameService.buildImageFilename(url, mimeType);
-    const filepath = join(incomingFolderPath, filename);
+    const filepath = this.imageDownloadPathService.joinPath(incomingFolderPath, filename);
     await this.fileSystemPort.writeFile(filepath, bytes);
 
     const key = this.imageUrlRulesService.extractCanonicalImageKey(url);
@@ -167,7 +166,7 @@ export class FinalizePropertyImagesUseCase {
       imageUrl,
       resolvedExtension
     );
-    const targetPath = join(propertyFolderPath, targetFilename);
+    const targetPath = this.imageDownloadPathService.joinPath(propertyFolderPath, targetFilename);
 
     if (await this.imageFileNameService.pathExists(targetPath)) {
       this.logger.log(`Image already exists. Skipping overwrite for URL: ${imageUrl}`);
@@ -214,9 +213,9 @@ export class FinalizePropertyImagesUseCase {
     const entries = await this.fileSystemPort.listEntries(incomingFolderPath);
 
     for (const entry of entries) {
-      const entryPath = join(incomingFolderPath, entry.name);
+      const entryPath = this.imageDownloadPathService.joinPath(incomingFolderPath, entry.name);
       if (entry.isFile) {
-        const targetPath = join(leftoversFolderPath, entry.name);
+        const targetPath = this.imageDownloadPathService.joinPath(leftoversFolderPath, entry.name);
         await this.fileSystemPort.deleteFile(targetPath);
         await this.fileSystemPort.move(entryPath, targetPath);
         continue;

@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import { constants } from 'node:fs';
-import { access } from 'node:fs/promises';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
+import { INPUT_OUTPUT_FILE_ACCESS_PORT } from 'ports/outbound/input-output/input-output-file-access.port.token';
+
+import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
 
 @Injectable()
 export class ImageFileNameService {
-  constructor(private readonly imageUrlRulesService: ImageUrlRulesService) {}
+  constructor(
+    private readonly imageUrlRulesService: ImageUrlRulesService,
+    @Inject(INPUT_OUTPUT_FILE_ACCESS_PORT)
+    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort
+  ) {}
 
   buildImageFilename(url: string, mimeType: string): string {
     const hash = createHash('sha1').update(url).digest('hex');
@@ -88,11 +93,6 @@ export class ImageFileNameService {
   }
 
   async pathExists(path: string): Promise<boolean> {
-    try {
-      await access(path, constants.F_OK);
-      return true;
-    } catch {
-      return false;
-    }
+    return this.inputOutputFileAccessPort.pathExists(path);
   }
 }

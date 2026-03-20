@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
-import { join } from 'node:path';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
+import { INPUT_OUTPUT_FILE_ACCESS_PORT } from 'ports/outbound/input-output/input-output-file-access.port.token';
+import { INPUT_OUTPUT_PATH_PORT } from 'ports/outbound/input-output/input-output-path.port.token';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
@@ -9,6 +9,8 @@ import { OPERATING_SYSTEM_PROCESS_CONTROL_PORT } from 'ports/outbound/operating-
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
+import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
+import type { InputOutputPathPort } from 'ports/outbound/input-output/input-output-path.port';
 import type {
   OperatingSystemProcessControlPort,
   OperatingSystemSpawnedProcess
@@ -26,6 +28,10 @@ export class ChromiumProcessLifecycleService {
   constructor(
     @Inject(CHROME_SETTINGS_PORT)
     private readonly chromeConfig: ChromeSettingsPort,
+    @Inject(INPUT_OUTPUT_PATH_PORT)
+    private readonly inputOutputPathPort: InputOutputPathPort,
+    @Inject(INPUT_OUTPUT_FILE_ACCESS_PORT)
+    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort,
     private readonly chromiumUserAgentTlsService: ChromiumUserAgentTlsService,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort,
@@ -40,13 +46,17 @@ export class ChromiumProcessLifecycleService {
     onUnexpectedExit: (code: number | null, signal: NodeJS.Signals | null) => void,
     isShuttingDown: () => boolean
   ): Promise<void> {
-    const logsDir = join(process.cwd(), 'output', 'logs');
-    mkdirSync(logsDir, { recursive: true });
+    const logsDir = this.inputOutputPathPort.join(process.cwd(), 'output', 'logs');
+    this.inputOutputFileAccessPort.ensureDirectory(logsDir);
     const browserBinary = this.chromiumUserAgentTlsService.resolveBrowserBinary(this.logger);
 
     while (!isShuttingDown()) {
-      this.chromeStdoutFd = openSync(join(logsDir, 'chrome_stdout.log'), 'a');
-      this.chromeStderrFd = openSync(join(logsDir, 'chrome_stderr.log'), 'a');
+      this.chromeStdoutFd = this.inputOutputFileAccessPort.openFileForAppend(
+        this.inputOutputPathPort.join(logsDir, 'chrome_stdout.log')
+      );
+      this.chromeStderrFd = this.inputOutputFileAccessPort.openFileForAppend(
+        this.inputOutputPathPort.join(logsDir, 'chrome_stderr.log')
+      );
 
       try {
         const chromiumOptions = this.resolveChromiumOptions(browserBinary);
@@ -168,11 +178,11 @@ export class ChromiumProcessLifecycleService {
 
   private closeChromeLogFds(): void {
     if (this.chromeStdoutFd !== undefined) {
-      closeSync(this.chromeStdoutFd);
+      this.inputOutputFileAccessPort.closeFileDescriptor(this.chromeStdoutFd);
       this.chromeStdoutFd = undefined;
     }
     if (this.chromeStderrFd !== undefined) {
-      closeSync(this.chromeStderrFd);
+      this.inputOutputFileAccessPort.closeFileDescriptor(this.chromeStderrFd);
       this.chromeStderrFd = undefined;
     }
   }

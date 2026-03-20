@@ -1,24 +1,35 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
 import { ChromiumUserAgentTlsService } from 'application/services/chromium/chromium-user-agent-tls.service';
-import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import type {
   OperatingSystemProcessControlPort,
   OperatingSystemSpawnedProcess
 } from 'ports/outbound/operating-system/operating-system-process-control.port';
-
-jest.mock('node:fs', () => ({
-  closeSync: jest.fn(),
-  mkdirSync: jest.fn(),
-  openSync: jest.fn()
-}));
+import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
+import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
+import type { InputOutputPathPort } from 'ports/outbound/input-output/input-output-path.port';
 
 class ChromeConfigMockForProcessLifecycle {
   readonly chromePath = '/tmp/chrome-profile';
   readonly chromeBrowserLaunchRetryWaitMs = 500;
   readonly chromiumOptions = ['--headless=new', '--user-agent=from-options'];
   readonly chromeUserAgent = '';
+}
+
+class InputOutputPathPortMockForProcessLifecycle implements InputOutputPathPort {
+  readonly join = jest.fn((...segments: string[]) => segments.join('/'));
+  readonly resolve = jest.fn((...segments: string[]) => segments.join('/'));
+}
+
+class InputOutputFileAccessPortMockForProcessLifecycle implements InputOutputFileAccessPort {
+  readonly fileExists = jest.fn<(path: string) => boolean>();
+  readonly ensureDirectory = jest.fn<(path: string) => void>();
+  readonly assertReadableWritable = jest.fn<(path: string) => void>();
+  readonly writeTextFile = jest.fn<(path: string, content: string) => void>();
+  readonly deleteFile = jest.fn<(path: string) => void>();
+  readonly openFileForAppend = jest.fn<(path: string) => number>();
+  readonly closeFileDescriptor = jest.fn<(fileDescriptor: number) => void>();
+  readonly pathExists = jest.fn<(path: string) => Promise<boolean>>();
 }
 
 class ChromiumUserAgentTlsServiceMockForProcessLifecycle {
@@ -80,6 +91,8 @@ function createSpawnErrorProcess(error: Error & { code?: string }): FakeProcess 
 function createService() {
   const chromeConfig = new ChromeConfigMockForProcessLifecycle();
   const chromiumUserAgentTlsService = new ChromiumUserAgentTlsServiceMockForProcessLifecycle();
+  const inputOutputPathPort = new InputOutputPathPortMockForProcessLifecycle();
+  const inputOutputFileAccessPort = new InputOutputFileAccessPortMockForProcessLifecycle();
   chromiumUserAgentTlsService.resolveBrowserBinary.mockReturnValue('/usr/bin/chromium');
   chromiumUserAgentTlsService.getBrowserVersion.mockReturnValue('145.0.7420.0');
   chromiumUserAgentTlsService.resolveUserAgentForLaunch.mockReturnValue('Mozilla Chrome/145.0.7420.0');
@@ -97,7 +110,9 @@ function createService() {
     killPid: jest.fn()
   };
   const service = new ChromiumProcessLifecycleService(
-    chromeConfig as unknown as ChromeConfig,
+    chromeConfig as unknown as ChromeSettingsPort,
+    inputOutputPathPort,
+    inputOutputFileAccessPort,
     chromiumUserAgentTlsService as unknown as ChromiumUserAgentTlsService,
     errorMessagePort as never,
     operatingSystemProcessControlPort,
@@ -116,7 +131,9 @@ function createService() {
     logger,
     errorMessagePort,
     sleepPort,
-    operatingSystemProcessControlPort
+    operatingSystemProcessControlPort,
+    inputOutputPathPort,
+    inputOutputFileAccessPort
   };
 }
 
@@ -127,18 +144,17 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenLaunchSucceeds_launchChromiumProcess_shouldSpawnChromiumAndRegisterExitHandler', async () => {
     // Arrange
-    const { service, chromiumUserAgentTlsService, logger, operatingSystemProcessControlPort } = createService();
+    const { service, chromiumUserAgentTlsService, logger, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const spawnMock = operatingSystemProcessControlPort.spawn;
     const { process, exitHandlerRef } = createSpawnSuccessProcess(1234);
     spawnMock.mockReturnValue(process);
     const onUnexpectedExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
-    const openSyncMock = openSync as unknown as jest.Mock;
-    openSyncMock.mockReturnValueOnce(10).mockReturnValueOnce(11);
+    inputOutputFileAccessPort.openFileForAppend.mockReturnValueOnce(10).mockReturnValueOnce(11);
     // Action
     await service.launchChromiumProcess(9222, onUnexpectedExit, () => false);
     exitHandlerRef.handler?.(1, 'SIGTERM');
     // Assert
-    expect(mkdirSync).toHaveBeenCalledWith(expect.stringContaining('output/logs'), { recursive: true });
+    expect(inputOutputFileAccessPort.ensureDirectory).toHaveBeenCalledWith(expect.stringContaining('output/logs'));
     expect(chromiumUserAgentTlsService.resolveBrowserBinary).toHaveBeenCalledTimes(1);
     expect(spawnMock).toHaveBeenCalledWith(
       '/usr/bin/chromium',
@@ -153,17 +169,17 @@ describe('ChromiumProcessLifecycleService', () => {
     );
     expect(logger.log).toHaveBeenCalledWith('Chrome process started with PID 1234.');
     expect(onUnexpectedExit).toHaveBeenCalledWith(1, 'SIGTERM');
-    expect(closeSync).toHaveBeenCalledWith(10);
-    expect(closeSync).toHaveBeenCalledWith(11);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(10);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(11);
   });
 
   it('whenSpawnedProcessHasNoPid_launchChromiumProcess_shouldLogUnknownPid', async () => {
     // Arrange
-    const { service, logger, operatingSystemProcessControlPort } = createService();
+    const { service, logger, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const spawnMock = operatingSystemProcessControlPort.spawn;
     const { process } = createSpawnSuccessProcess(undefined);
     spawnMock.mockReturnValue(process);
-    (openSync as unknown as jest.Mock).mockReturnValueOnce(12).mockReturnValueOnce(13);
+    inputOutputFileAccessPort.openFileForAppend.mockReturnValueOnce(12).mockReturnValueOnce(13);
     // Action
     await service.launchChromiumProcess(9000, jest.fn(), () => false);
     // Assert
@@ -172,15 +188,14 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenSpawnFailsWithEnoent_launchChromiumProcess_shouldRetryAfterSleep', async () => {
     // Arrange
-    const { service, logger, sleepPort, operatingSystemProcessControlPort } = createService();
+    const { service, logger, sleepPort, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const spawnMock = operatingSystemProcessControlPort.spawn;
     const error = new Error('missing') as Error & { code?: string };
     error.code = 'ENOENT';
     const failingProcess = createSpawnErrorProcess(error);
     const { process: succeedingProcess } = createSpawnSuccessProcess(5678);
     spawnMock.mockReturnValueOnce(failingProcess).mockReturnValueOnce(succeedingProcess);
-    const openSyncMock = openSync as unknown as jest.Mock;
-    openSyncMock
+    inputOutputFileAccessPort.openFileForAppend
       .mockReturnValueOnce(20).mockReturnValueOnce(21)
       .mockReturnValueOnce(22).mockReturnValueOnce(23);
     // Action
@@ -191,17 +206,17 @@ describe('ChromiumProcessLifecycleService', () => {
     );
     expect(sleepPort.sleep).toHaveBeenCalledWith(500);
     expect(spawnMock).toHaveBeenCalledTimes(2);
-    expect(closeSync).toHaveBeenCalledWith(20);
-    expect(closeSync).toHaveBeenCalledWith(21);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(20);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(21);
   });
 
   it('whenSpawnFailsWithUnexpectedError_launchChromiumProcess_shouldPropagateError', async () => {
     // Arrange
-    const { service, sleepPort, operatingSystemProcessControlPort } = createService();
+    const { service, sleepPort, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const spawnMock = operatingSystemProcessControlPort.spawn;
     const error = new Error('spawn-failed');
     spawnMock.mockReturnValue(createSpawnErrorProcess(error));
-    (openSync as unknown as jest.Mock).mockReturnValueOnce(30).mockReturnValueOnce(31);
+    inputOutputFileAccessPort.openFileForAppend.mockReturnValueOnce(30).mockReturnValueOnce(31);
     // Action
     const action = service.launchChromiumProcess(9223, jest.fn(), () => false);
     // Assert
@@ -211,7 +226,7 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenServiceIsAlreadyShuttingDown_launchChromiumProcess_shouldAbortLaunch', async () => {
     // Arrange
-    const { service, operatingSystemProcessControlPort } = createService();
+    const { service, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     // Action
     const action = service.launchChromiumProcess(9224, jest.fn(), () => true);
     // Assert
@@ -221,7 +236,7 @@ describe('ChromiumProcessLifecycleService', () => {
 
   it('whenStopIsRequestedWithAlivePid_stopChromiumProcess_shouldSendSigtermAndCloseLogs', () => {
     // Arrange
-    const { service, operatingSystemProcessControlPort } = createService();
+    const { service, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const fakeProcess: FakeProcess = {
       pid: 7001,
       killed: false,
@@ -237,17 +252,17 @@ describe('ChromiumProcessLifecycleService', () => {
     // Assert
     expect(fakeProcess.kill).toHaveBeenCalledWith('SIGTERM');
     expect((service as unknown as { controlledStopInProgress: boolean }).controlledStopInProgress).toBe(true);
-    expect(closeSync).toHaveBeenCalledWith(40);
-    expect(closeSync).toHaveBeenCalledWith(41);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(40);
+    expect(inputOutputFileAccessPort.closeFileDescriptor).toHaveBeenCalledWith(41);
   });
 
   it('whenExitHappensAfterControlledStop_launchChromiumProcess_shouldResetStopFlagWithoutUnexpectedExitCallback', async () => {
     // Arrange
-    const { service, operatingSystemProcessControlPort } = createService();
+    const { service, operatingSystemProcessControlPort, inputOutputFileAccessPort } = createService();
     const spawnMock = operatingSystemProcessControlPort.spawn;
     const { process, exitHandlerRef } = createSpawnSuccessProcess(7010);
     spawnMock.mockReturnValue(process);
-    (openSync as unknown as jest.Mock).mockReturnValueOnce(14).mockReturnValueOnce(15);
+    inputOutputFileAccessPort.openFileForAppend.mockReturnValueOnce(14).mockReturnValueOnce(15);
     const onUnexpectedExit = jest.fn<(code: number | null, signal: NodeJS.Signals | null) => void>();
     // Action
     await service.launchChromiumProcess(9001, onUnexpectedExit, () => false);

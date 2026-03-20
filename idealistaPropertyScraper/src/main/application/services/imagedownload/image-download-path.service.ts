@@ -1,42 +1,60 @@
-import { Injectable } from '@nestjs/common';
-import { constants, accessSync, existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { Inject, Injectable } from '@nestjs/common';
+import { INPUT_OUTPUT_FILE_ACCESS_PORT } from 'ports/outbound/input-output/input-output-file-access.port.token';
+import { INPUT_OUTPUT_PATH_PORT } from 'ports/outbound/input-output/input-output-path.port.token';
+
+import type { InputOutputFileAccessPort } from 'ports/outbound/input-output/input-output-file-access.port';
+import type { InputOutputPathPort } from 'ports/outbound/input-output/input-output-path.port';
 
 @Injectable()
 export class ImageDownloadPathService {
+  constructor(
+    @Inject(INPUT_OUTPUT_PATH_PORT)
+    private readonly inputOutputPathPort: InputOutputPathPort,
+    @Inject(INPUT_OUTPUT_FILE_ACCESS_PORT)
+    private readonly inputOutputFileAccessPort: InputOutputFileAccessPort
+  ) {}
+
   ensureWritableFolders(downloadFolder: string): void {
     const folderPath = this.getDownloadFolderPath(downloadFolder);
     const incomingFolderPath = this.getIncomingFolderPath(downloadFolder);
     const leftoversFolderPath = this.getLeftoversFolderPath(downloadFolder);
 
-    if (!existsSync(folderPath)) {
-      mkdirSync(folderPath, { recursive: true });
+    if (!this.inputOutputFileAccessPort.fileExists(folderPath)) {
+      this.inputOutputFileAccessPort.ensureDirectory(folderPath);
     }
-    if (!existsSync(incomingFolderPath)) {
-      mkdirSync(incomingFolderPath, { recursive: true });
+    if (!this.inputOutputFileAccessPort.fileExists(incomingFolderPath)) {
+      this.inputOutputFileAccessPort.ensureDirectory(incomingFolderPath);
     }
-    if (!existsSync(leftoversFolderPath)) {
-      mkdirSync(leftoversFolderPath, { recursive: true });
+    if (!this.inputOutputFileAccessPort.fileExists(leftoversFolderPath)) {
+      this.inputOutputFileAccessPort.ensureDirectory(leftoversFolderPath);
     }
 
-    accessSync(folderPath, constants.R_OK | constants.W_OK);
-    accessSync(incomingFolderPath, constants.R_OK | constants.W_OK);
-    accessSync(leftoversFolderPath, constants.R_OK | constants.W_OK);
+    this.inputOutputFileAccessPort.assertReadableWritable(folderPath);
+    this.inputOutputFileAccessPort.assertReadableWritable(incomingFolderPath);
+    this.inputOutputFileAccessPort.assertReadableWritable(leftoversFolderPath);
 
-    const probeFile = join(incomingFolderPath, `.write-probe-${Date.now()}.tmp`);
-    writeFileSync(probeFile, 'ok');
-    unlinkSync(probeFile);
+    const probeFile = this.inputOutputPathPort.join(incomingFolderPath, `.write-probe-${Date.now()}.tmp`);
+    this.inputOutputFileAccessPort.writeTextFile(probeFile, 'ok');
+    this.inputOutputFileAccessPort.deleteFile(probeFile);
   }
 
   getDownloadFolderPath(downloadFolder: string): string {
-    return resolve(process.cwd(), downloadFolder);
+    return this.inputOutputPathPort.resolve(process.cwd(), downloadFolder);
   }
 
   getIncomingFolderPath(downloadFolder: string): string {
-    return join(this.getDownloadFolderPath(downloadFolder), '_incoming');
+    return this.inputOutputPathPort.join(this.getDownloadFolderPath(downloadFolder), '_incoming');
   }
 
   getLeftoversFolderPath(downloadFolder: string): string {
-    return join(this.getDownloadFolderPath(downloadFolder), '_leftovers');
+    return this.inputOutputPathPort.join(this.getDownloadFolderPath(downloadFolder), '_leftovers');
+  }
+
+  getPropertyFolderPath(downloadFolder: string, propertyId: string): string {
+    return this.inputOutputPathPort.join(this.getDownloadFolderPath(downloadFolder), propertyId);
+  }
+
+  joinPath(...segments: string[]): string {
+    return this.inputOutputPathPort.join(...segments);
   }
 }

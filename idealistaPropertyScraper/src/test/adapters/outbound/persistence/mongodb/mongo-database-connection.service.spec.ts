@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import * as mongodb from 'mongodb';
 import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
 import { MongoConfigMock } from '../../../../support/mocks/mongo-config.mock';
@@ -9,7 +10,9 @@ function createService(): MongoDatabaseConnectionService {
 
 describe('MongoDatabaseConnectionService', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   });
 
   it('whenMongoClientExists_onModuleDestroy_shouldCloseClientAndResetReferences', async () => {

@@ -8,6 +8,7 @@ const config: Config = {
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.spec.json' }]
   },
+  setupFilesAfterEnv: ['<rootDir>/src/test/support/jest.setup.ts'],
   moduleDirectories: ['node_modules', '<rootDir>/src/main'],
   moduleNameMapper: {
     '^@real-state-fizgon/captcha-solvers$': '<rootDir>/src/test/support/mocks/captcha-solvers.mock.ts'

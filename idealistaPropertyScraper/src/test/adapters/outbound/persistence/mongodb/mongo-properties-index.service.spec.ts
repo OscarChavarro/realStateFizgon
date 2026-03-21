@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { MongoServerError } from 'mongodb';
 import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
 import { MongoPropertiesIndexService } from 'adapters/outbound/persistence/mongodb/mongo-properties-index.service';
@@ -14,7 +15,10 @@ function createService(connectionService: MongoDatabaseConnectionServiceMock = n
 
 describe('MongoPropertiesIndexService', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
   it('whenPropertiesCollectionDoesNotExist_ensurePropertiesCollectionAndUrlIndex_shouldCreateCollectionAndEnsureUniqueIndex', async () => {

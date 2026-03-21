@@ -1,4 +1,5 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 import { ConfigurationSourceServiceMock } from '../../../support/mocks/configuration-source.mock';
@@ -15,6 +16,12 @@ function createChromeConfig(params: {
 }
 
 describe('ChromeConfig', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+
   it.each([
     {
       getter: (config: ChromeConfig) => config.chromeBinary,

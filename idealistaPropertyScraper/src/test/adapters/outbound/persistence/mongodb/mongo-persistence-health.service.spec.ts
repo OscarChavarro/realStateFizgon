@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Logger } from '@nestjs/common';
 import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
 import { MongoPersistenceHealthService } from 'adapters/outbound/persistence/mongodb/mongo-persistence-health.service';
 import { MongoPropertiesIndexService } from 'adapters/outbound/persistence/mongodb/mongo-properties-index.service';
@@ -38,7 +39,9 @@ function createService(
 
 describe('MongoPersistenceHealthService', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   });
 
   it('whenValidationFailsThenSucceeds_validateConnectionOrExit_shouldRetryAfterSleep', async () => {

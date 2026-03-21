@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
+import { SleepModule } from 'adapters/outbound/timing/sleep.module';
+import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
 import { MongoDatabaseService } from 'adapters/outbound/persistence/mongodb/mongo-database.service';
+import { MongoPersistenceHealthService } from 'adapters/outbound/persistence/mongodb/mongo-persistence-health.service';
 import { MongoPriceMigrationService } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
 import { MongoPublicationDateMapperService } from 'adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
+import { MongoPropertiesIndexService } from 'adapters/outbound/persistence/mongodb/mongo-properties-index.service';
 import { MongoPropertyUpsertService } from 'adapters/outbound/persistence/mongodb/mongo-property-upsert.service';
 import { MongoPropertyVisitService } from 'adapters/outbound/persistence/mongodb/mongo-property-visit.service';
 import { ConfigurationModule } from 'infrastructure/config/settings/configuration.module';
@@ -10,12 +14,15 @@ import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.por
 import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
 @Module({
-  imports: [ConfigurationModule],
+  imports: [ConfigurationModule, SleepModule],
   providers: [
     MongoPriceMigrationService,
     MongoPublicationDateMapperService,
     MongoPropertyUpsertService,
     MongoPropertyVisitService,
+    MongoDatabaseConnectionService,
+    MongoPropertiesIndexService,
+    MongoPersistenceHealthService,
     MongoDatabaseService,
     {
       provide: PROPERTY_WRITE_PORT,
@@ -27,9 +34,9 @@ import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.p
     },
     {
       provide: PERSISTENCE_HEALTH_PORT,
-      useExisting: MongoDatabaseService
+      useExisting: MongoPersistenceHealthService
     }
   ],
-  exports: [MongoDatabaseService, PROPERTY_WRITE_PORT, PROPERTY_READ_PORT, PERSISTENCE_HEALTH_PORT]
+  exports: [MongoDatabaseService, MongoPersistenceHealthService, PROPERTY_WRITE_PORT, PROPERTY_READ_PORT, PERSISTENCE_HEALTH_PORT]
 })
 export class MongoDatabaseModule {}

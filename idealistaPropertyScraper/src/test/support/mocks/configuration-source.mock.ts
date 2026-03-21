@@ -1,16 +1,17 @@
 import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
+import type { FilterId } from 'domain/filters/filter-id';
 
-type FilterDefinitionByName = Record<string, FilterDefinition | undefined>;
+type FilterDefinitionById = Record<string, FilterDefinition | undefined>;
 type SettingsPayload = Record<string, unknown>;
 
 export class ConfigurationSourceServiceMock {
   constructor(
     public readonly environment: SettingsPayload = {},
     public readonly secrets: SettingsPayload = {},
-    private readonly filterDefinitionsByName: FilterDefinitionByName = {}
+    private readonly filterDefinitionsById: FilterDefinitionById = {}
   ) {}
 
-  getFilterDefinitionByName(filterName: string): FilterDefinition | undefined {
-    return this.filterDefinitionsByName[filterName];
+  getFilterDefinitionById(filterId: FilterId): FilterDefinition | undefined {
+    return this.filterDefinitionsById[filterId];
   }
 }

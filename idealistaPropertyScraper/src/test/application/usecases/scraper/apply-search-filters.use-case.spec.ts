@@ -9,6 +9,7 @@ import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 import type { AsideFiltersPayload } from 'application/dto/scraper/aside-filters-payload.dto';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+import type { FilterId } from 'domain/filters/filter-id';
 
 class FilterUpdateServiceMockForApplySearchFiltersUseCase {
   readonly applyRequiredActions = jest.fn<(
@@ -39,7 +40,7 @@ class FilterSelectedOptionExtractorMockForApplySearchFiltersUseCase {
 }
 
 class ScraperConfigMockForApplySearchFiltersUseCase {
-  readonly getFilterDefinitionByName = jest.fn<(name: string) => {
+  readonly getFilterDefinitionById = jest.fn<(id: FilterId) => {
     plainOptions?: string[];
     selectedPlainOptions?: string[];
     minOptions?: string[];
@@ -71,6 +72,7 @@ function createSnapshot(overrides: Partial<FilterSnapshot> = {}): FilterSnapshot
   const maxOptions = [...(overrides.maxOptions ?? [])];
 
   return Object.freeze({
+    id: overrides.id ?? 'condition',
     name: overrides.name ?? 'Estado',
     cssSelector: overrides.cssSelector ?? '#estado',
     type: overrides.type ?? FilterType.SINGLE_SELECTOR,
@@ -414,8 +416,8 @@ describe('ApplySearchFiltersUseCase', () => {
   it('whenFilterDefinitionsExist_buildConfiguredFilterSnapshots_shouldPopulateImmutableSelections', () => {
     // Arrange
     const { useCase, scraperConfig } = createUseCase();
-    scraperConfig.getFilterDefinitionByName.mockImplementation((name: string) => {
-      if (name === 'Precio') {
+    scraperConfig.getFilterDefinitionById.mockImplementation((id: FilterId) => {
+      if (id === 'price') {
         return {
           minOptions: ['0'],
           maxOptions: ['1200'],
@@ -423,7 +425,7 @@ describe('ApplySearchFiltersUseCase', () => {
           selectedMax: '1200'
         };
       }
-      if (name === 'Habitaciones') {
+      if (id === 'rooms') {
         return {
           plainOptions: ['1', '2'],
           selectedPlainOptions: ['2']
@@ -432,8 +434,8 @@ describe('ApplySearchFiltersUseCase', () => {
       return undefined;
     });
     const baseSnapshots = [
-      createSnapshot({ name: 'Precio', cssSelector: '#price', type: FilterType.MIN_MAX }),
-      createSnapshot({ name: 'Habitaciones', cssSelector: '#rooms', type: FilterType.MULTIPLE_SELECTOR })
+      createSnapshot({ id: 'price', name: 'Precio', cssSelector: '#price', type: FilterType.MIN_MAX }),
+      createSnapshot({ id: 'rooms', name: 'Habitaciones', cssSelector: '#rooms', type: FilterType.MULTIPLE_SELECTOR })
     ];
     // Action
     const configured = (useCase as unknown as {
@@ -460,6 +462,7 @@ describe('ApplySearchFiltersUseCase', () => {
     // Assert
     expect(baseSnapshots.length).toBeGreaterThan(0);
     expect(baseSnapshots.some((filter) => filter.name === 'Precio')).toBe(true);
+    expect(baseSnapshots.some((filter) => filter.id === 'price')).toBe(true);
     expect(baseSnapshots.every((filter) => filter.plainOptions.length === 0)).toBe(true);
     expect(baseSnapshots.every((filter) => filter.selectedPlainOptions.length === 0)).toBe(true);
     expect(baseSnapshots.every((filter) => filter.selectedMin === null && filter.selectedMax === null)).toBe(true);

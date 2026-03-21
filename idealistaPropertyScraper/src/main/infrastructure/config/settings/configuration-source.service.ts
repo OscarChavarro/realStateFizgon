@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { FILTER_IDS, type FilterId } from 'domain/filters/filter-id';
 import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
 import {
   Environment,
@@ -12,23 +13,23 @@ import {
 import { EnvironmentFilterDefinitionValue } from 'infrastructure/config/validation/scraper.schema';
 import { toErrorMessage } from 'infrastructure/error-message';
 
-const FILTER_DEFINITION_KEY_BY_FILTER_NAME: Record<string, string> = {
-  'Tipo de inmueble': 'propertyType',
-  'Precio': 'price',
-  'Tipo de alquiler': 'rentalType',
-  'Tamaño': 'size',
-  'Tipo de vivienda': 'housingType',
-  'Otras denominaciones': 'otherDenominations',
-  Equipamiento: 'equipment',
-  Habitaciones: 'rooms',
-  'Baños': 'bathrooms',
-  Estado: 'condition',
-  'Características': 'features',
-  Planta: 'floor',
-  'Eficiencia Energética': 'energyEfficiency',
-  Multimedia: 'multimedia',
-  'Tipo de anuncio': 'listingType',
-  'Fecha de publicación': 'publicationDate'
+const FILTER_ID_BY_FILTER_LABEL: Record<string, FilterId> = {
+  'Tipo de inmueble': FILTER_IDS.PROPERTY_TYPE,
+  'Precio': FILTER_IDS.PRICE,
+  'Tipo de alquiler': FILTER_IDS.RENTAL_TYPE,
+  'Tamaño': FILTER_IDS.SIZE,
+  'Tipo de vivienda': FILTER_IDS.HOUSING_TYPE,
+  'Otras denominaciones': FILTER_IDS.OTHER_DENOMINATIONS,
+  Equipamiento: FILTER_IDS.EQUIPMENT,
+  Habitaciones: FILTER_IDS.ROOMS,
+  'Baños': FILTER_IDS.BATHROOMS,
+  Estado: FILTER_IDS.CONDITION,
+  'Características': FILTER_IDS.FEATURES,
+  Planta: FILTER_IDS.FLOOR,
+  'Eficiencia Energética': FILTER_IDS.ENERGY_EFFICIENCY,
+  Multimedia: FILTER_IDS.MULTIMEDIA,
+  'Tipo de anuncio': FILTER_IDS.LISTING_TYPE,
+  'Fecha de publicación': FILTER_IDS.PUBLICATION_DATE
 };
 
 @Injectable()
@@ -62,13 +63,17 @@ export class ConfigurationSourceService {
     return this.secretsData;
   }
 
-  getFilterDefinitionByName(filterName: string): FilterDefinition | undefined {
-    const definitionKey = FILTER_DEFINITION_KEY_BY_FILTER_NAME[filterName];
-    if (!definitionKey) {
+  getFilterDefinitionById(filterId: FilterId): FilterDefinition | undefined {
+    return this.filterDefinitionsByKey[filterId];
+  }
+
+  getFilterDefinitionByLabel(filterLabel: string): FilterDefinition | undefined {
+    const filterId = FILTER_ID_BY_FILTER_LABEL[filterLabel];
+    if (!filterId) {
       return undefined;
     }
 
-    return this.filterDefinitionsByKey[definitionKey];
+    return this.getFilterDefinitionById(filterId);
   }
 
   private readJsonFile(filePath: string): unknown {
@@ -138,10 +143,15 @@ export class ConfigurationSourceService {
         continue;
       }
 
-      accumulator[definitionKey] = this.sanitizeFilterDefinition(definition);
+      const normalizedDefinitionKey = this.resolveFilterDefinitionKey(definitionKey);
+      accumulator[normalizedDefinitionKey] = this.sanitizeFilterDefinition(definition);
     }
 
     return accumulator;
+  }
+
+  private resolveFilterDefinitionKey(definitionKey: string): string {
+    return FILTER_ID_BY_FILTER_LABEL[definitionKey] ?? definitionKey;
   }
 
   private sanitizeFilterDefinition(definition: EnvironmentFilterDefinitionValue): FilterDefinition {

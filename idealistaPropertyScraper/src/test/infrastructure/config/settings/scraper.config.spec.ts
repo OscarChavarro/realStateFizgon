@@ -169,7 +169,7 @@ describe('ScraperConfig', () => {
     expect(value).toBe(expected);
   });
 
-  it('whenFilterDefinitionIsRequested_getFilterDefinitionByName_shouldDelegateToSource', () => {
+  it('whenFilterDefinitionIsRequested_getFilterDefinitionById_shouldDelegateToSource', () => {
     // Arrange
     const definition: FilterDefinition = {
       plainOptions: ['new'],
@@ -181,11 +181,11 @@ describe('ScraperConfig', () => {
     };
     const config = createScraperConfig({
       definitions: {
-        'Tipo de inmueble': definition
+        propertyType: definition
       }
     });
     // Action
-    const result = config.getFilterDefinitionByName('Tipo de inmueble');
+    const result = config.getFilterDefinitionById('propertyType');
     // Assert
     expect(result).toBe(definition);
   });

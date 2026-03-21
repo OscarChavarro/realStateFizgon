@@ -40,6 +40,7 @@ function createClient(): FiltersCdpClient {
 
 function createSnapshot(overrides: Partial<FilterSnapshot> = {}): FilterSnapshot {
   return Object.freeze({
+    id: overrides.id ?? 'rooms',
     name: overrides.name ?? 'Habitaciones',
     cssSelector: overrides.cssSelector ?? '#rooms',
     type: overrides.type ?? FilterType.MULTIPLE_SELECTOR,

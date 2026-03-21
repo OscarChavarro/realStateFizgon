@@ -1,4 +1,5 @@
 import { FilterType } from 'domain/filters/filter-type';
+import type { FilterId } from 'domain/filters/filter-id';
 
 export abstract class Filter {
   protected plainOptions: string[] = [];
@@ -7,10 +8,15 @@ export abstract class Filter {
   protected selectedMax: string | null = null;
 
   constructor(
+    private readonly id: FilterId,
     private readonly name: string,
     private readonly cssSelector: string,
     private readonly type: FilterType
   ) {}
+
+  getId(): FilterId {
+    return this.id;
+  }
 
   getName(): string {
     return this.name;

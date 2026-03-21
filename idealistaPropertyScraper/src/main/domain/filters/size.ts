@@ -1,4 +1,5 @@
 import { Filter } from 'domain/filters/filter';
+import { FILTER_IDS } from 'domain/filters/filter-id';
 import { FilterType } from 'domain/filters/filter-type';
 
 export class Size extends Filter {
@@ -6,7 +7,7 @@ export class Size extends Filter {
   protected maxOptions: string[] = [];
 
   constructor() {
-    super('Tamaño', '#area-filter-container', FilterType.MIN_MAX);
+    super(FILTER_IDS.SIZE, 'Tamaño', '#area-filter-container', FilterType.MIN_MAX);
   }
 
   setMinOptions(options: string[]): void {

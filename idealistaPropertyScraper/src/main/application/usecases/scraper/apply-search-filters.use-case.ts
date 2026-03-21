@@ -7,6 +7,7 @@ import { SupportedFilters } from 'domain/filters/supported-filters';
 import { FilterType } from 'domain/filters/filter-type';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
+import type { FilterId } from 'domain/filters/filter-id';
 
 import type { AsideFiltersPayload } from 'application/dto/scraper/aside-filters-payload.dto';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
@@ -231,6 +232,7 @@ export class ApplySearchFiltersUseCase {
     return Object.freeze(
       supportedFilters.map((filter) =>
         this.createFilterSnapshot({
+          id: filter.getId(),
           name: filter.getName(),
           cssSelector: filter.getCssSelector(),
           type: filter.getType(),
@@ -248,7 +250,7 @@ export class ApplySearchFiltersUseCase {
   private buildConfiguredFilterSnapshots(baseSnapshots: readonly FilterSnapshot[]): readonly FilterSnapshot[] {
     return Object.freeze(
       baseSnapshots.map((filter) => {
-        const definition = this.scraperConfig.getFilterDefinitionByName(filter.name);
+        const definition = this.scraperConfig.getFilterDefinitionById(filter.id);
         if (!definition) {
           return filter;
         }
@@ -273,6 +275,7 @@ export class ApplySearchFiltersUseCase {
   }
 
   private createFilterSnapshot(data: {
+    id: FilterId;
     name: string;
     cssSelector: string;
     type: FilterType;
@@ -284,6 +287,7 @@ export class ApplySearchFiltersUseCase {
     selectedMax: string | null;
   }): FilterSnapshot {
     return Object.freeze({
+      id: data.id,
       name: data.name,
       cssSelector: data.cssSelector,
       type: data.type,

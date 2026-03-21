@@ -1,4 +1,5 @@
 import type { ScraperState } from 'domain/states/scraper-state';
+import type { FilterId } from 'domain/filters/filter-id';
 
 export type ScraperFilterDefinition = {
   plainOptions: string[];
@@ -32,5 +33,5 @@ export interface ScraperSettingsPort {
   readonly endpointsPassword: string;
   readonly reScrapeIntervalMs: number;
   readonly initialScraperState: ScraperState;
-  getFilterDefinitionByName(filterName: string): ScraperFilterDefinition | undefined;
+  getFilterDefinitionById(filterId: FilterId): ScraperFilterDefinition | undefined;
 }

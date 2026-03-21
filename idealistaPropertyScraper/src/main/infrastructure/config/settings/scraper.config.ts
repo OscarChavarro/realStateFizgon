@@ -5,6 +5,7 @@ import { ConfigurationSourceService } from 'infrastructure/config/settings/confi
 
 import type { EndpointsAuthSettingsPort } from 'ports/outbound/settings/endpoints-auth-settings.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
+import type { FilterId } from 'domain/filters/filter-id';
 
 @Injectable()
 export class ScraperConfig implements ScraperSettingsPort, EndpointsAuthSettingsPort {
@@ -112,7 +113,7 @@ export class ScraperConfig implements ScraperSettingsPort, EndpointsAuthSettings
     return ScraperState.IDLE;
   }
 
-  getFilterDefinitionByName(filterName: string): FilterDefinition | undefined {
-    return this.configurationSourceService.getFilterDefinitionByName(filterName);
+  getFilterDefinitionById(filterId: FilterId): FilterDefinition | undefined {
+    return this.configurationSourceService.getFilterDefinitionById(filterId);
   }
 }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
@@ -42,9 +43,11 @@ class ImageFileNameServiceMock {
 }
 
 class ImageNetworkCaptureServiceMock {
-  readonly waitForPendingImageDownloads = jest.fn<(timeoutMs: number) => Promise<void>>();
-  readonly waitForImageNetworkSettled = jest.fn<(logger: unknown, maxWaitMs: number, quietWindowMs: number) => Promise<void>>();
-  readonly resetPendingRequests = jest.fn<() => void>();
+  readonly waitForPendingImageDownloads = jest.fn<(scrapeRunContext: ScrapeRunContext, timeoutMs: number) => Promise<void>>();
+  readonly waitForImageNetworkSettled = jest.fn<
+    (scrapeRunContext: ScrapeRunContext, logger: unknown, maxWaitMs: number, quietWindowMs: number) => Promise<void>
+  >();
+  readonly resetPendingRequests = jest.fn<(scrapeRunContext: ScrapeRunContext) => void>();
 }
 
 class ImagePendingQueuePublisherServiceMock {
@@ -158,8 +161,9 @@ describe('FinalizePropertyImagesUseCase', () => {
     const { useCase, urlRules, fileSystem, logger } = createUseCase();
     urlRules.extractPropertyIdFromUrl.mockReturnValue(null);
     const property = createProperty('https://www.idealista.com/alquiler-viviendas/madrid/', []);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(logger.error).toHaveBeenCalledWith('Unable to extract property id from URL: https://www.idealista.com/alquiler-viviendas/madrid/');
     expect(fileSystem.ensureDirectory).not.toHaveBeenCalled();
@@ -179,13 +183,14 @@ describe('FinalizePropertyImagesUseCase', () => {
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
     const property = createProperty('https://www.idealista.com/inmueble/777/', [new PropertyImage('https://img/a.jpg', null)]);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(httpBinaryDownloadPort.download).toHaveBeenCalledWith('https://img/a.jpg');
     expect(pendingPublisher.publishPendingImageUrl).toHaveBeenCalledWith('https://img/a.jpg', '777');
     expect(moveRemainingSpy).toHaveBeenCalledWith('/tmp/images/incoming');
-    expect(networkCapture.resetPendingRequests).toHaveBeenCalledTimes(1);
+    expect(networkCapture.resetPendingRequests).toHaveBeenCalledWith(scrapeRunContext);
   });
 
   it('whenImageCandidateIsMissingAndDirectFallbackSucceeds_execute_shouldWriteDirectlyAndSkipPendingQueue', async () => {
@@ -207,8 +212,9 @@ describe('FinalizePropertyImagesUseCase', () => {
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
     const property = createProperty('https://www.idealista.com/inmueble/778/', [new PropertyImage('https://img/missing.jpg', null)]);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(httpBinaryDownloadPort.download).toHaveBeenCalledWith('https://img/missing.jpg');
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/download/778/fallback-778.jpg', Buffer.from([1, 2, 3]));
@@ -227,11 +233,12 @@ describe('FinalizePropertyImagesUseCase', () => {
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
     const property = createProperty('https://www.idealista.com/inmueble/701/', [new PropertyImage('https://img/not-allowed.jpg', null)]);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(urlRules.extractCanonicalImageKey).not.toHaveBeenCalled();
-    expect(networkCapture.resetPendingRequests).toHaveBeenCalledTimes(1);
+    expect(networkCapture.resetPendingRequests).toHaveBeenCalledWith(scrapeRunContext);
   });
 
   it('whenImageKeyCannotBeExtracted_execute_shouldLogAndContinue', async () => {
@@ -247,8 +254,9 @@ describe('FinalizePropertyImagesUseCase', () => {
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
     const property = createProperty('https://www.idealista.com/inmueble/702/', [new PropertyImage('https://img/no-key.jpg', null)]);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(logger.error).toHaveBeenCalledWith('Image URL cannot be normalized to a key: https://img/no-key.jpg');
   });
@@ -265,11 +273,11 @@ describe('FinalizePropertyImagesUseCase', () => {
       useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingPath: string) => Promise<void> },
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
-    (useCase as unknown as { incomingImagesByKey: Map<string, Array<{ url: string; path: string; extension: string } | undefined>> }).incomingImagesByKey
-      .set('key-703', [undefined]);
+    const scrapeRunContext = createScrapeRunContext();
+    scrapeRunContext.image.incomingImagesByKey.set('key-703', [undefined as never]);
     const property = createProperty('https://www.idealista.com/inmueble/703/', [new PropertyImage('https://img/undefined.jpg', null)]);
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(pendingPublisher.publishPendingImageUrl).toHaveBeenCalledWith('https://img/undefined.jpg', '703');
   });
@@ -288,16 +296,20 @@ describe('FinalizePropertyImagesUseCase', () => {
       useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingPath: string) => Promise<void> },
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
-    (useCase as unknown as { incomingImagesByKey: Map<string, Array<{ url: string; path: string; extension: string }>> }).incomingImagesByKey
-      .set('key-2', [{ url: 'https://img/b.jpg', path: '/tmp/images/incoming/source.jpg', extension: 'jpg' }]);
+    const scrapeRunContext = createScrapeRunContext();
+    scrapeRunContext.image.incomingImagesByKey.set('key-2', [{
+      url: 'https://img/b.jpg',
+      path: '/tmp/images/incoming/source.jpg',
+      extension: 'jpg'
+    }]);
     const property = createProperty('https://www.idealista.com/inmueble/888/', [new PropertyImage('https://img/b.jpg', null)]);
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(fileSystem.deleteFile).toHaveBeenCalledWith('/tmp/images/incoming/source.jpg');
     expect(fileSystem.move).not.toHaveBeenCalled();
     expect(moveRemainingSpy).toHaveBeenCalled();
-    expect(networkCapture.resetPendingRequests).toHaveBeenCalled();
+    expect(networkCapture.resetPendingRequests).toHaveBeenCalledWith(scrapeRunContext);
   });
 
   it('whenRenameFails_execute_shouldLogErrorAndContinue', async () => {
@@ -317,11 +329,15 @@ describe('FinalizePropertyImagesUseCase', () => {
       useCase as unknown as { moveRemainingIncomingToLeftovers: (incomingPath: string) => Promise<void> },
       'moveRemainingIncomingToLeftovers'
     ).mockResolvedValue(undefined);
-    (useCase as unknown as { incomingImagesByKey: Map<string, Array<{ url: string; path: string; extension: string }>> }).incomingImagesByKey
-      .set('key-3', [{ url: 'https://img/c.jpg', path: '/tmp/images/incoming/source-c.jpg', extension: 'jpg' }]);
+    const scrapeRunContext = createScrapeRunContext();
+    scrapeRunContext.image.incomingImagesByKey.set('key-3', [{
+      url: 'https://img/c.jpg',
+      path: '/tmp/images/incoming/source-c.jpg',
+      extension: 'jpg'
+    }]);
     const property = createProperty('https://www.idealista.com/inmueble/999/', [new PropertyImage('https://img/c.jpg', null)]);
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
     expect(logger.error).toHaveBeenCalledWith('Failed moving image for URL: https://img/c.jpg');
   });
@@ -335,16 +351,17 @@ describe('FinalizePropertyImagesUseCase', () => {
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     fileName.buildImageFilename.mockReturnValue('captured.bin');
     fileName.resolveImageExtension.mockReturnValue('jpg');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await useCase.persistCapturedImage({
       requestId: 'req-1',
       url: 'https://img4.idealista.com/blur/a.jpg',
       mimeType: 'image/jpeg',
       body: { body: Buffer.from('abc').toString('base64'), base64Encoded: true }
-    });
+    }, scrapeRunContext);
     // Assert
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured.bin', expect.any(Buffer));
-    const cache = (useCase as unknown as { incomingImagesByKey: Map<string, Array<{ path: string }>> }).incomingImagesByKey;
+    const cache = scrapeRunContext.image.incomingImagesByKey;
     expect(cache.get('canonical-a')?.[0]?.path).toBe('/tmp/images/incoming/captured.bin');
   });
 
@@ -357,13 +374,14 @@ describe('FinalizePropertyImagesUseCase', () => {
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     fileName.buildImageFilename.mockReturnValue('captured-binary.bin');
     fileName.resolveImageExtension.mockReturnValue('jpg');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await useCase.persistCapturedImage({
       requestId: 'req-binary',
       url: 'https://img4.idealista.com/blur/binary.jpg',
       mimeType: 'image/jpeg',
       body: { body: 'abc', base64Encoded: false }
-    });
+    }, scrapeRunContext);
     // Assert
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/captured-binary.bin', Buffer.from('abc', 'binary'));
   });
@@ -372,13 +390,14 @@ describe('FinalizePropertyImagesUseCase', () => {
     // Arrange
     const { useCase, fileSystem, urlRules } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(false);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await useCase.persistCapturedImage({
       requestId: 'req-2',
       url: 'https://img4.idealista.com/blur/b.jpg',
       mimeType: 'image/jpeg',
       body: { body: '', base64Encoded: false }
-    });
+    }, scrapeRunContext);
     // Assert
     expect(fileSystem.writeFile).not.toHaveBeenCalled();
   });
@@ -388,13 +407,14 @@ describe('FinalizePropertyImagesUseCase', () => {
     const { useCase, fileSystem, urlRules } = createUseCase();
     urlRules.shouldTrackImageUrl.mockReturnValue(true);
     urlRules.isSvgImage.mockReturnValue(false);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await useCase.persistCapturedImage({
       requestId: 'req-3',
       url: 'https://img4.idealista.com/blur/c.jpg',
       mimeType: 'image/jpeg',
       body: { body: '', base64Encoded: true }
-    });
+    }, scrapeRunContext);
     // Assert
     expect(fileSystem.writeFile).not.toHaveBeenCalled();
   });
@@ -407,16 +427,17 @@ describe('FinalizePropertyImagesUseCase', () => {
     urlRules.extractCanonicalImageKey.mockReturnValue(null);
     pathService.getIncomingFolderPath.mockReturnValue('/tmp/images/incoming');
     fileName.buildImageFilename.mockReturnValue('no-key.bin');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await useCase.persistCapturedImage({
       requestId: 'req-4',
       url: 'https://img4.idealista.com/blur/d.jpg',
       mimeType: 'image/jpeg',
       body: { body: Buffer.from('abc').toString('base64'), base64Encoded: true }
-    });
+    }, scrapeRunContext);
     // Assert
     expect(fileSystem.writeFile).toHaveBeenCalledWith('/tmp/images/incoming/no-key.bin', expect.any(Buffer));
-    const cache = (useCase as unknown as { incomingImagesByKey: Map<string, unknown> }).incomingImagesByKey;
+    const cache = scrapeRunContext.image.incomingImagesByKey;
     expect(cache.size).toBe(0);
   });
 
@@ -457,17 +478,19 @@ describe('FinalizePropertyImagesUseCase', () => {
   it('whenMultipleCandidatesExist_consumeIncomingImageByKey_shouldKeepRemainingCandidatesMapped', () => {
     // Arrange
     const { useCase } = createUseCase();
-    const map = (useCase as unknown as {
-      incomingImagesByKey: Map<string, Array<{ url: string; path: string; extension: string }>>;
-    }).incomingImagesByKey;
+    const scrapeRunContext = createScrapeRunContext();
+    const map = scrapeRunContext.image.incomingImagesByKey;
     map.set('canonical-multi', [
       { url: 'https://img/a.jpg', path: '/tmp/a.jpg', extension: 'jpg' },
       { url: 'https://img/b.jpg', path: '/tmp/b.jpg', extension: 'jpg' }
     ]);
     // Action
     const selected = (useCase as unknown as {
-      consumeIncomingImageByKey: (key: string) => { url: string; path: string; extension: string } | undefined;
-    }).consumeIncomingImageByKey('canonical-multi');
+      consumeIncomingImageByKey: (
+        scrapeRunContext: ScrapeRunContext,
+        key: string
+      ) => { url: string; path: string; extension: string } | undefined;
+    }).consumeIncomingImageByKey(scrapeRunContext, 'canonical-multi');
     // Assert
     expect(selected?.path).toBe('/tmp/a.jpg');
     expect(map.get('canonical-multi')?.length).toBe(1);
@@ -477,23 +500,29 @@ describe('FinalizePropertyImagesUseCase', () => {
   it('whenNoTimeoutIsProvided_waitForPendingImageDownloads_shouldUseDefaultTimeout', async () => {
     // Arrange
     const { useCase, networkCapture } = createUseCase();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await (useCase as unknown as {
-      waitForPendingImageDownloads: (timeoutMs?: number) => Promise<void>;
-    }).waitForPendingImageDownloads();
+      waitForPendingImageDownloads: (scrapeRunContext: ScrapeRunContext, timeoutMs?: number) => Promise<void>;
+    }).waitForPendingImageDownloads(scrapeRunContext);
     // Assert
-    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(15000);
+    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(scrapeRunContext, 15000);
   });
 
   it('whenNoWindowArgumentsAreProvided_waitForImageNetworkSettled_shouldUseDefaultValues', async () => {
     // Arrange
     const { useCase, networkCapture, logger } = createUseCase();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await (useCase as unknown as {
-      waitForImageNetworkSettled: (maxWaitMs?: number, quietWindowMs?: number) => Promise<void>;
-    }).waitForImageNetworkSettled();
+      waitForImageNetworkSettled: (
+        scrapeRunContext: ScrapeRunContext,
+        maxWaitMs?: number,
+        quietWindowMs?: number
+      ) => Promise<void>;
+    }).waitForImageNetworkSettled(scrapeRunContext);
     // Assert
-    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(logger, 12000, 1200);
+    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(scrapeRunContext, logger, 12000, 1200);
   });
 
   it('whenFallbackTargetAlreadyExists_downloadImageDirectlyToPropertyFolder_shouldSkipFetchAndReturnTrue', async () => {

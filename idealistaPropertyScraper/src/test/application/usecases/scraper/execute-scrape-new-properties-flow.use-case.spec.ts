@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyListingPaginationService } from 'application/services/scraper/pagination/property-listing-pagination.service';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
@@ -6,12 +7,17 @@ import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepar
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 class PrepareSearchResultsUseCaseMockForExecuteScrapeNewPropertiesFlowUseCase {
   readonly execute = jest.fn<
-    (client: ScraperCdpClient, page: ScraperCdpClient['Page'], runtime: ScraperCdpClient['Runtime']) => Promise<void>
+    (
+      client: ScraperCdpClient,
+      page: ScraperCdpClient['Page'],
+      runtime: ScraperCdpClient['Runtime'],
+      scrapeRunContext: ScrapeRunContext
+    ) => Promise<void>
   >();
 }
 
 class PropertyListingPaginationServiceMockForExecuteScrapeNewPropertiesFlowUseCase {
-  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
+  readonly execute = jest.fn<(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
 }
 
 function createClient(): ScraperCdpClient {
@@ -64,19 +70,21 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
     // Arrange
     const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     prepareSearchResultsUseCase.execute.mockResolvedValue(undefined);
     propertyListingPaginationService.execute.mockResolvedValue(undefined);
 
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
 
     // Assert
     expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledWith(
       client,
       client.Page,
-      client.Runtime
+      client.Runtime,
+      scrapeRunContext
     );
-    expect(propertyListingPaginationService.execute).toHaveBeenCalledWith(client);
+    expect(propertyListingPaginationService.execute).toHaveBeenCalledWith(client, scrapeRunContext);
     expect(logger.log).toHaveBeenCalledWith('SCRAPING_FOR_NEW_PROPERTIES cycle finished.');
   });
 
@@ -84,10 +92,11 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
     // Arrange
     const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     prepareSearchResultsUseCase.execute.mockRejectedValue(new Error('prepare failed'));
 
     // Action
-    const action = useCase.execute(client);
+    const action = useCase.execute(client, scrapeRunContext);
 
     // Assert
     await expect(action).rejects.toThrow('prepare failed');
@@ -99,11 +108,12 @@ describe('ExecuteScrapeNewPropertiesFlowUseCase', () => {
     // Arrange
     const { useCase, prepareSearchResultsUseCase, propertyListingPaginationService, logger } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     prepareSearchResultsUseCase.execute.mockResolvedValue(undefined);
     propertyListingPaginationService.execute.mockRejectedValue(new Error('pagination failed'));
 
     // Action
-    const action = useCase.execute(client);
+    const action = useCase.execute(client, scrapeRunContext);
 
     // Assert
     await expect(action).rejects.toThrow('pagination failed');

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
@@ -30,18 +31,32 @@ class ImageUrlRulesServiceMock {
 }
 
 class ImageNetworkCaptureServiceMock {
-  readonly isInitialized = jest.fn<(client: object) => boolean>();
-  readonly markInitialized = jest.fn<(client: object) => void>();
-  readonly trackResponseReceived = jest.fn<(event: unknown, isAllowed: (url: string) => boolean) => void>();
-  readonly trackLoadingFinished = jest.fn<(network: unknown, event: unknown, onImageBody: (payload: unknown) => Promise<void>, logger: unknown) => void>();
-  readonly trackLoadingFailed = jest.fn<(event: unknown) => void>();
-  readonly waitForPendingImageDownloads = jest.fn<(timeoutMs: number) => Promise<void>>();
-  readonly waitForImageNetworkSettled = jest.fn<(logger: unknown, maxWaitMs: number, quietWindowMs: number) => Promise<void>>();
+  readonly isInitialized = jest.fn<(client: object, scrapeRunContext: ScrapeRunContext) => boolean>();
+  readonly markInitialized = jest.fn<(client: object, scrapeRunContext: ScrapeRunContext) => void>();
+  readonly trackResponseReceived = jest.fn<(
+    scrapeRunContext: ScrapeRunContext,
+    event: unknown,
+    isAllowed: (url: string) => boolean
+  ) => void>();
+  readonly trackLoadingFinished = jest.fn<(
+    scrapeRunContext: ScrapeRunContext,
+    network: unknown,
+    event: unknown,
+    onImageBody: (payload: unknown) => Promise<void>,
+    logger: unknown
+  ) => void>();
+  readonly trackLoadingFailed = jest.fn<(scrapeRunContext: ScrapeRunContext, event: unknown) => void>();
+  readonly waitForPendingImageDownloads = jest.fn<
+    (scrapeRunContext: ScrapeRunContext, timeoutMs: number) => Promise<void>
+  >();
+  readonly waitForImageNetworkSettled = jest.fn<
+    (scrapeRunContext: ScrapeRunContext, logger: unknown, maxWaitMs: number, quietWindowMs: number) => Promise<void>
+  >();
 }
 
 class FinalizePropertyImagesUseCaseMock {
-  readonly execute = jest.fn<(property: Property) => Promise<void>>();
-  readonly persistCapturedImage = jest.fn<(payload: unknown) => Promise<void>>();
+  readonly execute = jest.fn<(property: Property, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
+  readonly persistCapturedImage = jest.fn<(payload: unknown, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
 }
 
 type SleepPortMock = {
@@ -156,9 +171,10 @@ describe('ImageDownloaderService', () => {
     // Arrange
     const { service, networkCapture } = createService();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.isInitialized.mockReturnValue(true);
     // Action
-    await service.initializeNetworkCapture(client);
+    await service.initializeNetworkCapture(client, scrapeRunContext);
     // Assert
     expect(client.Network.enable).not.toHaveBeenCalled();
     expect(networkCapture.markInitialized).not.toHaveBeenCalled();
@@ -167,6 +183,7 @@ describe('ImageDownloaderService', () => {
   it('whenClientNeedsInitialization_initializeNetworkCapture_shouldRegisterDelegatingListeners', async () => {
     // Arrange
     const { service, networkCapture, urlRules } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.isInitialized.mockReturnValue(false);
     urlRules.isIdealistaDomain.mockReturnValue(true);
     const network: FakeNetwork = {
@@ -178,7 +195,7 @@ describe('ImageDownloaderService', () => {
     };
     const client = createClient(network);
     // Action
-    await service.initializeNetworkCapture(client);
+    await service.initializeNetworkCapture(client, scrapeRunContext);
     const responseCallback = network.responseReceived.mock.calls[0]?.[0] as (event: unknown) => void;
     const finishedCallback = network.loadingFinished.mock.calls[0]?.[0] as (event: unknown) => void;
     const failedCallback = network.loadingFailed.mock.calls[0]?.[0] as (event: unknown) => void;
@@ -187,24 +204,25 @@ describe('ImageDownloaderService', () => {
     failedCallback?.({ requestId: 'c' });
     // Assert
     expect(network.enable).toHaveBeenCalledTimes(1);
-    expect(networkCapture.markInitialized).toHaveBeenCalledWith(client);
+    expect(networkCapture.markInitialized).toHaveBeenCalledWith(client, scrapeRunContext);
     expect(networkCapture.trackResponseReceived).toHaveBeenCalled();
     expect(networkCapture.trackLoadingFinished).toHaveBeenCalled();
-    expect(networkCapture.trackLoadingFailed).toHaveBeenCalledWith({ requestId: 'c' });
+    expect(networkCapture.trackLoadingFailed).toHaveBeenCalledWith(scrapeRunContext, { requestId: 'c' });
   });
 
   it('whenResponseDelegatorIsInvoked_initializeNetworkCapture_shouldDelegateDomainCheckToUrlRules', async () => {
     // Arrange
     const { service, networkCapture, urlRules } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.isInitialized.mockReturnValue(false);
     urlRules.isIdealistaDomain.mockReturnValue(true);
     const client = createClient();
     // Action
-    await service.initializeNetworkCapture(client);
+    await service.initializeNetworkCapture(client, scrapeRunContext);
     const responseReceivedMock = client.Network.responseReceived as unknown as jest.Mock;
     const responseCallback = responseReceivedMock.mock.calls[0]?.[0] as ((event: unknown) => void) | undefined;
     responseCallback?.({ requestId: 'req-domain' });
-    const isAllowedDomain = networkCapture.trackResponseReceived.mock.calls[0]?.[1];
+    const isAllowedDomain = networkCapture.trackResponseReceived.mock.calls[0]?.[2];
     const allowed = isAllowedDomain ? isAllowedDomain('https://img4.idealista.com/blur/x.jpg') : false;
     // Assert
     expect(allowed).toBe(true);
@@ -214,15 +232,16 @@ describe('ImageDownloaderService', () => {
   it('whenLoadingFinishedCallbackDispatchesImage_initializeNetworkCapture_shouldForwardPayloadToFinalizeUseCase', async () => {
     // Arrange
     const { service, networkCapture, finalizeUseCase } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.isInitialized.mockReturnValue(false);
     finalizeUseCase.persistCapturedImage.mockResolvedValue(undefined);
     const client = createClient();
     // Action
-    await service.initializeNetworkCapture(client);
+    await service.initializeNetworkCapture(client, scrapeRunContext);
     const loadingFinishedMock = client.Network.loadingFinished as unknown as jest.Mock;
     const loadingFinishedCallback = loadingFinishedMock.mock.calls[0]?.[0] as ((event: unknown) => void) | undefined;
     loadingFinishedCallback?.({ requestId: 'req-on-body' });
-    const onImageBody = networkCapture.trackLoadingFinished.mock.calls[0]?.[2];
+    const onImageBody = networkCapture.trackLoadingFinished.mock.calls[0]?.[3];
     await onImageBody?.({
       requestId: 'req-on-body',
       url: 'https://img4.idealista.com/blur/x.jpg',
@@ -235,57 +254,62 @@ describe('ImageDownloaderService', () => {
       url: 'https://img4.idealista.com/blur/x.jpg',
       mimeType: 'image/jpeg',
       body: { body: 'abc', base64Encoded: false }
-    });
+    }, scrapeRunContext);
   });
 
   it('whenPendingDownloadWaitIsRequested_waitForPendingImageDownloads_shouldDelegateToNetworkCapture', async () => {
     // Arrange
     const { service, networkCapture } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.waitForPendingImageDownloads.mockResolvedValue(undefined);
     // Action
-    await service.waitForPendingImageDownloads(4321);
+    await service.waitForPendingImageDownloads(scrapeRunContext, 4321);
     // Assert
-    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(4321);
+    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(scrapeRunContext, 4321);
   });
 
   it('whenPendingDownloadWaitUsesDefault_waitForPendingImageDownloads_shouldDelegateWithDefaultTimeout', async () => {
     // Arrange
     const { service, networkCapture } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.waitForPendingImageDownloads.mockResolvedValue(undefined);
     // Action
-    await service.waitForPendingImageDownloads();
+    await service.waitForPendingImageDownloads(scrapeRunContext);
     // Assert
-    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(15000);
+    expect(networkCapture.waitForPendingImageDownloads).toHaveBeenCalledWith(scrapeRunContext, 15000);
   });
 
   it('whenNetworkSettleWaitIsRequested_waitForImageNetworkSettled_shouldDelegateToNetworkCapture', async () => {
     // Arrange
     const { service, networkCapture, logger } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.waitForImageNetworkSettled.mockResolvedValue(undefined);
     // Action
-    await service.waitForImageNetworkSettled(6543, 321);
+    await service.waitForImageNetworkSettled(scrapeRunContext, 6543, 321);
     // Assert
-    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(logger, 6543, 321);
+    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(scrapeRunContext, logger, 6543, 321);
   });
 
   it('whenNetworkSettleWaitUsesDefault_waitForImageNetworkSettled_shouldDelegateWithDefaultWindows', async () => {
     // Arrange
     const { service, networkCapture, logger } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     networkCapture.waitForImageNetworkSettled.mockResolvedValue(undefined);
     // Action
-    await service.waitForImageNetworkSettled();
+    await service.waitForImageNetworkSettled(scrapeRunContext);
     // Assert
-    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(logger, 12000, 1200);
+    expect(networkCapture.waitForImageNetworkSettled).toHaveBeenCalledWith(scrapeRunContext, logger, 12000, 1200);
   });
 
   it('whenFinalizationIsRequested_movePropertyImagesFromIncoming_shouldDelegateToFinalizeUseCase', async () => {
     // Arrange
     const { service, finalizeUseCase } = createService();
+    const scrapeRunContext = createScrapeRunContext();
     finalizeUseCase.execute.mockResolvedValue(undefined);
     const property = createProperty('https://www.idealista.com/inmueble/123/', [new PropertyImage('https://img/a.jpg', null)]);
     // Action
-    await service.movePropertyImagesFromIncoming(property);
+    await service.movePropertyImagesFromIncoming(property, scrapeRunContext);
     // Assert
-    expect(finalizeUseCase.execute).toHaveBeenCalledWith(property);
+    expect(finalizeUseCase.execute).toHaveBeenCalledWith(property, scrapeRunContext);
   });
 });

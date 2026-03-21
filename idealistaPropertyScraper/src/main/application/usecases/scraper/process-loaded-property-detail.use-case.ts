@@ -7,6 +7,7 @@ import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scra
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 
 import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class ProcessLoadedPropertyDetailUseCase {
@@ -25,7 +26,8 @@ export class ProcessLoadedPropertyDetailUseCase {
   async execute(
     client: PropertyCdpClient,
     url: string,
-    geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB'
+    geoHintMode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB',
+    scrapeRunContext: ScrapeRunContext
   ): Promise<void> {
     await this.captchaDetectorPort.panicIfCaptchaDetected({
       runtime: client.Runtime,
@@ -55,6 +57,6 @@ export class ProcessLoadedPropertyDetailUseCase {
       return;
     }
 
-    await this.persistPropertyDetailAndAssetsUseCase.execute(enrichedProperty);
+    await this.persistPropertyDetailAndAssetsUseCase.execute(enrichedProperty, scrapeRunContext);
   }
 }

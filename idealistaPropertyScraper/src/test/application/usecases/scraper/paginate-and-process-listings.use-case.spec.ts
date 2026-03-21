@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { PaginateAndProcessListingsUseCase } from 'application/usecases/scraper/paginate-and-process-listings.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
@@ -19,7 +20,9 @@ class ScraperConfigMockForPaginateAndProcessListingsUseCase {
 
 class PropertyListPageServiceMockForPaginateAndProcessListingsUseCase {
   readonly getPropertyUrls = jest.fn<(client: PropertyCdpClient) => Promise<string[]>>();
-  readonly processUrls = jest.fn<(client: PropertyCdpClient, urls: string[]) => Promise<void>>();
+  readonly processUrls = jest.fn<
+    (client: PropertyCdpClient, urls: string[], scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 class SleepPortMockForPaginateAndProcessListingsUseCase implements SleepPort {
@@ -80,8 +83,9 @@ describe('PaginateAndProcessListingsUseCase', () => {
       return { result: { value: true } };
     });
     const client = createClient(evaluate);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
     // Assert
     expect(propertyListPageService.getPropertyUrls).toHaveBeenCalledTimes(1);
     expect(propertyListPageService.processUrls).toHaveBeenCalledTimes(1);
@@ -104,8 +108,9 @@ describe('PaginateAndProcessListingsUseCase', () => {
       return { result: { value: true } };
     });
     const client = createClient(evaluate);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
     // Assert
     expect(logger.warn).toHaveBeenCalledWith('Next button exists but could not be clicked. Stopping pagination.');
   });
@@ -136,8 +141,9 @@ describe('PaginateAndProcessListingsUseCase', () => {
       return { result: { value: true } };
     });
     const client = createClient(evaluate);
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
     // Assert
     expect(logger.log).toHaveBeenCalledWith('Moved to page 2.');
     expect(logger.log).toHaveBeenCalledWith('Pagination finished at page 2.');

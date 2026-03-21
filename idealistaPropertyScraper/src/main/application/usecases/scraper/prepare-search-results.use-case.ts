@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { FiltersService } from 'application/services/scraper/filters/filters.service';
-import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { ExecuteMainSearchFormUseCase } from 'application/usecases/scraper/execute-main-search-form.use-case';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
@@ -11,6 +10,7 @@ import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settin
 import { CAPTCHA_DETECTOR_PORT } from 'ports/outbound/captcha/captcha-detector.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
@@ -37,7 +37,6 @@ export class PrepareSearchResultsUseCase {
     private readonly chromiumPageSyncService: ChromiumPageSyncService,
     private readonly executeMainSearchFormUseCase: ExecuteMainSearchFormUseCase,
     private readonly filtersService: FiltersService,
-    private readonly propertyListPageService: PropertyListPageService,
     private readonly originErrorDetectorService: OriginErrorDetectorService,
     @Inject(CAPTCHA_DETECTOR_PORT)
     private readonly captchaDetectorPort: CaptchaDetectorPort,
@@ -45,7 +44,12 @@ export class PrepareSearchResultsUseCase {
     private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
-  async execute(client: FiltersCdpClient, page: PageDomain, runtime: RuntimeDomain): Promise<void> {
+  async execute(
+    client: FiltersCdpClient,
+    page: PageDomain,
+    runtime: RuntimeDomain,
+    scrapeRunContext: ScrapeRunContext
+  ): Promise<void> {
     const locationResult = await runtime.evaluate({
       expression: 'window.location.href',
       returnByValue: true
@@ -68,8 +72,8 @@ export class PrepareSearchResultsUseCase {
     }
 
     await this.waitForFirstHomePageDeviceVerification();
-    this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-    await this.executeMainPageWithRetry(client, page, runtime);
+    scrapeRunContext.processedPropertyUrls.clear();
+    await this.executeMainPageWithRetry(client, page, runtime, scrapeRunContext);
     await this.captchaDetectorPort.panicIfCaptchaDetected({
       runtime,
       logger: this.logger,
@@ -102,14 +106,15 @@ export class PrepareSearchResultsUseCase {
   private async executeMainPageWithRetry(
     client: FiltersCdpClient,
     page: PageDomain,
-    runtime: RuntimeDomain
+    runtime: RuntimeDomain,
+    scrapeRunContext: ScrapeRunContext
   ): Promise<void> {
     const maxAttempts = 3;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
         await this.recoverIfOriginError(page, runtime);
-        this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
+        scrapeRunContext.processedPropertyUrls.clear();
         await this.executeMainSearchFormUseCase.execute(
           client,
           this.scraperConfig.mainSearchArea,

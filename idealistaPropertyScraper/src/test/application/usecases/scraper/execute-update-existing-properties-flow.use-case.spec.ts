@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { ExecuteUpdateExistingPropertiesFlowUseCase } from 'application/usecases/scraper/execute-update-existing-properties-flow.use-case';
 import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
@@ -10,21 +11,23 @@ class PrepareSearchResultsUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCa
   readonly execute = jest.fn<(
     client: ScraperCdpClient,
     page: ScraperCdpClient['Page'],
-    runtime: ScraperCdpClient['Runtime']
+    runtime: ScraperCdpClient['Runtime'],
+    scrapeRunContext: ScrapeRunContext
   ) => Promise<void>>();
 }
 
 class PropertyListPageServiceMockForExecuteUpdateExistingPropertiesFlowUseCase {
-  readonly resetProcessedUrlsForCurrentSearch = jest.fn<() => void>();
-  readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
+  readonly processExistingUrls = jest.fn<
+    (client: ScraperCdpClient, urls: string[], scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 class RevalidatePropertiesWithoutLastVisitUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase {
-  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
+  readonly execute = jest.fn<(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
 }
 
 class RevalidateOpenPropertiesFromDatabaseUseCaseMockForExecuteUpdateExistingPropertiesFlowUseCase {
-  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
+  readonly execute = jest.fn<(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
 }
 
 function createClient(): ScraperCdpClient {
@@ -56,18 +59,18 @@ describe('ExecuteUpdateExistingPropertiesFlowUseCase', () => {
       list as unknown as PropertyListPageService
     );
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     revalidateWithoutVisit.execute.mockResolvedValue(undefined);
     revalidateOpenFromDb.execute.mockResolvedValue(undefined);
 
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
 
     // Assert
-    expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledWith(client, client.Page, client.Runtime);
-    expect(list.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(1);
+    expect(prepareSearchResultsUseCase.execute).toHaveBeenCalledWith(client, client.Page, client.Runtime, scrapeRunContext);
     expect(revalidateWithoutVisit.execute).toHaveBeenCalledTimes(1);
-    expect(revalidateWithoutVisit.execute).toHaveBeenCalledWith(client);
+    expect(revalidateWithoutVisit.execute).toHaveBeenCalledWith(client, scrapeRunContext);
     expect(revalidateOpenFromDb.execute).toHaveBeenCalledTimes(1);
-    expect(revalidateOpenFromDb.execute).toHaveBeenCalledWith(client);
+    expect(revalidateOpenFromDb.execute).toHaveBeenCalledWith(client, scrapeRunContext);
   });
 });

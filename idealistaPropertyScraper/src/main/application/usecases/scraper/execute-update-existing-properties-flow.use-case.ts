@@ -4,6 +4,7 @@ import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepar
 import { RevalidateOpenPropertiesFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-open-properties-from-database.use-case';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class ExecuteUpdateExistingPropertiesFlowUseCase {
@@ -16,16 +17,16 @@ export class ExecuteUpdateExistingPropertiesFlowUseCase {
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
-  async execute(client: ScraperCdpClient): Promise<void> {
+  async execute(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext): Promise<void> {
     await this.prepareSearchResultsUseCase.execute(
       client,
       client.Page,
-      client.Runtime
+      client.Runtime,
+      scrapeRunContext
     );
 
-    this.propertyListPageService.resetProcessedUrlsForCurrentSearch();
-    await this.revalidatePropertiesWithoutLastVisitUseCase.execute(client);
-    await this.revalidateOpenPropertiesFromDatabaseUseCase.execute(client);
+    await this.revalidatePropertiesWithoutLastVisitUseCase.execute(client, scrapeRunContext);
+    await this.revalidateOpenPropertiesFromDatabaseUseCase.execute(client, scrapeRunContext);
     this.logger.log('UPDATING_PROPERTIES cycle finished.');
   }
 }

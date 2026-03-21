@@ -14,6 +14,7 @@ import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { DownloadedIncomingImage } from 'application/dto/imagedownload/downloaded-incoming-image.dto';
 import type { ImageResponseBodyPayload } from 'application/dto/imagedownload/image-response-body-payload.dto';
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
 import type { HttpBinaryDownloadPort } from 'ports/outbound/network/http-binary-download.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
@@ -22,7 +23,6 @@ import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 @Injectable()
 export class FinalizePropertyImagesUseCase {
   private readonly logger = new Logger(FinalizePropertyImagesUseCase.name);
-  private readonly incomingImagesByKey = new Map<string, DownloadedIncomingImage[]>();
   private static readonly MISSING_IMAGE_RECOVERY_WAIT_MS = 4000;
   private static readonly DIRECT_DOWNLOAD_MAX_ATTEMPTS = 3;
   private static readonly DIRECT_DOWNLOAD_RETRY_WAIT_MS = 300;
@@ -42,7 +42,7 @@ export class FinalizePropertyImagesUseCase {
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
-  async execute(property: Property): Promise<void> {
+  async execute(property: Property, scrapeRunContext: ScrapeRunContext): Promise<void> {
     const propertyId = this.imageUrlRulesService.extractPropertyIdFromUrl(property.url);
     if (!propertyId) {
       this.logger.error(`Unable to extract property id from URL: ${property.url}`);
@@ -65,12 +65,12 @@ export class FinalizePropertyImagesUseCase {
         continue;
       }
 
-      let selectedFile = this.consumeIncomingImageByKey(key);
+      let selectedFile = this.consumeIncomingImageByKey(scrapeRunContext, key);
       if (!selectedFile && !recoverySyncPerformed) {
         recoverySyncPerformed = true;
-        await this.waitForPendingImageDownloads(FinalizePropertyImagesUseCase.MISSING_IMAGE_RECOVERY_WAIT_MS);
-        await this.waitForImageNetworkSettled(FinalizePropertyImagesUseCase.MISSING_IMAGE_RECOVERY_WAIT_MS, 1000);
-        selectedFile = this.consumeIncomingImageByKey(key);
+        await this.waitForPendingImageDownloads(scrapeRunContext, FinalizePropertyImagesUseCase.MISSING_IMAGE_RECOVERY_WAIT_MS);
+        await this.waitForImageNetworkSettled(scrapeRunContext, FinalizePropertyImagesUseCase.MISSING_IMAGE_RECOVERY_WAIT_MS, 1000);
+        selectedFile = this.consumeIncomingImageByKey(scrapeRunContext, key);
       }
 
       if (!selectedFile) {
@@ -100,11 +100,11 @@ export class FinalizePropertyImagesUseCase {
     }
 
     await this.moveRemainingIncomingToLeftovers(incomingFolderPath);
-    this.incomingImagesByKey.clear();
-    this.imageNetworkCaptureService.resetPendingRequests();
+    scrapeRunContext.image.incomingImagesByKey.clear();
+    this.imageNetworkCaptureService.resetPendingRequests(scrapeRunContext);
   }
 
-  async persistCapturedImage(payload: ImageResponseBodyPayload): Promise<void> {
+  async persistCapturedImage(payload: ImageResponseBodyPayload, scrapeRunContext: ScrapeRunContext): Promise<void> {
     const { url, mimeType, body } = payload;
     if (!this.imageUrlRulesService.shouldTrackImageUrl(url) || this.imageUrlRulesService.isSvgImage(url, mimeType)) {
       return;
@@ -128,34 +128,41 @@ export class FinalizePropertyImagesUseCase {
     }
 
     const extension = this.imageFileNameService.resolveImageExtension(url, mimeType);
-    const list = this.incomingImagesByKey.get(key) ?? [];
+    const list = scrapeRunContext.image.incomingImagesByKey.get(key) ?? [];
     list.push({
       url,
       path: filepath,
       extension
     });
-    this.incomingImagesByKey.set(key, list);
+    scrapeRunContext.image.incomingImagesByKey.set(key, list);
   }
 
-  private async waitForPendingImageDownloads(timeoutMs = 15000): Promise<void> {
-    await this.imageNetworkCaptureService.waitForPendingImageDownloads(timeoutMs);
+  private async waitForPendingImageDownloads(scrapeRunContext: ScrapeRunContext, timeoutMs = 15000): Promise<void> {
+    await this.imageNetworkCaptureService.waitForPendingImageDownloads(scrapeRunContext, timeoutMs);
   }
 
-  private async waitForImageNetworkSettled(maxWaitMs = 12000, quietWindowMs = 1200): Promise<void> {
-    await this.imageNetworkCaptureService.waitForImageNetworkSettled(this.logger, maxWaitMs, quietWindowMs);
+  private async waitForImageNetworkSettled(
+    scrapeRunContext: ScrapeRunContext,
+    maxWaitMs = 12000,
+    quietWindowMs = 1200
+  ): Promise<void> {
+    await this.imageNetworkCaptureService.waitForImageNetworkSettled(scrapeRunContext, this.logger, maxWaitMs, quietWindowMs);
   }
 
-  private consumeIncomingImageByKey(key: string): DownloadedIncomingImage | undefined {
-    const candidates = this.incomingImagesByKey.get(key);
+  private consumeIncomingImageByKey(
+    scrapeRunContext: ScrapeRunContext,
+    key: string
+  ): DownloadedIncomingImage | undefined {
+    const candidates = scrapeRunContext.image.incomingImagesByKey.get(key);
     if (!candidates || candidates.length === 0) {
       return undefined;
     }
 
     const selected = candidates.shift();
     if (candidates.length === 0) {
-      this.incomingImagesByKey.delete(key);
+      scrapeRunContext.image.incomingImagesByKey.delete(key);
     } else {
-      this.incomingImagesByKey.set(key, candidates);
+      scrapeRunContext.image.incomingImagesByKey.set(key, candidates);
     }
 
     return selected;

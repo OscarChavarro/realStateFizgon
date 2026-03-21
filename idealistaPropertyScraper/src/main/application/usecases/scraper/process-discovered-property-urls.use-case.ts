@@ -5,6 +5,7 @@ import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.por
 import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class ProcessDiscoveredPropertyUrlsUseCase {
@@ -18,7 +19,8 @@ export class ProcessDiscoveredPropertyUrlsUseCase {
     private readonly propertyDetailPageService: PropertyDetailPageService
   ) {}
 
-  async execute(client: PropertyCdpClient, urls: string[], processedUrls: Set<string>): Promise<void> {
+  async execute(client: PropertyCdpClient, urls: string[], scrapeRunContext: ScrapeRunContext): Promise<void> {
+    const processedUrls = scrapeRunContext.processedPropertyUrls;
     for (const url of urls) {
       if (processedUrls.has(url)) {
         this.logger.log(`URL already processed in current search cycle, skipping click: ${url}`);
@@ -33,7 +35,7 @@ export class ProcessDiscoveredPropertyUrlsUseCase {
       }
 
       this.logger.log(`Processing new: ${url}`);
-      await this.propertyDetailPageService.loadPropertyUrl(client, url);
+      await this.propertyDetailPageService.loadPropertyUrl(client, url, scrapeRunContext);
       processedUrls.add(url);
     }
   }

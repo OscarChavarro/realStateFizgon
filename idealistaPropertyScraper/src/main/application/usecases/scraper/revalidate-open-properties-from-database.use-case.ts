@@ -3,6 +3,7 @@ import { PropertyListPageService } from 'application/services/scraper/property/p
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class RevalidateOpenPropertiesFromDatabaseUseCase {
@@ -14,9 +15,9 @@ export class RevalidateOpenPropertiesFromDatabaseUseCase {
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
-  async execute(client: ScraperCdpClient): Promise<void> {
+  async execute(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext): Promise<void> {
     const openUrls = await this.propertyReadPort.getOpenPropertyUrls();
     this.logger.log(`UPDATING_PROPERTIES: revalidating ${openUrls.length} open properties from MongoDB.`);
-    await this.propertyListPageService.processExistingUrls(client, openUrls);
+    await this.propertyListPageService.processExistingUrls(client, openUrls, scrapeRunContext);
   }
 }

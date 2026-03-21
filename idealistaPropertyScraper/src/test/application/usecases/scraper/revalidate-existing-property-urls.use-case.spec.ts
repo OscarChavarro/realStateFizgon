@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
 import { RevalidateExistingPropertyUrlsUseCase } from 'application/usecases/scraper/revalidate-existing-property-urls.use-case';
 import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
@@ -6,7 +7,9 @@ import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence
 
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailPageServiceMockForRevalidateExistingPropertyUrlsUseCase {
-  readonly loadPropertyUrlFromDatabase = jest.fn<(client: PropertyCdpClient, url: string) => Promise<void>>();
+  readonly loadPropertyUrlFromDatabase = jest.fn<
+    (client: PropertyCdpClient, url: string, scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 function createClient(): PropertyCdpClient {
@@ -29,9 +32,10 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
       propertyPersistencePort as unknown as PropertyWritePort,
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
-    const processedUrls = new Set<string>(['https://idealista.com/inmueble/1/']);
+    const scrapeRunContext = createScrapeRunContext();
+    scrapeRunContext.processedPropertyUrls.add('https://idealista.com/inmueble/1/');
     // Action
-    await useCase.execute(createClient(), ['https://idealista.com/inmueble/1/'], processedUrls);
+    await useCase.execute(createClient(), ['https://idealista.com/inmueble/1/'], scrapeRunContext);
     // Assert
     expect(propertyDetailPageService.loadPropertyUrlFromDatabase).not.toHaveBeenCalled();
     expect(propertyPersistencePort.touchPropertyLastTimeVisited).not.toHaveBeenCalled();
@@ -49,13 +53,13 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
     );
     const client = createClient();
     const url = 'https://idealista.com/inmueble/2/';
-    const processedUrls = new Set<string>();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client, [url], processedUrls);
+    await useCase.execute(client, [url], scrapeRunContext);
     // Assert
-    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledWith(client, url);
+    expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledWith(client, url, scrapeRunContext);
     expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledWith(url);
-    expect(processedUrls.has(url)).toBe(true);
+    expect(scrapeRunContext.processedPropertyUrls.has(url)).toBe(true);
   });
 
   it('whenSameUrlAppearsTwice_execute_shouldRevalidateOnlyOnce', async () => {
@@ -70,12 +74,12 @@ describe('RevalidateExistingPropertyUrlsUseCase', () => {
     );
     const client = createClient();
     const url = 'https://idealista.com/inmueble/3/';
-    const processedUrls = new Set<string>();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client, [url, url], processedUrls);
+    await useCase.execute(client, [url, url], scrapeRunContext);
     // Assert
     expect(propertyDetailPageService.loadPropertyUrlFromDatabase).toHaveBeenCalledTimes(1);
     expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledTimes(1);
-    expect(processedUrls.has(url)).toBe(true);
+    expect(scrapeRunContext.processedPropertyUrls.has(url)).toBe(true);
   });
 });

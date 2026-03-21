@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
 import { LoadPropertyDetailFromResultsUseCase } from 'application/usecases/scraper/load-property-detail-from-results.use-case';
 import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper/process-loaded-property-detail.use-case';
@@ -15,7 +16,12 @@ class RevalidatePropertyDetailFromDatabaseUseCaseMockForPropertyDetailPageServic
 
 class ProcessLoadedPropertyDetailUseCaseMockForPropertyDetailPageService {
   readonly execute = jest.fn<
-    (client: PropertyCdpClient, url: string, mode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB') => Promise<void>
+    (
+      client: PropertyCdpClient,
+      url: string,
+      mode: 'ALWAYS' | 'ONLY_WHEN_MISSING_IN_DB',
+      scrapeRunContext: ScrapeRunContext
+    ) => Promise<void>
   >();
 }
 
@@ -55,12 +61,13 @@ describe('PropertyDetailPageService', () => {
     // Arrange
     const { service, loadPropertyDetailFromResultsUseCase } = createService();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     loadPropertyDetailFromResultsUseCase.execute.mockRejectedValue(
       new Error('Property URL is not visible in current results DOM and cannot be clicked: https://www.idealista.com/inmueble/1/')
     );
 
     // Action
-    const action = service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/1/');
+    const action = service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/1/', scrapeRunContext);
 
     // Assert
     await expect(action).rejects.toThrow(
@@ -77,10 +84,11 @@ describe('PropertyDetailPageService', () => {
     // Arrange
     const { service, revalidatePropertyDetailFromDatabaseUseCase } = createService();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     revalidatePropertyDetailFromDatabaseUseCase.execute.mockRejectedValue(new Error('navigation failed'));
 
     // Action
-    const action = service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/6/');
+    const action = service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/6/', scrapeRunContext);
 
     // Assert
     await expect(action).rejects.toThrow('navigation failed');
@@ -95,19 +103,21 @@ describe('PropertyDetailPageService', () => {
     // Arrange
     const { service, loadPropertyDetailFromResultsUseCase, processLoadedPropertyDetailUseCase } = createService();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     loadPropertyDetailFromResultsUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
       await onDetailLoaded();
     });
     processLoadedPropertyDetailUseCase.execute.mockResolvedValue(undefined);
 
     // Action
-    await service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/7/');
+    await service.loadPropertyUrl(client, 'https://www.idealista.com/inmueble/7/', scrapeRunContext);
 
     // Assert
     expect(processLoadedPropertyDetailUseCase.execute).toHaveBeenCalledWith(
       client,
       'https://www.idealista.com/inmueble/7/',
-      'ALWAYS'
+      'ALWAYS',
+      scrapeRunContext
     );
   });
 
@@ -119,19 +129,21 @@ describe('PropertyDetailPageService', () => {
       processLoadedPropertyDetailUseCase
     } = createService();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     revalidatePropertyDetailFromDatabaseUseCase.execute.mockImplementation(async (_client, _url, onDetailLoaded) => {
       await onDetailLoaded();
     });
     processLoadedPropertyDetailUseCase.execute.mockResolvedValue(undefined);
 
     // Action
-    await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/8/');
+    await service.loadPropertyUrlFromDatabase(client, 'https://www.idealista.com/inmueble/8/', scrapeRunContext);
 
     // Assert
     expect(processLoadedPropertyDetailUseCase.execute).toHaveBeenCalledWith(
       client,
       'https://www.idealista.com/inmueble/8/',
-      'ONLY_WHEN_MISSING_IN_DB'
+      'ONLY_WHEN_MISSING_IN_DB',
+      scrapeRunContext
     );
   });
 });

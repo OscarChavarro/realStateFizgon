@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyDetailPageService } from 'application/services/scraper/property/property-detail-page.service';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'application/usecases/scraper/process-discovered-property-urls.use-case';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
@@ -7,7 +8,9 @@ import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence
 
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 class PropertyDetailPageServiceMockForProcessDiscoveredPropertyUrlsUseCase {
-  readonly loadPropertyUrl = jest.fn<(client: PropertyCdpClient, url: string) => Promise<void>>();
+  readonly loadPropertyUrl = jest.fn<
+    (client: PropertyCdpClient, url: string, scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 function createClient(): PropertyCdpClient {
@@ -31,9 +34,10 @@ describe('ProcessDiscoveredPropertyUrlsUseCase', () => {
       propertyPersistencePort as unknown as PropertyWritePort,
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
-    const processedUrls = new Set<string>(['https://idealista.com/inmueble/1/']);
+    const scrapeRunContext = createScrapeRunContext();
+    scrapeRunContext.processedPropertyUrls.add('https://idealista.com/inmueble/1/');
     // Action
-    await useCase.execute(createClient(), ['https://idealista.com/inmueble/1/'], processedUrls);
+    await useCase.execute(createClient(), ['https://idealista.com/inmueble/1/'], scrapeRunContext);
     // Assert
     expect(propertyPersistencePort.isOpenPropertyByUrl).not.toHaveBeenCalled();
     expect(propertyDetailPageService.loadPropertyUrl).not.toHaveBeenCalled();
@@ -51,14 +55,14 @@ describe('ProcessDiscoveredPropertyUrlsUseCase', () => {
       propertyDetailPageService as unknown as PropertyDetailPageService
     );
     const url = 'https://idealista.com/inmueble/2/';
-    const processedUrls = new Set<string>();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(createClient(), [url], processedUrls);
+    await useCase.execute(createClient(), [url], scrapeRunContext);
     // Assert
     expect(propertyPersistencePort.isOpenPropertyByUrl).toHaveBeenCalledWith(url);
     expect(propertyPersistencePort.touchPropertyLastTimeVisited).toHaveBeenCalledWith(url);
     expect(propertyDetailPageService.loadPropertyUrl).not.toHaveBeenCalled();
-    expect(processedUrls.has(url)).toBe(false);
+    expect(scrapeRunContext.processedPropertyUrls.has(url)).toBe(false);
   });
 
   it('whenUrlIsNew_execute_shouldNavigateAndMarkUrlAsProcessed', async () => {
@@ -74,14 +78,14 @@ describe('ProcessDiscoveredPropertyUrlsUseCase', () => {
     );
     const client = createClient();
     const url = 'https://idealista.com/inmueble/3/';
-    const processedUrls = new Set<string>();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client, [url], processedUrls);
+    await useCase.execute(client, [url], scrapeRunContext);
     // Assert
     expect(propertyPersistencePort.isOpenPropertyByUrl).toHaveBeenCalledWith(url);
-    expect(propertyDetailPageService.loadPropertyUrl).toHaveBeenCalledWith(client, url);
+    expect(propertyDetailPageService.loadPropertyUrl).toHaveBeenCalledWith(client, url, scrapeRunContext);
     expect(propertyPersistencePort.touchPropertyLastTimeVisited).not.toHaveBeenCalled();
-    expect(processedUrls.has(url)).toBe(true);
+    expect(scrapeRunContext.processedPropertyUrls.has(url)).toBe(true);
   });
 
   it('whenUrlAppearsTwice_execute_shouldProcessItOnlyOnce', async () => {
@@ -97,12 +101,12 @@ describe('ProcessDiscoveredPropertyUrlsUseCase', () => {
     );
     const client = createClient();
     const url = 'https://idealista.com/inmueble/4/';
-    const processedUrls = new Set<string>();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(client, [url, url], processedUrls);
+    await useCase.execute(client, [url, url], scrapeRunContext);
     // Assert
     expect(propertyPersistencePort.isOpenPropertyByUrl).toHaveBeenCalledTimes(1);
     expect(propertyDetailPageService.loadPropertyUrl).toHaveBeenCalledTimes(1);
-    expect(processedUrls.has(url)).toBe(true);
+    expect(scrapeRunContext.processedPropertyUrls.has(url)).toBe(true);
   });
 });

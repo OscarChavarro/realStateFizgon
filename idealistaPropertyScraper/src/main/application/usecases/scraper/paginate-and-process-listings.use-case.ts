@@ -9,6 +9,7 @@ import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
 import type { CaptchaDetectorPort } from 'ports/outbound/captcha/captcha-detector.port';
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 import type { ClockPort } from 'ports/outbound/timing/clock.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
@@ -28,7 +29,7 @@ export class PaginateAndProcessListingsUseCase {
     @Inject(SLEEP_PORT) private readonly sleepPort: SleepPort
   ) {}
 
-  async execute(client: PropertyCdpClient): Promise<void> {
+  async execute(client: PropertyCdpClient, scrapeRunContext: ScrapeRunContext): Promise<void> {
     let page = 1;
 
     while (true) {
@@ -38,7 +39,7 @@ export class PaginateAndProcessListingsUseCase {
         context: `property listing page ${page}`
       });
       const pageUrls = await this.propertyListPageService.getPropertyUrls(client);
-      await this.propertyListPageService.processUrls(client, pageUrls);
+      await this.propertyListPageService.processUrls(client, pageUrls, scrapeRunContext);
 
       const hasNext = await this.hasNextButton(client);
       if (!hasNext) {

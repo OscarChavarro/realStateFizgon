@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { CookieApprovalDialogScraperService } from 'application/services/scraper/property/cookie-approval-dialog-scraper.service';
 import { PropertyDetailInteractionService } from 'application/services/scraper/property/property-detail-interaction.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
@@ -32,7 +33,7 @@ class ExtractAndEnrichPropertyDetailUseCaseMockForProcessLoadedPropertyDetailUse
 }
 
 class PersistPropertyDetailAndAssetsUseCaseMockForProcessLoadedPropertyDetailUseCase {
-  readonly execute = jest.fn<(property: Property) => Promise<void>>();
+  readonly execute = jest.fn<(property: Property, scrapeRunContext: ScrapeRunContext) => Promise<void>>();
 }
 
 class CaptchaDetectorPortMockForProcessLoadedPropertyDetailUseCase implements CaptchaDetectorPort {
@@ -107,12 +108,13 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       captchaDetectorPort
     } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
     handleDeactivated.execute.mockResolvedValue(true);
 
     // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/2/', 'ALWAYS');
+    await useCase.execute(client, 'https://www.idealista.com/inmueble/2/', 'ALWAYS', scrapeRunContext);
 
     // Assert
     expect(captchaDetectorPort.panicIfCaptchaDetected).toHaveBeenCalledTimes(1);
@@ -133,6 +135,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     const enrichedProperty = createProperty('https://www.idealista.com/inmueble/3/');
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
@@ -142,7 +145,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     persistPropertyDetailAndAssetsUseCase.execute.mockResolvedValue(undefined);
 
     // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/3/', 'ALWAYS');
+    await useCase.execute(client, 'https://www.idealista.com/inmueble/3/', 'ALWAYS', scrapeRunContext);
 
     // Assert
     expect(handleDeactivated.execute).toHaveBeenCalledTimes(1);
@@ -152,7 +155,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       'https://www.idealista.com/inmueble/3/',
       'ALWAYS'
     );
-    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty);
+    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty, scrapeRunContext);
   });
 
   it('whenDetailIsActiveAndExtractedFromDatabase_execute_shouldUseConditionalGeoHintMode', async () => {
@@ -166,6 +169,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     const enrichedProperty = createProperty('https://www.idealista.com/inmueble/3b/');
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
@@ -175,7 +179,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     persistPropertyDetailAndAssetsUseCase.execute.mockResolvedValue(undefined);
 
     // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/3b/', 'ONLY_WHEN_MISSING_IN_DB');
+    await useCase.execute(client, 'https://www.idealista.com/inmueble/3b/', 'ONLY_WHEN_MISSING_IN_DB', scrapeRunContext);
 
     // Assert
     expect(extractAndEnrich.execute).toHaveBeenCalledWith(
@@ -183,7 +187,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       'https://www.idealista.com/inmueble/3b/',
       'ONLY_WHEN_MISSING_IN_DB'
     );
-    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty);
+    expect(persistPropertyDetailAndAssetsUseCase.execute).toHaveBeenCalledWith(enrichedProperty, scrapeRunContext);
   });
 
   it('whenExtractionPathReturnsNull_execute_shouldReturnWithoutPersisting', async () => {
@@ -197,6 +201,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
       persistPropertyDetailAndAssetsUseCase
     } = createUseCase();
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     interaction.throwIfOriginErrorPage.mockResolvedValue(undefined);
     interaction.revealDetailMedia.mockResolvedValue(undefined);
     cookie.acceptCookiesIfVisible.mockResolvedValue(undefined);
@@ -204,7 +209,7 @@ describe('ProcessLoadedPropertyDetailUseCase', () => {
     extractAndEnrich.execute.mockResolvedValue(null);
 
     // Action
-    await useCase.execute(client, 'https://www.idealista.com/inmueble/5/', 'ONLY_WHEN_MISSING_IN_DB');
+    await useCase.execute(client, 'https://www.idealista.com/inmueble/5/', 'ONLY_WHEN_MISSING_IN_DB', scrapeRunContext);
 
     // Assert
     expect(extractAndEnrich.execute).toHaveBeenCalledTimes(1);

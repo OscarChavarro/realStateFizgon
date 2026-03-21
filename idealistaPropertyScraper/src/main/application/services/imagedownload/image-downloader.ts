@@ -15,6 +15,7 @@ import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settin
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 import { SLEEP_PORT } from 'ports/outbound/timing/sleep.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 import type { SleepPort } from 'ports/outbound/timing/sleep.port';
 
@@ -58,16 +59,17 @@ export class ImageDownloaderService {
     }
   }
 
-  async initializeNetworkCapture(client: NetworkEnabledCdpClient): Promise<void> {
-    if (this.imageNetworkCaptureService.isInitialized(client)) {
+  async initializeNetworkCapture(client: NetworkEnabledCdpClient, scrapeRunContext: ScrapeRunContext): Promise<void> {
+    if (this.imageNetworkCaptureService.isInitialized(client, scrapeRunContext)) {
       return;
     }
 
     await client.Network.enable();
-    this.imageNetworkCaptureService.markInitialized(client);
+    this.imageNetworkCaptureService.markInitialized(client, scrapeRunContext);
 
     client.Network.responseReceived((event) => {
       this.imageNetworkCaptureService.trackResponseReceived(
+        scrapeRunContext,
         event as NetworkResponseReceivedEvent,
         (url) => this.imageUrlRulesService.isIdealistaDomain(url)
       );
@@ -75,27 +77,37 @@ export class ImageDownloaderService {
 
     client.Network.loadingFinished((event) => {
       this.imageNetworkCaptureService.trackLoadingFinished(
+        scrapeRunContext,
         client.Network,
         event as NetworkLoadingFinishedEvent,
-        async (payload) => this.finalizePropertyImagesUseCase.persistCapturedImage(payload),
+        async (payload) => this.finalizePropertyImagesUseCase.persistCapturedImage(payload, scrapeRunContext),
         this.logger
       );
     });
 
     client.Network.loadingFailed((event) => {
-      this.imageNetworkCaptureService.trackLoadingFailed(event as NetworkLoadingFailedEvent);
+      this.imageNetworkCaptureService.trackLoadingFailed(scrapeRunContext, event as NetworkLoadingFailedEvent);
     });
   }
 
-  async waitForPendingImageDownloads(timeoutMs = 15000): Promise<void> {
-    await this.imageNetworkCaptureService.waitForPendingImageDownloads(timeoutMs);
+  async waitForPendingImageDownloads(scrapeRunContext: ScrapeRunContext, timeoutMs = 15000): Promise<void> {
+    await this.imageNetworkCaptureService.waitForPendingImageDownloads(scrapeRunContext, timeoutMs);
   }
 
-  async waitForImageNetworkSettled(maxWaitMs = 12000, quietWindowMs = 1200): Promise<void> {
-    await this.imageNetworkCaptureService.waitForImageNetworkSettled(this.logger, maxWaitMs, quietWindowMs);
+  async waitForImageNetworkSettled(
+    scrapeRunContext: ScrapeRunContext,
+    maxWaitMs = 12000,
+    quietWindowMs = 1200
+  ): Promise<void> {
+    await this.imageNetworkCaptureService.waitForImageNetworkSettled(
+      scrapeRunContext,
+      this.logger,
+      maxWaitMs,
+      quietWindowMs
+    );
   }
 
-  async movePropertyImagesFromIncoming(property: Property): Promise<void> {
-    await this.finalizePropertyImagesUseCase.execute(property);
+  async movePropertyImagesFromIncoming(property: Property, scrapeRunContext: ScrapeRunContext): Promise<void> {
+    await this.finalizePropertyImagesUseCase.execute(property, scrapeRunContext);
   }
 }

@@ -3,6 +3,7 @@ import { PropertyListPageService } from 'application/services/scraper/property/p
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 @Injectable()
 export class RevalidatePropertiesWithoutLastVisitUseCase {
@@ -14,7 +15,7 @@ export class RevalidatePropertiesWithoutLastVisitUseCase {
     private readonly propertyListPageService: PropertyListPageService
   ) {}
 
-  async execute(client: ScraperCdpClient): Promise<void> {
+  async execute(client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext): Promise<void> {
     const openUrlsWithoutLastTimeVisited = await this.propertyReadPort.getOpenPropertyUrlsWithoutLastTimeVisited();
     if (openUrlsWithoutLastTimeVisited.length === 0) {
       return;
@@ -23,6 +24,6 @@ export class RevalidatePropertiesWithoutLastVisitUseCase {
     this.logger.log(
       `UPDATING_PROPERTIES: pre-pass for ${openUrlsWithoutLastTimeVisited.length} open properties without lastTimeVisited.`
     );
-    await this.propertyListPageService.processExistingUrls(client, openUrlsWithoutLastTimeVisited);
+    await this.propertyListPageService.processExistingUrls(client, openUrlsWithoutLastTimeVisited, scrapeRunContext);
   }
 }

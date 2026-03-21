@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { PublishNewPropertyNotificationUseCase } from 'application/usecases/imagedownload/publish-new-property-notification.use-case';
@@ -17,9 +18,11 @@ class PropertyPersistencePortMockForPersistPropertyDetailAndAssetsUseCase {
 }
 
 class ImageDownloaderMockForPersistPropertyDetailAndAssetsUseCase {
-  readonly waitForImageNetworkSettled = jest.fn<() => Promise<void>>();
-  readonly waitForPendingImageDownloads = jest.fn<() => Promise<void>>();
-  readonly movePropertyImagesFromIncoming = jest.fn<(property: Property) => Promise<void>>();
+  readonly waitForImageNetworkSettled = jest.fn<(scrapeRunContext: ScrapeRunContext) => Promise<void>>();
+  readonly waitForPendingImageDownloads = jest.fn<(scrapeRunContext: ScrapeRunContext) => Promise<void>>();
+  readonly movePropertyImagesFromIncoming = jest.fn<
+    (property: Property, scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 function createProperty(): Property {
@@ -54,14 +57,15 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
       imageDownloader as unknown as ImageDownloaderService
     );
     const property = createProperty();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(property);
+    await useCase.execute(property, scrapeRunContext);
     // Assert
-    expect(imageDownloader.waitForImageNetworkSettled).toHaveBeenCalledTimes(1);
+    expect(imageDownloader.waitForImageNetworkSettled).toHaveBeenCalledWith(scrapeRunContext);
     expect(mongo.saveProperty).toHaveBeenCalledWith(property);
     expect(publishNewPropertyNotificationUseCase.execute).toHaveBeenCalledWith(property);
-    expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledTimes(1);
-    expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledWith(property);
+    expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledWith(scrapeRunContext);
+    expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledWith(property, scrapeRunContext);
   });
 
   it('whenPropertyAlreadyExists_execute_shouldSkipNotificationPublish', async () => {
@@ -78,8 +82,9 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloaderService
     );
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(createProperty());
+    await useCase.execute(createProperty(), scrapeRunContext);
     // Assert
     expect(publishNewPropertyNotificationUseCase.execute).not.toHaveBeenCalled();
   });
@@ -99,11 +104,12 @@ describe('PersistPropertyDetailAndAssetsUseCase', () => {
       publishNewPropertyNotificationUseCase as unknown as PublishNewPropertyNotificationUseCase,
       imageDownloader as unknown as ImageDownloaderService
     );
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute(createProperty());
+    await useCase.execute(createProperty(), scrapeRunContext);
     // Assert
     expect(publishNewPropertyNotificationUseCase.execute).toHaveBeenCalledTimes(1);
-    expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledTimes(1);
-    expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledTimes(1);
+    expect(imageDownloader.waitForPendingImageDownloads).toHaveBeenCalledWith(scrapeRunContext);
+    expect(imageDownloader.movePropertyImagesFromIncoming).toHaveBeenCalledWith(expect.any(Property), scrapeRunContext);
   });
 });

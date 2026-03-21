@@ -3,6 +3,7 @@ import { LoadPropertyDetailFromResultsUseCase } from 'application/usecases/scrap
 import { ProcessLoadedPropertyDetailUseCase } from 'application/usecases/scraper/process-loaded-property-detail.use-case';
 import { RevalidatePropertyDetailFromDatabaseUseCase } from 'application/usecases/scraper/revalidate-property-detail-from-database.use-case';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class PropertyDetailPageService {
@@ -12,15 +13,24 @@ export class PropertyDetailPageService {
     private readonly processLoadedPropertyDetailUseCase: ProcessLoadedPropertyDetailUseCase
   ) {}
 
-  async loadPropertyUrl(client: PropertyCdpClient, url: string): Promise<void> {
+  async loadPropertyUrl(client: PropertyCdpClient, url: string, scrapeRunContext: ScrapeRunContext): Promise<void> {
     await this.loadPropertyDetailFromResultsUseCase.execute(client, url, async () => {
-      await this.processLoadedPropertyDetailUseCase.execute(client, url, 'ALWAYS');
+      await this.processLoadedPropertyDetailUseCase.execute(client, url, 'ALWAYS', scrapeRunContext);
     });
   }
 
-  async loadPropertyUrlFromDatabase(client: PropertyCdpClient, url: string): Promise<void> {
+  async loadPropertyUrlFromDatabase(
+    client: PropertyCdpClient,
+    url: string,
+    scrapeRunContext: ScrapeRunContext
+  ): Promise<void> {
     await this.revalidatePropertyDetailFromDatabaseUseCase.execute(client, url, async () => {
-      await this.processLoadedPropertyDetailUseCase.execute(client, url, 'ONLY_WHEN_MISSING_IN_DB');
+      await this.processLoadedPropertyDetailUseCase.execute(
+        client,
+        url,
+        'ONLY_WHEN_MISSING_IN_DB',
+        scrapeRunContext
+      );
     });
   }
 }

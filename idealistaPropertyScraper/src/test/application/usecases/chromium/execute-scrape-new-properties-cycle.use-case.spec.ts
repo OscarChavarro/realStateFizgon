@@ -7,6 +7,7 @@ import { ImageDownloaderService } from 'application/services/imagedownload/image
 import { ExecuteScrapeNewPropertiesCycleUseCase } from 'application/usecases/chromium/execute-scrape-new-properties-cycle.use-case';
 import { ExecuteScrapeNewPropertiesFlowUseCase } from 'application/usecases/scraper/execute-scrape-new-properties-flow.use-case';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 jest.mock('chrome-remote-interface', () => jest.fn());
@@ -32,11 +33,15 @@ class ChromiumGeolocationServiceMockForExecuteScrapeNewPropertiesCycleUseCase {
 }
 
 class ImageDownloaderMockForExecuteScrapeNewPropertiesCycleUseCase {
-  readonly initializeNetworkCapture = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
+  readonly initializeNetworkCapture = jest.fn<
+    (client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 class ExecuteScrapeNewPropertiesFlowUseCaseMockForExecuteScrapeNewPropertiesCycleUseCase {
-  readonly execute = jest.fn<(client: ScraperCdpClient) => Promise<void>>();
+  readonly execute = jest.fn<
+    (client: ScraperCdpClient, scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 function createClient(): ScraperCdpClient {
@@ -148,9 +153,19 @@ describe('ExecuteScrapeNewPropertiesCycleUseCase', () => {
     expect(chromiumGeolocationService.registerPageNavigationListener).toHaveBeenCalledWith(client, client.Page);
     expect(chromiumGeolocationService.ensureOriginIsAuthorized).toHaveBeenCalledWith(client, scraperConfig.scraperHomeUrl);
     expect(chromiumGeolocationService.applyGeolocationOverride).toHaveBeenCalledWith(client);
-    expect(imageDownloader.initializeNetworkCapture).toHaveBeenCalledWith(client);
+    expect(imageDownloader.initializeNetworkCapture).toHaveBeenCalledTimes(1);
+    const scrapeRunContext = imageDownloader.initializeNetworkCapture.mock.calls[0]?.[1];
+    expect(scrapeRunContext).toEqual(
+      expect.objectContaining({
+        processedPropertyUrls: expect.any(Set),
+        image: expect.any(Object)
+      })
+    );
     expect(client.Page.bringToFront).toHaveBeenCalledTimes(1);
-    expect(executeScrapeNewPropertiesFlowUseCase.execute).toHaveBeenCalledWith(client);
+    expect(executeScrapeNewPropertiesFlowUseCase.execute).toHaveBeenCalledWith(
+      client,
+      scrapeRunContext as ScrapeRunContext
+    );
     expect(client.close).toHaveBeenCalledTimes(1);
     expect(logger.log).toHaveBeenCalledWith('Using page target target-42 for SCRAPING_FOR_NEW_PROPERTIES state.');
   });

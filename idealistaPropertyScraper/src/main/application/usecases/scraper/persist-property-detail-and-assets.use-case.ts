@@ -5,6 +5,7 @@ import { Property } from 'domain/property/property';
 import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 import { PROPERTY_WRITE_PORT } from 'ports/outbound/persistence/property-write.port.token';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 @Injectable()
 export class PersistPropertyDetailAndAssetsUseCase {
   constructor(
@@ -14,13 +15,13 @@ export class PersistPropertyDetailAndAssetsUseCase {
     private readonly imageDownloader: ImageDownloaderService
   ) {}
 
-  async execute(property: Property): Promise<void> {
-    await this.imageDownloader.waitForImageNetworkSettled();
+  async execute(property: Property, scrapeRunContext: ScrapeRunContext): Promise<void> {
+    await this.imageDownloader.waitForImageNetworkSettled(scrapeRunContext);
     const saveResult = await this.propertyWritePort.saveProperty(property);
     if (saveResult.isNew) {
       await this.publishNewPropertyNotificationUseCase.execute(property);
     }
-    await this.imageDownloader.waitForPendingImageDownloads();
-    await this.imageDownloader.movePropertyImagesFromIncoming(property);
+    await this.imageDownloader.waitForPendingImageDownloads(scrapeRunContext);
+    await this.imageDownloader.movePropertyImagesFromIncoming(property, scrapeRunContext);
   }
 }

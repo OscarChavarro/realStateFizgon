@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import CDP = require('chrome-remote-interface');
+import { createScrapeRunContext } from 'application/context/scrape-run-context';
 import { ChromiumGeolocationService } from 'application/services/chromium/chromium-geolocation.service';
 import { ChromiumNetworkHeadersService } from 'application/services/chromium/chromium-network-headers.service';
 import { ChromiumPageTargetService } from 'application/services/chromium/chromium-page-target.service';
@@ -24,6 +25,7 @@ export class ExecuteScrapeNewPropertiesCycleUseCase {
   ) {}
 
   async execute(cdpHost: string, cdpPort: number): Promise<void> {
+    const scrapeRunContext = createScrapeRunContext();
     const selectedTarget = await this.chromiumPageTargetService.waitForPageTarget(cdpHost, cdpPort);
     if (!selectedTarget) {
       throw new Error('No page target available in Chrome');
@@ -42,9 +44,9 @@ export class ExecuteScrapeNewPropertiesCycleUseCase {
       this.chromiumGeolocationService.registerPageNavigationListener(client, Page);
       await this.chromiumGeolocationService.ensureOriginIsAuthorized(client, this.scraperConfig.scraperHomeUrl);
       await this.chromiumGeolocationService.applyGeolocationOverride(client);
-      await this.imageDownloader.initializeNetworkCapture(client);
+      await this.imageDownloader.initializeNetworkCapture(client, scrapeRunContext);
       await Page.bringToFront();
-      await this.executeScrapeNewPropertiesFlowUseCase.execute(client);
+      await this.executeScrapeNewPropertiesFlowUseCase.execute(client, scrapeRunContext);
     } finally {
       await client.close();
     }

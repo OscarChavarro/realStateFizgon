@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext } from 'application/context/scrape-run-context';
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { OriginErrorDetectorService } from 'application/services/resilience/origin-error-detector.service';
 import { FiltersService } from 'application/services/scraper/filters/filters.service';
-import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { ExecuteMainSearchFormUseCase } from 'application/usecases/scraper/execute-main-search-form.use-case';
 import { PrepareSearchResultsUseCase } from 'application/usecases/scraper/prepare-search-results.use-case';
 import { ChromeConfig } from 'infrastructure/config/settings/chrome.config';
@@ -36,10 +36,6 @@ class ExecuteMainSearchFormUseCaseMockForPrepareSearchResultsUseCase {
 
 class FiltersServiceMockForPrepareSearchResultsUseCase {
   readonly execute = jest.fn<(client: unknown) => Promise<void>>();
-}
-
-class PropertyListPageServiceMockForPrepareSearchResultsUseCase {
-  readonly resetProcessedUrlsForCurrentSearch = jest.fn<() => void>();
 }
 
 class OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase {
@@ -118,7 +114,6 @@ function createUseCase(dependencies: {
   sync: ChromiumPageSyncServiceMockForPrepareSearchResultsUseCase;
   executeMainSearchFormUseCase: ExecuteMainSearchFormUseCaseMockForPrepareSearchResultsUseCase;
   filters: FiltersServiceMockForPrepareSearchResultsUseCase;
-  propertyList: PropertyListPageServiceMockForPrepareSearchResultsUseCase;
   originError: OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase;
 }): {
   useCase: PrepareSearchResultsUseCase;
@@ -137,7 +132,6 @@ function createUseCase(dependencies: {
     dependencies.sync as unknown as ChromiumPageSyncService,
     dependencies.executeMainSearchFormUseCase as unknown as ExecuteMainSearchFormUseCase,
     dependencies.filters as unknown as FiltersService,
-    dependencies.propertyList as unknown as PropertyListPageService,
     dependencies.originError as unknown as OriginErrorDetectorService,
     captchaDetectorPort,
     errorMessagePort
@@ -156,13 +150,13 @@ describe('PrepareSearchResultsUseCase', () => {
     executeMainSearchFormUseCase.execute.mockResolvedValue(undefined);
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
     filters.execute.mockResolvedValue(undefined);
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError.mockResolvedValue(false);
-    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, propertyList, originError });
+    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, originError });
     const cdp = createPageAndRuntime('https://other-page.local/');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime);
+    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime, scrapeRunContext);
     // Assert
     expect(cdp.page.navigate as unknown as jest.Mock).toHaveBeenCalledWith({ url: 'https://www.idealista.com/' });
     expect(sync.waitForPageLoad).toHaveBeenCalled();
@@ -179,17 +173,20 @@ describe('PrepareSearchResultsUseCase', () => {
     executeMainSearchFormUseCase.execute.mockResolvedValue(undefined);
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
     filters.execute.mockResolvedValue(undefined);
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError.mockResolvedValue(false);
-    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, propertyList, originError });
+    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, originError });
     const cdp = createPageAndRuntime('https://www.idealista.com/');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime);
-    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime);
+    scrapeRunContext.processedPropertyUrls.add('https://www.idealista.com/inmueble/1/');
+    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime, scrapeRunContext);
+    expect(scrapeRunContext.processedPropertyUrls.size).toBe(0);
+    scrapeRunContext.processedPropertyUrls.add('https://www.idealista.com/inmueble/2/');
+    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime, scrapeRunContext);
+    expect(scrapeRunContext.processedPropertyUrls.size).toBe(0);
     // Assert
     expect(sync.sleep).toHaveBeenCalledTimes(1);
-    expect(propertyList.resetProcessedUrlsForCurrentSearch).toHaveBeenCalledTimes(4);
   });
 
   it('whenLocationEvaluateReturnsNoValue_execute_shouldFallbackToEmptyCurrentUrlAndNavigateHome', async () => {
@@ -202,13 +199,13 @@ describe('PrepareSearchResultsUseCase', () => {
     executeMainSearchFormUseCase.execute.mockResolvedValue(undefined);
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
     filters.execute.mockResolvedValue(undefined);
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError.mockResolvedValue(false);
-    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, propertyList, originError });
+    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, originError });
     const cdp = createPageAndRuntimeWithoutLocationResult();
+    const scrapeRunContext = createScrapeRunContext();
     // Action
-    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime);
+    await useCase.execute({ Page: cdp.page, Runtime: cdp.runtime } as never, cdp.page, cdp.runtime, scrapeRunContext);
     // Assert
     expect(cdp.page.navigate as unknown as jest.Mock).toHaveBeenCalledWith({ url: 'https://www.idealista.com/' });
     expect(filters.execute).toHaveBeenCalled();
@@ -225,17 +222,22 @@ describe('PrepareSearchResultsUseCase', () => {
       .mockRejectedValueOnce(new Error('boom'))
       .mockResolvedValue(undefined);
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError
       .mockResolvedValueOnce(true)
       .mockResolvedValue(false);
-    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, propertyList, originError });
+    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, originError });
     const cdp = createPageAndRuntime('https://www.idealista.com/');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await (useCase as unknown as {
-      executeMainPageWithRetry: (client: unknown, page: unknown, runtime: unknown) => Promise<void>;
-    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime);
+      executeMainPageWithRetry: (
+        client: unknown,
+        page: unknown,
+        runtime: unknown,
+        scrapeRunContext: ReturnType<typeof createScrapeRunContext>
+      ) => Promise<void>;
+    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime, scrapeRunContext);
     // Assert
     expect(cdp.page.reload as unknown as jest.Mock).toHaveBeenCalledWith({ ignoreCache: true });
     expect(executeMainSearchFormUseCase.execute).toHaveBeenCalledTimes(2);
@@ -251,15 +253,20 @@ describe('PrepareSearchResultsUseCase', () => {
     const executeMainSearchFormUseCase = new ExecuteMainSearchFormUseCaseMockForPrepareSearchResultsUseCase();
     executeMainSearchFormUseCase.execute.mockRejectedValue(new Error('final-failure'));
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError.mockResolvedValue(false);
-    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, propertyList, originError });
+    const { useCase } = createUseCase({ sync, executeMainSearchFormUseCase, filters, originError });
     const cdp = createPageAndRuntime('https://www.idealista.com/');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     const action = (useCase as unknown as {
-      executeMainPageWithRetry: (client: unknown, page: unknown, runtime: unknown) => Promise<void>;
-    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime);
+      executeMainPageWithRetry: (
+        client: unknown,
+        page: unknown,
+        runtime: unknown,
+        scrapeRunContext: ReturnType<typeof createScrapeRunContext>
+      ) => Promise<void>;
+    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime, scrapeRunContext);
     // Assert
     await expect(action).rejects.toThrow('final-failure');
   });
@@ -275,7 +282,6 @@ describe('PrepareSearchResultsUseCase', () => {
       .mockRejectedValueOnce(new Error('attempt-failed'))
       .mockResolvedValue(undefined);
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError
       .mockResolvedValueOnce(false)
@@ -285,14 +291,19 @@ describe('PrepareSearchResultsUseCase', () => {
       sync,
       executeMainSearchFormUseCase,
       filters,
-      propertyList,
       originError
     });
     const cdp = createPageAndRuntime('https://www.idealista.com/');
+    const scrapeRunContext = createScrapeRunContext();
     // Action
     await (useCase as unknown as {
-      executeMainPageWithRetry: (client: unknown, page: unknown, runtime: unknown) => Promise<void>;
-    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime);
+      executeMainPageWithRetry: (
+        client: unknown,
+        page: unknown,
+        runtime: unknown,
+        scrapeRunContext: ReturnType<typeof createScrapeRunContext>
+      ) => Promise<void>;
+    }).executeMainPageWithRetry({ Page: cdp.page, Runtime: cdp.runtime }, cdp.page, cdp.runtime, scrapeRunContext);
     // Assert
     expect(errorMessagePort.toErrorMessage).toHaveBeenCalledWith(expect.any(Error));
     expect(cdp.page.reload as unknown as jest.Mock).toHaveBeenCalledWith({ ignoreCache: true });
@@ -306,14 +317,12 @@ describe('PrepareSearchResultsUseCase', () => {
     sync.sleep.mockResolvedValue(undefined);
     const executeMainSearchFormUseCase = new ExecuteMainSearchFormUseCaseMockForPrepareSearchResultsUseCase();
     const filters = new FiltersServiceMockForPrepareSearchResultsUseCase();
-    const propertyList = new PropertyListPageServiceMockForPrepareSearchResultsUseCase();
     const originError = new OriginErrorDetectorServiceMockForPrepareSearchResultsUseCase();
     originError.hasOriginError.mockResolvedValue(true);
     const { useCase } = createUseCase({
       sync,
       executeMainSearchFormUseCase,
       filters,
-      propertyList,
       originError
     });
     const cdp = createPageAndRuntime('https://www.idealista.com/');

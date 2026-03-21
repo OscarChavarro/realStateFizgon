@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { createScrapeRunContext, ScrapeRunContext } from 'application/context/scrape-run-context';
 import { PropertyListPageService } from 'application/services/scraper/property/property-list-page.service';
 import { RevalidatePropertiesWithoutLastVisitUseCase } from 'application/usecases/scraper/revalidate-properties-without-last-visit.use-case';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
@@ -6,7 +7,9 @@ import { PropertyPersistencePortMock } from '../../../ports/outbound/persistence
 
 import type { ScraperCdpClient } from 'ports/outbound/browser/scraper-cdp-client.port';
 class PropertyListPageServiceMockForRevalidatePropertiesWithoutLastVisitUseCase {
-  readonly processExistingUrls = jest.fn<(client: ScraperCdpClient, urls: string[]) => Promise<void>>();
+  readonly processExistingUrls = jest.fn<
+    (client: ScraperCdpClient, urls: string[], scrapeRunContext: ScrapeRunContext) => Promise<void>
+  >();
 }
 
 function createClient(): ScraperCdpClient {
@@ -43,17 +46,18 @@ describe('RevalidatePropertiesWithoutLastVisitUseCase', () => {
       list as unknown as PropertyListPageService
     );
     const client = createClient();
+    const scrapeRunContext = createScrapeRunContext();
     mongo.getOpenPropertyUrlsWithoutLastTimeVisited.mockResolvedValue(missingUrls);
     list.processExistingUrls.mockResolvedValue(undefined);
 
     // Action
-    await useCase.execute(client);
+    await useCase.execute(client, scrapeRunContext);
 
     // Assert
     expect(mongo.getOpenPropertyUrlsWithoutLastTimeVisited).toHaveBeenCalledTimes(1);
     expect(list.processExistingUrls).toHaveBeenCalledTimes(expectedCalls);
     if (expectedCalls > 0) {
-      expect(list.processExistingUrls).toHaveBeenCalledWith(client, missingUrls);
+      expect(list.processExistingUrls).toHaveBeenCalledWith(client, missingUrls, scrapeRunContext);
     }
   });
 });

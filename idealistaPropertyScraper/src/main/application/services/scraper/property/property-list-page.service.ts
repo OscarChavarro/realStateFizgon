@@ -1,14 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ProcessDiscoveredPropertyUrlsUseCase } from 'application/usecases/scraper/process-discovered-property-urls.use-case';
 import { RevalidateExistingPropertyUrlsUseCase } from 'application/usecases/scraper/revalidate-existing-property-urls.use-case';
 import { PropertyUrl } from 'domain/property/property-url';
 
+import type { ScrapeRunContext } from 'application/context/scrape-run-context';
 import type { PropertyCdpClient } from 'ports/outbound/browser/property-cdp-client.port';
 @Injectable()
 export class PropertyListPageService {
-  private readonly logger = new Logger(PropertyListPageService.name);
-  private readonly processedUrlsSinceLastSearch = new Set<string>();
-
   constructor(
     private readonly processDiscoveredPropertyUrlsUseCase: ProcessDiscoveredPropertyUrlsUseCase,
     private readonly revalidateExistingPropertyUrlsUseCase: RevalidateExistingPropertyUrlsUseCase
@@ -71,20 +69,19 @@ export class PropertyListPageService {
     return Array.from(normalizedPropertyUrls);
   }
 
-  resetProcessedUrlsForCurrentSearch(): void {
-    this.processedUrlsSinceLastSearch.clear();
-    this.logger.log('Reset processed property URL cache for the current search cycle.');
+  async processUrls(client: PropertyCdpClient, urls: string[], scrapeRunContext: ScrapeRunContext): Promise<void> {
+    await this.processDiscoveredPropertyUrlsUseCase.execute(client, urls, scrapeRunContext);
   }
 
-  async processUrls(client: PropertyCdpClient, urls: string[]): Promise<void> {
-    await this.processDiscoveredPropertyUrlsUseCase.execute(client, urls, this.processedUrlsSinceLastSearch);
-  }
-
-  async processExistingUrls(client: PropertyCdpClient, urls: string[]): Promise<void> {
+  async processExistingUrls(
+    client: PropertyCdpClient,
+    urls: string[],
+    scrapeRunContext: ScrapeRunContext
+  ): Promise<void> {
     await this.revalidateExistingPropertyUrlsUseCase.execute(
       client,
       urls,
-      this.processedUrlsSinceLastSearch
+      scrapeRunContext
     );
   }
 }

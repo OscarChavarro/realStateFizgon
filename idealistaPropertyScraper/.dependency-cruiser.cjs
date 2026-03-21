@@ -26,12 +26,12 @@ module.exports = {
       name: 'application-modules-should-not-import-infrastructure-directly',
       severity: 'error',
       comment:
-        'Application modules must not import infrastructure modules directly.',
+        'Application modules must not import concrete adapters or infrastructure modules directly.',
       from: {
         path: '^src/main/application/(usecases|services)/.*\\.module\\.ts$'
       },
       to: {
-        path: '^src/main/infrastructure/'
+        path: '^src/main/(adapters|infrastructure)/'
       }
     },
     {

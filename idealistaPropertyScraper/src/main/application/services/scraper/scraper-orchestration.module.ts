@@ -1,9 +1,4 @@
 import { Module } from '@nestjs/common';
-import { IdealistaCaptchaDetectorModule } from 'adapters/outbound/captcha/idealista-captcha-detector.module';
-import { ProxyAccessValidatorModule } from 'adapters/outbound/network/proxy-access-validator.module';
-import { ErrorMessageModule } from 'adapters/outbound/observability/error-message.module';
-import { MongoDatabaseModule } from 'adapters/outbound/persistence/mongodb/mongo-database.module';
-import { SleepModule } from 'adapters/outbound/timing/sleep.module';
 import { ImageDownloadModule } from 'application/services/imagedownload/image-download.module';
 import { ScraperChromiumModule } from 'application/services/chromium/scraper-chromium.module';
 import { ScraperFiltersModule } from 'application/services/scraper/filters/scraper-filters.module';
@@ -39,12 +34,7 @@ import { ValidateProxyAccessPreCheckUseCase } from 'application/usecases/prechec
     ScraperPropertyModule,
     ScraperPaginationModule,
     ScraperStateModule,
-    MongoDatabaseModule,
-    ImageDownloadModule,
-    ErrorMessageModule,
-    SleepModule,
-    IdealistaCaptchaDetectorModule,
-    ProxyAccessValidatorModule
+    ImageDownloadModule
   ],
   providers: [
     ScraperOrchestratorService,

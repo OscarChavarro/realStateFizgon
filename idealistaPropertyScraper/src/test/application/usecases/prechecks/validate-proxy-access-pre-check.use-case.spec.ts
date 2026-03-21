@@ -17,24 +17,35 @@ function createUseCase() {
     chromeBrowserLaunchRetryWaitMs: 5000
   };
   const proxyAccessValidatorPort = new ProxyAccessValidatorPortMockForValidateProxyAccessPreCheckUseCase();
-  proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue(undefined);
+  proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue({
+    status: 'proxy_validated',
+    enabled: true,
+    host: chromeConfig.proxyHost,
+    port: chromeConfig.proxyPort
+  });
   const useCase = new ValidateProxyAccessPreCheckUseCase(
     chromeConfig as unknown as ChromeConfig,
     proxyAccessValidatorPort
   );
+  const logger = {
+    log: jest.fn<(message: string) => void>(),
+    warn: jest.fn<(message: string) => void>(),
+    error: jest.fn<(message: string) => void>()
+  };
+  (useCase as unknown as { logger: typeof logger }).logger = logger;
 
   return {
     useCase,
     chromeConfig,
-    proxyAccessValidatorPort
+    proxyAccessValidatorPort,
+    logger
   };
 }
 
 describe('ValidateProxyAccessPreCheckUseCase', () => {
   it('whenProxyIsConfigured_execute_shouldValidateProxyAccessWithConfiguredValues', async () => {
     // Arrange
-    const { useCase, chromeConfig, proxyAccessValidatorPort } = createUseCase();
-    proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue(undefined);
+    const { useCase, chromeConfig, proxyAccessValidatorPort, logger } = createUseCase();
     // Action
     await useCase.execute();
     // Assert
@@ -43,9 +54,11 @@ describe('ValidateProxyAccessPreCheckUseCase', () => {
       enabled: chromeConfig.proxyEnabled,
       host: chromeConfig.proxyHost,
       port: chromeConfig.proxyPort,
-      retryWaitMs: chromeConfig.chromeBrowserLaunchRetryWaitMs,
-      logger: expect.any(Object)
+      retryWaitMs: chromeConfig.chromeBrowserLaunchRetryWaitMs
     });
+    expect(logger.log).toHaveBeenCalledWith(
+      'Proxy validation completed: proxy connectivity available for 127.0.0.1:8080.'
+    );
   });
 
   it('whenProxyValidationFails_execute_shouldPropagateError', async () => {
@@ -56,5 +69,18 @@ describe('ValidateProxyAccessPreCheckUseCase', () => {
     const action = useCase.execute();
     // Assert
     await expect(action).rejects.toThrow('proxy unavailable');
+  });
+
+  it('whenProxyIsDisabled_execute_shouldLogDisabledValidationResult', async () => {
+    // Arrange
+    const { useCase, proxyAccessValidatorPort, logger } = createUseCase();
+    proxyAccessValidatorPort.validateProxyAccessOrWait.mockResolvedValue({
+      status: 'proxy_disabled',
+      enabled: false
+    });
+    // Action
+    await useCase.execute();
+    // Assert
+    expect(logger.log).toHaveBeenCalledWith('Proxy validation completed: proxy disabled in configuration.');
   });
 });

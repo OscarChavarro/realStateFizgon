@@ -17,12 +17,20 @@ export class ValidateProxyAccessPreCheckUseCase {
   ) {}
 
   async execute(): Promise<void> {
-    await this.proxyAccessValidatorPort.validateProxyAccessOrWait({
+    const validationResult = await this.proxyAccessValidatorPort.validateProxyAccessOrWait({
       enabled: this.chromeConfig.proxyEnabled,
       host: this.chromeConfig.proxyHost,
       port: this.chromeConfig.proxyPort,
-      retryWaitMs: this.chromeConfig.chromeBrowserLaunchRetryWaitMs,
-      logger: this.logger
+      retryWaitMs: this.chromeConfig.chromeBrowserLaunchRetryWaitMs
     });
+
+    if (validationResult.status === 'proxy_disabled') {
+      this.logger.log('Proxy validation completed: proxy disabled in configuration.');
+      return;
+    }
+
+    this.logger.log(
+      `Proxy validation completed: proxy connectivity available for ${validationResult.host}:${String(validationResult.port)}.`
+    );
   }
 }

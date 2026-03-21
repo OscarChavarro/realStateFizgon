@@ -1,8 +1,3 @@
-export type ProxyValidationLogger = {
-  log(message: string): void;
-  error(message: string): void;
-};
-
 export type ProxyAccessValidationRequest = {
   enabled: boolean;
   host: string;
@@ -13,9 +8,20 @@ export type ProxyAccessValidationRequest = {
   quickRetryDelayMs?: number;
   testConnectHost?: string;
   testConnectPort?: number;
-  logger?: ProxyValidationLogger;
 };
 
+export type ProxyAccessValidationResult =
+  | {
+      status: 'proxy_disabled';
+      enabled: false;
+    }
+  | {
+      status: 'proxy_validated';
+      enabled: true;
+      host: string;
+      port: number | string;
+    };
+
 export interface ProxyAccessValidatorPort {
-  validateProxyAccessOrWait(request: ProxyAccessValidationRequest): Promise<void>;
+  validateProxyAccessOrWait(request: ProxyAccessValidationRequest): Promise<ProxyAccessValidationResult>;
 }

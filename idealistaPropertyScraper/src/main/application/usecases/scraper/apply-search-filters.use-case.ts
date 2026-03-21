@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { FilterSnapshot } from 'application/services/scraper/filters/filter-snapshot.type';
 import { FilterAvailableOptionExtractorService } from 'application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractorService } from 'application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
 import { SupportedFilters } from 'domain/filters/supported-filters';
-import { Filter } from 'domain/filters/filter';
 import { FilterType } from 'domain/filters/filter-type';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
@@ -13,8 +13,6 @@ import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client
 @Injectable()
 export class ApplySearchFiltersUseCase {
   private readonly logger = new Logger(ApplySearchFiltersUseCase.name);
-  private readonly extractedFiltersFromDom = new SupportedFilters();
-  private readonly preloadedFiltersFromConfiguration = new SupportedFilters();
 
   constructor(
     private readonly filterUpdateService: FilterUpdateService,
@@ -22,9 +20,7 @@ export class ApplySearchFiltersUseCase {
     private readonly filterSelectedOptionExtractor: FilterSelectedOptionExtractorService,
     @Inject(SCRAPER_SETTINGS_PORT)
     private readonly scraperConfig: ScraperSettingsPort
-  ) {
-    this.applyConfiguredFilterDefinitions();
-  }
+  ) {}
 
   async execute(client: FiltersCdpClient): Promise<void> {
     await client.Runtime.enable();
@@ -35,16 +31,23 @@ export class ApplySearchFiltersUseCase {
       return;
     }
 
+    const baseFilterSnapshots = this.buildBaseFilterSnapshots();
+    const preloadedFiltersFromConfiguration = this.buildConfiguredFilterSnapshots(baseFilterSnapshots);
     const matchedSectionIndexes = new Set<number>();
+    const extractedFiltersFromDom: FilterSnapshot[] = [];
 
-    for (const filter of this.extractedFiltersFromDom.getSupportedFilters()) {
-      await this.processFilter(client, payload, filter, matchedSectionIndexes);
+    for (const filterSnapshot of baseFilterSnapshots) {
+      const extractedSnapshot = await this.processFilter(client, payload, filterSnapshot, matchedSectionIndexes);
+      if (extractedSnapshot) {
+        extractedFiltersFromDom.push(extractedSnapshot);
+      }
     }
+    const extractedFilterSnapshots = Object.freeze([...extractedFiltersFromDom]) as readonly FilterSnapshot[];
 
     await this.filterUpdateService.applyRequiredActions(
       client,
-      this.preloadedFiltersFromConfiguration,
-      this.extractedFiltersFromDom
+      preloadedFiltersFromConfiguration,
+      extractedFilterSnapshots
     );
 
     const unsupported = payload.sections.filter((section) => !matchedSectionIndexes.has(section.index));
@@ -56,11 +59,11 @@ export class ApplySearchFiltersUseCase {
   private async processFilter(
     client: FiltersCdpClient,
     payload: AsideFiltersPayload,
-    filter: Filter,
+    filter: FilterSnapshot,
     matchedSectionIndexes: Set<number>
-  ): Promise<void> {
-    const presentBySelector = await this.isPresentBySelector(client, filter.getCssSelector());
-    const supportedNormalized = this.normalizeText(filter.getName());
+  ): Promise<FilterSnapshot | null> {
+    const presentBySelector = await this.isPresentBySelector(client, filter.cssSelector);
+    const supportedNormalized = this.normalizeText(filter.name);
     const matched = payload.sections.find((section) => this.matches(section.normalized, supportedNormalized));
 
     if (matched) {
@@ -70,55 +73,67 @@ export class ApplySearchFiltersUseCase {
     const present = presentBySelector || Boolean(matched);
 
     if (!present) {
-      return;
+      return null;
     }
 
-    switch (filter.getType()) {
+    switch (filter.type) {
       case FilterType.MIN_MAX:
-        await this.processMinMaxFilter(client, filter);
-        return;
+        return this.processMinMaxFilter(client, filter);
       case FilterType.SINGLE_SELECTOR_DROPDOWN:
-        await this.processSingleSelectorDropdownFilter(client, filter);
-        return;
+        return this.processSingleSelectorDropdownFilter(client, filter);
       case FilterType.MULTIPLE_SELECTOR:
-        await this.processMultipleSelectorFilter(client, filter);
-        return;
+        return this.processMultipleSelectorFilter(client, filter);
       case FilterType.SINGLE_SELECTOR:
-        await this.processSingleSelectorFilter(client, filter);
-        return;
+        return this.processSingleSelectorFilter(client, filter);
       default:
-        filter.setPlainOptions([]);
+        return this.createFilterSnapshot({
+          ...filter,
+          plainOptions: [],
+          selectedPlainOptions: []
+        });
     }
   }
 
-  private async processMinMaxFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
-    const { minOptions, maxOptions } = await this.filterAvailableOptionExtractor.extractMinMaxOptions(client, filter.getCssSelector());
-    const { selectedMin, selectedMax } = await this.filterSelectedOptionExtractor.extractSelectedMinMax(client, filter.getCssSelector());
-    filter.setMinOptions(minOptions);
-    filter.setMaxOptions(maxOptions);
-    filter.setSelectedMin(selectedMin);
-    filter.setSelectedMax(selectedMax);
+  private async processMinMaxFilter(client: FiltersCdpClient, filter: FilterSnapshot): Promise<FilterSnapshot> {
+    const { minOptions, maxOptions } = await this.filterAvailableOptionExtractor.extractMinMaxOptions(client, filter.cssSelector);
+    const { selectedMin, selectedMax } = await this.filterSelectedOptionExtractor.extractSelectedMinMax(client, filter.cssSelector);
+    return this.createFilterSnapshot({
+      ...filter,
+      minOptions,
+      maxOptions,
+      selectedMin,
+      selectedMax
+    });
   }
 
-  private async processSingleSelectorDropdownFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
-    const options = await this.filterAvailableOptionExtractor.extractSingleSelectorDropdownOptions(client, filter.getCssSelector());
-    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorDropdownOptions(client, filter.getCssSelector());
-    filter.setPlainOptions(options);
-    filter.setSelectedPlainOptions(selectedPlainOptions);
+  private async processSingleSelectorDropdownFilter(client: FiltersCdpClient, filter: FilterSnapshot): Promise<FilterSnapshot> {
+    const options = await this.filterAvailableOptionExtractor.extractSingleSelectorDropdownOptions(client, filter.cssSelector);
+    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorDropdownOptions(client, filter.cssSelector);
+    return this.createFilterSnapshot({
+      ...filter,
+      plainOptions: options,
+      selectedPlainOptions
+    });
   }
 
-  private async processMultipleSelectorFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
-    const options = await this.filterAvailableOptionExtractor.extractMultipleSelectorOptions(client, filter.getCssSelector());
-    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedMultipleSelectorOptions(client, filter.getCssSelector());
-    filter.setPlainOptions(options);
-    filter.setSelectedPlainOptions(selectedPlainOptions);
+  private async processMultipleSelectorFilter(client: FiltersCdpClient, filter: FilterSnapshot): Promise<FilterSnapshot> {
+    const options = await this.filterAvailableOptionExtractor.extractMultipleSelectorOptions(client, filter.cssSelector);
+    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedMultipleSelectorOptions(client, filter.cssSelector);
+    return this.createFilterSnapshot({
+      ...filter,
+      plainOptions: options,
+      selectedPlainOptions
+    });
   }
 
-  private async processSingleSelectorFilter(client: FiltersCdpClient, filter: Filter): Promise<void> {
-    const options = await this.filterAvailableOptionExtractor.extractSingleSelectorOptions(client, filter.getCssSelector());
-    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorOptions(client, filter.getCssSelector());
-    filter.setPlainOptions(options);
-    filter.setSelectedPlainOptions(selectedPlainOptions);
+  private async processSingleSelectorFilter(client: FiltersCdpClient, filter: FilterSnapshot): Promise<FilterSnapshot> {
+    const options = await this.filterAvailableOptionExtractor.extractSingleSelectorOptions(client, filter.cssSelector);
+    const selectedPlainOptions = await this.filterSelectedOptionExtractor.extractSelectedSingleSelectorOptions(client, filter.cssSelector);
+    return this.createFilterSnapshot({
+      ...filter,
+      plainOptions: options,
+      selectedPlainOptions
+    });
   }
 
   private async readAsideFilters(client: FiltersCdpClient): Promise<AsideFiltersPayload> {
@@ -211,23 +226,73 @@ export class ApplySearchFiltersUseCase {
       .trim();
   }
 
-  private applyConfiguredFilterDefinitions(): void {
-    for (const filter of this.preloadedFiltersFromConfiguration.getSupportedFilters()) {
-      const definition = this.scraperConfig.getFilterDefinitionByName(filter.getName());
-      if (!definition) {
-        continue;
-      }
+  private buildBaseFilterSnapshots(): readonly FilterSnapshot[] {
+    const supportedFilters = new SupportedFilters().getSupportedFilters();
+    return Object.freeze(
+      supportedFilters.map((filter) =>
+        this.createFilterSnapshot({
+          name: filter.getName(),
+          cssSelector: filter.getCssSelector(),
+          type: filter.getType(),
+          plainOptions: [],
+          selectedPlainOptions: [],
+          minOptions: [],
+          maxOptions: [],
+          selectedMin: null,
+          selectedMax: null
+        })
+      )
+    ) as readonly FilterSnapshot[];
+  }
 
-      if (filter.getType() === FilterType.MIN_MAX) {
-        filter.setMinOptions(definition.minOptions);
-        filter.setMaxOptions(definition.maxOptions);
-        filter.setSelectedMin(definition.selectedMin);
-        filter.setSelectedMax(definition.selectedMax);
-        continue;
-      }
+  private buildConfiguredFilterSnapshots(baseSnapshots: readonly FilterSnapshot[]): readonly FilterSnapshot[] {
+    return Object.freeze(
+      baseSnapshots.map((filter) => {
+        const definition = this.scraperConfig.getFilterDefinitionByName(filter.name);
+        if (!definition) {
+          return filter;
+        }
 
-      filter.setPlainOptions(definition.plainOptions);
-      filter.setSelectedPlainOptions(definition.selectedPlainOptions);
-    }
+        if (filter.type === FilterType.MIN_MAX) {
+          return this.createFilterSnapshot({
+            ...filter,
+            minOptions: definition.minOptions,
+            maxOptions: definition.maxOptions,
+            selectedMin: definition.selectedMin,
+            selectedMax: definition.selectedMax
+          });
+        }
+
+        return this.createFilterSnapshot({
+          ...filter,
+          plainOptions: definition.plainOptions,
+          selectedPlainOptions: definition.selectedPlainOptions
+        });
+      })
+    ) as readonly FilterSnapshot[];
+  }
+
+  private createFilterSnapshot(data: {
+    name: string;
+    cssSelector: string;
+    type: FilterType;
+    plainOptions: readonly string[];
+    selectedPlainOptions: readonly string[];
+    minOptions: readonly string[];
+    maxOptions: readonly string[];
+    selectedMin: string | null;
+    selectedMax: string | null;
+  }): FilterSnapshot {
+    return Object.freeze({
+      name: data.name,
+      cssSelector: data.cssSelector,
+      type: data.type,
+      plainOptions: Object.freeze([...data.plainOptions]),
+      selectedPlainOptions: Object.freeze([...data.selectedPlainOptions]),
+      minOptions: Object.freeze([...data.minOptions]),
+      maxOptions: Object.freeze([...data.maxOptions]),
+      selectedMin: data.selectedMin,
+      selectedMax: data.selectedMax
+    });
   }
 }

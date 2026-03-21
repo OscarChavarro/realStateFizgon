@@ -1,18 +1,32 @@
 import { Injectable } from '@nestjs/common';
-import { Filter } from 'domain/filters/filter';
 import { FilterType } from 'domain/filters/filter-type';
 import { MinMaxSelection } from 'application/dto/scraper/min-max-selection.dto';
 
+import type { FilterSnapshot } from 'application/services/scraper/filters/filter-snapshot.type';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+
+type LegacyFilterSelectionShape = {
+  getType(): FilterType;
+  getCssSelector(): string;
+};
+
+type PlainSelectionFilter = Pick<FilterSnapshot, 'type' | 'cssSelector'> | LegacyFilterSelectionShape;
+
 @Injectable()
 export class FilterSelectionReaderService {
-  async readCurrentPlainSelection(client: FiltersCdpClient, expectedFilter: Filter): Promise<string[]> {
-    switch (expectedFilter.getType()) {
+  async readCurrentPlainSelection(
+    client: FiltersCdpClient,
+    expectedFilter: PlainSelectionFilter
+  ): Promise<string[]> {
+    const filterType = this.resolveFilterType(expectedFilter);
+    const selector = this.resolveCssSelector(expectedFilter);
+
+    switch (filterType) {
       case FilterType.SINGLE_SELECTOR_DROPDOWN:
-        return this.extractSelectedSingleSelectorDropdownOptions(client, expectedFilter.getCssSelector());
+        return this.extractSelectedSingleSelectorDropdownOptions(client, selector);
       case FilterType.MULTIPLE_SELECTOR:
       case FilterType.SINGLE_SELECTOR:
-        return this.extractSelectedInputBasedOptions(client, expectedFilter.getCssSelector());
+        return this.extractSelectedInputBasedOptions(client, selector);
       default:
         return [];
     }
@@ -145,5 +159,24 @@ export class FilterSelectionReaderService {
     }
 
     return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  private resolveFilterType(filter: PlainSelectionFilter): FilterType {
+    if (this.isLegacyFilterSelectionShape(filter)) {
+      return filter.getType();
+    }
+    return (filter as Pick<FilterSnapshot, 'type'>).type;
+  }
+
+  private resolveCssSelector(filter: PlainSelectionFilter): string {
+    if (this.isLegacyFilterSelectionShape(filter)) {
+      return filter.getCssSelector();
+    }
+    return (filter as Pick<FilterSnapshot, 'cssSelector'>).cssSelector;
+  }
+
+  private isLegacyFilterSelectionShape(filter: PlainSelectionFilter): filter is LegacyFilterSelectionShape {
+    return typeof (filter as Partial<LegacyFilterSelectionShape>).getType === 'function'
+      && typeof (filter as Partial<LegacyFilterSelectionShape>).getCssSelector === 'function';
   }
 }

@@ -17,6 +17,7 @@ import { PublicationDate } from 'domain/filters/publication-date';
 import { RentalType } from 'domain/filters/rental-type';
 import { Rooms } from 'domain/filters/rooms';
 import { Size } from 'domain/filters/size';
+import { SupportedFilters } from 'domain/filters/supported-filters';
 
 class NoopMinMaxFilter extends Filter {
   constructor() {
@@ -63,6 +64,30 @@ describe('Filter definitions', () => {
     expect(result).toEqual(['1', '2']);
   });
 
+  it('whenPlainOptionsAreSet_setPlainOptions_shouldCloneSourceArray', () => {
+    // Arrange
+    const filter = new NoopMinMaxFilter() as unknown as {
+      setPlainOptions(options: string[]): void;
+      plainOptions: string[];
+    };
+    const plain = ['A', 'B'];
+    filter.setPlainOptions(plain);
+    plain.push('C');
+    // Assert
+    expect(filter.plainOptions).toEqual(['A', 'B']);
+  });
+
+  it('whenSelectedMinAndMaxAreUpdated_getters_shouldReturnAssignedValues', () => {
+    // Arrange
+    const filter = new NoopMinMaxFilter();
+    // Action
+    filter.setSelectedMin('100');
+    filter.setSelectedMax('900');
+    // Assert
+    expect(filter.getSelectedMin()).toBe('100');
+    expect(filter.getSelectedMax()).toBe('900');
+  });
+
   it.each([
     { factory: () => new Price(), min: ['100000'], max: ['500000'] },
     { factory: () => new Size(), min: ['40'], max: ['120'] }
@@ -97,5 +122,16 @@ describe('Filter definitions', () => {
     const action = (): void => operation(filter);
     // Assert
     expect(action).not.toThrow();
+  });
+
+  it('whenSupportedFiltersAreRequested_getSupportedFilters_shouldExposeConfiguredList', () => {
+    // Arrange
+    const supportedFilters = new SupportedFilters();
+    // Action
+    const filters = supportedFilters.getSupportedFilters();
+    // Assert
+    expect(filters.length).toBe(16);
+    expect(filters.some((filter) => filter.getName() === 'Precio')).toBe(true);
+    expect(filters.some((filter) => filter.getName() === 'Tipo de inmueble')).toBe(true);
   });
 });

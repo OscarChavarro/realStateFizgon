@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ApplySearchFiltersUseCase } from 'application/usecases/scraper/apply-search-filters.use-case';
+import { FilterSnapshot } from 'application/services/scraper/filters/filter-snapshot.type';
 import { FilterAvailableOptionExtractorService } from 'application/services/scraper/filters/filter-available-option-extractor.service';
 import { FilterSelectedOptionExtractorService } from 'application/services/scraper/filters/filter-selected-option-extractor.service';
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
-import { SupportedFilters } from 'domain/filters/supported-filters';
-import { Filter } from 'domain/filters/filter';
+import { ApplySearchFiltersUseCase } from 'application/usecases/scraper/apply-search-filters.use-case';
 import { FilterType } from 'domain/filters/filter-type';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 import type { AsideFiltersPayload } from 'application/dto/scraper/aside-filters-payload.dto';
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+
 class FilterUpdateServiceMockForApplySearchFiltersUseCase {
-  readonly applyRequiredActions = jest.fn<(client: FiltersCdpClient, preloaded: SupportedFilters, extracted: SupportedFilters) => Promise<void>>();
+  readonly applyRequiredActions = jest.fn<(
+    client: FiltersCdpClient,
+    preloaded: readonly FilterSnapshot[],
+    extracted: readonly FilterSnapshot[]
+  ) => Promise<void>>();
 }
 
 class FilterAvailableOptionExtractorMockForApplySearchFiltersUseCase {
@@ -45,31 +49,6 @@ class ScraperConfigMockForApplySearchFiltersUseCase {
   } | undefined>();
 }
 
-class FakeFilter extends Filter {
-  private minOptions: string[] = [];
-  private maxOptions: string[] = [];
-
-  constructor(name: string, cssSelector: string, type: FilterType | 'UNKNOWN') {
-    super(name, cssSelector, type as FilterType);
-  }
-
-  override setMinOptions(options: string[]): void {
-    this.minOptions = [...options];
-  }
-
-  override setMaxOptions(options: string[]): void {
-    this.maxOptions = [...options];
-  }
-
-  getMinOptions(): string[] {
-    return [...this.minOptions];
-  }
-
-  getMaxOptions(): string[] {
-    return [...this.maxOptions];
-  }
-}
-
 function createClient(
   evaluate: FiltersCdpClient['Runtime']['evaluate']
 ): FiltersCdpClient {
@@ -85,10 +64,23 @@ function createClient(
   };
 }
 
-function createSupportedFilters(filters: Filter[]): SupportedFilters {
-  return {
-    getSupportedFilters: () => filters
-  } as unknown as SupportedFilters;
+function createSnapshot(overrides: Partial<FilterSnapshot> = {}): FilterSnapshot {
+  const plainOptions = [...(overrides.plainOptions ?? [])];
+  const selectedPlainOptions = [...(overrides.selectedPlainOptions ?? [])];
+  const minOptions = [...(overrides.minOptions ?? [])];
+  const maxOptions = [...(overrides.maxOptions ?? [])];
+
+  return Object.freeze({
+    name: overrides.name ?? 'Estado',
+    cssSelector: overrides.cssSelector ?? '#estado',
+    type: overrides.type ?? FilterType.SINGLE_SELECTOR,
+    plainOptions: Object.freeze(plainOptions),
+    selectedPlainOptions: Object.freeze(selectedPlainOptions),
+    minOptions: Object.freeze(minOptions),
+    maxOptions: Object.freeze(maxOptions),
+    selectedMin: overrides.selectedMin ?? null,
+    selectedMax: overrides.selectedMax ?? null
+  });
 }
 
 function createUseCase() {
@@ -138,15 +130,21 @@ describe('ApplySearchFiltersUseCase', () => {
     await expect(action).rejects.toThrow('boom');
   });
 
-  it('whenSingleSelectorFilterIsPresent_execute_shouldLoadAvailableAndSelectedOptions', async () => {
+  it('whenSingleSelectorFilterIsPresent_execute_shouldBuildPerExecutionSnapshotAndDelegate', async () => {
     // Arrange
     const { useCase, filterUpdate, available, selected } = createUseCase();
-    const filter = new FakeFilter('Estado', '#single', FilterType.SINGLE_SELECTOR);
-    (useCase as unknown as { extractedFiltersFromDom: SupportedFilters }).extractedFiltersFromDom = createSupportedFilters([filter]);
-    (useCase as unknown as { preloadedFiltersFromConfiguration: SupportedFilters }).preloadedFiltersFromConfiguration = createSupportedFilters([filter]);
+    const filterSnapshot = createSnapshot({
+      name: 'Estado',
+      cssSelector: '#single',
+      type: FilterType.SINGLE_SELECTOR
+    });
+    jest.spyOn(useCase as unknown as { buildBaseFilterSnapshots: () => readonly FilterSnapshot[] }, 'buildBaseFilterSnapshots')
+      .mockReturnValue([filterSnapshot]);
+
     available.extractSingleSelectorOptions.mockResolvedValue(['nuevo', 'usado']);
     selected.extractSelectedSingleSelectorOptions.mockResolvedValue(['nuevo']);
     filterUpdate.applyRequiredActions.mockResolvedValue(undefined);
+
     const payload: AsideFiltersPayload = {
       found: true,
       sections: [{ index: 0, name: 'Estado', normalized: 'estado' }]
@@ -164,17 +162,28 @@ describe('ApplySearchFiltersUseCase', () => {
     expect(available.extractSingleSelectorOptions).toHaveBeenCalledWith(client, '#single');
     expect(selected.extractSelectedSingleSelectorOptions).toHaveBeenCalledWith(client, '#single');
     expect(filterUpdate.applyRequiredActions).toHaveBeenCalledTimes(1);
+    const [, preloaded, extracted] = filterUpdate.applyRequiredActions.mock.calls[0] ?? [];
+    expect(preloaded).toHaveLength(1);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0]?.selectedPlainOptions).toEqual(['nuevo']);
+    expect(Object.isFrozen(extracted[0])).toBe(true);
   });
 
-  it('whenMinMaxFilterIsPresent_execute_shouldLoadMinMaxOptionsAndSelection', async () => {
+  it('whenMinMaxFilterIsPresent_execute_shouldBuildMinMaxSnapshot', async () => {
     // Arrange
     const { useCase, filterUpdate, available, selected } = createUseCase();
-    const filter = new FakeFilter('Precio', '#price', FilterType.MIN_MAX);
-    (useCase as unknown as { extractedFiltersFromDom: SupportedFilters }).extractedFiltersFromDom = createSupportedFilters([filter]);
-    (useCase as unknown as { preloadedFiltersFromConfiguration: SupportedFilters }).preloadedFiltersFromConfiguration = createSupportedFilters([filter]);
+    const filterSnapshot = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX
+    });
+    jest.spyOn(useCase as unknown as { buildBaseFilterSnapshots: () => readonly FilterSnapshot[] }, 'buildBaseFilterSnapshots')
+      .mockReturnValue([filterSnapshot]);
+
     available.extractMinMaxOptions.mockResolvedValue({ minOptions: ['Mín', '500'], maxOptions: ['1500', '2000'] });
     selected.extractSelectedMinMax.mockResolvedValue({ selectedMin: '500', selectedMax: '1500' });
     filterUpdate.applyRequiredActions.mockResolvedValue(undefined);
+
     const payload: AsideFiltersPayload = {
       found: true,
       sections: [{ index: 0, name: 'Precio', normalized: 'precio' }]
@@ -191,14 +200,126 @@ describe('ApplySearchFiltersUseCase', () => {
     // Assert
     expect(available.extractMinMaxOptions).toHaveBeenCalledWith(client, '#price');
     expect(selected.extractSelectedMinMax).toHaveBeenCalledWith(client, '#price');
-    expect(filter.getSelectedMin()).toBe('500');
+    const [, , extracted] = filterUpdate.applyRequiredActions.mock.calls[0] ?? [];
+    expect(extracted[0]?.selectedMin).toBe('500');
+    expect(extracted[0]?.selectedMax).toBe('1500');
+  });
+
+  it('whenDropdownFilterIsPresent_processFilter_shouldExtractDropdownOptionsAndSelection', async () => {
+    // Arrange
+    const { useCase, available, selected } = createUseCase();
+    const filter = createSnapshot({
+      name: 'Tipo de inmueble',
+      cssSelector: '#typology',
+      type: FilterType.SINGLE_SELECTOR_DROPDOWN
+    });
+    jest.spyOn(
+      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
+      'isPresentBySelector'
+    ).mockResolvedValue(true);
+    available.extractSingleSelectorDropdownOptions.mockResolvedValue(['Piso', 'Ático']);
+    selected.extractSelectedSingleSelectorDropdownOptions.mockResolvedValue(['Piso']);
+    const payload: AsideFiltersPayload = {
+      found: true,
+      sections: [{ index: 1, name: 'Tipo de inmueble', normalized: 'tipo de inmueble' }]
+    };
+    const matched = new Set<number>();
+    const client = createClient(jest.fn(async () => ({ result: { value: true } })));
+    // Action
+    const result = await (useCase as unknown as {
+      processFilter: (
+        clientArg: FiltersCdpClient,
+        payloadArg: AsideFiltersPayload,
+        filterArg: FilterSnapshot,
+        matchedArg: Set<number>
+      ) => Promise<FilterSnapshot | null>;
+    }).processFilter(client, payload, filter, matched);
+    // Assert
+    expect(available.extractSingleSelectorDropdownOptions).toHaveBeenCalledWith(client, '#typology');
+    expect(selected.extractSelectedSingleSelectorDropdownOptions).toHaveBeenCalledWith(client, '#typology');
+    expect(result?.plainOptions).toEqual(['Piso', 'Ático']);
+    expect(result?.selectedPlainOptions).toEqual(['Piso']);
+    expect(matched.has(1)).toBe(true);
+  });
+
+  it('whenMultipleSelectorFilterIsPresent_processFilter_shouldExtractMultipleOptionsAndSelection', async () => {
+    // Arrange
+    const { useCase, available, selected } = createUseCase();
+    const filter = createSnapshot({
+      name: 'Habitaciones',
+      cssSelector: '#rooms',
+      type: FilterType.MULTIPLE_SELECTOR
+    });
+    jest.spyOn(
+      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
+      'isPresentBySelector'
+    ).mockResolvedValue(true);
+    available.extractMultipleSelectorOptions.mockResolvedValue(['1', '2', '3+']);
+    selected.extractSelectedMultipleSelectorOptions.mockResolvedValue(['2']);
+    const payload: AsideFiltersPayload = {
+      found: true,
+      sections: [{ index: 3, name: 'Habitaciones', normalized: 'habitaciones' }]
+    };
+    const matched = new Set<number>();
+    const client = createClient(jest.fn(async () => ({ result: { value: true } })));
+    // Action
+    const result = await (useCase as unknown as {
+      processFilter: (
+        clientArg: FiltersCdpClient,
+        payloadArg: AsideFiltersPayload,
+        filterArg: FilterSnapshot,
+        matchedArg: Set<number>
+      ) => Promise<FilterSnapshot | null>;
+    }).processFilter(client, payload, filter, matched);
+    // Assert
+    expect(available.extractMultipleSelectorOptions).toHaveBeenCalledWith(client, '#rooms');
+    expect(selected.extractSelectedMultipleSelectorOptions).toHaveBeenCalledWith(client, '#rooms');
+    expect(result?.plainOptions).toEqual(['1', '2', '3+']);
+    expect(result?.selectedPlainOptions).toEqual(['2']);
+    expect(matched.has(3)).toBe(true);
+  });
+
+  it('whenFilterTypeIsUnknown_processFilter_shouldReturnDefaultSnapshotWithEmptyPlainSelections', async () => {
+    // Arrange
+    const { useCase, available, selected } = createUseCase();
+    const filter = createSnapshot({
+      name: 'Desconocido',
+      cssSelector: '#unknown',
+      type: 'UNKNOWN' as FilterType,
+      plainOptions: ['X'],
+      selectedPlainOptions: ['Y']
+    });
+    jest.spyOn(
+      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
+      'isPresentBySelector'
+    ).mockResolvedValue(true);
+    const payload: AsideFiltersPayload = {
+      found: true,
+      sections: [{ index: 7, name: 'Desconocido', normalized: 'desconocido' }]
+    };
+    const matched = new Set<number>();
+    const client = createClient(jest.fn(async () => ({ result: { value: true } })));
+    // Action
+    const result = await (useCase as unknown as {
+      processFilter: (
+        clientArg: FiltersCdpClient,
+        payloadArg: AsideFiltersPayload,
+        filterArg: FilterSnapshot,
+        matchedArg: Set<number>
+      ) => Promise<FilterSnapshot | null>;
+    }).processFilter(client, payload, filter, matched);
+    // Assert
+    expect(result?.plainOptions).toEqual([]);
+    expect(result?.selectedPlainOptions).toEqual([]);
+    expect(available.extractSingleSelectorOptions).not.toHaveBeenCalled();
+    expect(selected.extractSelectedSingleSelectorOptions).not.toHaveBeenCalled();
   });
 
   it('whenPayloadContainsUnsupportedSections_execute_shouldLogUnsupportedSections', async () => {
     // Arrange
     const { useCase, filterUpdate, logger } = createUseCase();
-    (useCase as unknown as { extractedFiltersFromDom: SupportedFilters }).extractedFiltersFromDom = createSupportedFilters([]);
-    (useCase as unknown as { preloadedFiltersFromConfiguration: SupportedFilters }).preloadedFiltersFromConfiguration = createSupportedFilters([]);
+    jest.spyOn(useCase as unknown as { buildBaseFilterSnapshots: () => readonly FilterSnapshot[] }, 'buildBaseFilterSnapshots')
+      .mockReturnValue([]);
     filterUpdate.applyRequiredActions.mockResolvedValue(undefined);
     const payload: AsideFiltersPayload = {
       found: true,
@@ -208,38 +329,55 @@ describe('ApplySearchFiltersUseCase', () => {
     // Action
     await useCase.execute(client);
     // Assert
-    expect(filterUpdate.applyRequiredActions).toHaveBeenCalledTimes(1);
+    expect(filterUpdate.applyRequiredActions).toHaveBeenCalledWith(client, [], []);
     expect(logger.log).toHaveBeenCalledWith('Not supported: Filtro no soportado');
   });
 
-  it('whenFilterTypeIsUnknown_processFilter_shouldClearPlainOptions', async () => {
+  it('whenAsideFiltersPayloadIsUndefined_execute_shouldUseMissingFallback', async () => {
     // Arrange
-    const { useCase } = createUseCase();
-    const unknownFilter = new FakeFilter('Custom', '#custom', 'UNKNOWN');
-    unknownFilter.setPlainOptions(['A', 'B']);
-    jest.spyOn(
-      useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
-      'isPresentBySelector'
-    ).mockResolvedValue(true);
-    const payload: AsideFiltersPayload = {
-      found: true,
-      sections: [{ index: 0, name: 'Custom', normalized: 'custom' }]
-    };
-    const matchedIndexes = new Set<number>();
-    const client = createClient(jest.fn(async () => ({ result: { value: true } })));
+    const { useCase, filterUpdate, logger } = createUseCase();
+    const client = createClient(jest.fn(async () => ({ result: { value: undefined } })));
     // Action
-    await (useCase as unknown as {
-      processFilter: (clientArg: FiltersCdpClient, payloadArg: AsideFiltersPayload, filter: Filter, matched: Set<number>) => Promise<void>;
-    }).processFilter(client, payload, unknownFilter, matchedIndexes);
+    await useCase.execute(client);
     // Assert
-    expect(unknownFilter.getSelectedPlainOptions()).toEqual([]);
-    expect(matchedIndexes.has(0)).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith('Filters root #aside-filters was not found on the page.');
+    expect(filterUpdate.applyRequiredActions).not.toHaveBeenCalled();
   });
 
-  it('whenFilterIsNotPresent_processFilter_shouldReturnWithoutProcessing', async () => {
+  it('whenFilterIsMissingDuringExecute_execute_shouldSkipAddingItToExtractedSnapshots', async () => {
+    // Arrange
+    const { useCase, filterUpdate } = createUseCase();
+    const missingFilter = createSnapshot({
+      name: 'No existe',
+      cssSelector: '#missing',
+      type: FilterType.SINGLE_SELECTOR
+    });
+    jest.spyOn(useCase as unknown as { buildBaseFilterSnapshots: () => readonly FilterSnapshot[] }, 'buildBaseFilterSnapshots')
+      .mockReturnValue([missingFilter]);
+    filterUpdate.applyRequiredActions.mockResolvedValue(undefined);
+    const payload: AsideFiltersPayload = { found: true, sections: [] };
+    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
+      if (params.expression.includes('Boolean(document.querySelector')) {
+        return { result: { value: false } };
+      }
+      return { result: { value: payload } };
+    });
+    const client = createClient(evaluate);
+    // Action
+    await useCase.execute(client);
+    // Assert
+    const [, , extracted] = filterUpdate.applyRequiredActions.mock.calls[0] ?? [];
+    expect(extracted).toEqual([]);
+  });
+
+  it('whenFilterIsNotPresent_processFilter_shouldReturnNull', async () => {
     // Arrange
     const { useCase, available, selected } = createUseCase();
-    const filter = new FakeFilter('No existe', '#missing', FilterType.SINGLE_SELECTOR);
+    const filter = createSnapshot({
+      name: 'No existe',
+      cssSelector: '#missing',
+      type: FilterType.SINGLE_SELECTOR
+    });
     jest.spyOn(
       useCase as unknown as { isPresentBySelector: (client: FiltersCdpClient, selector: string) => Promise<boolean> },
       'isPresentBySelector'
@@ -248,67 +386,19 @@ describe('ApplySearchFiltersUseCase', () => {
     const matched = new Set<number>();
     const client = createClient(jest.fn(async () => ({ result: { value: false } })));
     // Action
-    await (useCase as unknown as {
-      processFilter: (clientArg: FiltersCdpClient, payloadArg: AsideFiltersPayload, filterArg: Filter, matchedArg: Set<number>) => Promise<void>;
+    const result = await (useCase as unknown as {
+      processFilter: (
+        clientArg: FiltersCdpClient,
+        payloadArg: AsideFiltersPayload,
+        filterArg: FilterSnapshot,
+        matchedArg: Set<number>
+      ) => Promise<FilterSnapshot | null>;
     }).processFilter(client, payload, filter, matched);
     // Assert
+    expect(result).toBeNull();
     expect(available.extractSingleSelectorOptions).not.toHaveBeenCalled();
     expect(selected.extractSelectedSingleSelectorOptions).not.toHaveBeenCalled();
     expect(matched.size).toBe(0);
-  });
-
-  it.each([
-    {
-      label: 'dropdown',
-      filter: new FakeFilter('Tipo de inmueble', '#dropdown', FilterType.SINGLE_SELECTOR_DROPDOWN),
-      availableMockKey: 'extractSingleSelectorDropdownOptions',
-      selectedMockKey: 'extractSelectedSingleSelectorDropdownOptions'
-    },
-    {
-      label: 'multiple',
-      filter: new FakeFilter('Habitaciones', '#multiple', FilterType.MULTIPLE_SELECTOR),
-      availableMockKey: 'extractMultipleSelectorOptions',
-      selectedMockKey: 'extractSelectedMultipleSelectorOptions'
-    }
-  ])('whenSupportedFilterTypeIs$label_execute_shouldExtractAvailableAndSelectedOptions', async ({
-    filter,
-    availableMockKey,
-    selectedMockKey
-  }) => {
-    // Arrange
-    const { useCase, filterUpdate, available, selected } = createUseCase();
-    (useCase as unknown as { extractedFiltersFromDom: SupportedFilters }).extractedFiltersFromDom = createSupportedFilters([filter]);
-    (useCase as unknown as { preloadedFiltersFromConfiguration: SupportedFilters }).preloadedFiltersFromConfiguration = createSupportedFilters([filter]);
-    (available as unknown as Record<string, { mockResolvedValue: (value: unknown) => void }>)[availableMockKey].mockResolvedValue(['A', 'B']);
-    (selected as unknown as Record<string, { mockResolvedValue: (value: unknown) => void }>)[selectedMockKey].mockResolvedValue(['A']);
-    filterUpdate.applyRequiredActions.mockResolvedValue(undefined);
-    const payload: AsideFiltersPayload = {
-      found: true,
-      sections: [{ index: 0, name: filter.getName(), normalized: filter.getName().toLowerCase() }]
-    };
-    const evaluate = jest.fn<FiltersCdpClient['Runtime']['evaluate']>(async (params: { expression: string }) => {
-      if (params.expression.includes('Boolean(document.querySelector')) {
-        return { result: { value: true } };
-      }
-      return { result: { value: payload } };
-    });
-    const client = createClient(evaluate);
-    // Action
-    await useCase.execute(client);
-    // Assert
-    expect((available as unknown as Record<string, jest.Mock>)[availableMockKey]).toHaveBeenCalledWith(client, filter.getCssSelector());
-    expect((selected as unknown as Record<string, jest.Mock>)[selectedMockKey]).toHaveBeenCalledWith(client, filter.getCssSelector());
-    expect(filter.getSelectedPlainOptions()).toEqual(['A']);
-  });
-
-  it('whenAsidePayloadIsUndefined_readAsideFilters_shouldReturnNotFoundPayload', async () => {
-    // Arrange
-    const { useCase } = createUseCase();
-    const client = createClient(jest.fn(async () => ({ result: { value: undefined } })));
-    // Action
-    const payload = await (useCase as unknown as { readAsideFilters: (clientArg: FiltersCdpClient) => Promise<AsideFiltersPayload> }).readAsideFilters(client);
-    // Assert
-    expect(payload).toEqual({ found: false, sections: [] });
   });
 
   it('whenSupportedNameContainsSectionName_matches_shouldReturnTrueOnReverseIncludeBranch', () => {
@@ -321,47 +411,59 @@ describe('ApplySearchFiltersUseCase', () => {
     expect(result).toBe(true);
   });
 
-  it('whenFilterDefinitionsExist_applyConfiguredFilterDefinitions_shouldPopulatePreloadedSelections', () => {
+  it('whenFilterDefinitionsExist_buildConfiguredFilterSnapshots_shouldPopulateImmutableSelections', () => {
     // Arrange
-    const filterUpdate = new FilterUpdateServiceMockForApplySearchFiltersUseCase();
-    const available = new FilterAvailableOptionExtractorMockForApplySearchFiltersUseCase();
-    const selected = new FilterSelectedOptionExtractorMockForApplySearchFiltersUseCase();
-    const scraperConfig = {
-      getFilterDefinitionByName: (name: string) => {
-        if (name === 'Precio') {
-          return {
-            minOptions: ['0'],
-            maxOptions: ['1200'],
-            selectedMin: '0',
-            selectedMax: '1200'
-          };
-        }
-        if (name === 'Habitaciones') {
-          return {
-            plainOptions: ['1', '2'],
-            selectedPlainOptions: ['2']
-          };
-        }
-        return undefined;
+    const { useCase, scraperConfig } = createUseCase();
+    scraperConfig.getFilterDefinitionByName.mockImplementation((name: string) => {
+      if (name === 'Precio') {
+        return {
+          minOptions: ['0'],
+          maxOptions: ['1200'],
+          selectedMin: '0',
+          selectedMax: '1200'
+        };
       }
-    };
-    const useCase = new ApplySearchFiltersUseCase(
-      filterUpdate as unknown as FilterUpdateService,
-      available as unknown as FilterAvailableOptionExtractorService,
-      selected as unknown as FilterSelectedOptionExtractorService,
-      scraperConfig as unknown as ScraperConfig
-    );
+      if (name === 'Habitaciones') {
+        return {
+          plainOptions: ['1', '2'],
+          selectedPlainOptions: ['2']
+        };
+      }
+      return undefined;
+    });
+    const baseSnapshots = [
+      createSnapshot({ name: 'Precio', cssSelector: '#price', type: FilterType.MIN_MAX }),
+      createSnapshot({ name: 'Habitaciones', cssSelector: '#rooms', type: FilterType.MULTIPLE_SELECTOR })
+    ];
     // Action
-    const preloaded = (useCase as unknown as { preloadedFiltersFromConfiguration: SupportedFilters }).preloadedFiltersFromConfiguration.getSupportedFilters();
-    const price = preloaded.find((item) => item.getName() === 'Precio') as Filter | undefined;
-    const rooms = preloaded.find((item) => item.getName() === 'Habitaciones') as Filter | undefined;
+    const configured = (useCase as unknown as {
+      buildConfiguredFilterSnapshots: (base: readonly FilterSnapshot[]) => readonly FilterSnapshot[];
+    }).buildConfiguredFilterSnapshots(baseSnapshots);
     // Assert
-    expect((price as unknown as { minOptions: string[] }).minOptions).toEqual(['0']);
-    expect((price as unknown as { maxOptions: string[] }).maxOptions).toEqual(['1200']);
-    expect(price?.getSelectedMin()).toBe('0');
-    expect(price?.getSelectedMax()).toBe('1200');
-    expect((rooms as unknown as { plainOptions: string[] }).plainOptions).toEqual(['1', '2']);
-    expect(rooms?.getSelectedPlainOptions()).toEqual(['2']);
+    expect(configured[0]?.minOptions).toEqual(['0']);
+    expect(configured[0]?.maxOptions).toEqual(['1200']);
+    expect(configured[0]?.selectedMin).toBe('0');
+    expect(configured[0]?.selectedMax).toBe('1200');
+    expect(configured[1]?.plainOptions).toEqual(['1', '2']);
+    expect(configured[1]?.selectedPlainOptions).toEqual(['2']);
+    expect(Object.isFrozen(configured[0])).toBe(true);
+    expect(Object.isFrozen(configured[0]?.plainOptions)).toBe(true);
+    expect(baseSnapshots[0]?.selectedMin).toBeNull();
+    expect(baseSnapshots[1]?.selectedPlainOptions).toEqual([]);
+  });
+
+  it('whenBaseSnapshotsAreBuilt_buildBaseFilterSnapshots_shouldReturnImmutableDefaultsForSupportedFilters', () => {
+    // Arrange
+    const { useCase } = createUseCase();
+    // Action
+    const baseSnapshots = (useCase as unknown as { buildBaseFilterSnapshots: () => readonly FilterSnapshot[] }).buildBaseFilterSnapshots();
+    // Assert
+    expect(baseSnapshots.length).toBeGreaterThan(0);
+    expect(baseSnapshots.some((filter) => filter.name === 'Precio')).toBe(true);
+    expect(baseSnapshots.every((filter) => filter.plainOptions.length === 0)).toBe(true);
+    expect(baseSnapshots.every((filter) => filter.selectedPlainOptions.length === 0)).toBe(true);
+    expect(baseSnapshots.every((filter) => filter.selectedMin === null && filter.selectedMax === null)).toBe(true);
+    expect(Object.isFrozen(baseSnapshots)).toBe(true);
+    expect(Object.isFrozen(baseSnapshots[0] as object)).toBe(true);
   });
 });
-

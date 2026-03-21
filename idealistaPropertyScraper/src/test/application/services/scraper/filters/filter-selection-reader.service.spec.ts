@@ -51,6 +51,27 @@ describe('FilterSelectionReaderService', () => {
     }
   });
 
+  it('whenSnapshotShapeIsProvided_readCurrentPlainSelection_shouldResolveTypeAndSelectorFromSnapshot', async () => {
+    // Arrange
+    const service = new FilterSelectionReaderService();
+    const client = createClient();
+    const evaluateMock = client.Runtime.evaluate as unknown as { mockResolvedValue: (value: unknown) => void; mock: { calls: Array<[{
+      expression: string;
+      awaitPromise?: boolean;
+      returnByValue?: boolean;
+    }]> } };
+    evaluateMock.mockResolvedValue({ result: { value: ['A'] } });
+    const snapshotFilter = {
+      type: FilterType.SINGLE_SELECTOR_DROPDOWN,
+      cssSelector: '#snapshot-filter'
+    };
+    // Action
+    const result = await service.readCurrentPlainSelection(client, snapshotFilter as never);
+    // Assert
+    expect(result).toEqual(['A']);
+    expect(evaluateMock.mock.calls[0]?.[0].expression).toContain('#snapshot-filter');
+  });
+
   it('whenMinMaxSelectionIsRead_readCurrentMinMaxSelection_shouldReturnFallbackWhenValueIsMissing', async () => {
     // Arrange
     const service = new FilterSelectionReaderService();

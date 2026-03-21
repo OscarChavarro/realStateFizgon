@@ -1,15 +1,14 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { FilterSnapshot } from 'application/services/scraper/filters/filter-snapshot.type';
 import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
 import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
 import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
 import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
-import { SupportedFilters } from 'domain/filters/supported-filters';
-import { Price } from 'domain/filters/price';
-import { PropertyType } from 'domain/filters/property-type';
-import { Rooms } from 'domain/filters/rooms';
+import { FilterType } from 'domain/filters/filter-type';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
+
 class FilterLoaderDetectionServiceMock {
   readonly scrollToTop = jest.fn<(client: FiltersCdpClient) => Promise<void>>();
   readonly waitForPostClickStabilityOrReload = jest.fn<(client: FiltersCdpClient) => Promise<boolean>>();
@@ -39,8 +38,18 @@ function createClient(): FiltersCdpClient {
   };
 }
 
-function wrapFilters(filters: unknown[]): SupportedFilters {
-  return { getSupportedFilters: () => filters as never[] } as unknown as SupportedFilters;
+function createSnapshot(overrides: Partial<FilterSnapshot> = {}): FilterSnapshot {
+  return Object.freeze({
+    name: overrides.name ?? 'Habitaciones',
+    cssSelector: overrides.cssSelector ?? '#rooms',
+    type: overrides.type ?? FilterType.MULTIPLE_SELECTOR,
+    plainOptions: Object.freeze([...(overrides.plainOptions ?? [])]),
+    selectedPlainOptions: Object.freeze([...(overrides.selectedPlainOptions ?? [])]),
+    minOptions: Object.freeze([...(overrides.minOptions ?? [])]),
+    maxOptions: Object.freeze([...(overrides.maxOptions ?? [])]),
+    selectedMin: overrides.selectedMin ?? null,
+    selectedMax: overrides.selectedMax ?? null
+  });
 }
 
 describe('FilterUpdateService', () => {
@@ -59,10 +68,14 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Rooms();
-    expected.setSelectedPlainOptions(['2 habitaciones']);
+    const expected = createSnapshot({
+      name: 'Habitaciones',
+      cssSelector: '#rooms',
+      type: FilterType.MULTIPLE_SELECTOR,
+      selectedPlainOptions: ['2 habitaciones']
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
     expect(actionExecutor.clickPlainOption).not.toHaveBeenCalled();
     expect(loader.waitForPostClickStabilityOrReload).not.toHaveBeenCalled();
@@ -84,13 +97,17 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Rooms();
-    expected.setSelectedPlainOptions(['B']);
+    const expected = createSnapshot({
+      name: 'Habitaciones',
+      cssSelector: '#rooms',
+      type: FilterType.MULTIPLE_SELECTOR,
+      selectedPlainOptions: ['B']
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
-    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'B', 'enable');
-    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'A', 'disable');
+    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'B', 'enable');
+    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'A', 'disable');
     expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalled();
   });
 
@@ -110,14 +127,18 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new PropertyType();
-    expected.setSelectedPlainOptions(['Piso']);
+    const expected = createSnapshot({
+      name: 'Tipo de inmueble',
+      cssSelector: '#typology',
+      type: FilterType.SINGLE_SELECTOR_DROPDOWN,
+      selectedPlainOptions: ['Piso']
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
     expect(actionExecutor.clickSingleSelectorDropdownOption).toHaveBeenCalledWith(
       expect.any(Object),
-      expected.getCssSelector(),
+      expected.cssSelector,
       'Piso'
     );
     expect(actionExecutor.clickPlainOption).not.toHaveBeenCalled();
@@ -139,14 +160,56 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Price();
-    expected.setSelectedMin(null);
-    expected.setSelectedMax('800');
+    const expected = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX,
+      selectedMin: null,
+      selectedMax: '800'
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
-    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'min', 'Mín');
-    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'max', '800');
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'min', 'Mín');
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'max', '800');
+  });
+
+  it('whenOnlyMinDiffExists_applyRequiredActions_shouldSkipMaxClickBranch', async () => {
+    // Arrange
+    const loader = new FilterLoaderDetectionServiceMock();
+    loader.scrollToTop.mockResolvedValue(undefined);
+    loader.waitForPostClickStabilityOrReload.mockResolvedValue(true);
+    const selectionReader = new FilterSelectionReaderServiceMock();
+    selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
+    selectionReader.readCurrentMinMaxSelection
+      .mockResolvedValueOnce({ selectedMin: '100', selectedMax: '500' })
+      .mockResolvedValue({ selectedMin: '200', selectedMax: '500' });
+    const actionExecutor = new FilterActionExecutorServiceMock();
+    actionExecutor.clickMinMaxOption.mockResolvedValue(true);
+    const service = new FilterUpdateService(
+      loader as unknown as FilterLoaderDetectionService,
+      new FilterTextNormalizationService(),
+      selectionReader as unknown as FilterSelectionReaderService,
+      actionExecutor as unknown as FilterActionExecutorService
+    );
+    const expected = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX,
+      selectedMin: '200',
+      selectedMax: '500'
+    });
+    // Action
+    await service.applyRequiredActions(createClient(), [expected], []);
+    // Assert
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledTimes(1);
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'min', '200');
+    expect(actionExecutor.clickMinMaxOption).not.toHaveBeenCalledWith(
+      expect.any(Object),
+      expected.cssSelector,
+      'max',
+      expect.any(String)
+    );
   });
 
   it('whenExpectedMaxIsNullAndCurrentMaxIsSelected_applyRequiredActions_shouldUseMaxPlaceholderFallback', async () => {
@@ -167,23 +230,65 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Price();
-    expected.setSelectedMin(null);
-    expected.setSelectedMax(null);
+    const expected = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX,
+      selectedMin: null,
+      selectedMax: null
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
-    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'max', 'Máx');
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'max', 'Máx');
   });
 
-  it('whenOnlyMinChangesAndFlowStaysStable_applyRequiredActions_shouldSkipMaxUpdateBranch', async () => {
+  it('whenDisablingPlainOptionTriggersReload_applyRequiredActions_shouldRestartAndReconcileAgain', async () => {
     // Arrange
     const loader = new FilterLoaderDetectionServiceMock();
     loader.scrollToTop.mockResolvedValue(undefined);
-    loader.waitForPostClickStabilityOrReload.mockResolvedValue(true);
+    loader.waitForPostClickStabilityOrReload
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    const selectionReader = new FilterSelectionReaderServiceMock();
+    selectionReader.readCurrentPlainSelection
+      .mockResolvedValueOnce(['A'])
+      .mockResolvedValueOnce([]);
+    selectionReader.readCurrentMinMaxSelection.mockResolvedValue({ selectedMin: null, selectedMax: null });
+    const actionExecutor = new FilterActionExecutorServiceMock();
+    actionExecutor.clickPlainOption.mockResolvedValue(true);
+    const service = new FilterUpdateService(
+      loader as unknown as FilterLoaderDetectionService,
+      new FilterTextNormalizationService(),
+      selectionReader as unknown as FilterSelectionReaderService,
+      actionExecutor as unknown as FilterActionExecutorService
+    );
+    const expected = createSnapshot({
+      name: 'Habitaciones',
+      cssSelector: '#rooms',
+      type: FilterType.MULTIPLE_SELECTOR,
+      selectedPlainOptions: []
+    });
+    // Action
+    await service.applyRequiredActions(createClient(), [expected], []);
+    // Assert
+    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'A', 'disable');
+    expect(selectionReader.readCurrentPlainSelection).toHaveBeenCalledTimes(2);
+    expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalledTimes(1);
+  });
+
+  it('whenMinSelectionClickTriggersReload_applyRequiredActions_shouldRestartDuringMinMaxReconciliation', async () => {
+    // Arrange
+    const loader = new FilterLoaderDetectionServiceMock();
+    loader.scrollToTop.mockResolvedValue(undefined);
+    loader.waitForPostClickStabilityOrReload
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
     const selectionReader = new FilterSelectionReaderServiceMock();
     selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
-    selectionReader.readCurrentMinMaxSelection.mockResolvedValue({ selectedMin: '100', selectedMax: '800' });
+    selectionReader.readCurrentMinMaxSelection
+      .mockResolvedValueOnce({ selectedMin: '300', selectedMax: '1000' })
+      .mockResolvedValueOnce({ selectedMin: null, selectedMax: '1000' });
     const actionExecutor = new FilterActionExecutorServiceMock();
     actionExecutor.clickMinMaxOption.mockResolvedValue(true);
     const service = new FilterUpdateService(
@@ -192,14 +297,52 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Price();
-    expected.setSelectedMin('200');
-    expected.setSelectedMax('800');
+    const expected = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX,
+      selectedMin: null,
+      selectedMax: '1000'
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
-    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'min', '200');
-    expect(actionExecutor.clickMinMaxOption).not.toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'max', '800');
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'min', 'Mín');
+    expect(selectionReader.readCurrentMinMaxSelection).toHaveBeenCalledTimes(2);
+  });
+
+  it('whenMaxSelectionClickTriggersReload_applyRequiredActions_shouldRestartDuringMaxBranch', async () => {
+    // Arrange
+    const loader = new FilterLoaderDetectionServiceMock();
+    loader.scrollToTop.mockResolvedValue(undefined);
+    loader.waitForPostClickStabilityOrReload
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true);
+    const selectionReader = new FilterSelectionReaderServiceMock();
+    selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
+    selectionReader.readCurrentMinMaxSelection
+      .mockResolvedValueOnce({ selectedMin: '100', selectedMax: '500' })
+      .mockResolvedValueOnce({ selectedMin: '100', selectedMax: null });
+    const actionExecutor = new FilterActionExecutorServiceMock();
+    actionExecutor.clickMinMaxOption.mockResolvedValue(true);
+    const service = new FilterUpdateService(
+      loader as unknown as FilterLoaderDetectionService,
+      new FilterTextNormalizationService(),
+      selectionReader as unknown as FilterSelectionReaderService,
+      actionExecutor as unknown as FilterActionExecutorService
+    );
+    const expected = createSnapshot({
+      name: 'Precio',
+      cssSelector: '#price',
+      type: FilterType.MIN_MAX,
+      selectedMin: '100',
+      selectedMax: null
+    });
+    // Action
+    await service.applyRequiredActions(createClient(), [expected], []);
+    // Assert
+    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledWith(expect.any(Object), expected.cssSelector, 'max', 'Máx');
+    expect(selectionReader.readCurrentMinMaxSelection).toHaveBeenCalledTimes(2);
   });
 
   it('whenPostClickReloadHappens_applyRequiredActions_shouldRestartFromBeginningAndReconcileAgain', async () => {
@@ -222,10 +365,14 @@ describe('FilterUpdateService', () => {
       selectionReader as unknown as FilterSelectionReaderService,
       actionExecutor as unknown as FilterActionExecutorService
     );
-    const expected = new Rooms();
-    expected.setSelectedPlainOptions(['B']);
+    const expected = createSnapshot({
+      name: 'Habitaciones',
+      cssSelector: '#rooms',
+      type: FilterType.MULTIPLE_SELECTOR,
+      selectedPlainOptions: ['B']
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
     expect(selectionReader.readCurrentPlainSelection).toHaveBeenCalledTimes(2);
     expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalledTimes(1);
@@ -253,100 +400,16 @@ describe('FilterUpdateService', () => {
       error: jest.fn<(message: string) => void>()
     };
     (service as unknown as { logger: typeof logger }).logger = logger;
-    const expected = new PropertyType();
-    expected.setSelectedPlainOptions(['Piso']);
+    const expected = createSnapshot({
+      name: 'Tipo de inmueble',
+      cssSelector: '#typology',
+      type: FilterType.SINGLE_SELECTOR_DROPDOWN,
+      selectedPlainOptions: ['Piso']
+    });
     // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
+    await service.applyRequiredActions(createClient(), [expected], []);
     // Assert
     expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalledTimes(4);
     expect(logger.warn).toHaveBeenCalledWith('Reached maximum full reconciliation passes.');
-  });
-
-  it('whenMinMaxSelectionAlreadyMatches_applyRequiredActions_shouldSkipMinMaxClicks', async () => {
-    // Arrange
-    const loader = new FilterLoaderDetectionServiceMock();
-    loader.scrollToTop.mockResolvedValue(undefined);
-    loader.waitForPostClickStabilityOrReload.mockResolvedValue(true);
-    const selectionReader = new FilterSelectionReaderServiceMock();
-    selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
-    selectionReader.readCurrentMinMaxSelection.mockResolvedValue({ selectedMin: '200', selectedMax: '900' });
-    const actionExecutor = new FilterActionExecutorServiceMock();
-    const service = new FilterUpdateService(
-      loader as unknown as FilterLoaderDetectionService,
-      new FilterTextNormalizationService(),
-      selectionReader as unknown as FilterSelectionReaderService,
-      actionExecutor as unknown as FilterActionExecutorService
-    );
-    const expected = new Price();
-    expected.setSelectedMin('200');
-    expected.setSelectedMax('900');
-    // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
-    // Assert
-    expect(actionExecutor.clickMinMaxOption).not.toHaveBeenCalled();
-    expect(loader.waitForPostClickStabilityOrReload).not.toHaveBeenCalled();
-  });
-
-  it('whenPlainFilterOnlyNeedsDisabling_applyRequiredActions_shouldRestartAfterDisableClick', async () => {
-    // Arrange
-    const loader = new FilterLoaderDetectionServiceMock();
-    loader.scrollToTop.mockResolvedValue(undefined);
-    loader.waitForPostClickStabilityOrReload.mockResolvedValue(false);
-    const selectionReader = new FilterSelectionReaderServiceMock();
-    selectionReader.readCurrentPlainSelection.mockResolvedValue(['Sobrante']);
-    selectionReader.readCurrentMinMaxSelection.mockResolvedValue({ selectedMin: null, selectedMax: null });
-    const actionExecutor = new FilterActionExecutorServiceMock();
-    actionExecutor.clickPlainOption.mockResolvedValue(true);
-    const service = new FilterUpdateService(
-      loader as unknown as FilterLoaderDetectionService,
-      new FilterTextNormalizationService(),
-      selectionReader as unknown as FilterSelectionReaderService,
-      actionExecutor as unknown as FilterActionExecutorService
-    );
-    const expected = new Rooms();
-    expected.setSelectedPlainOptions([]);
-    // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
-    // Assert
-    expect(actionExecutor.clickPlainOption).toHaveBeenCalledWith(expect.any(Object), expected.getCssSelector(), 'Sobrante', 'disable');
-    expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalled();
-  });
-
-  it.each([
-    {
-      currentSelection: { selectedMin: '100', selectedMax: '800' },
-      expectedSelection: { selectedMin: '200', selectedMax: '800' }
-    },
-    {
-      currentSelection: { selectedMin: '200', selectedMax: '700' },
-      expectedSelection: { selectedMin: '200', selectedMax: '800' }
-    }
-  ])('whenMinMaxNeedsSingleSideUpdate_applyRequiredActions_shouldRestartAfterClickedBound', async ({
-    currentSelection,
-    expectedSelection
-  }) => {
-    // Arrange
-    const loader = new FilterLoaderDetectionServiceMock();
-    loader.scrollToTop.mockResolvedValue(undefined);
-    loader.waitForPostClickStabilityOrReload.mockResolvedValue(false);
-    const selectionReader = new FilterSelectionReaderServiceMock();
-    selectionReader.readCurrentPlainSelection.mockResolvedValue([]);
-    selectionReader.readCurrentMinMaxSelection.mockResolvedValue(currentSelection);
-    const actionExecutor = new FilterActionExecutorServiceMock();
-    actionExecutor.clickMinMaxOption.mockResolvedValue(true);
-    const service = new FilterUpdateService(
-      loader as unknown as FilterLoaderDetectionService,
-      new FilterTextNormalizationService(),
-      selectionReader as unknown as FilterSelectionReaderService,
-      actionExecutor as unknown as FilterActionExecutorService
-    );
-    const expected = new Price();
-    expected.setSelectedMin(expectedSelection.selectedMin);
-    expected.setSelectedMax(expectedSelection.selectedMax);
-    // Action
-    await service.applyRequiredActions(createClient(), wrapFilters([expected]), wrapFilters([]));
-    // Assert
-    expect(actionExecutor.clickMinMaxOption).toHaveBeenCalledTimes(4);
-    expect(loader.waitForPostClickStabilityOrReload).toHaveBeenCalled();
   });
 });

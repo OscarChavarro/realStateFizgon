@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { FilterLoaderDetectionService } from 'application/services/scraper/filters/filter-loader-detection.service';
-import { Filter } from 'domain/filters/filter';
+import { FilterSnapshot } from 'application/services/scraper/filters/filter-snapshot.type';
 import { FilterType } from 'domain/filters/filter-type';
-import { SupportedFilters } from 'domain/filters/supported-filters';
 import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
 import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
 import { FilterActionExecutorService } from 'application/services/scraper/filters/filter-action-executor.service';
@@ -24,11 +23,11 @@ export class FilterUpdateService {
 
   async applyRequiredActions(
     client: FiltersCdpClient,
-    preloadedFiltersFromConfiguration: SupportedFilters,
-    extractedFiltersFromDom: SupportedFilters
+    preloadedFiltersFromConfiguration: readonly FilterSnapshot[],
+    extractedFiltersFromDom: readonly FilterSnapshot[]
   ): Promise<void> {
-    const preloaded = preloadedFiltersFromConfiguration.getSupportedFilters();
-    const extractedCount = extractedFiltersFromDom.getSupportedFilters().length;
+    const preloaded = preloadedFiltersFromConfiguration;
+    const extractedCount = extractedFiltersFromDom.length;
     this.logger.log(`Reconciling ${preloaded.length} filters against current DOM (${extractedCount} extracted).`);
 
     for (let pass = 1; pass <= this.maxFullReconciliationPasses; pass += 1) {
@@ -52,10 +51,10 @@ export class FilterUpdateService {
     this.logger.warn('Reached maximum full reconciliation passes.');
   }
 
-  private async reconcileFilter(client: FiltersCdpClient, expectedFilter: Filter): Promise<boolean> {
+  private async reconcileFilter(client: FiltersCdpClient, expectedFilter: FilterSnapshot): Promise<boolean> {
     for (let attempt = 1; attempt <= this.maxReconciliationAttempts; attempt += 1) {
-      if (expectedFilter.getType() === FilterType.MIN_MAX) {
-        const currentSelection = await this.filterSelectionReaderService.readCurrentMinMaxSelection(client, expectedFilter.getCssSelector());
+      if (expectedFilter.type === FilterType.MIN_MAX) {
+        const currentSelection = await this.filterSelectionReaderService.readCurrentMinMaxSelection(client, expectedFilter.cssSelector);
         const hasDiff = this.hasMinMaxDiff(expectedFilter, currentSelection);
 
         if (!hasDiff) {
@@ -69,7 +68,7 @@ export class FilterUpdateService {
       } else {
         const currentSelection = await this.filterSelectionReaderService.readCurrentPlainSelection(client, expectedFilter);
         const { toEnable, toDisable } = this.getPlainSelectionDiff(
-          expectedFilter.getSelectedPlainOptions(),
+          [...expectedFilter.selectedPlainOptions],
           currentSelection
         );
 
@@ -84,13 +83,13 @@ export class FilterUpdateService {
       }
     }
 
-    this.logger.warn(`Could not fully reconcile filter ${expectedFilter.getName()} after retries.`);
+    this.logger.warn(`Could not fully reconcile filter ${expectedFilter.name} after retries.`);
     return false;
   }
 
-  private hasMinMaxDiff(expectedFilter: Filter, currentSelection: MinMaxSelection): boolean {
-    return expectedFilter.getSelectedMin() !== currentSelection.selectedMin
-      || expectedFilter.getSelectedMax() !== currentSelection.selectedMax;
+  private hasMinMaxDiff(expectedFilter: FilterSnapshot, currentSelection: MinMaxSelection): boolean {
+    return expectedFilter.selectedMin !== currentSelection.selectedMin
+      || expectedFilter.selectedMax !== currentSelection.selectedMax;
   }
 
   private getPlainSelectionDiff(expected: string[], current: string[]): { toEnable: string[]; toDisable: string[] } {
@@ -113,15 +112,15 @@ export class FilterUpdateService {
 
   private async applyPlainSelectionActions(
     client: FiltersCdpClient,
-    expectedFilter: Filter,
+    expectedFilter: FilterSnapshot,
     toEnable: string[],
     toDisable: string[]
   ): Promise<boolean> {
-    if (expectedFilter.getType() === FilterType.SINGLE_SELECTOR_DROPDOWN) {
+    if (expectedFilter.type === FilterType.SINGLE_SELECTOR_DROPDOWN) {
       for (const option of toEnable) {
         const clicked = await this.filterActionExecutorService.clickSingleSelectorDropdownOption(
           client,
-          expectedFilter.getCssSelector(),
+          expectedFilter.cssSelector,
           option
         );
         if (clicked && await this.shouldRestartAfterClick(client)) {
@@ -135,7 +134,7 @@ export class FilterUpdateService {
     for (const option of toEnable) {
       const clicked = await this.filterActionExecutorService.clickPlainOption(
         client,
-        expectedFilter.getCssSelector(),
+        expectedFilter.cssSelector,
         option,
         'enable'
       );
@@ -147,7 +146,7 @@ export class FilterUpdateService {
     for (const option of toDisable) {
       const clicked = await this.filterActionExecutorService.clickPlainOption(
         client,
-        expectedFilter.getCssSelector(),
+        expectedFilter.cssSelector,
         option,
         'disable'
       );
@@ -161,17 +160,17 @@ export class FilterUpdateService {
 
   private async applyMinMaxActions(
     client: FiltersCdpClient,
-    expectedFilter: Filter,
+    expectedFilter: FilterSnapshot,
     currentSelection: MinMaxSelection
   ): Promise<boolean> {
-    const expectedMin = expectedFilter.getSelectedMin();
-    const expectedMax = expectedFilter.getSelectedMax();
+    const expectedMin = expectedFilter.selectedMin;
+    const expectedMax = expectedFilter.selectedMax;
 
     if (expectedMin !== currentSelection.selectedMin) {
       const value = expectedMin ?? 'Mín';
       const clicked = await this.filterActionExecutorService.clickMinMaxOption(
         client,
-        expectedFilter.getCssSelector(),
+        expectedFilter.cssSelector,
         'min',
         value
       );
@@ -184,7 +183,7 @@ export class FilterUpdateService {
       const value = expectedMax ?? 'Máx';
       const clicked = await this.filterActionExecutorService.clickMinMaxOption(
         client,
-        expectedFilter.getCssSelector(),
+        expectedFilter.cssSelector,
         'max',
         value
       );

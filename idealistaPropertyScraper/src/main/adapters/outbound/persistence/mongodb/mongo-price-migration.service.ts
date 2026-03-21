@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, Document } from 'mongodb';
-import { Property } from 'domain/property/property';
+import { Collection } from 'mongodb';
+import { MongoPropertyDocument } from 'adapters/outbound/persistence/mongodb/mongo-property.document';
 
 export type PriceFixSummary = {
   scanned: number;
@@ -11,7 +11,7 @@ export type PriceFixSummary = {
 
 @Injectable()
 export class MongoPriceMigrationService {
-  async fixStringPricesToNumbers(collection: Collection<Property & Document>): Promise<PriceFixSummary> {
+  async fixStringPricesToNumbers(collection: Collection<MongoPropertyDocument>): Promise<PriceFixSummary> {
     const cursor = collection.find(
       {
         price: { $exists: true, $type: 'string' }

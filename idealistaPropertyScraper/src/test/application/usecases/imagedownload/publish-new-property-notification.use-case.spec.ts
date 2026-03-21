@@ -46,7 +46,7 @@ describe('PublishNewPropertyNotificationUseCase', () => {
     await useCase.execute(property);
     // Assert
     expect(newPropertyNotificationPublisherPort.publishNewPropertyNotification).toHaveBeenCalledWith({
-      url: property.url,
+      url: property.url.value,
       title: property.title
     });
   });

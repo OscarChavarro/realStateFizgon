@@ -132,7 +132,7 @@ describe('GeoCoordinateHintService', () => {
     const enriched = await service.enrichProperty(runtime, property, 'ONLY_WHEN_MISSING_IN_DB');
     // Assert
     expect(enriched).toBe(property);
-    expect(propertyPersistencePortMock.hasGeoLocationHintByUrl).toHaveBeenCalledWith(property.url);
+    expect(propertyPersistencePortMock.hasGeoLocationHintByUrl).toHaveBeenCalledWith(property.url.value);
     expect(runtime.evaluate).not.toHaveBeenCalled();
   });
 
@@ -153,7 +153,7 @@ describe('GeoCoordinateHintService', () => {
     // Action
     const enriched = await service.enrichProperty(runtime, property, 'ONLY_WHEN_MISSING_IN_DB');
     // Assert
-    expect(propertyPersistencePortMock.hasGeoLocationHintByUrl).toHaveBeenCalledWith(property.url);
+    expect(propertyPersistencePortMock.hasGeoLocationHintByUrl).toHaveBeenCalledWith(property.url.value);
     expect(runtime.evaluate).toHaveBeenCalledTimes(1);
     expect(enriched.geoLocationHint).toEqual({ lat: 40.1, lon: -3.1 });
   });

@@ -20,12 +20,12 @@ export class PublishNewPropertyNotificationUseCase {
   async execute(property: Property): Promise<void> {
     try {
       await this.newPropertyNotificationPublisherPort.publishNewPropertyNotification({
-        url: property.url,
+        url: property.url.value,
         title: property.title
       });
     } catch (error) {
       this.logger.error(
-        `Property was stored in MongoDB but notification publish failed for "${property.url}". ${this.errorMessagePort.toErrorMessage(error)}`
+        `Property was stored in MongoDB but notification publish failed for "${property.url.value}". ${this.errorMessagePort.toErrorMessage(error)}`
       );
     }
   }

@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Collection, Document, MongoServerError } from 'mongodb';
-import { Property } from 'domain/property/property';
+import { Collection, MongoServerError } from 'mongodb';
 
 import { MONGO_PROPERTIES_COLLECTION_NAME } from 'adapters/outbound/persistence/mongodb/mongo-properties.collection-name';
 import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
+import { MongoPropertyDocument } from 'adapters/outbound/persistence/mongodb/mongo-property.document';
 
 @Injectable()
 export class MongoPropertiesIndexService {
@@ -22,11 +22,11 @@ export class MongoPropertiesIndexService {
       this.logger.log(`Created MongoDB collection "${MONGO_PROPERTIES_COLLECTION_NAME}".`);
     }
 
-    const collection = database.collection<Property & Document>(MONGO_PROPERTIES_COLLECTION_NAME);
+    const collection = database.collection<MongoPropertyDocument>(MONGO_PROPERTIES_COLLECTION_NAME);
     await this.ensureUniqueUrlIndex(collection);
   }
 
-  private async ensureUniqueUrlIndex(collection: Collection<Property & Document>): Promise<void> {
+  private async ensureUniqueUrlIndex(collection: Collection<MongoPropertyDocument>): Promise<void> {
     const indexes = await collection.indexes();
     const urlIndexes = indexes.filter((index) => this.isSingleUrlIndex(index.key));
     const uniqueUrlIndex = urlIndexes.find((index) => index.unique === true);

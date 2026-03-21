@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, Document } from 'mongodb';
 import { Property } from 'domain/property/property';
 import { PropertyUrl } from 'domain/property/property-url';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';

@@ -36,13 +36,13 @@ export class GeoCoordinateHintService {
     mode: GeoHintFetchMode
   ): Promise<Property> {
     if (mode === 'ONLY_WHEN_MISSING_IN_DB') {
-      const hasHint = await this.propertyReadPort.hasGeoLocationHintByUrl(property.url);
+      const hasHint = await this.propertyReadPort.hasGeoLocationHintByUrl(property.url.value);
       if (hasHint) {
         return property;
       }
     }
 
-    const geoLocationHint = await this.fetchGeoLocationHint(runtime, property.propertyId, property.url);
+    const geoLocationHint = await this.fetchGeoLocationHint(runtime, property.propertyId, property.url.value);
     return this.withGeoLocationHint(property, geoLocationHint);
   }
 

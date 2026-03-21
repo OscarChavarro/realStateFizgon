@@ -4,6 +4,7 @@ import { PropertyImage } from 'domain/property/property-image';
 import { PropertyMainFeatures } from 'domain/property/property-main-features';
 import { Property } from 'domain/property/property';
 import { PropertyId } from 'domain/property/property-id';
+import { PropertyUrl } from 'domain/property/property-url';
 import { Price } from 'domain/property/price';
 
 describe('Property domain models', () => {
@@ -64,19 +65,17 @@ describe('Property domain models', () => {
       images
     });
     // Assert
-    expect(property).toEqual({
-      propertyId: '123456789',
-      url: 'https://www.idealista.com/inmueble/123456789/',
-      title: 'Piso en venta',
-      location: 'Madrid',
-      price: 450000,
-      mainFeatures,
-      advertiserComment: 'Excelente ubicación',
-      featureGroups,
-      publicationAge: 'Publicado ayer',
-      images,
-      geoLocationHint: undefined
-    });
+    expect(property.propertyId).toBe('123456789');
+    expect(property.url.value).toBe('https://www.idealista.com/inmueble/123456789/');
+    expect(property.title).toBe('Piso en venta');
+    expect(property.location).toBe('Madrid');
+    expect(property.price).toBe(450000);
+    expect(property.mainFeatures).toBe(mainFeatures);
+    expect(property.advertiserComment).toBe('Excelente ubicación');
+    expect(property.featureGroups).toEqual(featureGroups);
+    expect(property.publicationAge).toBe('Publicado ayer');
+    expect(property.images).toEqual(images);
+    expect(property.geoLocationHint).toBeUndefined();
   });
 
   it('whenPropertyIdIsNotProvided_create_shouldDeriveIdFromUrl', () => {
@@ -97,7 +96,29 @@ describe('Property domain models', () => {
     });
     // Assert
     expect(property.propertyId).toBe('987654321');
-    expect(property.url).toBe('https://www.idealista.com/inmueble/987654321/');
+    expect(property.url.value).toBe('https://www.idealista.com/inmueble/987654321/');
+  });
+
+  it('whenPropertyIsCreatedWithPropertyUrlValueObject_create_shouldAcceptTypedUrl', () => {
+    // Arrange
+    const mainFeatures = new PropertyMainFeatures(null, null, null, []);
+    const propertyUrl = PropertyUrl.create('https://www.idealista.com/inmueble/555/?foo=bar');
+    // Action
+    const property = Property.create({
+      propertyId: '555',
+      url: propertyUrl,
+      title: 'Title',
+      location: 'Madrid',
+      price: 1000,
+      mainFeatures,
+      advertiserComment: null,
+      featureGroups: [],
+      publicationAge: null,
+      images: []
+    });
+    // Assert
+    expect(property.url).toBe(propertyUrl);
+    expect(property.url.value).toBe('https://www.idealista.com/inmueble/555/');
   });
 
   it('whenPropertyIdConflictsWithUrl_create_shouldThrowInvariantViolation', () => {
@@ -161,7 +182,7 @@ describe('Property domain models', () => {
     expect(withGeo.geoLocationHint).toEqual({ lat: 40.4, lon: -3.7 });
     expect(withImages.images.map((image) => image.url)).toEqual(['https://img/2.jpg']);
     expect(withImages.propertyId).toBe('123');
-    expect(withImages.url).toBe('https://www.idealista.com/inmueble/123/');
+    expect(withImages.url.value).toBe('https://www.idealista.com/inmueble/123/');
   });
 
   it('whenValueObjectsAreCreated_constructors_shouldEnforceExplicitInvariants', () => {

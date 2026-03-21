@@ -43,9 +43,9 @@ export class FinalizePropertyImagesUseCase {
   ) {}
 
   async execute(property: Property, scrapeRunContext: ScrapeRunContext): Promise<void> {
-    const propertyId = this.imageUrlRulesService.extractPropertyIdFromUrl(property.url);
+    const propertyId = this.imageUrlRulesService.extractPropertyIdFromUrl(property.url.value);
     if (!propertyId) {
-      this.logger.error(`Unable to extract property id from URL: ${property.url}`);
+      this.logger.error(`Unable to extract property id from URL: ${property.url.value}`);
       return;
     }
 

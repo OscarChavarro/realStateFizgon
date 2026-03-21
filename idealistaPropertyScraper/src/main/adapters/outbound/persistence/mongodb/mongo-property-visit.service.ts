@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Collection, Document } from 'mongodb';
-import { Property } from 'domain/property/property';
+import { Collection } from 'mongodb';
+import { MongoPropertyDocument } from 'adapters/outbound/persistence/mongodb/mongo-property.document';
 
 @Injectable()
 export class MongoPropertyVisitService {
   async touchPropertyLastTimeVisited(
-    collection: Collection<Property & Document>,
+    collection: Collection<MongoPropertyDocument>,
     url: string,
     visitedAt: Date = new Date()
   ): Promise<void> {
@@ -21,7 +21,7 @@ export class MongoPropertyVisitService {
   }
 
   async getOpenPropertyUrlsWithoutLastTimeVisited(
-    collection: Collection<Property & Document>
+    collection: Collection<MongoPropertyDocument>
   ): Promise<string[]> {
     const documents = await collection.find(
       {
@@ -40,7 +40,7 @@ export class MongoPropertyVisitService {
     return this.extractValidUrls(documents);
   }
 
-  async getOpenPropertyUrls(collection: Collection<Property & Document>): Promise<string[]> {
+  async getOpenPropertyUrls(collection: Collection<MongoPropertyDocument>): Promise<string[]> {
     const documents = await collection.find(
       {
         closedBy: { $exists: false },

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { Collection, Document } from 'mongodb';
+import { Collection } from 'mongodb';
 import { MongoDatabaseConnectionService } from 'adapters/outbound/persistence/mongodb/mongo-database-connection.service';
 import { MongoDatabaseService } from 'adapters/outbound/persistence/mongodb/mongo-database.service';
+import { MongoPropertyDocument } from 'adapters/outbound/persistence/mongodb/mongo-property.document';
 import { PriceFixSummary } from 'adapters/outbound/persistence/mongodb/mongo-price-migration.service';
 import { Property } from 'domain/property/property';
 import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
@@ -9,7 +10,7 @@ import { PropertyImage } from 'domain/property/property-image';
 import { PropertyMainFeatures } from 'domain/property/property-main-features';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 
-type PropertiesCollection = Collection<Property & Document>;
+type PropertiesCollection = Collection<MongoPropertyDocument>;
 
 class MongoDatabaseConnectionServiceMock {
   readonly getPropertiesCollection = jest.fn<() => Promise<PropertiesCollection>>();

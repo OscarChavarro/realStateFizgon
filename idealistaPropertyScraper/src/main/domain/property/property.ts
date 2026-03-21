@@ -6,7 +6,7 @@ import { PropertyId } from 'domain/property/property-id';
 import { PropertyMainFeatures } from 'domain/property/property-main-features';
 import { PropertyUrl } from 'domain/property/property-url';
 
-type PropertyCreateParams = {
+export type PropertyPrimitives = {
   propertyId: string | null;
   url: string;
   title: string | null;
@@ -20,10 +20,14 @@ type PropertyCreateParams = {
   geoLocationHint?: GeoLocationHint | null;
 };
 
+export type PropertyCreateParams = Omit<PropertyPrimitives, 'url'> & {
+  url: string | PropertyUrl;
+};
+
 export class Property {
   private constructor(
     public readonly propertyId: string | null,
-    public readonly url: string,
+    public readonly url: PropertyUrl,
     public readonly title: string | null,
     public readonly location: string | null,
     public readonly price: number | null,
@@ -36,7 +40,7 @@ export class Property {
   ) {}
 
   static create(params: PropertyCreateParams): Property {
-    const propertyUrl = PropertyUrl.create(params.url);
+    const propertyUrl = params.url instanceof PropertyUrl ? params.url : PropertyUrl.create(params.url);
     const propertyId = this.resolvePropertyId(params.propertyId, propertyUrl);
     const price = Price.createOptional(params.price);
     const normalizedTitle = this.normalizeOptionalText(params.title);
@@ -46,7 +50,7 @@ export class Property {
 
     return new Property(
       propertyId?.value ?? null,
-      propertyUrl.value,
+      propertyUrl,
       normalizedTitle,
       normalizedLocation,
       price?.toNumber() ?? null,
@@ -80,10 +84,10 @@ export class Property {
     });
   }
 
-  toPrimitives(): PropertyCreateParams {
+  toPrimitives(): PropertyPrimitives {
     return {
       propertyId: this.propertyId,
-      url: this.url,
+      url: this.url.value,
       title: this.title,
       location: this.location,
       price: this.price,
@@ -101,7 +105,7 @@ export class Property {
   }
 
   get urlValueObject(): PropertyUrl {
-    return PropertyUrl.create(this.url);
+    return this.url;
   }
 
   get priceValueObject(): Price | null {

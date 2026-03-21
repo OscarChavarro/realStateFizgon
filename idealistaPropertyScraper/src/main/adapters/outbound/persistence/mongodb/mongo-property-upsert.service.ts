@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Document, MongoServerError } from 'mongodb';
 import { MongoPublicationDateMapperService } from 'adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
+import { MongoPropertyDocument } from 'adapters/outbound/persistence/mongodb/mongo-property.document';
 import { Property } from 'domain/property/property';
 import { PropertyUrl } from 'domain/property/property-url';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
@@ -11,18 +12,19 @@ export class MongoPropertyUpsertService {
     private readonly mongoPublicationDateMapperService: MongoPublicationDateMapperService
   ) {}
 
-  async saveProperty(collection: Collection<Property & Document>, property: Property): Promise<SavePropertyResult> {
+  async saveProperty(collection: Collection<MongoPropertyDocument>, property: Property): Promise<SavePropertyResult> {
     const now = new Date();
     const publicationDate = this.mongoPublicationDateMapperService.mapPublicationDate(property.publicationAge, now);
-    const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
+    const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url.value);
     const normalizedProperty: Property = propertyId === property.propertyId
       ? property
       : property.withPropertyId(propertyId);
     const upsertSetDocument = this.toSetDocument(normalizedProperty);
+    const normalizedUrl = normalizedProperty.url.value;
 
     try {
       const result = await collection.updateOne(
-        { url: normalizedProperty.url },
+        { url: normalizedUrl },
         {
           $set: upsertSetDocument,
           $unset: {
@@ -41,7 +43,7 @@ export class MongoPropertyUpsertService {
       }
 
       await collection.updateOne(
-        { url: normalizedProperty.url },
+        { url: normalizedUrl },
         {
           $set: this.toSetDocument(normalizedProperty, now),
           $unset: {
@@ -54,7 +56,7 @@ export class MongoPropertyUpsertService {
       if (publicationDate) {
         await collection.updateOne(
           {
-            url: normalizedProperty.url,
+            url: normalizedUrl,
             publicationDate: { $exists: false }
           },
           {
@@ -71,7 +73,7 @@ export class MongoPropertyUpsertService {
       }
 
       await collection.updateOne(
-        { url: normalizedProperty.url },
+        { url: normalizedUrl },
         {
           $set: this.toSetDocument(normalizedProperty, now),
           $unset: {
@@ -84,7 +86,7 @@ export class MongoPropertyUpsertService {
       if (publicationDate) {
         await collection.updateOne(
           {
-            url: normalizedProperty.url,
+            url: normalizedUrl,
             publicationDate: { $exists: false }
           },
           {
@@ -106,9 +108,9 @@ export class MongoPropertyUpsertService {
     return PropertyUrl.extractPropertyId(url);
   }
 
-  private toSetDocument(property: Property, updatedBy?: Date): Property & Document {
+  private toSetDocument(property: Property, updatedBy?: Date): MongoPropertyDocument {
     const document: Record<string, unknown> = {
-      ...property
+      ...property.toPrimitives()
     };
     if (updatedBy) {
       document['updatedBy'] = updatedBy;
@@ -120,6 +122,6 @@ export class MongoPropertyUpsertService {
       }
     }
 
-    return document as Property & Document;
+    return document as MongoPropertyDocument;
   }
 }

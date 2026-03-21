@@ -16,18 +16,18 @@ class ErrorMessagePortMockForPublishNewPropertyNotificationUseCase implements Er
 }
 
 function createProperty(): Property {
-  return new Property(
-    '123',
-    'https://www.idealista.com/inmueble/123/',
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['Ascensor'])],
-    'hace 3 días',
-    [new PropertyImage('https://img/a.jpg', 'img')]
-  );
+  return Property.create({
+    propertyId: '123',
+    url: 'https://www.idealista.com/inmueble/123/',
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['Ascensor'])],
+    publicationAge: 'hace 3 días',
+    images: [new PropertyImage('https://img/a.jpg', 'img')]
+  });
 }
 
 describe('PublishNewPropertyNotificationUseCase', () => {

@@ -224,19 +224,7 @@ export class PropertyDetailDomExtractorService {
 
   filterPropertyImagesByBlurPattern(property: Property): Property {
     const images = property.images.filter((image) => this.isIdealistaBlurUrl(image.url));
-    return new Property(
-      property.propertyId,
-      property.url,
-      property.title,
-      property.location,
-      property.price,
-      property.mainFeatures,
-      property.advertiserComment,
-      property.featureGroups,
-      property.publicationAge,
-      images,
-      property.geoLocationHint
-    );
+    return property.withImages(images);
   }
 
   private async evaluateExpression<T>(runtime: RuntimeClient, expression: string): Promise<T> {
@@ -255,24 +243,19 @@ export class PropertyDetailDomExtractorService {
     );
     const images = payload.images.map((image) => new PropertyImage(image.url, image.title));
     const normalizedPrice = this.parsePriceToNumber(payload.price);
-    const propertyId = this.extractPropertyIdFromUrl(url);
 
-    return new Property(
-      propertyId,
+    return Property.create({
+      propertyId: PropertyUrl.extractPropertyId(url),
       url,
-      payload.title,
-      payload.location,
-      normalizedPrice,
+      title: payload.title,
+      location: payload.location,
+      price: normalizedPrice,
       mainFeatures,
-      payload.advertiserComment,
+      advertiserComment: payload.advertiserComment,
       featureGroups,
-      payload.publicationAge,
+      publicationAge: payload.publicationAge,
       images
-    );
-  }
-
-  private extractPropertyIdFromUrl(url: string): string | null {
-    return PropertyUrl.extractPropertyId(url);
+    });
   }
 
   private buildMainFeatures(infoFeatures: string[]): PropertyMainFeatures {

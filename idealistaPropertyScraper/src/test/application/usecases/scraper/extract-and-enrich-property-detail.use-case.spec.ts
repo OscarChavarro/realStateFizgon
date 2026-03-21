@@ -31,18 +31,18 @@ function createRuntime(): RuntimeClient {
 }
 
 function createProperty(url: string): Property {
-  return new Property(
-    '123',
+  return Property.create({
+    propertyId: null,
     url,
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['Ascensor'])],
-    'hace 1 día',
-    [new PropertyImage('https://img/1.jpg', null)]
-  );
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['Ascensor'])],
+    publicationAge: 'hace 1 día',
+    images: [new PropertyImage('https://img/1.jpg', null)]
+  });
 }
 
 function createUseCase() {

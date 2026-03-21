@@ -72,18 +72,18 @@ function createClient(network?: FakeNetwork): NetworkEnabledCdpClient {
 }
 
 function createProperty(url: string, images: PropertyImage[]): Property {
-  return new Property(
-    '123',
+  return Property.create({
+    propertyId: '123',
     url,
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['Ascensor'])],
-    'hace 2 dias',
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['Ascensor'])],
+    publicationAge: 'hace 2 dias',
     images
-  );
+  });
 }
 
 function createService() {

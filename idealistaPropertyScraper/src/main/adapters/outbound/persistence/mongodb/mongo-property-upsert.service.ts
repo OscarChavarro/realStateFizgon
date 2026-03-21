@@ -17,10 +17,7 @@ export class MongoPropertyUpsertService {
     const propertyId = property.propertyId ?? this.extractPropertyIdFromUrl(property.url);
     const normalizedProperty: Property = propertyId === property.propertyId
       ? property
-      : {
-          ...property,
-          propertyId
-        };
+      : property.withPropertyId(propertyId);
     const upsertSetDocument = this.toSetDocument(normalizedProperty);
 
     try {

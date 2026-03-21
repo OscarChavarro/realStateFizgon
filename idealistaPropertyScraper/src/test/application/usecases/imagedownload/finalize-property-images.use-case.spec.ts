@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageFileNameService } from 'application/services/imagedownload/image-file-name.service';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
@@ -73,18 +73,18 @@ class ErrorMessagePortMock implements ErrorMessagePort {
 }
 
 function createProperty(url: string, images: PropertyImage[]): Property {
-  return new Property(
-    '123',
+  return Property.create({
+    propertyId: null,
     url,
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['Ascensor'])],
-    'hace 2 dias',
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80 m2', '2', 'Exterior', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['Ascensor'])],
+    publicationAge: 'hace 2 dias',
     images
-  );
+  });
 }
 
 function createUseCase() {

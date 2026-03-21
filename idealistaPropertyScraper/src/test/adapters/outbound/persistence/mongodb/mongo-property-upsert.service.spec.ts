@@ -12,18 +12,18 @@ type UpsertCollectionMock = {
 };
 
 function createProperty(url: string, propertyId: string | null = null): Property {
-  return new Property(
+  return Property.create({
     propertyId,
     url,
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80m2', '2', '2nd', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['a'])],
-    'Anuncio actualizado hace 10 días',
-    [new PropertyImage('https://img/1.jpg', null)]
-  );
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80m2', '2', '2nd', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['a'])],
+    publicationAge: 'Anuncio actualizado hace 10 días',
+    images: [new PropertyImage('https://img/1.jpg', null)]
+  });
 }
 
 function createService(): MongoPropertyUpsertService {
@@ -78,19 +78,19 @@ describe('MongoPropertyUpsertService', () => {
       updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
     };
     const service = createService();
-    const property = new Property(
-      '123456781',
-      'https://www.idealista.com/inmueble/123456781/',
-      'Title',
-      'Madrid',
-      1000,
-      new PropertyMainFeatures('80m2', '2', '2nd', []),
-      'Comment',
-      [new PropertyFeatureGroup('General', ['a'])],
-      'Anuncio actualizado hace 1 día',
-      [new PropertyImage('https://img/1.jpg', null)],
-      null
-    );
+    const property = Property.create({
+      propertyId: '123456781',
+      url: 'https://www.idealista.com/inmueble/123456781/',
+      title: 'Title',
+      location: 'Madrid',
+      price: 1000,
+      mainFeatures: new PropertyMainFeatures('80m2', '2', '2nd', []),
+      advertiserComment: 'Comment',
+      featureGroups: [new PropertyFeatureGroup('General', ['a'])],
+      publicationAge: 'Anuncio actualizado hace 1 día',
+      images: [new PropertyImage('https://img/1.jpg', null)],
+      geoLocationHint: null
+    });
     // Action
     await service.saveProperty(collection as never, property);
     // Assert
@@ -145,18 +145,18 @@ describe('MongoPropertyUpsertService', () => {
       updateOne: jest.fn(async () => ({ upsertedCount: 0 }))
     };
     const service = createService();
-    const property = new Property(
-      '123456789',
-      'https://www.idealista.com/inmueble/123456789/',
-      'Title',
-      'Madrid',
-      1000,
-      new PropertyMainFeatures('80m2', '2', '2nd', []),
-      'Comment',
-      [new PropertyFeatureGroup('General', ['a'])],
-      'texto no parseable',
-      [new PropertyImage('https://img/1.jpg', null)]
-    );
+    const property = Property.create({
+      propertyId: '123456789',
+      url: 'https://www.idealista.com/inmueble/123456789/',
+      title: 'Title',
+      location: 'Madrid',
+      price: 1000,
+      mainFeatures: new PropertyMainFeatures('80m2', '2', '2nd', []),
+      advertiserComment: 'Comment',
+      featureGroups: [new PropertyFeatureGroup('General', ['a'])],
+      publicationAge: 'texto no parseable',
+      images: [new PropertyImage('https://img/1.jpg', null)]
+    });
     // Action
     const result = await service.saveProperty(collection as never, property);
     // Assert
@@ -225,18 +225,18 @@ describe('MongoPropertyUpsertService', () => {
       .mockImplementationOnce(async () => ({ modifiedCount: 1 }));
     const service = createService();
     (service as unknown as { isDuplicateKeyError: (error: unknown) => boolean }).isDuplicateKeyError = (error) => error === duplicateError;
-    const property = new Property(
-      '1',
-      'https://www.idealista.com/inmueble/1/',
-      'Title',
-      'Madrid',
-      1000,
-      new PropertyMainFeatures('80m2', '2', '2nd', []),
-      'Comment',
-      [new PropertyFeatureGroup('General', ['a'])],
-      'texto no parseable',
-      [new PropertyImage('https://img/1.jpg', null)]
-    );
+    const property = Property.create({
+      propertyId: '1',
+      url: 'https://www.idealista.com/inmueble/1/',
+      title: 'Title',
+      location: 'Madrid',
+      price: 1000,
+      mainFeatures: new PropertyMainFeatures('80m2', '2', '2nd', []),
+      advertiserComment: 'Comment',
+      featureGroups: [new PropertyFeatureGroup('General', ['a'])],
+      publicationAge: 'texto no parseable',
+      images: [new PropertyImage('https://img/1.jpg', null)]
+    });
     // Action
     const result = await service.saveProperty(collection as never, property);
     // Assert
@@ -313,6 +313,28 @@ describe('MongoPropertyUpsertService', () => {
         $setOnInsert: expect.objectContaining({
           importedBy: expect.any(Date)
         })
+      }),
+      { upsert: true }
+    );
+  });
+
+  it('whenPropertyIdIsMissingButExtractionProvidesOne_saveProperty_shouldNormalizeUsingWithPropertyId', async () => {
+    // Arrange
+    const collection: UpsertCollectionMock = {
+      updateOne: jest.fn(async () => ({ upsertedCount: 1 }))
+    };
+    const service = createService();
+    const property = createProperty('https://www.idealista.com/alquiler-viviendas/madrid/', null);
+    const withPropertyIdSpy = jest.spyOn(property, 'withPropertyId');
+    (service as unknown as { extractPropertyIdFromUrl: (url: string) => string | null }).extractPropertyIdFromUrl = () => '999';
+    // Action
+    await service.saveProperty(collection as never, property);
+    // Assert
+    expect(withPropertyIdSpy).toHaveBeenCalledWith('999');
+    expect(collection.updateOne).toHaveBeenCalledWith(
+      { url: 'https://www.idealista.com/alquiler-viviendas/madrid/' },
+      expect.objectContaining({
+        $set: expect.objectContaining({ propertyId: '999' })
       }),
       { upsert: true }
     );

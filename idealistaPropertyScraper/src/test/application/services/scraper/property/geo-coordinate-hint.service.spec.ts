@@ -23,18 +23,18 @@ function createRuntimeMock(result: RuntimeMockResult): RuntimeClient {
 }
 
 function createProperty(url: string, propertyId: string | null): Property {
-  return new Property(
+  return Property.create({
     propertyId,
     url,
-    'Title',
-    'Madrid',
-    1000,
-    new PropertyMainFeatures('80m2', '2', '2nd', []),
-    'Comment',
-    [new PropertyFeatureGroup('General', ['a'])],
-    'Anuncio actualizado hace 1 día',
-    [new PropertyImage('https://img/1.jpg', null)]
-  );
+    title: 'Title',
+    location: 'Madrid',
+    price: 1000,
+    mainFeatures: new PropertyMainFeatures('80m2', '2', '2nd', []),
+    advertiserComment: 'Comment',
+    featureGroups: [new PropertyFeatureGroup('General', ['a'])],
+    publicationAge: 'Anuncio actualizado hace 1 día',
+    images: [new PropertyImage('https://img/1.jpg', null)]
+  });
 }
 
 describe('GeoCoordinateHintService', () => {

@@ -52,4 +52,40 @@ describe('PropertyUrl', () => {
     // Assert
     expect(propertyId).toBeNull();
   });
+
+  it('whenAbsoluteUrlIsValid_create_shouldBuildValueObjectWithCanonicalUrlAndOptionalPropertyId', () => {
+    // Arrange
+    const propertyUrl = PropertyUrl.create('https://www.idealista.com/inmueble/123/?x=1');
+    const listingUrl = PropertyUrl.create('https://www.idealista.com/alquiler-viviendas/madrid/');
+    // Assert
+    expect(propertyUrl.value).toBe('https://www.idealista.com/inmueble/123/');
+    expect(propertyUrl.propertyId?.value).toBe('123');
+    expect(listingUrl.value).toBe('https://www.idealista.com/alquiler-viviendas/madrid/');
+    expect(listingUrl.propertyId).toBeNull();
+  });
+
+  it('whenUrlIsInvalid_create_shouldThrowAndTryCreateShouldReturnNull', () => {
+    // Action
+    const createAction = (): PropertyUrl => PropertyUrl.create('not-a-url');
+    const tryCreateResult = PropertyUrl.tryCreate('not-a-url');
+    // Assert
+    expect(createAction).toThrow('valid URL');
+    expect(tryCreateResult).toBeNull();
+  });
+
+  it('whenUrlUsesUnsupportedProtocol_create_shouldThrowError', () => {
+    // Action
+    const action = (): PropertyUrl => PropertyUrl.create('ftp://www.idealista.com/inmueble/123/');
+    // Assert
+    expect(action).toThrow('http or https');
+  });
+
+  it('whenUrlsAreCompared_equalsAndToString_shouldUseNormalizedValue', () => {
+    // Arrange
+    const left = PropertyUrl.create('https://www.idealista.com/inmueble/123/?a=1');
+    const right = PropertyUrl.create('https://www.idealista.com/inmueble/123/');
+    // Assert
+    expect(left.equals(right)).toBe(true);
+    expect(left.toString()).toBe('https://www.idealista.com/inmueble/123/');
+  });
 });

@@ -16,7 +16,6 @@ type ExtractedPropertyPayloadMock = {
 };
 
 type PropertyDetailDomExtractorServicePrivate = {
-  extractPropertyIdFromUrl(url: string): string | null;
   findAndRemoveFirst(values: string[], predicate: (value: string) => boolean): string | null;
   parsePriceToNumber(rawPrice: string | null): number | null;
 };
@@ -97,16 +96,15 @@ describe('PropertyDetailDomExtractorService', () => {
     expect(property?.price).toBeNull();
   });
 
-  it('whenPriceAndUrlAreEmpty_extractProperty_shouldMapPropertyWithNullPriceAndNullPropertyId', async () => {
+  it('whenPriceAndUrlAreEmpty_extractProperty_shouldThrowBecauseUrlInvariantIsViolated', async () => {
     // Arrange
     const service = new PropertyDetailDomExtractorService();
     const payload = createPayload(null, ['50 m²']);
     const runtime = createRuntime(payload);
     // Action
-    const property = await service.extractProperty(runtime, '   ');
+    const action = service.extractProperty(runtime, '   ');
     // Assert
-    expect(property?.price).toBeNull();
-    expect(property?.propertyId).toBeNull();
+    await expect(action).rejects.toThrow('PropertyUrl cannot be empty');
   });
 
   it.each([
@@ -117,18 +115,18 @@ describe('PropertyDetailDomExtractorService', () => {
   ])('whenImageUrlIs%s_filterPropertyImagesByBlurPattern_shouldKeepExpectedUrls', (url, shouldKeep) => {
     // Arrange
     const service = new PropertyDetailDomExtractorService();
-    const property = new Property(
-      '123',
-      'https://www.idealista.com/inmueble/123/',
-      'Title',
-      'Madrid',
-      1000,
-      new PropertyMainFeatures(null, null, null, []),
-      'Comment',
-      [],
-      null,
-      [{ url, title: null }]
-    );
+    const property = Property.create({
+      propertyId: '123',
+      url: 'https://www.idealista.com/inmueble/123/',
+      title: 'Title',
+      location: 'Madrid',
+      price: 1000,
+      mainFeatures: new PropertyMainFeatures(null, null, null, []),
+      advertiserComment: 'Comment',
+      featureGroups: [],
+      publicationAge: null,
+      images: [{ url, title: null }]
+    });
     // Action
     const filtered = service.filterPropertyImagesByBlurPattern(property);
     // Assert
@@ -139,38 +137,23 @@ describe('PropertyDetailDomExtractorService', () => {
     // Arrange
     const service = new PropertyDetailDomExtractorService();
     const extracted = createPayload('1200', ['70 m²']);
-    const property = new Property(
-      '123',
-      'https://www.idealista.com/inmueble/123/',
-      extracted.title,
-      extracted.location,
-      1200,
-      new PropertyMainFeatures(null, null, null, []),
-      extracted.advertiserComment,
-      [],
-      extracted.publicationAge,
-      extracted.images
-    );
+    const property = Property.create({
+      propertyId: '123',
+      url: 'https://www.idealista.com/inmueble/123/',
+      title: extracted.title,
+      location: extracted.location,
+      price: 1200,
+      mainFeatures: new PropertyMainFeatures(null, null, null, []),
+      advertiserComment: extracted.advertiserComment,
+      featureGroups: [],
+      publicationAge: extracted.publicationAge,
+      images: extracted.images
+    });
     // Action
     const filtered = service.filterPropertyImagesByBlurPattern(property);
     // Assert
     expect(filtered.images).toHaveLength(1);
     expect(filtered.images[0]?.url).toBe('https://img4.idealista.com/blur/WEB_DETAIL/0/id.pro.es.image.master/a.jpg');
-  });
-
-  it('whenRegexMatchGroupIsUndefined_extractPropertyIdFromUrl_shouldReturnNull', () => {
-    // Arrange
-    const service = new PropertyDetailDomExtractorService();
-    const privateService = service as unknown as PropertyDetailDomExtractorServicePrivate;
-    const craftedUrl = {
-      trim: () => ({
-        match: () => ['matched-url-segment', undefined]
-      })
-    } as unknown as string;
-    // Action
-    const propertyId = privateService.extractPropertyIdFromUrl(craftedUrl);
-    // Assert
-    expect(propertyId).toBeNull();
   });
 
   it('whenFirstMatchedEntryIsSparse_findAndRemoveFirst_shouldReturnNullAndRemoveEntry', () => {

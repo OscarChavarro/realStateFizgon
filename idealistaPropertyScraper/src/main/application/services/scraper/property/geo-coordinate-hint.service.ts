@@ -167,19 +167,7 @@ export class GeoCoordinateHintService {
   }
 
   private withGeoLocationHint(property: Property, geoLocationHint: GeoLocationHint | null): Property {
-    return new Property(
-      property.propertyId,
-      property.url,
-      property.title,
-      property.location,
-      property.price,
-      property.mainFeatures,
-      property.advertiserComment,
-      property.featureGroups,
-      property.publicationAge,
-      property.images,
-      geoLocationHint
-    );
+    return property.withGeoLocationHint(geoLocationHint);
   }
 
   private isCoordinatesObject(value: unknown): value is LatitudeLongitudeLike {

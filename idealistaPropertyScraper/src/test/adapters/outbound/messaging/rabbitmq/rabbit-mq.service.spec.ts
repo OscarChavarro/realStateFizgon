@@ -71,7 +71,7 @@ describe('RabbitMqService', () => {
     expect(publishWithRetrySpy).not.toHaveBeenCalled();
   });
 
-  it('whenBackpressureIsTriggered_publishJsonToQueue_shouldWaitForDrainBeforeConfirms', async () => {
+  it('whenBackpressureIsTriggered_publishPendingImageUrl_shouldWaitForDrainBeforeConfirms', async () => {
     // Arrange
     const config = new RabbitConfigMock();
     const service = new RabbitMqService(config);
@@ -85,7 +85,7 @@ describe('RabbitMqService', () => {
     const connectMock = connect as unknown as jest.MockedFunction<typeof connect>;
     connectMock.mockResolvedValue(connection as never);
     // Action
-    await service.publishJsonToQueue('events', { id: 1 });
+    await service.publishPendingImageUrl({ url: 'https://img4.idealista.com/a.jpg', propertyId: '123' });
     // Assert
     expect(connectMock).toHaveBeenCalledWith({
       protocol: 'amqp',
@@ -95,7 +95,7 @@ describe('RabbitMqService', () => {
       username: 'guest',
       password: 'guest'
     });
-    expect(channel.assertQueue).toHaveBeenCalledWith('events', { durable: true });
+    expect(channel.assertQueue).toHaveBeenCalledWith('pending-image-urls-to-download', { durable: true });
     expect(channel.waitForConfirms).toHaveBeenCalledTimes(1);
   });
 
@@ -141,14 +141,19 @@ describe('RabbitMqService', () => {
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
 
-  it('whenNotificationIsRequested_publishIdealistaUpdateNotification_shouldPublishExpectedPayload', async () => {
+  it('whenNotificationIsRequested_publishNewPropertyNotification_shouldPublishExpectedPayload', async () => {
     // Arrange
     const config = new RabbitConfigMock();
     const service = new RabbitMqService(config);
     muteServiceLogger(service);
-    const publishJsonSpy = jest.spyOn(service, 'publishJsonToQueue').mockResolvedValue(undefined);
+    const publishJsonSpy = jest
+      .spyOn(service as unknown as { publishJsonToQueue: (queueName: string, payload: unknown) => Promise<void> }, 'publishJsonToQueue')
+      .mockResolvedValue(undefined);
     // Action
-    await service.publishIdealistaUpdateNotification('https://idealista.com/inmueble/1/', 'Title');
+    await service.publishNewPropertyNotification({
+      url: 'https://idealista.com/inmueble/1/',
+      title: 'Title'
+    });
     // Assert
     expect(publishJsonSpy).toHaveBeenCalledWith('outgoing-notification-messages', {
       url: 'https://idealista.com/inmueble/1/',

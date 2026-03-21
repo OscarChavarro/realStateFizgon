@@ -1,33 +1,28 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Property } from 'domain/property/property';
-import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
-import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
+import { NEW_PROPERTY_NOTIFICATION_PUBLISHER_PORT } from 'ports/outbound/messaging/new-property-notification-publisher.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';
 
+import type { NewPropertyNotificationPublisherPort } from 'ports/outbound/messaging/new-property-notification-publisher.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
 @Injectable()
 export class PublishNewPropertyNotificationUseCase {
   private readonly logger = new Logger(PublishNewPropertyNotificationUseCase.name);
-  private static readonly OUTGOING_NOTIFICATION_MESSAGES_QUEUE = 'outgoing-notification-messages';
 
   constructor(
-    @Inject(QUEUE_PUBLISHER_PORT)
-    private readonly queuePublisherPort: QueuePublisherPort,
+    @Inject(NEW_PROPERTY_NOTIFICATION_PUBLISHER_PORT)
+    private readonly newPropertyNotificationPublisherPort: NewPropertyNotificationPublisherPort,
     @Inject(ERROR_MESSAGE_PORT)
     private readonly errorMessagePort: ErrorMessagePort
   ) {}
 
   async execute(property: Property): Promise<void> {
     try {
-      await this.queuePublisherPort.publishJsonToQueue(
-        PublishNewPropertyNotificationUseCase.OUTGOING_NOTIFICATION_MESSAGES_QUEUE,
-        {
-          url: property.url,
-          title: property.title,
-          type: 'IDEALISTA_UPDATE'
-        }
-      );
+      await this.newPropertyNotificationPublisherPort.publishNewPropertyNotification({
+        url: property.url,
+        title: property.title
+      });
     } catch (error) {
       this.logger.error(
         `Property was stored in MongoDB but notification publish failed for "${property.url}". ${this.errorMessagePort.toErrorMessage(error)}`

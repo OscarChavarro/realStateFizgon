@@ -4,14 +4,17 @@ import { once } from 'node:events';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { toErrorMessage } from 'infrastructure/error-message';
-import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
 import { RABBIT_SETTINGS_PORT } from 'ports/outbound/settings/rabbit-settings.port.token';
+
+import type { NewPropertyNotificationMessage, NewPropertyNotificationPublisherPort } from 'ports/outbound/messaging/new-property-notification-publisher.port';
+import type { PendingImageUrlMessage, PendingImageUrlPublisherPort } from 'ports/outbound/messaging/pending-image-url-publisher.port';
 import type { RabbitSettingsPort } from 'ports/outbound/settings/rabbit-settings.port';
 
 @Injectable()
-export class RabbitMqService implements OnModuleDestroy, QueuePublisherPort {
+export class RabbitMqService implements OnModuleDestroy, NewPropertyNotificationPublisherPort, PendingImageUrlPublisherPort {
   private readonly logger = new Logger(RabbitMqService.name);
   private static readonly OUTGOING_NOTIFICATION_MESSAGES_QUEUE = 'outgoing-notification-messages';
+  private static readonly PENDING_IMAGE_URLS_QUEUE = 'pending-image-urls-to-download';
   private readonly fallbackFilePath = join(process.cwd(), 'output', 'audit', 'pending-property-urls.ndjson');
   private connection: ChannelModel | null = null;
   private channel: ConfirmChannel | null = null;
@@ -52,11 +55,18 @@ export class RabbitMqService implements OnModuleDestroy, QueuePublisherPort {
     }
   }
 
-  async publishIdealistaUpdateNotification(url: string, title: string | null): Promise<void> {
+  async publishNewPropertyNotification(message: NewPropertyNotificationMessage): Promise<void> {
     await this.publishJsonToQueue(RabbitMqService.OUTGOING_NOTIFICATION_MESSAGES_QUEUE, {
-      url,
-      title,
+      url: message.url,
+      title: message.title,
       type: 'IDEALISTA_UPDATE'
+    });
+  }
+
+  async publishPendingImageUrl(message: PendingImageUrlMessage): Promise<void> {
+    await this.publishJsonToQueue(RabbitMqService.PENDING_IMAGE_URLS_QUEUE, {
+      url: message.url,
+      propertyId: message.propertyId
     });
   }
 
@@ -93,7 +103,7 @@ export class RabbitMqService implements OnModuleDestroy, QueuePublisherPort {
     }
   }
 
-  async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
+  private async publishJsonToQueue(queueName: string, payload: unknown): Promise<void> {
     await this.publishWithRetry(async () => {
       const channel = await this.getChannel();
       await channel.assertQueue(queueName, { durable: true });

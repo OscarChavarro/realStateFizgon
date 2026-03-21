@@ -4,11 +4,11 @@ import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
 import { PropertyImage } from 'domain/property/property-image';
 import { PropertyMainFeatures } from 'domain/property/property-main-features';
 import { Property } from 'domain/property/property';
-import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
+import type { NewPropertyNotificationPublisherPort } from 'ports/outbound/messaging/new-property-notification-publisher.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';
 
-class QueuePublisherPortMockForPublishNewPropertyNotificationUseCase {
-  readonly publishJsonToQueue = jest.fn<(queueName: string, payload: unknown) => Promise<void>>();
+class NewPropertyNotificationPublisherPortMockForPublishNewPropertyNotificationUseCase implements NewPropertyNotificationPublisherPort {
+  readonly publishNewPropertyNotification = jest.fn<(message: { url: string; title: string | null }) => Promise<void>>();
 }
 
 class ErrorMessagePortMockForPublishNewPropertyNotificationUseCase implements ErrorMessagePort {
@@ -31,38 +31,34 @@ function createProperty(): Property {
 }
 
 describe('PublishNewPropertyNotificationUseCase', () => {
-  it('whenPropertyIsNew_execute_shouldPublishIdealistaUpdateNotificationPayload', async () => {
+  it('whenPropertyIsNew_execute_shouldPublishSemanticIntent', async () => {
     // Arrange
-    const queuePublisherPort = new QueuePublisherPortMockForPublishNewPropertyNotificationUseCase();
-    queuePublisherPort.publishJsonToQueue.mockResolvedValue(undefined);
+    const newPropertyNotificationPublisherPort = new NewPropertyNotificationPublisherPortMockForPublishNewPropertyNotificationUseCase();
+    newPropertyNotificationPublisherPort.publishNewPropertyNotification.mockResolvedValue(undefined);
     const errorMessagePort = new ErrorMessagePortMockForPublishNewPropertyNotificationUseCase();
     errorMessagePort.toErrorMessage.mockImplementation((error: unknown) => String(error));
     const useCase = new PublishNewPropertyNotificationUseCase(
-      queuePublisherPort as unknown as QueuePublisherPort,
+      newPropertyNotificationPublisherPort,
       errorMessagePort
     );
     const property = createProperty();
     // Action
     await useCase.execute(property);
     // Assert
-    expect(queuePublisherPort.publishJsonToQueue).toHaveBeenCalledWith(
-      'outgoing-notification-messages',
-      {
-        url: property.url,
-        title: property.title,
-        type: 'IDEALISTA_UPDATE'
-      }
-    );
+    expect(newPropertyNotificationPublisherPort.publishNewPropertyNotification).toHaveBeenCalledWith({
+      url: property.url,
+      title: property.title
+    });
   });
 
   it('whenNotificationPublishFails_execute_shouldLogErrorAndResolve', async () => {
     // Arrange
-    const queuePublisherPort = new QueuePublisherPortMockForPublishNewPropertyNotificationUseCase();
-    queuePublisherPort.publishJsonToQueue.mockRejectedValue(new Error('broker down'));
+    const newPropertyNotificationPublisherPort = new NewPropertyNotificationPublisherPortMockForPublishNewPropertyNotificationUseCase();
+    newPropertyNotificationPublisherPort.publishNewPropertyNotification.mockRejectedValue(new Error('broker down'));
     const errorMessagePort = new ErrorMessagePortMockForPublishNewPropertyNotificationUseCase();
     errorMessagePort.toErrorMessage.mockImplementation((error: unknown) => String(error));
     const useCase = new PublishNewPropertyNotificationUseCase(
-      queuePublisherPort as unknown as QueuePublisherPort,
+      newPropertyNotificationPublisherPort,
       errorMessagePort
     );
     const loggerErrorSpy = jest.spyOn(
@@ -72,7 +68,7 @@ describe('PublishNewPropertyNotificationUseCase', () => {
     // Action
     await expect(useCase.execute(createProperty())).resolves.toBeUndefined();
     // Assert
-    expect(queuePublisherPort.publishJsonToQueue).toHaveBeenCalledTimes(1);
+    expect(newPropertyNotificationPublisherPort.publishNewPropertyNotification).toHaveBeenCalledTimes(1);
     expect(loggerErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Property was stored in MongoDB but notification publish failed')
     );

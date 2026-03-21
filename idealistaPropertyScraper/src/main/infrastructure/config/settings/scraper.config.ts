@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 

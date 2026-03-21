@@ -59,6 +59,23 @@ describe('PropertyDetailNavigationService', () => {
     expect(runtime.evaluate).toHaveBeenCalledWith(expect.objectContaining({ returnByValue: true }));
   });
 
+  it('whenTargetUrlDoesNotContainPropertyId_clickPropertyLinkFromResults_shouldReturnFalseWithoutEvaluatingRuntime', async () => {
+    // Arrange
+    const runtime = createRuntime([true]);
+    const sleepPort = createSleepPort();
+    const clockPort = createClockPort(0);
+    const service = new PropertyDetailNavigationService(
+      new ChromeConfigMockForDetailNavigation() as unknown as ChromeConfig,
+      clockPort as never,
+      sleepPort as never
+    );
+    // Action
+    const clicked = await service.clickPropertyLinkFromResults(runtime, 'https://www.idealista.com/alquiler-viviendas/madrid-madrid/');
+    // Assert
+    expect(clicked).toBe(false);
+    expect(runtime.evaluate).not.toHaveBeenCalled();
+  });
+
   it('whenTargetUrlBecomesReady_waitForDetailUrlAndDomComplete_shouldWaitUntilReady', async () => {
     // Arrange
     const runtime = createRuntime([false, true]);

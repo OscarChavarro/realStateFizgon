@@ -51,6 +51,7 @@ describe('PropertyListPageService', () => {
           result: {
             value: [
               'https://www.idealista.com/inmueble/1/',
+              'https://www.idealista.com/obra-nueva/madrid/',
               5,
               'https://www.idealista.com/inmueble/2/'
             ]

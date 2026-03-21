@@ -3,10 +3,10 @@ import { GeoCoordinateHintService } from 'application/services/scraper/property/
 import { PropertyDetailDomExtractorService } from 'application/services/scraper/property/property-detail-dom-extractor.service';
 import { ExtractAndEnrichPropertyDetailUseCase } from 'application/usecases/scraper/extract-and-enrich-property-detail.use-case';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
+import { Property } from 'domain/property/property';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 class HandleDeactivatedPropertyDetailUseCaseMockForExtractAndEnrichPropertyDetailUseCase {

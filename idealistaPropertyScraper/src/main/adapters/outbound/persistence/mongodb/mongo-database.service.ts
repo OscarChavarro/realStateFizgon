@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { MongoClient, Db, Collection, Document, MongoServerError } from 'mongodb';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
+import { PropertyUrl } from 'domain/property/property-url';
 import { sleep } from 'infrastructure/sleep';
 import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
@@ -226,16 +227,6 @@ export class MongoDatabaseService implements OnModuleDestroy, PropertyWritePort,
   }
 
   private extractPropertyIdFromUrl(url: string): string | null {
-    const normalized = url.trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const match = normalized.match(/\/inmueble\/(\d+)(?:\/|$)/i);
-    if (!match) {
-      return null;
-    }
-
-    return match[1];
+    return PropertyUrl.extractPropertyId(url);
   }
 }

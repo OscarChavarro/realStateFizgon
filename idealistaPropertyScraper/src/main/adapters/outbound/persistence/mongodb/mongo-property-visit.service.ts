@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Document } from 'mongodb';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 
 @Injectable()
 export class MongoPropertyVisitService {

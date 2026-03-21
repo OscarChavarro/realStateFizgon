@@ -4,7 +4,7 @@ import { ChromiumGeolocationService } from 'application/services/chromium/chromi
 import { ChromiumPageSyncService } from 'application/services/chromium/chromium-page-sync.service';
 import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 @Injectable()
 export class RecoverFromBrowserFailureUseCase {

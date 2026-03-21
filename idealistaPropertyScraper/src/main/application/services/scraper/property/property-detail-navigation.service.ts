@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { PropertyUrl } from 'domain/property/property-url';
 import { CHROME_SETTINGS_PORT } from 'ports/outbound/settings/chrome-settings.port.token';
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import { CLOCK_PORT } from 'ports/outbound/timing/clock.port.token';
@@ -30,8 +31,14 @@ export class PropertyDetailNavigationService {
   ) {}
 
   async clickPropertyLinkFromResults(runtime: RuntimeClient, targetUrl: string): Promise<boolean> {
+    const targetPropertyId = PropertyUrl.extractPropertyId(targetUrl);
+    if (!targetPropertyId) {
+      return false;
+    }
+
     return await this.evaluateExpression<boolean>(runtime, `(() => {
-      const normalizeUrl = (value) => {
+      const propertyPathRegex = new RegExp(${JSON.stringify(PropertyUrl.INMUEBLE_PATH_REGEX_SOURCE)}, 'i');
+      const extractPropertyId = (value) => {
         if (!value || typeof value !== 'string') {
           return null;
         }
@@ -47,21 +54,18 @@ export class PropertyDetailNavigationService {
           return null;
         }
 
-        const match = parsed.pathname.match(/^\\/inmueble\\/(\\d+)\\/?/);
+        const match = parsed.pathname.match(propertyPathRegex);
         if (!match) {
           return null;
         }
 
-        return parsed.origin + '/inmueble/' + match[1] + '/';
+        return match[1] || null;
       };
 
-      const targetNormalized = normalizeUrl(${JSON.stringify(targetUrl)});
-      if (!targetNormalized) {
-        return false;
-      }
+      const targetPropertyId = ${JSON.stringify(targetPropertyId)};
 
       const anchors = Array.from(document.querySelectorAll('article.item a.item-link[href], article.item a[href*="/inmueble/"]'));
-      const link = anchors.find((anchor) => normalizeUrl(anchor.getAttribute('href') || '') === targetNormalized);
+      const link = anchors.find((anchor) => extractPropertyId(anchor.getAttribute('href') || '') === targetPropertyId);
       if (!link) {
         return false;
       }

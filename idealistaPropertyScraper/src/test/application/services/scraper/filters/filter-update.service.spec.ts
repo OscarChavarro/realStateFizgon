@@ -5,9 +5,9 @@ import { FilterSelectionReaderService } from 'application/services/scraper/filte
 import { FilterTextNormalizationService } from 'application/services/scraper/filters/filter-text-normalization.service';
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
 import { SupportedFilters } from 'domain/filters/supported-filters';
-import { Price } from 'domain/filters/price.filter';
-import { PropertyType } from 'domain/filters/property-type.filter';
-import { Rooms } from 'domain/filters/rooms.filter';
+import { Price } from 'domain/filters/price';
+import { PropertyType } from 'domain/filters/property-type';
+import { Rooms } from 'domain/filters/rooms';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 class FilterLoaderDetectionServiceMock {

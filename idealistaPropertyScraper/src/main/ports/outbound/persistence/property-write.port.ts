@@ -1,4 +1,4 @@
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 
 export interface PropertyWritePort {

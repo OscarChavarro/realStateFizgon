@@ -5,10 +5,10 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { NetworkEnabledCdpClient } from 'ports/outbound/browser/network-enabled-cdp-client.port';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { Property } from 'domain/property/property.model';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
 
 import type { ChromeSettingsPort } from 'ports/outbound/settings/chrome-settings.port';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';

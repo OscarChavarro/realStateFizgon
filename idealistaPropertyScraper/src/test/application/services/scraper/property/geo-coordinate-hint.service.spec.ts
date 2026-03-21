@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { GeoCoordinateHintService } from 'application/services/scraper/property/geo-coordinate-hint.service';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
+import { Property } from 'domain/property/property';
 import { PropertyPersistencePortMock } from '../../../../ports/outbound/persistence/property-persistence-port.mock';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';

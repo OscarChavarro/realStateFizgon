@@ -1,4 +1,4 @@
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 export type RequestPropertiesCommandResult = {
   status: string;

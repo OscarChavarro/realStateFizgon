@@ -5,7 +5,7 @@ import { ChromiumPageSyncService } from 'application/services/chromium/chromium-
 import { ChromiumProcessLifecycleService } from 'application/services/chromium/chromium-process-lifecycle.service';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { RecoverFromBrowserFailureUseCase } from 'application/usecases/resilience/recover-from-browser-failure.use-case';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 class ChromiumPageSyncServiceMockForRecoverFromBrowserFailureUseCase {
   readonly sleep = jest.fn<(ms: number) => Promise<void>>();

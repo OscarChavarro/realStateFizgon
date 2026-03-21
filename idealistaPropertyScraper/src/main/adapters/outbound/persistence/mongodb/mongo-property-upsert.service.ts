@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Collection, Document, MongoServerError } from 'mongodb';
 import { MongoPublicationDateMapperService } from 'adapters/outbound/persistence/mongodb/mongo-publication-date-mapper.service';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
+import { PropertyUrl } from 'domain/property/property-url';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';
 
 @Injectable()
@@ -105,17 +106,7 @@ export class MongoPropertyUpsertService {
   }
 
   private extractPropertyIdFromUrl(url: string): string | null {
-    const normalized = url.trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const match = normalized.match(/\/inmueble\/(\d+)(?:\/|$)/i);
-    if (!match) {
-      return null;
-    }
-
-    return match[1];
+    return PropertyUrl.extractPropertyId(url);
   }
 
   private toSetDocument(property: Property, updatedBy?: Date): Property & Document {

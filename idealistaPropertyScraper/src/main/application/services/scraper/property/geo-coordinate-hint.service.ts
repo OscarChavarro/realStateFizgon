@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { GeoLocationHint } from 'domain/property/geo-location-hint.model';
-import { Property } from 'domain/property/property.model';
+import { GeoLocationHint } from 'domain/property/geo-location-hint';
+import { Property } from 'domain/property/property';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { PROPERTY_READ_PORT } from 'ports/outbound/persistence/property-read.port.token';
 

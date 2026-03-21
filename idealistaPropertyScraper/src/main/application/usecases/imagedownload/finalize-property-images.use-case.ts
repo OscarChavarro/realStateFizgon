@@ -4,7 +4,7 @@ import { ImageFileNameService } from 'application/services/imagedownload/image-f
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
 import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { SCRAPER_SETTINGS_PORT } from 'ports/outbound/settings/scraper-settings.port.token';
 import type { ScraperSettingsPort } from 'ports/outbound/settings/scraper-settings.port';
 import { FILE_SYSTEM_PORT } from 'ports/outbound/filesystem/file-system.port.token';

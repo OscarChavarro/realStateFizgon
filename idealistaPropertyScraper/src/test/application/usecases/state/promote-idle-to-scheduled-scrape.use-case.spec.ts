@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { PromoteIdleToScheduledScrapeUseCase } from 'application/usecases/state/promote-idle-to-scheduled-scrape.use-case';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 

@@ -1,12 +1,12 @@
 import { Filter } from 'domain/filters/filter';
-import { FilterType } from 'domain/filters/filter-type.enum';
+import { FilterType } from 'domain/filters/filter-type';
 
-export class Size extends Filter {
+export class Price extends Filter {
   protected minOptions: string[] = [];
   protected maxOptions: string[] = [];
 
   constructor() {
-    super('Tamaño', '#area-filter-container', FilterType.MIN_MAX);
+    super('Precio', '#price-filter-container', FilterType.MIN_MAX);
   }
 
   setMinOptions(options: string[]): void {

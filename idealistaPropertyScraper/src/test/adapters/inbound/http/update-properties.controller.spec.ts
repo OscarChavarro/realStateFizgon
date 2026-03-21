@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { UpdatePropertiesController } from 'adapters/inbound/http/update-properties.controller';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 import type { RequestScrapePropertiesPort } from 'ports/inbound/http/request-scrape-properties.port';
 import type { RequestUpdatePropertiesPort } from 'ports/inbound/http/request-update-properties.port';

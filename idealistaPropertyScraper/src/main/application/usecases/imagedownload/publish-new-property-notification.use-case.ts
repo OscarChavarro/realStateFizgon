@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { QueuePublisherPort } from 'ports/outbound/messaging/queue-publisher.port';
 import { QUEUE_PUBLISHER_PORT } from 'ports/outbound/messaging/queue-publisher.port.token';
 import { ERROR_MESSAGE_PORT } from 'ports/outbound/observability/error-message.port.token';

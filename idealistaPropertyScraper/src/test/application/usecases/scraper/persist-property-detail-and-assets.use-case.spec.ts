@@ -2,10 +2,10 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { ImageDownloaderService } from 'application/services/imagedownload/image-downloader';
 import { PersistPropertyDetailAndAssetsUseCase } from 'application/usecases/scraper/persist-property-detail-and-assets.use-case';
 import { PublishNewPropertyNotificationUseCase } from 'application/usecases/imagedownload/publish-new-property-notification.use-case';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
+import { Property } from 'domain/property/property';
 import { PropertyWritePort } from 'ports/outbound/persistence/property-write.port';
 
 class PublishNewPropertyNotificationUseCaseMockForPersistPropertyDetailAndAssetsUseCase {

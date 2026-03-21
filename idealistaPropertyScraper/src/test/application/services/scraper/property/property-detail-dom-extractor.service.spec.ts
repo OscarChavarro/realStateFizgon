@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { PropertyDetailDomExtractorService } from 'application/services/scraper/property/property-detail-dom-extractor.service';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { Property } from 'domain/property/property.model';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
+import { Property } from 'domain/property/property';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 type ExtractedPropertyPayloadMock = {

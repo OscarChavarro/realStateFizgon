@@ -1,4 +1,4 @@
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 import type { EndpointsAuthSettingsPort } from 'ports/outbound/settings/endpoints-auth-settings.port';
 
 type ScraperConfigMockOptions = {

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { ImageDownloadPathService } from 'application/services/imagedownload/image-download-path.service';
 import { ImageNetworkCaptureService } from 'application/services/imagedownload/image-network-capture.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';

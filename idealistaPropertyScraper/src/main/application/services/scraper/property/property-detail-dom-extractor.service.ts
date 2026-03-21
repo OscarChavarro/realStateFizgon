@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
-import { Property } from 'domain/property/property.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
+import { Property } from 'domain/property/property';
+import { PropertyUrl } from 'domain/property/property-url';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';
 type ExtractedPropertyPayload = {
@@ -271,17 +272,7 @@ export class PropertyDetailDomExtractorService {
   }
 
   private extractPropertyIdFromUrl(url: string): string | null {
-    const normalized = url.trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const match = normalized.match(/\/inmueble\/(\d+)(?:\/|$)/i);
-    if (!match) {
-      return null;
-    }
-
-    return match[1] ?? null;
+    return PropertyUrl.extractPropertyId(url);
   }
 
   private buildMainFeatures(infoFeatures: string[]): PropertyMainFeatures {

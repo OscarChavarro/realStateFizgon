@@ -5,7 +5,7 @@ import { FilterSelectedOptionExtractorService } from 'application/services/scrap
 import { FilterUpdateService } from 'application/services/scraper/filters/filter-update.service';
 import { SupportedFilters } from 'domain/filters/supported-filters';
 import { Filter } from 'domain/filters/filter';
-import { FilterType } from 'domain/filters/filter-type.enum';
+import { FilterType } from 'domain/filters/filter-type';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 
 import type { AsideFiltersPayload } from 'application/dto/scraper/aside-filters-payload.dto';

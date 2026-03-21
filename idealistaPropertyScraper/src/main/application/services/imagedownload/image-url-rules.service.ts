@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PropertyUrl } from 'domain/property/property-url';
 
 @Injectable()
 export class ImageUrlRulesService {
@@ -45,8 +46,7 @@ export class ImageUrlRulesService {
   }
 
   extractPropertyIdFromUrl(url: string): string | null {
-    const match = url.match(/\/inmueble\/(\d+)\//i);
-    return match?.[1] ?? null;
+    return PropertyUrl.extractPropertyId(url);
   }
 
   extractCanonicalImageKey(rawUrl: string): string | null {

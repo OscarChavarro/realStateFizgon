@@ -1,5 +1,5 @@
 import { Filter } from 'domain/filters/filter';
-import { FilterType } from 'domain/filters/filter-type.enum';
+import { FilterType } from 'domain/filters/filter-type';
 
 export class ListingType extends Filter {
   constructor() {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 import { ScraperConfigMock } from '../../../support/mocks/scraper-config.mock';
 
 const createClockPortMock = (...timestamps: number[]): { nowMs: jest.MockedFunction<() => number> } => {

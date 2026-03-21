@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { GeoCoordinateHintService } from 'application/services/scraper/property/geo-coordinate-hint.service';
 import { PropertyDetailDomExtractorService } from 'application/services/scraper/property/property-detail-dom-extractor.service';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { HandleDeactivatedPropertyDetailUseCase } from 'application/usecases/scraper/handle-deactivated-property-detail.use-case';
 
 import type { RuntimeClient } from 'ports/outbound/browser/runtime-client.port';

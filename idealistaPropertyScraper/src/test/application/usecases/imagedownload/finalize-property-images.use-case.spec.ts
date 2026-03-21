@@ -5,10 +5,10 @@ import { ImageNetworkCaptureService } from 'application/services/imagedownload/i
 import { ImagePendingQueuePublisherService } from 'application/services/imagedownload/image-pending-queue-publisher.service';
 import { ImageUrlRulesService } from 'application/services/imagedownload/image-url-rules.service';
 import { FinalizePropertyImagesUseCase } from 'application/usecases/imagedownload/finalize-property-images.use-case';
-import { Property } from 'domain/property/property.model';
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { Property } from 'domain/property/property';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
 import type { FileSystemPort } from 'ports/outbound/filesystem/file-system.port';
 import type { HttpBinaryDownloadPort } from 'ports/outbound/network/http-binary-download.port';
 import type { ErrorMessagePort } from 'ports/outbound/observability/error-message.port';

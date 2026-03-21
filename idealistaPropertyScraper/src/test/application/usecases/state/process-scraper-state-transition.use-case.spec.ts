@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { ProcessScraperStateTransitionUseCase } from 'application/usecases/state/process-scraper-state-transition.use-case';
 import { ResolveIdleStateUseCase } from 'application/usecases/state/resolve-idle-state.use-case';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 type HandlerMocks = {
   onScrapingForNewProperties: jest.MockedFunction<() => Promise<void>>;

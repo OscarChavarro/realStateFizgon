@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { ScraperStateMachineService } from 'application/services/state/scraper-state-machine.service';
 import { RequestScrapePropertiesUseCase } from 'application/usecases/state/request-scrape-properties.use-case';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 
 class ScraperStateMachineServiceMockForRequestScrapePropertiesUseCase {
   readonly enqueueScrapePropertiesRequest = jest.fn<() => number>();

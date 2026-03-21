@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Property } from 'domain/property/property.model';
+import { Property } from 'domain/property/property';
 import { PersistenceHealthPort } from 'ports/outbound/persistence/persistence-health.port';
 import { PropertyReadPort } from 'ports/outbound/persistence/property-read.port';
 import { SavePropertyResult } from 'ports/outbound/persistence/save-property-result.type';

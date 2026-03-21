@@ -1,4 +1,4 @@
-import type { ScraperState } from 'domain/states/scraper-state.enum';
+import type { ScraperState } from 'domain/states/scraper-state';
 
 export type ScraperFilterDefinition = {
   plainOptions: string[];

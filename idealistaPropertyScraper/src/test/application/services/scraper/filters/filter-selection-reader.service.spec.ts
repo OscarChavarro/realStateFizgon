@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { FilterSelectionReaderService } from 'application/services/scraper/filters/filter-selection-reader.service';
-import { FilterType } from 'domain/filters/filter-type.enum';
+import { FilterType } from 'domain/filters/filter-type';
 
 import type { FiltersCdpClient } from 'ports/outbound/browser/filters-cdp-client.port';
 type FilterLike = {

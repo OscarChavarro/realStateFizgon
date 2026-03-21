@@ -1,7 +1,7 @@
-import { PropertyFeatureGroup } from 'domain/property/property-feature-group.model';
-import { GeoLocationHint } from 'domain/property/geo-location-hint.model';
-import { PropertyImage } from 'domain/property/property-image.model';
-import { PropertyMainFeatures } from 'domain/property/property-main-features.model';
+import { PropertyFeatureGroup } from 'domain/property/property-feature-group';
+import { GeoLocationHint } from 'domain/property/geo-location-hint';
+import { PropertyImage } from 'domain/property/property-image';
+import { PropertyMainFeatures } from 'domain/property/property-main-features';
 
 export class Property {
   constructor(

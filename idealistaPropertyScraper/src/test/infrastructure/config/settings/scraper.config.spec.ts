@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { ScraperConfig } from 'infrastructure/config/settings/scraper.config';
 import { ConfigurationSourceService } from 'infrastructure/config/settings/configuration-source.service';
 import { FilterDefinition } from 'infrastructure/config/settings/filter-definition.type';
-import { ScraperState } from 'domain/states/scraper-state.enum';
+import { ScraperState } from 'domain/states/scraper-state';
 import { ConfigurationSourceServiceMock } from '../../../support/mocks/configuration-source.mock';
 
 function createScraperConfig(params: {

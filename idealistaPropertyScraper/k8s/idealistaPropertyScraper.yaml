@@ -15,14 +15,16 @@ spec:
     spec:
       hostname: idealista-property-scraper
       securityContext:
-        runAsUser: 1001
-        runAsGroup: 1001
+        runAsUser: 1
+        runAsGroup: 1
         fsGroup: 1001
-        runAsNonRoot: true
+        runAsNonRoot: false
       containers:
       - name: idealista-property-scraper
         image: idealista-property-scraper:local
         imagePullPolicy: Never
+        securityContext:
+          privileged: true
         ports:
         - name: vnc-tcp
           containerPort: 5900
@@ -34,6 +36,9 @@ spec:
           readOnly: true
         - name: images-persistent
           mountPath: /app/output/images
+        - name: cgroup
+          mountPath: /sys/fs/cgroup
+          readOnly: false
       volumes:
       - name: app-secrets
         secret:
@@ -44,6 +49,10 @@ spec:
       - name: images-persistent
         persistentVolumeClaim:
           claimName: idealista-property-images-pvc
+      - name: cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
 ---
 apiVersion: v1
 kind: Service

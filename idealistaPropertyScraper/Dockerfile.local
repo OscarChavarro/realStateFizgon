@@ -15,17 +15,18 @@ RUN npm run build
 FROM node:22-bookworm-slim AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
 ENV XVFB_SCREEN=1920x1080x24
+
+STOPSIGNAL SIGRTMIN+3
+
+VOLUME ["/sys/fs/cgroup"]
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-sandbox \
+    curl \
     dbus \
     dbus-x11 \
     dnsutils \
@@ -39,6 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-noto-ui-core \
     g++ \
     gcc \
+    gnupg \
     htop \
     iputils-ping \
     libdbus-1-3 \
@@ -49,6 +51,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     nfs-common \
     python3 \
+    sudo \
+    systemd \
+    systemd-sysv \
     telnet \
     wget \
     x11-utils \
@@ -92,21 +97,25 @@ COPY idealistaPropertyScraper/environment.json ./environment.json
 COPY idealistaPropertyScraper/secrets-example.json ./secrets-example.json
 COPY idealistaPropertyScraper/k8s/x11vnc-launcher.sh /usr/local/bin/x
 COPY idealistaPropertyScraper/start-with-xvfb.sh /usr/local/bin/start-with-xvfb.sh
+
 RUN sed -i 's#/Applications/Google Chrome.app/Contents/MacOS/Google Chrome#/usr/local/bin/browser-cdp#g' environment.json
+
 RUN chmod +x /usr/local/bin/start-with-xvfb.sh /usr/local/bin/x \
     && groupadd -g 1001 scraper \
     && useradd -u 1001 -g 1001 -m -s /bin/bash scraper \
     && echo 'scraper:password' | chpasswd \
+    && echo 'root:root' | chpasswd \
+    && usermod -aG sudo scraper \
+    && echo 'scraper ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers \
     && mkdir -p /app/output/logs /app/output/.vnc /app/output/images \
-    && if command -v mwm >/dev/null 2>&1; then \
-         if [ -f /etc/X11/mwm/system.mwmrc ]; then \
-           sed -i -E 's#"New Window"[[:space:]]+f\\.exec[[:space:]]+"xterm[[:space:]]*&"#"New Window"\t\tf.exec "uxterm -ls -sb -fn 10x20 &"#g' /etc/X11/mwm/system.mwmrc; \
-         else \
-           echo "WARNING: /etc/X11/mwm/system.mwmrc not found; mwm menu was not patched."; \
-         fi; \
-       fi \
     && chown -R scraper:scraper /app /home/scraper
 
-USER scraper
+RUN systemctl enable dbus
 
-CMD ["dumb-init", "/usr/local/bin/start-with-xvfb.sh"]
+RUN printf '%s\n' \
+'#!/bin/bash' \
+'su - scraper -c "/usr/local/bin/start-with-xvfb.sh"' \
+> /usr/local/bin/start-app.sh \
+&& chmod +x /usr/local/bin/start-app.sh
+
+CMD ["/sbin/init"]

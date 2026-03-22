@@ -30,11 +30,34 @@ Bot detectors usually query browser for WebGL support as a desktop/mobile machin
 WebGL API support should be enabled. For that, mesa system should be installed, and the following specific options needs to be added to chromium:
 
 ```
---enable-webgl
---ignore-gpu-blocklist
---use-gl=swiftshader
---use-angle=swiftshader
- ````
+"chromiumOptions": [
+      "--disable-background-networking",
+      "--disable-component-extensions-with-background-pages",
+      "--disable-component-update",
+      "--disable-default-apps",
+      "--disable-domain-reliability",
+      "--disable-features=MediaRouter,UseDBus,UseOzonePlatform",
+      "--disable-setuid-sandbox",
+      "--disable-sync",
+      "--enable-unsafe-swiftshader",
+      "--enable-webgl",
+      "--ignore-gpu-blocklist",
+      "--metrics-recording-only",
+      "--no-first-run",
+      "--no-sandbox",
+      "--use-gl=swiftshader",
+      "--window-size=1920,1080"
+    ],
+````
+
+After connecting to X11/Xvbf session via remote xvncviewer, open chromium browser and test WebGL support with some demo as such https://akirodic.com/p/jellyfish/ and after running that session go to error logs in `./output/logs`, check that there are no errors like
+
+```
+[106:106:0322/113901.573594:ERROR:ui/gl/init/gl_factory.cc:111] Requested GL implementation (gl=none,angle=none) not found in allowed implementations: [(gl=egl-angle,angle=default)].
+[106:106:0322/113901.592690:ERROR:components/viz/service/main/viz_main_impl.cc:189] Exiting GPU process due to errors during initialization
+```
+
+
 
 ## 5. TLS signatures should be consistent with User Agent (UA)
 

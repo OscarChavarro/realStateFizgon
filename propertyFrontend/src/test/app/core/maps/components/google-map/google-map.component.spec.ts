@@ -824,7 +824,7 @@ describe('GoogleMapComponent', () => {
     const mapInstance = (component as any).mapInstance as MockGoogleMap;
     expect(mapInstance).toBeTruthy();
     expect((mapInstance.options as any)['mapId']).toBe('map-id');
-    expect((mapInstance.options as any)['mapTypeId']).toBe('hybrid');
+    expect((mapInstance.options as any)['mapTypeId']).toBe('roadmap');
     expect((mapInstance.options as any)['styles']).toEqual(
       poiLayerManagerMock.buildMapStyles.calls.mostRecent().returnValue
     );

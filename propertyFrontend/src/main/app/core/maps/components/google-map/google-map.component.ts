@@ -121,7 +121,7 @@ export class GoogleMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     { id: 'satellite', label: 'map.PROPERTY_LOCATION_STYLE_SATELLITE' },
     { id: 'hybrid', label: 'map.PROPERTY_LOCATION_STYLE_HYBRID' }
   ];
-  selectedMapVisualStyle: GoogleMapVisualStyleId = 'hybrid';
+  selectedMapVisualStyle: GoogleMapVisualStyleId = 'vector';
 
   get selectedPropertySummary(): GoogleMapProperty | null {
     return this.selectionController.getSelectedPropertySummary();

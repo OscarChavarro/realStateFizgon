@@ -29,7 +29,7 @@ export class ProcessDiscoveredPropertyUrlsUseCase {
 
       const isOpen = await this.propertyReadPort.isOpenPropertyByUrl(url);
       if (isOpen) {
-        this.logger.log(`Skipping existing open property: ${url}`);
+        this.logger.log(`Skipping ${url}`);
         await this.propertyWritePort.touchPropertyLastTimeVisited(url);
         continue;
       }
